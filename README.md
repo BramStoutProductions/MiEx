@@ -25,3 +25,6 @@ MiEx is released as a stand-alone Jar file which contains all that it needs. The
 
 # Usage
 For more information on how to use MiEx, please visit [our wiki!](https://github.com/BramStoutProductions/MiEx/wiki)
+
+# Forum
+Talk about MiEx, ask for help, help others, and share your creations on our [GitHub Discussions page!](https://github.com/BramStoutProductions/MiEx/discussions)
