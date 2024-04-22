@@ -1,0 +1,80 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_side" ],
+    "include": [ "grass_block_side" ],
+    "network": {
+        "@texture@_overlay": {
+            "RIFILE": {
+                "attributes": {
+                    "inputs:colorScale": {
+                        "type": "color3f",
+                        "value": [ 1.0, 1.0, 1.0 ]
+                    }
+                }
+            },
+            "RIFILE_OVERLAY": {
+                "type": "PxrTexture",
+                "attributes": {
+                    "outputs:resultRGB": {
+                        "type": "color3f"
+                    },
+                    "outputs:resultA": {
+                        "type": "float"
+                    },
+                    "inputs:filename": {
+                        "type": "asset",
+                        "value": "@texture@_overlay_srgbtex_LOOCS G2.png.tex"
+                    },
+                    "inputs:filter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "inputs:colorScale": {
+                        "type": "colof3f",
+                        "connection": "RIBIOME.outputs:resultRGB"
+                    },
+                    "inputs:invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIOVERLAY_COMPOSITE": {
+                "type": "PxrMix",
+                "attributes": {
+                    "outputs:resultRGB": {
+                        "type": "color3f"
+                    },
+                    "inputs:color1": {
+                        "type": "color3f",
+                        "connection": "RIFILE.outputs:resultRGB"
+                    },
+                    "inputs:color2": {
+                        "type": "color3f",
+                        "connection": "RIFILE_OVERLAY.outputs:resultRGB"
+                    },
+                    "inputs:mixer": {
+                        "type": "float",
+                        "connection": "RIFILE_OVERLAY.outputs:resultA"
+                    }
+                }
+            },
+            "RIMAT": {
+                "attributes": {
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "connection": "RIOVERLAY_COMPOSITE.outputs:resultRGB"
+                    }
+                }
+            },
+            "RIROUGHNESS_REMAP": {
+                "attributes": {
+                    "inputs:inputRGB": {
+                        "type": "color3f",
+                        "connection": "RIOVERLAY_COMPOSITE.outputs:resultRGB"
+                    }
+                }
+            }
+        }
+    }
+}

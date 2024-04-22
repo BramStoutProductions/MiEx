@@ -53,6 +53,8 @@ public class MCMeta {
 	private int frameCount;
 	private int tileWidth;
 	private int tileHeight;
+	private int imgWidth;
+	private int imgHeight;
 	
 	public MCMeta(String texture) {
 		animate = false;
@@ -62,6 +64,8 @@ public class MCMeta {
 		frameCount = 1;
 		tileWidth = 1;
 		tileHeight = 1;
+		imgWidth = 16;
+		imgHeight = 16;
 		
 		File file = ResourcePack.getFile(texture, "textures", ".png.mcmeta", "assets");
 		if(!file.exists())
@@ -88,9 +92,13 @@ public class MCMeta {
 			if(animData.has("frametime"))
 				frameTime = animData.get("frametime").getAsInt();
 			
-			File texFile = ResourcePack.getFile(texture, "textures", ".png", "assets");
+			File texFile = ResourcePack.getFile(texture, "textures", ".exr", "assets");
+			if(!texFile.exists())
+				texFile = ResourcePack.getFile(texture, "textures", ".png", "assets");
 			BufferedImage img = ImageIO.read(texFile);
 			frameCount = (img.getHeight() * tileHeight) / (img.getWidth() * tileWidth);
+			imgWidth = img.getWidth();
+			imgHeight = img.getHeight();
 			
 			if(animData.has("frames")) {
 				JsonArray framesArray = animData.get("frames").getAsJsonArray();
@@ -112,7 +120,8 @@ public class MCMeta {
 						frames[i*2+1] = frameDataTime;
 					}
 				}
-			}else {
+			}
+			if(frames == null || frames.length == 0){
 				frames = new int[frameCount * 2];
 				for(int i = 0; i < frameCount*2; i += 2) {
 					frames[i] = i/2;
@@ -150,6 +159,20 @@ public class MCMeta {
 
 	public int getTileHeight() {
 		return tileHeight;
+	}
+	
+	public int getImgWidth() {
+		return imgWidth;
+	}
+	
+	public int getImgHeight() {
+		return imgHeight;
+	}
+	
+	public float getPowerOfTwoScaleCompensation() {
+		int imgHeightPowerOfTwo = 32 - Integer.numberOfLeadingZeros(imgHeight-1);
+		int imgHeightMax = 1 << imgHeightPowerOfTwo;
+		return ((float) imgHeight) / ((float) imgHeightMax);
 	}
 	
 }

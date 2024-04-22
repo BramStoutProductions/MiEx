@@ -143,6 +143,9 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			northFace.getPoints()[3*3+1] = cheight10;
 			northFace.getUVs()[2*2+1] = cheight00 * 0.5f + 4.0f;
 			northFace.getUVs()[3*2+1] = cheight10 * 0.5f + 4.0f;
+			// Move the face a tiny bit outwards in case there happens
+			// to be a block
+			northFace.translate(0, 0, -0.01f);
 		}
 		
 		if(height12 <= 0f) {
@@ -151,6 +154,9 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			southFace.getPoints()[3*3+1] = cheight01;
 			southFace.getUVs()[2*2+1] = cheight11 * 0.5f + 4.0f;
 			southFace.getUVs()[3*2+1] = cheight01 * 0.5f + 4.0f;
+			// Move the face a tiny bit outwards in case there happens
+			// to be a block
+			southFace.translate(0, 0, 0.01f);
 		}
 		
 		if(height01 <= 0f) {
@@ -159,6 +165,9 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			westFace.getPoints()[3*3+1] = cheight00;
 			westFace.getUVs()[2*2+1] = cheight01 * 0.5f + 4.0f;
 			westFace.getUVs()[3*2+1] = cheight00 * 0.5f + 4.0f;
+			// Move the face a tiny bit outwards in case there happens
+			// to be a block
+			westFace.translate(-0.01f, 0, 0);
 		}
 		
 		if(height21 <= 0f) {
@@ -167,6 +176,9 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			eastFace.getPoints()[3*3+1] = cheight11;
 			eastFace.getUVs()[2*2+1] = cheight10 * 0.5f + 4.0f;
 			eastFace.getUVs()[3*2+1] = cheight11 * 0.5f + 4.0f;
+			// Move the face a tiny bit outwards in case there happens
+			// to be a block
+			eastFace.translate(0.01f, 0, 0);
 		}
 	}
 	

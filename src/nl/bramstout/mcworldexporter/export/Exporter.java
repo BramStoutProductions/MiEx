@@ -51,7 +51,6 @@ import javax.swing.JOptionPane;
 import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.export.usd.USDConverter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
@@ -64,7 +63,10 @@ public class Exporter {
 	private static Set<Integer> individualBlockIds = new HashSet<Integer>();
 
 	public static void export(File usdFile) throws Exception {
-		File file = new File(usdFile.getPath().replace(".usd", ".miex"));
+		String extensionTokens[] = usdFile.getName().split("\\.");
+		String extension = extensionTokens[extensionTokens.length-1];
+		
+		File file = new File(usdFile.getPath().replace("." + extension, ".miex"));
 		List<Future<?>> futures = new ArrayList<Future<?>>();
 		int chunkSize = Config.chunkSize;
 		
@@ -174,13 +176,16 @@ public class Exporter {
 		raf.close();
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
-		USDConverter usdConverter = new USDConverter(file, usdFile);
-		usdConverter.convert();
 		
-		// Delete the .miex file, since we don't need it anymore
-		file.delete();
-		for(File chunkFile : chunkFiles)
-			chunkFile.delete();
+		Converter converter = Converter.getConverter(extension.toLowerCase(), file, usdFile);
+		converter.convert();
+		
+		if(converter.deleteMiExFiles()) {
+			// Delete the .miex file, since we don't need it anymore
+			file.delete();
+			for(File chunkFile : chunkFiles)
+				chunkFile.delete();
+		}
 		
 		System.out.println("Exported:" + usdFile.getPath());
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);

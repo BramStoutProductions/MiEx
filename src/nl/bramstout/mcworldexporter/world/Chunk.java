@@ -135,6 +135,7 @@ public abstract class Chunk {
 	private boolean isRendering;
 	private boolean shouldRender;
 	private boolean renderRequested;
+	private boolean fullReRender;
 
 	private int blockRegistryChangeCounter;
 	
@@ -158,6 +159,7 @@ public abstract class Chunk {
 		this.isRendering = false;
 		this.shouldRender = true;
 		this.renderRequested = false;
+		this.fullReRender = false;
 		blockRegistryChangeCounter = BlockRegistry.getChangeCounter();
 		this.lastAccess = System.currentTimeMillis();
 		this.loadLock = new SpinLock();
@@ -269,16 +271,32 @@ public abstract class Chunk {
 		if (render)
 			this.renderRequested = true;
 	}
+	
+	public void setRenderRequested(boolean renderRequested) {
+		this.renderRequested = renderRequested;
+	}
+	
+	public boolean getRenderRequested() {
+		return renderRequested;
+	}
+	
+	public void setFullReRender(boolean fullRerender) {
+		this.fullReRender = fullRerender;
+		if(fullRerender)
+			renderRequested = false;
+	}
 
 	public void renderChunkImage() {
 		this.lastAccess = System.currentTimeMillis();
-		if (this.renderRequested)
+		if (this.renderRequested && this.fullReRender)
 			calculateHeightmap();
-		this.renderRequested = false;
 		this.shouldRender = false;
+		this.fullReRender = false;
 		if (blocks == null || heightMap == null || isRendering
-				|| blockRegistryChangeCounter != BlockRegistry.getChangeCounter())
+				|| blockRegistryChangeCounter != BlockRegistry.getChangeCounter()) {
+			this.renderRequested = false;
 			return;
+		}
 		
 		this.lastImageAccess = System.currentTimeMillis();
 		
@@ -349,6 +367,7 @@ public abstract class Chunk {
 		} catch (Exception ex) {
 		}
 		isRendering = false;
+		this.renderRequested = false;
 	}
 
 	public BufferedImage getChunkImageForZoomLevel(int zoomLevel) {

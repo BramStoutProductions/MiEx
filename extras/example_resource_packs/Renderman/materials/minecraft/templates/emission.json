@@ -1,0 +1,47 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/amethyst*", "minecraft:block/campfire_fire", "minecraft:block/fire_0",
+                    "minecraft:block/fire_1", "minecraft:block/glowstone", "minecraft:block/lava_flow",
+                    "minecraft:block/lava_still", "minecraft:block/magma", "minecraft:block/nether_portal",
+                    "minecraft:block/sea_lantern", "minecraft:block/shroomlight", "minecraft:block/soul_campfire_fire",
+                    "minecraft:block/soul_fire_0", "minecraft:block/soul_fire_1"],
+    "include": [ "emission" ],
+    "network": {
+        "@texture@": {
+            "RIMAT": {
+                "attributes": {
+                    "inputs:diffuseGain": {
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "inputs:glowGain": {
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "inputs:specularFaceColor": {
+                        "type": "color3f",
+                        "value": [0.0, 0.0, 0.0]
+                    },
+                    "inputs:specularEdgeColor": {
+                        "type": "color3f",
+                        "value": [0.0, 0.0, 0.0]
+                    },
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "value": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        },
+        "@texture@&&!@texture@_emission": {
+            "RIMAT": {
+                "attributes": {
+                    "inputs:glowColor":{
+                        "type": "color3f",
+                        "connection": "${RIMAT.inputs:diffuseColor}"
+                    }
+                }
+            }
+        }
+    }
+}

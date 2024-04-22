@@ -37,8 +37,11 @@ public class IndexCache {
 		
 		long startKey;
 		long keyLength;
-		Node leftChild;
-		Node rightChild;
+		long keyLength2;
+		Node child00;
+		Node child01;
+		Node child10;
+		Node child11;
 		long key1;
 		int value1;
 		long key2;
@@ -59,8 +62,11 @@ public class IndexCache {
 		public Node() {
 			startKey = 0;
 			keyLength = 1l << 63;
-			leftChild = null;
-			rightChild = null;
+			keyLength2 = 1l << 62;
+			child00 = null;
+			child01 = null;
+			child10 = null;
+			child11 = null;
 			key1 = -1;
 			value1 = -1;
 			key2 = -1;
@@ -80,13 +86,19 @@ public class IndexCache {
 		}
 		
 		public int getOrDefault(long key, int defaultValue) {
-			if(leftChild != null || rightChild != null) {
+			if(child00 != null || child01 != null || child10 != null || child11 != null) {
 				// This is an intermediate node.
 				// Check if it's in the left or right child.
 				if(((key - startKey) & keyLength) == 0) {
-					return leftChild.getOrDefault(key, defaultValue);
+					if(((key - startKey) & keyLength2) == 0)
+						return child00.getOrDefault(key, defaultValue);
+					else
+						return child01.getOrDefault(key, defaultValue);
 				}else {
-					return rightChild.getOrDefault(key, defaultValue);
+					if(((key - startKey) & keyLength2) == 0)
+						return child10.getOrDefault(key, defaultValue);
+					else
+						return child11.getOrDefault(key, defaultValue);
 				}
 			}else{
 				// This is a leaf node, so check the keys for a hit.
@@ -112,13 +124,19 @@ public class IndexCache {
 		}
 		
 		public void put(long key, int value) {
-			if(leftChild != null || rightChild != null) {
+			if(child00 != null || child01 != null || child10 != null || child11 != null) {
 				// This is an intermediate node.
 				// Check if it's in the left or right child.
 				if(((key - startKey) & keyLength) == 0) {
-					leftChild.put(key, value);
+					if(((key - startKey) & keyLength2) == 0)
+						child00.put(key, value);
+					else
+						child01.put(key, value);
 				}else {
-					rightChild.put(key, value);
+					if(((key - startKey) & keyLength2) == 0)
+						child10.put(key, value);
+					else
+						child11.put(key, value);
 				}
 			}else {
 				// This is a leaf node.
@@ -144,13 +162,24 @@ public class IndexCache {
 					// We've reached the end
 					// which means that we need to
 					// split this node up.
-					long childKeyLength = keyLength >>> 1;
-					leftChild = new Node();
-					rightChild = new Node();
-					leftChild.startKey = startKey;
-					leftChild.keyLength = childKeyLength;
-					rightChild.startKey = startKey + keyLength;
-					rightChild.keyLength = childKeyLength;
+					long childKeyLength = keyLength >>> 2;
+					long childKeyLength2 = keyLength2 >>> 2;
+					child00 = new Node();
+					child01 = new Node();
+					child10 = new Node();
+					child11 = new Node();
+					child00.startKey = startKey;
+					child00.keyLength = childKeyLength;
+					child00.keyLength2 = childKeyLength2;
+					child01.startKey = startKey + keyLength2;
+					child01.keyLength = childKeyLength;
+					child01.keyLength2 = childKeyLength2;
+					child10.startKey = startKey + keyLength;
+					child10.keyLength = childKeyLength;
+					child10.keyLength2 = childKeyLength2;
+					child11.startKey = startKey + keyLength + keyLength2;
+					child11.keyLength = childKeyLength;
+					child11.keyLength2 = childKeyLength2;
 					
 					put(key1, value1);
 					put(key2, value2);

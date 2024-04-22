@@ -131,8 +131,8 @@ public class ResourcePack {
 				}
 				colour = new Color((int)r, (int)g, (int)b).getRGB();
 			} catch (Exception ex) {
-				System.out.println(texture);
-				ex.printStackTrace();
+				//System.out.println(texture);
+				//ex.printStackTrace();
 			}
 			synchronized(mutex) {
 				defaultColours.put(texture, colour);

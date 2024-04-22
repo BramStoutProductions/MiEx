@@ -182,7 +182,7 @@ public class USDWriter {
 	}
 	
 	public void writeVariantSets(String name) throws IOException{
-		fw.write(getIndent() + "append variantSets = \"" + name + "\"");
+		fw.write(getIndent() + "append variantSets = \"" + name + "\"\n");
 	}
 	
 	public void beginDef(String type, String name) throws IOException{
@@ -293,8 +293,12 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValueIntArray(int[] value) throws IOException{
+		writeAttributeValueIntArray(value, value.length);
+	}
+	
+	public void writeAttributeValueIntArray(int[] value, int count) throws IOException{
 		fw.write(" = [");
-		int num = value.length - 1;
+		int num = count - 1;
 		for(int i = 0; i <= num; ++i) {
 			fw.write(Integer.toString(value[i]));
 			if(i != num)

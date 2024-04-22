@@ -45,6 +45,10 @@ public class WorldAnvil extends World{
 	}
 
 	@Override
+	protected void _unload() {		
+	}
+	
+	@Override
 	protected void loadWorldSettings() {
 		
 	}

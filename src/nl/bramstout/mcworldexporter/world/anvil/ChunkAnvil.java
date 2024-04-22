@@ -33,10 +33,10 @@ package nl.bramstout.mcworldexporter.world.anvil;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -57,16 +57,16 @@ import nl.bramstout.mcworldexporter.world.Chunk;
 
 public class ChunkAnvil extends Chunk {
 
-	private File regionFile;
+	private RegionAnvil region;
 	private int dataOffset;
 	private int dataSize;
 	private int entityDataOffset;
 	private int entityDataSize;
 	private Object mutex;
 
-	public ChunkAnvil(int chunkX, int chunkZ, File regionFile, int dataOffset, int dataSize, int entityDataOffset, int entityDataSize) {
+	public ChunkAnvil(int chunkX, int chunkZ, RegionAnvil region, int dataOffset, int dataSize, int entityDataOffset, int entityDataSize) {
 		super(chunkX, chunkZ);
-		this.regionFile = regionFile;
+		this.region = region;
 		this.dataOffset = dataOffset;
 		this.dataSize = dataSize;
 		this.entityDataOffset = entityDataOffset;
@@ -92,20 +92,18 @@ public class ChunkAnvil extends Chunk {
 			if(dataSize == 0)
 				return;
 			
-			FileInputStream file = new FileInputStream(regionFile);
-			file.skip(dataOffset);
-			byte[] buffer = new byte[dataSize];
-			file.read(buffer);
-			file.close();
-			ByteBuffer buffer2 = ByteBuffer.wrap(buffer);
-			int len = buffer2.getInt() - 1;
-			byte compressionType = buffer2.get();
+			FileChannel fileChannel = region.getRegionChannel();
+			MappedByteBuffer buffer = fileChannel.map(MapMode.READ_ONLY, dataOffset, dataSize);
+			int len = buffer.getInt();
+			int compressionType = buffer.get();
+			byte[] byteBuffer = new byte[len - 1];
+			buffer.get(byteBuffer, 0, len - 1);
 
 			InputStream is = null;
 			if (compressionType == 1)
-				is = new GZIPInputStream(new ByteArrayInputStream(buffer, 5, len));
+				is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else if (compressionType == 2)
-				is = new InflaterInputStream(new ByteArrayInputStream(buffer, 5, len));
+				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else
 				throw new Exception("Could not load chunk");
 
@@ -277,24 +275,20 @@ public class ChunkAnvil extends Chunk {
 				}
 			}
 			
-			
-			
 			// Entities
 			if(entityDataSize > 0) {
-				file = new FileInputStream(new File(regionFile.getAbsolutePath().replace("\\", "/").replace("/region/", "/entities/")));
-				file.skip(entityDataOffset);
-				buffer = new byte[entityDataSize];
-				file.read(buffer);
-				file.close();
-				buffer2 = ByteBuffer.wrap(buffer);
-				len = buffer2.getInt() - 1;
-				compressionType = buffer2.get();
+				fileChannel = region.getEntityChannel();
+				buffer = fileChannel.map(MapMode.READ_ONLY, entityDataOffset, entityDataSize);
+				len = buffer.getInt();
+				compressionType = buffer.get();
+				byteBuffer = new byte[len - 1];
+				buffer.get(byteBuffer, 0, len - 1);
 	
 				is = null;
 				if (compressionType == 1)
-					is = new GZIPInputStream(new ByteArrayInputStream(buffer, 5, len));
+					is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 				else if (compressionType == 2)
-					is = new InflaterInputStream(new ByteArrayInputStream(buffer, 5, len));
+					is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 				else
 					throw new Exception("Could not load chunk");
 	

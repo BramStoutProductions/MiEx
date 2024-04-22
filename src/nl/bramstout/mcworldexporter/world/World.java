@@ -63,6 +63,17 @@ public abstract class World {
 	protected abstract void findDimensions();
 
 	protected abstract void findRegions();
+	
+	protected abstract void _unload();
+	
+	public void unload() {
+		for(Region region : regions) {
+			if(region == null)
+				continue;
+			region.unload();
+		}
+		_unload();
+	}
 
 	// protected abstract long getRegionIdFromChunkPosition(int chunkX, int chunkZ);
 

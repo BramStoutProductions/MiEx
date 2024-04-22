@@ -48,6 +48,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 
+import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
@@ -73,6 +74,44 @@ public class USDMaterials {
 			this.value = value;
 			this.connection = connection;
 			this.expression = expression;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof ShadingAttribute))
+				return false;
+			ShadingAttribute other = (ShadingAttribute) obj;
+			if(!name.equals(other.name))
+				return false;
+			if(type == null) {
+				if(other.type != null)
+					return false;
+			}else {
+				if(!type.equals(other.type))
+					return false;
+			}
+			if(value == null) {
+				if(other.value != null)
+					return false;
+			}else {
+				if(!value.equals(other.value))
+					return false;
+			}
+			if(connection == null) {
+				if(other.connection != null)
+					return false;
+			}else {
+				if(!connection.equals(other.connection))
+					return false;
+			}
+			if(expression == null) {
+				if(other.expression != null)
+					return false;
+			}else {
+				if(!expression.equals(other.expression))
+					return false;
+			}
+			return true;
 		}
 		
 		public void override(ShadingAttribute other, MaterialNetwork context) {
@@ -136,6 +175,25 @@ public class USDMaterials {
 			attributes = new ArrayList<ShadingAttribute>();
 		}
 		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof ShadingNode))
+				return false;
+			ShadingNode other = (ShadingNode) obj;
+			if(!name.equals(other.name))
+				return false;
+			if(type == null) {
+				if(other.type != null)
+					return false;
+			}else {
+				if(!type.equals(other.type))
+					return false;
+			}
+			if(!attributes.equals(other.attributes))
+				return false;
+			return true;
+		}
+		
 		public void override(ShadingNode other, MaterialNetwork context) {
 			if(other.type != null)
 				this.type = other.type;
@@ -179,6 +237,18 @@ public class USDMaterials {
 			this.nodes = new ArrayList<ShadingNode>();
 		}
 		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof MaterialNetwork))
+				return false;
+			MaterialNetwork other = (MaterialNetwork) obj;
+			if(!condition.equals(other.condition))
+				return false;
+			if(!nodes.equals(other.nodes))
+				return false;
+			return true;
+		}
+		
 		public void override(MaterialNetwork other) {
 			for(ShadingNode otherNode : other.nodes) {
 				boolean found = false;
@@ -206,10 +276,21 @@ public class USDMaterials {
 		
 		public boolean evaluateCondition(String texture, boolean hasBiomeColor) {
 			for(String condition : this.condition.split("&&")) {
+				boolean invert = false;
+				if(condition.startsWith("!")) {
+					invert = true;
+					condition = condition.substring(1);
+				}
 				if(condition.equals("@biomeColor@")) {
-					if(!hasBiomeColor)
-						return false;
-					continue;
+					if(invert) {
+						if(hasBiomeColor)
+							return false;
+						continue;
+					}else {
+						if(!hasBiomeColor)
+							return false;
+						continue;
+					}
 				}
 				String fullPath = condition.replace("@texture@", texture);
 				boolean checkAlpha = false;
@@ -227,22 +308,44 @@ public class USDMaterials {
 					checkInterpolated = true;
 					fullPath = fullPath.substring(0, fullPath.length() - 13);
 				}
-				File file = ResourcePack.getFile(fullPath, "textures", ".png", "assets");
-				if(!file.exists())
-					return false;
+				File file = getTextureFile(fullPath);
+				if(invert && (!checkAlpha && !checkAnimated && !checkInterpolated)) {
+					if(file.exists())
+						return false;
+				}else {
+					if(!file.exists())
+						return false;
+				}
 				
 				if(checkAlpha) {
-					if(!FileUtil.hasAlpha(file))
-						return false;
+					if(invert) {
+						if(FileUtil.hasAlpha(file))
+							return false;
+					}else {
+						if(!FileUtil.hasAlpha(file))
+							return false;
+					}
 				}
 				if(checkAnimated || checkInterpolated) {
 					MCMeta mcmeta = new MCMeta(texture);
-					if(checkAnimated)
-						if(!mcmeta.isAnimate() || mcmeta.isInterpolate())
-							return false;
-					if(checkInterpolated)
-						if(!mcmeta.isInterpolate())
-							return false;
+					if(checkAnimated) {
+						if(invert) {
+							if(!(!mcmeta.isAnimate() || mcmeta.isInterpolate()))
+								return false;
+						}else {
+							if(!mcmeta.isAnimate() || mcmeta.isInterpolate())
+								return false;
+						}
+					}
+					if(checkInterpolated) {
+						if(invert) {
+							if(mcmeta.isInterpolate())
+								return false;
+						}else {
+							if(!mcmeta.isInterpolate())
+								return false;
+						}
+					}
 				}
 			}
 			return true;
@@ -256,16 +359,37 @@ public class USDMaterials {
 		public List<String> selection;
 		public Map<String, String> shadingGroup;
 		public List<MaterialNetwork> networks;
+		public String name;
 		
-		public MaterialTemplate() {
-			this(0);
+		public MaterialTemplate(String name) {
+			this(name, 0);
 		}
 		
-		public MaterialTemplate(int priority) {
+		public MaterialTemplate(String name, int priority) {
+			this.name = name;
 			this.priority = priority;
 			this.selection = new ArrayList<String>();
 			this.shadingGroup = new HashMap<String, String>();
 			this.networks = new ArrayList<MaterialNetwork>();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof MaterialTemplate))
+				return false;
+			MaterialTemplate other = (MaterialTemplate) obj;
+			if(priority != other.priority)
+				return false;
+			if(!shadingGroup.equals(other.shadingGroup))
+				return false;
+			if(!networks.equals(other.networks))
+				return false;
+			return true;
+		}
+		
+		@Override
+		public int hashCode() {
+			return name.hashCode();
 		}
 		
 		public boolean isInSelection(String texture) {
@@ -310,7 +434,7 @@ public class USDMaterials {
 		}
 		
 		public MaterialTemplate flatten(String texture, boolean hasBiomeColor) {
-			MaterialTemplate material = new MaterialTemplate(0);
+			MaterialTemplate material = new MaterialTemplate(name, 0);
 			material.shadingGroup = shadingGroup;
 			material.networks.add(new MaterialNetwork());
 			for(MaterialNetwork network : networks) {
@@ -337,11 +461,19 @@ public class USDMaterials {
 		if(templates == null)
 			reload();
 		
+		// If we are using templates, then they are created based on which template
+		// the textures are in, but those templates don't have a search string
+		// for the right atlasses (they can't know what name they would be anyways).
+		// So, if this texture is an atlas, then get one of the original textures
+		// that was put into this atlas. Then we use that texture to find the right
+		// template to use.
+		String templateTexture = Atlas.getTemplateTextureForAtlas(texture, texture);
+		
 		for(List<MaterialTemplate> templateList : templates) {
 			MaterialTemplate currentTemplate = null;
 			for(MaterialTemplate template : templateList) {
 				if(currentTemplate == null || template.priority > currentTemplate.priority)
-					if(template.isInSelection(texture))
+					if(template.isInSelection(templateTexture))
 						currentTemplate = template;
 			}
 			if(currentTemplate != null)
@@ -357,14 +489,13 @@ public class USDMaterials {
 		List<MaterialNetwork> sharedNetworks = new ArrayList<MaterialNetwork>();
 		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
 		resourcePacks.add("base_resource_pack");
-		int resourcePackIndex = 0;
-		for(String resourcePack : resourcePacks) {
+		for(int resourcePackIndex = 0; resourcePackIndex < resourcePacks.size(); resourcePackIndex++) {
+			String resourcePack = resourcePacks.get(resourcePackIndex);
 			List<MaterialTemplate> templateList = new ArrayList<MaterialTemplate>();
 			
 			File materialsDir = new File(FileUtil.getResourcePackDir() + resourcePack + "/materials/minecraft/templates");
 			loadFromDir(materialsDir, sharedNetworks, resourcePacks, resourcePackIndex, templateList);
 			templates.add(templateList);
-			resourcePackIndex++;
 		}
 		for(int i = sharedNetworks.size()-1; i >= 0; --i) {
 			sharedNodes.override(sharedNetworks.get(i));
@@ -418,7 +549,7 @@ public class USDMaterials {
 				// the next resource pack from this one, otherwise we might end up
 				// in a loop.
 				int startIndex = 0;
-				if(el.getAsString().equalsIgnoreCase(file.getPath().split("/materials/minecraft/templates/")[0].split("\\.")[0]))
+				if(el.getAsString().equalsIgnoreCase(file.getPath().replace('\\', '/').split("/materials/minecraft/templates/")[1].split("\\.")[0]))
 					startIndex = resourcePackIndex + 1;
 				
 				int includeIndex;
@@ -440,7 +571,7 @@ public class USDMaterials {
 			}
 		}
 		if(template == null)
-			template = new MaterialTemplate();
+			template = new MaterialTemplate(file.getCanonicalPath());
 		
 		if(data.has("priority")) {
 			template.priority = data.get("priority").getAsInt();
@@ -577,7 +708,7 @@ public class USDMaterials {
 	
 	public static void writeMaterial(USDWriter writer, MaterialTemplate material, String texture, boolean hasBiomeColor,
 										String parentPrim, String sharedPrims) throws IOException{
-		String matName = "MAT_" + texture.replace(':', '_').replace('/', '_') + (hasBiomeColor ? "_BIOME" : "");
+		String matName = "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + (hasBiomeColor ? "_BIOME" : "");
 		writer.beginDef("Material", matName);
 		writer.beginChildren();
 		for(Entry<String, String> conn : material.shadingGroup.entrySet()) {
@@ -586,7 +717,7 @@ public class USDMaterials {
 				connPath = sharedPrims + "/" + conn.getValue().substring(6);
 			}else {
 				String[] tokens = conn.getValue().split("\\.");
-				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + texture.replace(':', '_').replace('/', '_');
+				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -602,13 +733,18 @@ public class USDMaterials {
 	private static void writeMaterialNetwork(USDWriter writer, MaterialNetwork network, String texture, 
 											String parentPrim, String sharedPrims) throws IOException {
 		for(ShadingNode node : network.nodes) {
-			writeShadingNode(writer, node, texture, parentPrim, sharedPrims);
+			try {
+				writeShadingNode(writer, node, texture, parentPrim, sharedPrims);
+			}catch(Exception ex) {
+				System.out.println("Could not write node " + node.name + "for texture " + texture);
+				throw ex;
+			}
 		}
 	}
 	
 	private static void writeShadingNode(USDWriter writer, ShadingNode node, String texture, 
 										String parentPrim, String sharedPrims) throws IOException {
-		writer.beginDef("Shader", node.name + "_" + texture.replace(':', '_').replace('/', '_'));
+		writer.beginDef("Shader", node.name + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_'));
 		writer.beginChildren();
 		writer.writeAttributeName("token", "info:id", true);
 		writer.writeAttributeValueString(node.type);
@@ -630,7 +766,7 @@ public class USDMaterials {
 				connPath = sharedPrims + "/" + attr.connection.substring(6);
 			}else {
 				String[] tokens = attr.connection.split("\\.");
-				connPath = parentPrim + "/" + tokens[0] + "_" + texture.replace(':', '_').replace('/', '_');
+				connPath = parentPrim + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -681,6 +817,28 @@ public class USDMaterials {
 	}
 	
 	private static void writeExpressionValue(USDWriter writer, String texture, String expression, String attrType) throws IOException{
+		// Get rid of the '${' and '}'
+		expression = expression.substring(2, expression.length()-1);
+		// Split the expression from the arguments
+		String[] exprTokens = expression.split("\\(");
+		expression = exprTokens[0].strip();
+		Map<String, String> args = new HashMap<String, String>();
+		if(exprTokens.length > 1) {
+			// The split got rid of the opening '(', so here we get rid of the closing ')'.
+			String argsString = exprTokens[1].substring(0, exprTokens[1].length()-1);
+			String[] argsList = argsString.split(",");
+			for(String arg : argsList) {
+				String[] argTokens = arg.split("=");
+				if(argTokens.length == 2) {
+					// Put this arg in the map
+					// Also strip the white spaces and set it to lower case
+					// to make it easier to match different ways of writing
+					// names and values.
+					args.put(argTokens[0].strip().toLowerCase(), argTokens[1].strip().toLowerCase());
+				}
+			}
+		}
+		
 		// It's possible that we want the animation data of some other texture,
 		// so let's figure that out.
 		expression = expression.replace("@texture@", texture);
@@ -702,117 +860,31 @@ public class USDMaterials {
 		float frameTimeMultiplier = Config.animatedTexturesFrameTimeMultiplier;
 		boolean isFloat2 = attrType.equals("float2") || attrType.equals("half2") || attrType.equals("double2");
 		
-		if(expression.equalsIgnoreCase("${frameId}")) {
+		if(expression.equalsIgnoreCase("frameId")) {
 			List<Float> timeCodes = new ArrayList<Float>();
 			List<Float> values = new ArrayList<Float>();
-			int i = 0;
-			float prevValue = 0.0f;
-			for(float timeCode = startFrame; timeCode <= endFrame;) {
-				int frameIndex = i % (animData.getFrames().length/2);
-				int frameId = animData.getFrames()[frameIndex*2];
-				int frameTime = animData.getFrames()[frameIndex*2 + 1];
-				float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
-				
-				// UVs have (0,0) at the bottom left, while MC has it at the top left,
-				// so we need to invert frameId in order to get the correct result
-				frameId = animData.getFrameCount() - frameId;
-				float value = ((float) frameId) / ((float) animData.getFrameCount());
-				
-				// Because USD will always linearly interpolate,
-				// but we don't want any motion blur on the textures
-				// we need to put in two time samples really close
-				// to each other. We also need to offset it
-				// since the shutter start could be exactly on the
-				// frame, but the shutter could also be centered
-				// on the frame and so it start just before the frame.
-				// We assume that the shutter angle won't go past 180
-				// degrees, so we only need to have it be
-				// 0.25 of a frame before it. We do 0.3 just to be save
-				timeCodes.add(timeCode - 0.301f);
-				if(isFloat2) {
-					values.add(0.0f);
-					values.add(prevValue);
-				}else {
-					values.add(prevValue);
-				}
-				
-				timeCodes.add(timeCode - 0.3f);
-				if(isFloat2) {
-					values.add(0.0f);
-					values.add(value);
-				}else {
-					values.add(value);
-				}
-				
-				timeCode += frameTimeF;
-				prevValue = value;
-				i++;
-			}
+			getFrameIdSamples(timeCodes, values, startFrame, endFrame, 
+								animData, frameTimeMultiplier, isFloat2, args);
 			
 			if(isFloat2) {
 				writer.writeAttributeValueTimeSamplesFloatCompound(timeCodes, values, 2);
 			}else {
 				writer.writeAttributeValueTimeSamplesFloat(timeCodes, values);
 			}
-		}else if(expression.equalsIgnoreCase("${nextFrameId}")) {
-			List<Float> timeCodes = new ArrayList<Float>();
-			List<Float> values = new ArrayList<Float>();
-			int i = 0;
-			float prevValue = 0.0f;
-			for(float timeCode = startFrame; timeCode <= endFrame;) {
-				int frameIndex = (i+1) % (animData.getFrames().length/2);
-				int frameId = animData.getFrames()[frameIndex*2];
-				int frameTime = animData.getFrames()[frameIndex*2 + 1];
-				float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
-				
-				// UVs have (0,0) at the bottom left, while MC has it at the top left,
-				// so we need to invert frameId in order to get the correct result
-				frameId = animData.getFrameCount() - frameId;
-				float value = ((float) frameId) / ((float) animData.getFrameCount());
-				
-				// Because USD will always linearly interpolate,
-				// but we don't want any motion blur on the textures
-				// we need to put in two time samples really close
-				// to each other. We also need to offset it
-				// since the shutter start could be exactly on the
-				// frame, but the shutter could also be centered
-				// on the frame and so it start just before the frame.
-				// We assume that the shutter angle won't go past 180
-				// degrees, so we only need to have it be
-				// 0.25 of a frame before it. We do 0.3 just to be save
-				timeCodes.add(timeCode - 0.301f);
-				if(isFloat2) {
-					values.add(0.0f);
-					values.add(prevValue);
-				}else {
-					values.add(prevValue);
-				}
-				
-				timeCodes.add(timeCode - 0.3f);
-				if(isFloat2) {
-					values.add(0.0f);
-					values.add(value);
-				}else {
-					values.add(value);
-				}
-				
-				timeCode += frameTimeF;
-				prevValue = value;
-				i++;
-			}
-			
-			if(isFloat2) {
-				writer.writeAttributeValueTimeSamplesFloatCompound(timeCodes, values, 2);
-			}else {
-				writer.writeAttributeValueTimeSamplesFloat(timeCodes, values);
-			}
-		}else if(expression.equalsIgnoreCase("${frameScale}")) {
+		}else if(expression.equalsIgnoreCase("frameScale")) {
 			float scale = (float) animData.getFrameCount();
+			
+			if(args.getOrDefault("powerof2", "false").equals("true"))
+				scale /= animData.getPowerOfTwoScaleCompensation();
+			
+			if(args.getOrDefault("inverse", "false").equals("true"))
+				scale = 1.0f / scale;
+			
 			if(!isFloat2)
 				writer.writeAttributeValueFloat(scale);
 			else
 				writer.writeAttributeValueFloatCompound(new float[] { 1.0f, scale });
-		}else if(expression.equalsIgnoreCase("${interpFactor}")) {
+		}else if(expression.equalsIgnoreCase("interpFactor")) {
 			List<Float> timeCodes = new ArrayList<Float>();
 			List<Float> values = new ArrayList<Float>();
 			int i = 0;
@@ -858,8 +930,86 @@ public class USDMaterials {
 		}
 	}
 	
+	private static void getFrameIdSamples(List<Float> timeCodes, List<Float> values, float startFrame, float endFrame, 
+											MCMeta animData, float frameTimeMultiplier, boolean isFloat2,
+											Map<String, String> args) {
+		int i = 0;
+		try {
+			i = Integer.valueOf(args.getOrDefault("offset", "0")).intValue();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		float prevValue = 0.0f;
+		for(float timeCode = startFrame; timeCode <= endFrame;) {
+			int frameIndex = i % (animData.getFrames().length/2);
+			int frameId = animData.getFrames()[frameIndex*2];
+			int frameTime = animData.getFrames()[frameIndex*2 + 1];
+			float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
+			
+			// UVs have (0,0) at the bottom left, while MC has it at the top left,
+			// so we need to invert frameId in order to get the correct result
+			frameId = animData.getFrameCount() - frameId - 1;
+			float value = ((float) frameId) / ((float) animData.getFrameCount());
+			if(args.getOrDefault("powerof2", "false").equals("true"))
+				value *= animData.getPowerOfTwoScaleCompensation();
+			
+			// Because USD will always linearly interpolate,
+			// but we don't want any motion blur on the textures
+			// we need to put in two time samples really close
+			// to each other. We also need to offset it
+			// since the shutter start could be exactly on the
+			// frame, but the shutter could also be centered
+			// on the frame and so it start just before the frame.
+			// We assume that the shutter angle won't go past 180
+			// degrees, so we only need to have it be
+			// 0.25 of a frame before it. We do 0.3 just to be save
+			timeCodes.add(timeCode - 0.301f);
+			if(isFloat2) {
+				values.add(0.0f);
+				values.add(prevValue);
+			}else {
+				values.add(prevValue);
+			}
+			
+			timeCodes.add(timeCode - 0.3f);
+			if(isFloat2) {
+				values.add(0.0f);
+				values.add(value);
+			}else {
+				values.add(value);
+			}
+			
+			timeCode += frameTimeF;
+			prevValue = value;
+			i++;
+		}
+	}
+	
+	private static File getTextureFile(String texture) {
+		if(texture.startsWith(".")) {
+			File file = new File(USDConverter.currentOutputDir, texture + ".exr");
+			if(file.exists())
+				return file;
+			return new File(USDConverter.currentOutputDir, texture + ".png");
+		}
+		if(texture.contains(".")) {
+			String[] tokens = texture.split("\\.");
+			String extension = tokens[tokens.length-1];
+			String filename = tokens[0];
+			for(int i = 1; i < tokens.length-1; ++i)
+				filename = filename + "." + tokens[i];
+			return ResourcePack.getFile(filename, "textures", "." + extension, "assets");
+		}
+		// First check if there is an exr, if so use it.
+		File file = ResourcePack.getFile(texture, "textures", ".exr", "assets");
+		if(file.exists())
+			return file;
+		
+		return ResourcePack.getFile(texture, "textures", ".png", "assets");
+	}
+	
 	private static String getAssetPathForTexture(String texture) {
-		File file = ResourcePack.getFile(texture, "textures", ".png", "assets");
+		File file = getTextureFile(texture);
 		if(!file.exists())
 			return texture;
 		try {
@@ -867,13 +1017,23 @@ public class USDMaterials {
 			String resourcePathDir = new File(FileUtil.getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 			if(!resourcePathDir.endsWith("/"))
 				resourcePathDir = resourcePathDir + "/";
-			if(!fullPath.startsWith(resourcePathDir)) {
-				System.out.println("Texture isn't located in resource path dir");
-				System.out.println(fullPath + " : " + resourcePathDir);
-				return texture;
+			
+			String outputDir = USDConverter.currentOutputDir.getCanonicalPath().replace('\\', '/');
+			if(!outputDir.endsWith("/"))
+				outputDir = outputDir + "/";
+			
+			if(fullPath.startsWith(resourcePathDir)) {
+				String relativePath = fullPath.substring(resourcePathDir.length());
+				return FileUtil.getResourcePackUSDPrefix() + relativePath;
 			}
-			String relativePath = fullPath.substring(resourcePathDir.length());
-			return FileUtil.getResourcePackUSDPrefix() + relativePath;
+			if(fullPath.startsWith(outputDir)) {
+				String relativePath = fullPath.substring(outputDir.length());
+				return "./" + relativePath;
+			}
+			
+			System.out.println("Texture isn't located in resource path dir or output dir");
+			System.out.println(fullPath + " : " + resourcePathDir);
+			return texture;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

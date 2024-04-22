@@ -88,10 +88,12 @@ public class Queue<T> {
 		// Get the block
 		Block<T> block = writeBlock.get();
 		// Set the value
-		block.set(index, value);
+		try {
+			block.set(index, value);
+		}catch(Exception ex) {}
 		// If we've reached the next block, then update
 		// the writeBlock value to the next block.
-		if(index - block.startAddress == 1024)
+		if(index - block.startAddress == 1152)
 			writeBlock.set(block.nextBlock);
 	}
 	

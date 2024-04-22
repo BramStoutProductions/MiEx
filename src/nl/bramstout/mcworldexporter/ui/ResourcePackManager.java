@@ -77,6 +77,8 @@ public class ResourcePackManager extends JPanel {
 	private JScrollPane activeScrollPane;
 	private JPanel activePanel;
 	private JButton updateBaseResourcePackButton;
+	private JButton createAtlassesButton;
+	private AtlasCreatorDialog atlasCreator;
 	
 	public ResourcePackManager() {
 		super();
@@ -135,6 +137,13 @@ public class ResourcePackManager extends JPanel {
 		updateBaseResourcePackButton.setPreferredSize(new Dimension(300, 32));
 		add(updateBaseResourcePackButton);
 		
+		createAtlassesButton = new JButton("Create Atlasses");
+		createAtlassesButton.setMinimumSize(new Dimension(300, 32));
+		createAtlassesButton.setMaximumSize(new Dimension(300, 32));
+		createAtlassesButton.setPreferredSize(new Dimension(300, 32));
+		add(createAtlassesButton);
+		
+		atlasCreator = new AtlasCreatorDialog();
 		
 		reset();
 		
@@ -164,6 +173,16 @@ public class ResourcePackManager extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				ResourcePack.updateBaseResourcePack(false);
+			}
+			
+		});
+		
+		createAtlassesButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				atlasCreator.setVisible(true);
+				atlasCreator.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
 			}
 			
 		});

@@ -295,20 +295,28 @@ public class Mesh {
 			uvs = Arrays.copyOf(uvs, uvs.length);
 			for(int i = 0; i < uvs.length; i += 2) {
 				uvs[i] = (uvs[i] + atlas.x * 16.0f) / atlas.width;
-				uvs[i+1] = (uvs[i+1] + (atlas.height - atlas.y - 1f) * 16.0f) / atlas.height;
+				uvs[i+1] = (uvs[i+1] + (atlas.height - atlas.y - ((float) atlas.padding)) * 16.0f) / atlas.height;
+			}
+		}
+		// Scale the UVs
+		if(uvScale != 1.0f || yuvScale != 1.0f) {
+			uvs = Arrays.copyOf(uvs, uvs.length);
+			for(int i = 2; i < uvs.length; i += 2) {
+				uvs[i] = (uvs[i] - uvs[0]) * uvScale + uvs[0];
+				uvs[i + 1] = (uvs[i + 1] - uvs[1]) * yuvScale + uvs[1];
 			}
 		}
 		addPoint((points[0] - 8f) * scale + 8f + ox, (points[1] - 8f) * yScale + 8f + oy, (points[2] - 8f) * scale + 8f + oz, 
-				(uvs[0] * uvScale) / 16.0f, (uvs[1] * yuvScale) / 16.0f + uvOffsetY, 
+				uvs[0] / 16.0f, uvs[1] / 16.0f + uvOffsetY, 
 				colors[0], colors[1], colors[2], v0Data);
 		addPoint((points[3] - 8f) * scale + 8f + ox, (points[4] - 8f) * yScale + 8f + oy, (points[5] - 8f) * scale + 8f + oz, 
-				(uvs[2] * uvScale) / 16.0f, (uvs[3] * yuvScale) / 16.0f + uvOffsetY, 
+				uvs[2] / 16.0f, uvs[3] / 16.0f + uvOffsetY, 
 				colors[3], colors[4], colors[5], v1Data);
 		addPoint((points[6] - 8f) * scale + 8f + ox, (points[7] - 8f) * yScale + 8f + oy, (points[8] - 8f) * scale + 8f + oz, 
-				(uvs[4] * uvScale) / 16.0f, (uvs[5] * yuvScale) / 16.0f + uvOffsetY, 
+				uvs[4] / 16.0f, uvs[5] / 16.0f + uvOffsetY, 
 				colors[6], colors[7], colors[8], v2Data);
 		addPoint((points[9] - 8f) * scale + 8f + ox, (points[10] - 8f) * yScale + 8f + oy, (points[11] - 8f) * scale + 8f + oz, 
-				(uvs[6] * uvScale) / 16.0f, (uvs[7] * yuvScale) / 16.0f + uvOffsetY, 
+				uvs[6] / 16.0f, uvs[7] / 16.0f + uvOffsetY, 
 				colors[9], colors[10], colors[11], v3Data);
 		addEdge(v0Data, v1Data);
 		addEdge(v1Data, v2Data);

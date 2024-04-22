@@ -33,7 +33,10 @@ package nl.bramstout.mcworldexporter.world.anvil;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.Region;
@@ -42,10 +45,14 @@ public class RegionAnvil extends Region{
 
 	private ChunkAnvil[] chunks = null;
 	private Object mutex;
+	private FileChannel regionFileChannel;
+	private FileChannel entityFileChannel;
 	
 	public RegionAnvil(File regionFile, int x, int z) {
 		super(regionFile, x, z);
 		this.mutex = new Object();
+		this.regionFileChannel = null;
+		this.entityFileChannel = null;
 	}
 
 	@Override
@@ -95,7 +102,7 @@ public class RegionAnvil extends Region{
 					entityDataOffset = (entityData >> 8) * 4096;
 					entityDataSize = (entityData & 0xFF) * 4096;
 					
-					chunks[i] = new ChunkAnvil(x + regionXOffset, z + regionZOffset, regionFile, 
+					chunks[i] = new ChunkAnvil(x + regionXOffset, z + regionZOffset, this, 
 							dataOffset, dataSize, entityDataOffset, entityDataSize);
 					++i;
 				}
@@ -106,6 +113,28 @@ public class RegionAnvil extends Region{
 	@Override
 	public void unload() {
 		chunks = null;
+		try {
+			regionFileChannel.close();
+			entityFileChannel.close();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	public FileChannel getRegionChannel() throws IOException{
+		synchronized(mutex) {
+			if(regionFileChannel == null)
+				regionFileChannel = FileChannel.open(regionFile.toPath(), StandardOpenOption.READ);
+			return regionFileChannel;
+		}
+	}
+	
+	public FileChannel getEntityChannel() throws IOException{
+		synchronized(mutex) {
+			if(entityFileChannel == null)
+				entityFileChannel = FileChannel.open(new File(regionFile.getAbsolutePath().replace("\\", "/").replace("/region/", "/entities/")).toPath(), StandardOpenOption.READ);
+			return entityFileChannel;
+		}
 	}
 
 	@Override
@@ -126,6 +155,7 @@ public class RegionAnvil extends Region{
 			if(chunk == null)
 				continue;
 			chunk.setShouldRender(true);
+			chunk.setFullReRender(true);
 		}
 	}
 

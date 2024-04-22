@@ -667,7 +667,7 @@ public class ModelFace {
 		};
 		calculateOcclusion(minMaxPoints);
 	}
-
+	
 	public long getOccludes() {
 		return occludes;
 	}

@@ -50,11 +50,13 @@ import java.util.concurrent.Future;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
+import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 
-public class USDConverter {
+public class USDConverter extends Converter{
 
 	private static class ChunkInfo{
 		String name = "";
@@ -103,6 +105,7 @@ public class USDConverter {
 	private List<ChunkInfo> chunkInfosBG = new ArrayList<ChunkInfo>();
 	private Object mutex = new Object();
 	private static ExecutorService threadPool = Executors.newWorkStealingPool();
+	public static File currentOutputDir = null;
 	
 	public USDConverter(File inputFile, File outputFile) throws IOException {
 		this.inputFile = inputFile;
@@ -114,6 +117,12 @@ public class USDConverter {
 		chunksFolder.mkdirs();
 		materialsFile = new File(outputFile.getPath().replace(".usd", "_materials.usd"));
 		individualBlocksRegistry = new HashMap<Integer, IndividualBlockInfo>();
+		currentOutputDir = outputFile.getParentFile();
+	}
+	
+	@Override
+	public boolean deleteMiExFiles() {
+		return true;
 	}
 	
 	private void deleteDir(File dir) {
@@ -127,7 +136,8 @@ public class USDConverter {
 		dir.delete();
 	}
 	
-	public void convert() throws IOException, InterruptedException{
+	@Override
+	public void convert() throws Exception{
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
 		int version = dis.readInt();
 		if(version != 2)
@@ -142,6 +152,7 @@ public class USDConverter {
 		rootWriter.beginDef("Xform", "world");
 		rootWriter.beginMetaData();
 		rootWriter.writeVariantSets("MiEx_LOD");
+		rootWriter.writeMetaDataString("kind", "assembly");
 		rootWriter.endMetaData();
 		rootWriter.beginChildren();
 		
@@ -159,9 +170,12 @@ public class USDConverter {
 			for(int i = 0; i < numBaseMeshes; ++i) {
 				int baseMeshId = dis.readInt();
 				String blockName = dis.readUTF();
-				String primName = "_class_" + blockName.replace(':', '_').replace('/', '_') + baseMeshId;
+				String primName = "_class_" + blockName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + baseMeshId;
 				
 				rootWriter.beginClass("Xform", primName);
+				rootWriter.beginMetaData();
+				rootWriter.writeMetaDataString("kind", "subcomponent");
+				rootWriter.endMetaData();
 				rootWriter.beginChildren();
 				
 				Set<Texture> usedTextures = new HashSet<Texture>();
@@ -297,38 +311,42 @@ public class USDConverter {
 	private void writeChunks(USDWriter rootWriter, ChunkInfo[] chunkInfos) throws IOException{
 		for(ChunkInfo chunkInfo : chunkInfos) {
 			rootWriter.beginDef("Xform", chunkInfo.name);
+			rootWriter.beginMetaData();
+			rootWriter.writeMetaDataString("kind", "group");
+			rootWriter.writePayload("./" + chunksFolder.getName() + "/" + chunkInfo.name + ".usd", false);
+			rootWriter.endMetaData();
 			rootWriter.beginChildren();
 			rootWriter.writeAttributeName("bool", "isFG", true);
 			rootWriter.writeAttributeValueBoolean(chunkInfo.isFG);
 			
-			rootWriter.beginDef("Xform", "meshes");
+			/*rootWriter.beginDef("Xform", "meshes");
 			rootWriter.beginMetaData();
 			rootWriter.writePayload("./" + chunksFolder.getName() + "/" + chunkInfo.name + ".usd", false);
 			rootWriter.endMetaData();
-			rootWriter.beginChildren();
+			rootWriter.beginChildren();*/
 			
 			rootWriter.beginOver("materials");
 			rootWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				rootWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace(':', '_').replace('/', '_') + 
+				rootWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
-				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + tex.texture.replace(':', '_').replace('/', '_') + 
+				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : "") + ">");
 			}
 			rootWriter.endChildren();
 			rootWriter.endOver();
 			
-			rootWriter.endChildren();
-			rootWriter.endDef();
+			/*rootWriter.endChildren();
+			rootWriter.endDef();*/
 			
-			rootWriter.beginDef("Xform", "individual_blocks");
-			rootWriter.beginChildren();
+			/*rootWriter.beginDef("Xform", "individual_blocks");
+			rootWriter.beginChildren();*/
 			
 			for(Entry<Integer, List<Float>> instancer : chunkInfo.instancers.entrySet()) {
 				IndividualBlockInfo baseInfo = individualBlocksRegistry.get(instancer.getKey());
 				
-				rootWriter.beginDef("Xform", baseInfo.path.replace("_class_", ""));
-				rootWriter.beginChildren();
+				/*rootWriter.beginDef("Xform", baseInfo.path.replace("_class_", ""));
+				rootWriter.beginChildren();*/
 				for(int i = 0; i < instancer.getValue().size()/3; ++i) {
 					rootWriter.beginDef("Xform", baseInfo.path.replace("_class_", "") + "_" + i);
 					rootWriter.beginMetaData();
@@ -347,12 +365,12 @@ public class USDConverter {
 					rootWriter.endChildren();
 					rootWriter.endDef();
 				}
-				rootWriter.endChildren();
-				rootWriter.endDef();
+				/*rootWriter.endChildren();
+				rootWriter.endDef();*/
 			}
 			
-			rootWriter.endChildren();
-			rootWriter.endDef();
+			/*rootWriter.endChildren();
+			rootWriter.endDef();*/
 			
 			rootWriter.endChildren();
 			rootWriter.endDef();
@@ -362,15 +380,15 @@ public class USDConverter {
 	private void writeChunkRenderVariants(USDWriter rootWriter, ChunkInfo[] chunkInfos) throws IOException{
 		for(ChunkInfo chunkInfo : chunkInfos) {
 			rootWriter.beginOver(chunkInfo.name);
-			rootWriter.beginChildren();
+			/*rootWriter.beginChildren();
 			
-			rootWriter.beginOver("meshes");
+			rootWriter.beginOver("meshes");*/
 			rootWriter.beginMetaData();
 			rootWriter.writePayload("./" + chunksFolder.getName() + "/" + chunkInfo.name + "_render.usd", true);
 			rootWriter.endMetaData();
-			rootWriter.endOver();
+			/*rootWriter.endOver();
 			
-			rootWriter.endChildren();
+			rootWriter.endChildren();*/
 			rootWriter.endOver();
 		}
 	}
@@ -406,6 +424,9 @@ public class USDConverter {
 				chunkWriter.endMetaData();
 				
 				chunkWriter.beginDef("Xform", "chunk");
+				chunkWriter.beginMetaData();
+				chunkWriter.writeMetaDataString("kind", "group");
+				chunkWriter.endMetaData();
 				chunkWriter.beginChildren();
 				
 				chunkRenderWriter.beginMetaData();
@@ -413,6 +434,9 @@ public class USDConverter {
 				chunkRenderWriter.endMetaData();
 				
 				chunkRenderWriter.beginDef("Xform", "chunk");
+				chunkRenderWriter.beginMetaData();
+				chunkRenderWriter.writeMetaDataString("kind", "group");
+				chunkRenderWriter.endMetaData();
 				chunkRenderWriter.beginChildren();
 				
 				
@@ -459,7 +483,7 @@ public class USDConverter {
 			chunkWriter.beginDef("Scope", "materials");
 			chunkWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				chunkWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace(':', '_').replace('/', '_') + 
+				chunkWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
 			}
 			chunkWriter.endChildren();
@@ -476,7 +500,7 @@ public class USDConverter {
 			if(meshName.equals(""))
 				meshName = "mesh";
 			else
-				meshName = meshName.replace(':', '_').replace('/', '_');
+				meshName = meshName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
 			boolean doubleSided = dis.readInt() > 0;
 			String texture = dis.readUTF();
 			String extraData = dis.readUTF();
@@ -486,6 +510,18 @@ public class USDConverter {
 			int numEdges = dis.readInt();
 			int numFaces = dis.readInt();
 			int numColors = dis.readInt();
+			
+			// Handle banners
+			if(texture.startsWith("banner:")) {
+				String bannerTexName = texture.substring("banner:".length());
+				File textureFolder = new File(chunksFolder, "banners");
+				try {
+					BannerTextureCreator.createBannerTexture(extraData, textureFolder, bannerTexName);
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				texture = "./" + chunksFolder.getName() + "/banners/" + bannerTexName;
+			}
 			
 			usedTextures.add(new Texture(texture, numColors > 0));
 			
@@ -539,7 +575,7 @@ public class USDConverter {
 			
 			writeMesh(writer, meshName, materialsPrim, texture, extraData, null, doubleSided, vertexData, vertexIndices, 
 						vertexIndicesCounts, uvData, uvIndexData, normalData, normalIndexData, 
-						numColors, colorData, colorIndexData);
+						numColors, colorData, colorIndexData, proxyMesh == null ? "component" : "subcomponent");
 			
 			
 			if(proxyMesh != null) {
@@ -557,11 +593,14 @@ public class USDConverter {
 			if(groupName.equals(""))
 				groupName = "mesh";
 			else
-				groupName = groupName.replace(':', '_').replace('/', '_');
+				groupName = groupName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
 			int numChildren = dis.readInt();
 			
 			
 			renderWriter.beginDef("Xform", groupName);
+			renderWriter.beginMetaData();
+			renderWriter.writeMetaDataString("kind", "component");
+			renderWriter.endMetaData();
 			renderWriter.beginChildren();
 			
 			Mesh proxyMesh2 = proxyMesh;
@@ -584,7 +623,7 @@ public class USDConverter {
 			renderWriter.endDef();
 			
 			if(!noProxy) {
-				writeMesh(writer, proxyMesh2, materialsPrim, "proxy");
+				writeMesh(writer, proxyMesh2, materialsPrim, "proxy", "component");
 			}
 			
 		}else {
@@ -592,7 +631,7 @@ public class USDConverter {
 		}
 	}
 	
-	private void writeMesh(USDWriter writer, Mesh mesh, String materialsPrim, String purpose) throws IOException {
+	private void writeMesh(USDWriter writer, Mesh mesh, String materialsPrim, String purpose, String kind) throws IOException {
 		int numUVs = mesh.getUs().size();
 		float[] uvData = new float[numUVs * 2];
 		for(int i = 0; i < numUVs; ++i) {
@@ -620,17 +659,18 @@ public class USDConverter {
 					Arrays.copyOf(mesh.getUvIndices().getData(), mesh.getUvIndices().size()), 
 					Arrays.copyOf(mesh.getNormals().getData(), mesh.getNormals().size()), 
 					Arrays.copyOf(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size()), 
-					numColors, colorData, colorIndexData);
+					numColors, colorData, colorIndexData, kind);
 	}
 	
 	private void writeMesh(USDWriter writer, String meshName, String materialsPrim, String texture, String extraData, String purpose,
 							boolean doubleSided, float[] vertexData, int[] vertexIndices,
 							int[] vertexIndicesCounts, float[] uvData, int[] uvIndexData,
 							float[] normalData, int[] normalIndexData, int numColors,
-							float[] colorData, int[] colorIndexData) throws IOException {
+							float[] colorData, int[] colorIndexData, String kind) throws IOException {
 		writer.beginDef("Mesh", meshName);
 		writer.beginMetaData();
 		writer.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
+		writer.writeMetaDataString("kind", kind);
 		writer.endMetaData();
 		writer.beginChildren();
 		
@@ -641,6 +681,10 @@ public class USDConverter {
 		
 		writer.writeAttributeName("bool", "doubleSided", true);
 		writer.writeAttributeValueBoolean(doubleSided);
+		
+		// Renderman doesn't respect the doubleSided attribute
+		writer.writeAttributeName("int", "primvars:ri:attributes:Ri:Sides", false);
+		writer.writeAttributeValueInt(doubleSided ? 2 : 1);
 		
 		writer.writeAttributeName("token", "subdivisionScheme", true);
 		writer.writeAttributeValueString("none");
@@ -693,7 +737,7 @@ public class USDConverter {
 		
 		
 		writer.writeAttributeName("rel", "material:binding", false);
-		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + texture.replace(':', '_').replace('/', '_') + 
+		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
 				(numColors > 0 ? "_BIOME" : "")+ ">");
 		
 		writer.endChildren();

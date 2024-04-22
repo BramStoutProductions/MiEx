@@ -146,8 +146,10 @@ public class Renderer2D implements Runnable {
 							if (img == null || chunk.getShouldRender()) {
 								// Render chunk
 								chunk.setShouldRender(false);
-								if (!chunk.hasLoadError())
+								if (!chunk.hasLoadError() && !chunk.getRenderRequested()) {
+									chunk.setRenderRequested(true);
 									threadPool.submit(new LoadChunkTask(chunk, this));
+								}
 							}
 							// If we don't have an image to show, skip
 							if (img == null)
@@ -249,8 +251,11 @@ public class Renderer2D implements Runnable {
 		public void run() {
 			try {
 				if (chunk.getChunkX() < renderer.minChunkX || chunk.getChunkX() > renderer.maxChunkX
-						|| chunk.getChunkZ() < renderer.minChunkZ || chunk.getChunkZ() > renderer.maxChunkZ)
+						|| chunk.getChunkZ() < renderer.minChunkZ || chunk.getChunkZ() > renderer.maxChunkZ) {
+					// It's outside of what we can view, so we undo the render request.
+					chunk.setRenderRequested(false);
 					return;
+				}
 
 				chunk.load();
 				chunk.renderChunkImage();

@@ -91,6 +91,8 @@ public class MCWorldExporter {
 	}
 	
 	public void setWorld(File worldFolder) {
+		if(world != null)
+			world.unload();
 		world = new WorldAnvil(worldFolder);
 		ui.reset();
 	}

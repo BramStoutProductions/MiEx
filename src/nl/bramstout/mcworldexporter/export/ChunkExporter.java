@@ -112,6 +112,9 @@ public class ChunkExporter {
 		for(String bannedMaterial : Config.bannedMaterials) {
 			if(meshes.containsKey(bannedMaterial))
 				meshes.remove(bannedMaterial);
+			bannedMaterial = bannedMaterial + "_BIOME";
+			if(meshes.containsKey(bannedMaterial))
+				meshes.remove(bannedMaterial);
 		}
 	}
 	
@@ -396,8 +399,8 @@ public class ChunkExporter {
 				((double) bounds.getLodWidth()/2));
 		int lodSizeZ = (int) Math.ceil(((double) Math.abs(bounds.getLodCenterZ() - (chunkZ * 16 + 8))) / 
 						((double) bounds.getLodDepth()/2));
-		int lodSize = Math.min(Math.max(lodSizeX, lodSizeZ), 16);
-		int lodYSize = Math.max(lodSize / bounds.getLodYDetail(), 1);
+		int lodSize = Math.max(lodSizeX, lodSizeZ);
+		int lodYSize = Math.min(Math.max(lodSize / bounds.getLodYDetail(), 1), 16);
 		// Make lodSize go up by powers of two.
 		return Integer.highestOneBit(lodYSize);
 	}
@@ -667,6 +670,9 @@ public class ChunkExporter {
 			boolean lodNoUVScale) {
 		if(texture == null || texture.equals(""))
 			return;
+		String meshName = texture;
+		if(tint != null)
+			meshName = meshName + "_BIOME";
 		float lodSizeF = ((float) (lodSize-1)) / 2.0f;
 		float lodYSizeF = ((float) (lodYSize-1)) / 2.0f;
 		float lodScale = (float) lodSize;
@@ -676,24 +682,27 @@ public class ChunkExporter {
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
 			texture = atlas.atlas;
+			meshName = texture;
+			if(tint != null)
+				meshName = meshName + "_BIOME";
 			// When using an atlas, we can't just scale up the UVs.
-			lodUVScale = 1.0f;
-			lodYUVScale = 1.0f;
+			lodUVScale = Math.min(lodUVScale, (float) atlas.padding);
+			lodYUVScale = Math.min(lodYUVScale, (float) atlas.padding);
 		}
 		// Scale the Y uv's on the top and bottom faces like normal.
 		if(face.getDirection() == Direction.UP || face.getDirection() == Direction.DOWN)
 			lodYUVScale = lodUVScale;
-		if(meshes.containsKey(texture)) {
-			meshes.get(texture).addFace(face, 
+		if(meshes.containsKey(meshName)) {
+			meshes.get(meshName).addFace(face, 
 					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
 					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint);
 		}else {
-			Mesh mesh = new Mesh(texture, texture, doubleSided);
+			Mesh mesh = new Mesh(meshName, texture, doubleSided);
 			mesh.addFace(face, 
 					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
 					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint);
 			mesh.setExtraData(extraData);
-			meshes.put(texture, mesh);
+			meshes.put(meshName, mesh);
 		}
 	}
 	

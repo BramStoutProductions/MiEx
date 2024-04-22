@@ -56,11 +56,13 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.Exporter;
 
 public class ToolBar extends JPanel {
@@ -94,6 +96,7 @@ public class ToolBar extends JPanel {
 	private JCheckBox removeCavesCheckBox;
 	private JCheckBox fillInCavesCheckBox;
 	private JCheckBox exportIndividualBlocksCheckBox;
+	private JSpinner chunkSizeSpinner;
 
 	private JToggleButton editFGChunksButton;
 
@@ -370,7 +373,7 @@ public class ToolBar extends JPanel {
 
 		JPanel settingsPanel = new JPanel();
 		settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
-		settingsPanel.setMinimumSize(new Dimension(150, 140));
+		settingsPanel.setMinimumSize(new Dimension(160, 140));
 		settingsPanel.setMaximumSize(settingsPanel.getMinimumSize());
 		settingsPanel.setPreferredSize(settingsPanel.getMinimumSize());
 		settingsPanel.add(new JLabel(" "));
@@ -399,6 +402,26 @@ public class ToolBar extends JPanel {
 		exportIndividualBlocksCheckBox.setMaximumSize(new Dimension(410, 24));
 		settingsPanel.add(exportIndividualBlocksCheckBox);
 		exportIndividualBlocksCheckBox.setAlignmentX(1);
+		
+		JPanel chunkSizePanel = new JPanel();
+		chunkSizePanel.setLayout(new BoxLayout(chunkSizePanel, BoxLayout.X_AXIS));
+		chunkSizePanel.setPreferredSize(new Dimension(410, 20));
+		chunkSizePanel.setMinimumSize(chunkSizePanel.getPreferredSize());
+		chunkSizePanel.setMaximumSize(chunkSizePanel.getPreferredSize());
+		JLabel chunkSizeLabel = new JLabel("Chunk Size:");
+		chunkSizeLabel.setPreferredSize(new Dimension(64, 20));
+		chunkSizeLabel.setMinimumSize(chunkSizeLabel.getPreferredSize());
+		chunkSizeLabel.setMaximumSize(chunkSizeLabel.getPreferredSize());
+		chunkSizePanel.add(chunkSizeLabel);
+		chunkSizeSpinner = new JSpinner();
+		chunkSizeSpinner.setPreferredSize(new Dimension(48, 20));
+		chunkSizeSpinner.setValue(Config.chunkSize);
+		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMinimum(1);
+		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMaximum(64);
+		chunkSizeSpinner.setMinimumSize(chunkSizeSpinner.getPreferredSize());
+		chunkSizeSpinner.setMaximumSize(chunkSizeSpinner.getPreferredSize());
+		chunkSizePanel.add(chunkSizeSpinner);
+		settingsPanel.add(chunkSizePanel);
 
 		settingsPanel.add(new JPanel());
 		add(settingsPanel);
@@ -638,6 +661,15 @@ public class ToolBar extends JPanel {
 			}
 
 		});
+		
+		chunkSizeSpinner.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Config.chunkSize = ((Integer) chunkSizeSpinner.getValue()).intValue();
+			}
+
+		});
 
 		Border editFGChunksButtonBorder = editFGChunksButton.getBorder();
 		editFGChunksButton.addActionListener(new ActionListener() {
@@ -666,14 +698,22 @@ public class ToolBar extends JPanel {
 				chooser.setDialogTitle("Export World");
 				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 				chooser.setCurrentDirectory(new File(FileUtil.getHomeDir()));
-				chooser.setFileFilter(new FileNameExtensionFilter("USD Files", "usd"));
+				FileFilter defaultFilter = null;
+				for(String extension : Converter.getExtensions()) {
+					FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
+					chooser.addChoosableFileFilter(filter);
+					if(defaultFilter == null)
+						defaultFilter = filter;
+				}
+				chooser.setFileFilter(defaultFilter);
 				chooser.setAcceptAllFileFilterUsed(false);
 				int result = chooser.showSaveDialog(MCWorldExporter.getApp().getUI());
 				if (result == JFileChooser.APPROVE_OPTION) {
 					try {
 						File file = chooser.getSelectedFile();
-						if (!file.getAbsolutePath().endsWith(".usd"))
-							file = new File(file.getAbsolutePath() + ".usd");
+						FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+						if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
+							file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
 						Exporter.export(file);
 					} catch (Exception e1) {
 						e1.printStackTrace();
@@ -743,6 +783,9 @@ public class ToolBar extends JPanel {
 		}
 		if (MCWorldExporter.getApp().getExportBounds().getLodYDetail() != ((Integer) lodYDetailSpinner.getValue()).intValue()) {
 			lodYDetailSpinner.setValue(MCWorldExporter.getApp().getExportBounds().getLodYDetail());
+		}
+		if (Config.chunkSize != ((Integer) chunkSizeSpinner.getValue()).intValue()) {
+			chunkSizeSpinner.setValue(Config.chunkSize);
 		}
 	}
 

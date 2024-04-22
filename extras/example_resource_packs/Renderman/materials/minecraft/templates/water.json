@@ -1,0 +1,73 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/water_still", "minecraft:block/water_flow" ],
+    "include": [ "base" ],
+    "network": {
+        "@texture@": {
+            "RIMAT": {
+                "attributes": {
+                    "inputs:specularFaceColor": {
+                        "type": "color3f",
+                        "value": [ 0.00, 0.00, 0.00 ]
+                    },
+                    "inputs:specularEdgeColor": {
+                        "type": "color3f",
+                        "value": [ 1.0, 1.0, 1.0 ]
+                    },
+                    "inputs:presence": {
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "inputs:presenceCached": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "inputs:refractionGain": {
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "inputs:glassIor": {
+                        "type": "float",
+                        "value": 1.05
+                    },
+                    "inputs:refractionColor": {
+                        "type": "color3f",
+                        "connection": "RIREFRACTION_COLOR.outputs:resultRGB"
+                    },
+                    "inputs:glassRoughness": {
+                        "type": "float",
+                        "connection": "RIROUGHNESS.outputs:resultF"
+                    }
+                }
+            },
+            "RIROUGHNESS_REMAP": {
+                "attributes": {
+                    "inputs:outputMax": {
+                        "type": "float",
+                        "value": 0.25
+                    },
+                    "inputs:outputMin": {
+                        "type": "float",
+                        "value": 0.07
+                    }
+                }
+            },
+            "RIREFRACTION_COLOR": {
+                "type": "PxrGamma",
+                "attributes": {
+                    "outputs:resultRGB": {
+                        "type": "color3f"
+                    },
+                    "inputs:inputRGB": {
+                        "type": "color3f",
+                        "connection": "RIFILE.outputs:resultRGB"
+                    },
+                    "inputs:gamma": {
+                        "type": "float",
+                        "value": 3.0
+                    }
+                }
+            }
+        }
+    }
+}

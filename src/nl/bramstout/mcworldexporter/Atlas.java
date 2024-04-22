@@ -49,25 +49,35 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 public class Atlas {
 	
 	public static class AtlasItem{
+		public String name;
 		public String atlas;
 		public float x;
 		public float y;
 		public float width;
 		public float height;
+		public int padding;
 		
-		public AtlasItem(JsonObject data){
+		public AtlasItem(String name, JsonObject data){
+			this.name = name;
+			if(data == null)
+				return;
 			atlas = data.get("atlas").getAsString();
 			x = data.get("x").getAsFloat();
 			y = data.get("y").getAsFloat();
 			width = data.get("width").getAsFloat();
 			height = data.get("height").getAsFloat();
+			padding = 1;
+			if(data.has("padding"))
+				padding = data.get("padding").getAsInt();
 		}
 	}
 	
 	private static HashMap<String, AtlasItem> items = new HashMap<String, AtlasItem>();
+	private static HashMap<String, String> atlasToTemplateTexture = new HashMap<String, String>();
 	
 	public static void readAtlasConfig() {
 		items.clear();
+		atlasToTemplateTexture.clear();
 		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
 		resourcePacks.add("base_resource_pack");
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
@@ -81,10 +91,13 @@ public class Atlas {
 								continue;
 							// If it's null or an empty object, then that means that texture
 							// shouldn't be part of an atlas.
-							if(entry.getValue().isJsonNull() || entry.getValue().getAsJsonObject().isEmpty())
+							if(entry.getValue().isJsonNull() || entry.getValue().getAsJsonObject().isEmpty()) {
 								items.remove(entry.getKey());
-							else
-								items.put(entry.getKey(), new AtlasItem(entry.getValue().getAsJsonObject()));
+							}else {
+								AtlasItem item = new AtlasItem(entry.getKey(), entry.getValue().getAsJsonObject());
+								items.put(entry.getKey(), item);
+								atlasToTemplateTexture.put(item.atlas, entry.getKey());
+							}
 						}catch(Exception ex) {
 							ex.printStackTrace();
 						}
@@ -98,6 +111,10 @@ public class Atlas {
 	
 	public static AtlasItem getAtlasItem(String texture) {
 		return items.get(texture);
+	}
+	
+	public static String getTemplateTextureForAtlas(String atlas, String defaultValue) {
+		return atlasToTemplateTexture.getOrDefault(atlas, defaultValue);
 	}
 	
 }

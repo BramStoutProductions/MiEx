@@ -121,7 +121,7 @@
                     },
                     "inputs:translation": {
                         "type": "float2",
-                        "expression": "${nextFrameId}"
+                        "expression": "${frameId(offset=1)}"
                     }
                 }
             },
@@ -422,7 +422,7 @@
                     },
                     "inputs:translation": {
                         "type": "float2",
-                        "expression": "${@texture@_emission.nextFrameId}"
+                        "expression": "${@texture@_emission.frameId(offset=1)}"
                     }
                 }
             },

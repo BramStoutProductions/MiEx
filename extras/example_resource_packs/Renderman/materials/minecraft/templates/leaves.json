@@ -1,0 +1,21 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/*_leaves"],
+    "include": [ "base" ],
+    "network": {
+        "@texture@": {
+            "RIMAT": {
+                "attributes": {
+                    "inputs:diffuseTransmitGain":{
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "inputs:diffuseTransmitColor":{
+                        "type": "color3f",
+                        "connection": "${RIMAT.inputs:diffuseColor}"
+                    }
+                }
+            }
+        }
+    }
+}
