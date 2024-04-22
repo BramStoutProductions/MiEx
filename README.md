@@ -16,7 +16,7 @@ MiEx is a modern Minecraft World Exporter written in Java, originally created fo
 * Support for biome colours, including biome blending.
 * Support for animated textures.
 * Support for random frame offsets on animated textures.
-* Support for grouping textures together into atlasses in order to reduce material count.
+* Support for grouping textures together into atlases in order to reduce material count.
 * Support for adding a random offset to certain blocks (like vegetation) to reproduce what happens in Minecraft.
 * ***Currently not yet implemented, but groundwork laid out for:*** Potential support for Minecraft Bedrock worlds.
 
@@ -24,7 +24,7 @@ MiEx is a modern Minecraft World Exporter written in Java, originally created fo
 MiEx is released as a stand-alone Jar file which contains all that it needs. The base resource pack files are automatically gathered from the latest version of Minecraft that is installed on your computer. All that you have to do, is download the Jar file, place it wherever you want, and run it.
 
 # Usage
-For more information on how to use MiEx, please visit [our wiki!](https://github.com/BramStoutProductions/MiEx/wiki)
+For more information on how to use MiEx, please visit [our wiki!](https://github.com/BramStoutProductions/MiEx/wiki/1.-Home)
 
 # Forum
 Talk about MiEx, ask for help, help others, and share your creations on our [GitHub Discussions page!](https://github.com/BramStoutProductions/MiEx/discussions)
