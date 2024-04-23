@@ -1,3 +1,4 @@
+![Header image](https://bramstout.nl/content/miex_main_artwork_logo.jpg)
 MiEx is a modern Minecraft World Exporter written in Java, originally created for use by Bram Stout Productions to help create sets for animations. It has also been used for animations in Minecraft Live and Element Animation videos. MiEx exports out worlds into USD (Universal Scene Description).
 
 # Features
