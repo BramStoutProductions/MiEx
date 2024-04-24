@@ -708,7 +708,7 @@ public class USDMaterials {
 	
 	public static void writeMaterial(USDWriter writer, MaterialTemplate material, String texture, boolean hasBiomeColor,
 										String parentPrim, String sharedPrims) throws IOException{
-		String matName = "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + (hasBiomeColor ? "_BIOME" : "");
+		String matName = "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + (hasBiomeColor ? "_BIOME" : "");
 		writer.beginDef("Material", matName);
 		writer.beginChildren();
 		for(Entry<String, String> conn : material.shadingGroup.entrySet()) {
@@ -717,7 +717,7 @@ public class USDMaterials {
 				connPath = sharedPrims + "/" + conn.getValue().substring(6);
 			}else {
 				String[] tokens = conn.getValue().split("\\.");
-				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
+				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -744,7 +744,7 @@ public class USDMaterials {
 	
 	private static void writeShadingNode(USDWriter writer, ShadingNode node, String texture, 
 										String parentPrim, String sharedPrims) throws IOException {
-		writer.beginDef("Shader", node.name + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_'));
+		writer.beginDef("Shader", node.name + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_'));
 		writer.beginChildren();
 		writer.writeAttributeName("token", "info:id", true);
 		writer.writeAttributeValueString(node.type);
@@ -766,7 +766,7 @@ public class USDMaterials {
 				connPath = sharedPrims + "/" + attr.connection.substring(6);
 			}else {
 				String[] tokens = attr.connection.split("\\.");
-				connPath = parentPrim + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
+				connPath = parentPrim + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}

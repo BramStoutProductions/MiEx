@@ -170,7 +170,7 @@ public class USDConverter extends Converter{
 			for(int i = 0; i < numBaseMeshes; ++i) {
 				int baseMeshId = dis.readInt();
 				String blockName = dis.readUTF();
-				String primName = "_class_" + blockName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + baseMeshId;
+				String primName = "_class_" + blockName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + baseMeshId;
 				
 				rootWriter.beginClass("Xform", primName);
 				rootWriter.beginMetaData();
@@ -328,9 +328,9 @@ public class USDConverter extends Converter{
 			rootWriter.beginOver("materials");
 			rootWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				rootWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
+				rootWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
-				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
+				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : "") + ">");
 			}
 			rootWriter.endChildren();
@@ -483,7 +483,7 @@ public class USDConverter extends Converter{
 			chunkWriter.beginDef("Scope", "materials");
 			chunkWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				chunkWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
+				chunkWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
 			}
 			chunkWriter.endChildren();
@@ -500,7 +500,7 @@ public class USDConverter extends Converter{
 			if(meshName.equals(""))
 				meshName = "mesh";
 			else
-				meshName = meshName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
+				meshName = meshName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
 			boolean doubleSided = dis.readInt() > 0;
 			String texture = dis.readUTF();
 			String extraData = dis.readUTF();
@@ -593,7 +593,7 @@ public class USDConverter extends Converter{
 			if(groupName.equals(""))
 				groupName = "mesh";
 			else
-				groupName = groupName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_');
+				groupName = groupName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
 			int numChildren = dis.readInt();
 			
 			
@@ -737,7 +737,7 @@ public class USDConverter extends Converter{
 		
 		
 		writer.writeAttributeName("rel", "material:binding", false);
-		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_') + 
+		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
 				(numColors > 0 ? "_BIOME" : "")+ ">");
 		
 		writer.endChildren();
