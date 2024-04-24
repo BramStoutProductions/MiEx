@@ -224,7 +224,8 @@ public class ResourcePack {
 			"base_resource_pack/materials/minecraft/templates/emission.json",
 			"base_resource_pack/materials/minecraft/templates/grass_block_side.json",
 			"base_resource_pack/materials/minecraft/templates/grass_block_snow.json",
-			"base_resource_pack/materials/minecraft/templates/redstone_wire.json"
+			"base_resource_pack/materials/minecraft/templates/redstone_wire.json",
+			"UsdPreviewSurface/materials/minecraft/templates/base.json"
 		};
 		String[] RESOURCES_OVERRIDE_IF_DIR_EMPTY = new String[] {
 		};

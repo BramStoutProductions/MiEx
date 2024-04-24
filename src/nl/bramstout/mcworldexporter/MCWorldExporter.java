@@ -40,8 +40,11 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import nl.bramstout.mcworldexporter.export.Noise;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.ui.MainWindow;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 import nl.bramstout.mcworldexporter.world.anvil.WorldAnvil;
 
@@ -78,6 +81,13 @@ public class MCWorldExporter {
 		ui.setVisible(true);
 		
 		ResourcePack.setupDefaults();
+		Config.load();
+		BlockStateRegistry.clearBlockStateRegistry();
+		ModelRegistry.clearModelRegistry();
+		BiomeRegistry.recalculateTints();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
 		
 		SwingUtilities.invokeLater(new Runnable() {
 

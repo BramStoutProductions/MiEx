@@ -114,8 +114,10 @@ public class RegionAnvil extends Region{
 	public void unload() {
 		chunks = null;
 		try {
-			regionFileChannel.close();
-			entityFileChannel.close();
+			if(regionFileChannel != null)
+				regionFileChannel.close();
+			if(entityFileChannel != null)
+				entityFileChannel.close();
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}

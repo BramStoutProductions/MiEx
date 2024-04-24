@@ -49,6 +49,8 @@ public abstract class Chunk {
 
 	private static Queue<Chunk> loadedChunks = new Queue<Chunk>();
 	private static Queue<Chunk> loadedChunkImages = new Queue<Chunk>();
+	private static final int MAX_LOADED_CHUNKS = 64*64;
+	private static final int MAX_LOADED_CHUNK_IMAGES = 128*64;
 	
 	private static class LoadedChunksGC implements Runnable{
 		
@@ -56,7 +58,7 @@ public abstract class Chunk {
 		public void run() {
 			while(true) {
 				try {
-					Thread.sleep(1000 * 5);
+					Thread.sleep(1000 * 1);
 					
 					List<Chunk> putBackIn = new ArrayList<Chunk>();
 					Chunk chunk = null;
@@ -67,8 +69,14 @@ public abstract class Chunk {
 							putBackIn.add(chunk);
 						}
 					}
-					for(Chunk chunk2 : putBackIn) {
-						loadedChunks.push(chunk2);
+					int reverseCounter = putBackIn.size() - 1;
+					for(int i = 0; i < putBackIn.size(); ++i) {
+						// Unload the oldest chunks past our max loaded chunk count.
+						if(reverseCounter > MAX_LOADED_CHUNKS)
+							putBackIn.get(i).unload();
+						else
+							loadedChunks.push(putBackIn.get(i));
+						reverseCounter--;
 					}
 					
 					putBackIn = new ArrayList<Chunk>();
@@ -80,8 +88,14 @@ public abstract class Chunk {
 							putBackIn.add(chunk);
 						}
 					}
-					for(Chunk chunk2 : putBackIn) {
-						loadedChunkImages.push(chunk2);
+					reverseCounter = putBackIn.size() - 1;
+					for(int i = 0; i < putBackIn.size(); ++i) {
+						// Unload the oldest chunks past our max loaded chunk count.
+						if(reverseCounter > MAX_LOADED_CHUNK_IMAGES)
+							putBackIn.get(i).unload();
+						else
+							loadedChunkImages.push(putBackIn.get(i));
+						reverseCounter--;
 					}
 					
 					System.gc();
