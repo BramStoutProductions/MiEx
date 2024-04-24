@@ -102,6 +102,17 @@ public class FileUtil {
 		return getUSDCatExe() != null;
 	}
 	
+	protected static String logFile = null;
+	public static String getLogFile() {
+		if(logFile != null)
+			return logFile;
+		String log = System.getenv("MIEX_LOG_FILE");
+		if(log == null)
+			log = "./log.txt";
+		logFile = log;
+		return log;
+	}
+	
 	
 	public static boolean hasAlpha(File file) {
 		try {
@@ -120,8 +131,38 @@ public class FileUtil {
 		return false;
 	}
 	
+	public static boolean isWindows() {
+		return System.getProperty("os.name", "none").toLowerCase().contains("win");
+	}
+	
+	public static boolean isMacOs() {
+		return System.getProperty("os.name", "none").toLowerCase().contains("mac") ||
+				System.getProperty("os.name", "none").toLowerCase().contains("darwin");
+	}
+	
+	public static String getMinecraftRootDir() {
+		if(isWindows())
+			return System.getenv("APPDATA") + "/.minecraft";
+		else if(isMacOs())
+			return "~/Library/Application Support/minecraft";
+		throw new RuntimeException("Could not find minecraft directory");
+	}
+	
 	public static String getMinecraftSavesDir() {
-		return System.getenv("APPDATA") + "/.minecraft/saves";
+		return getMinecraftRootDir() + "/saves";
+	}
+	
+	protected static String minecraftVersionsDir = null;
+	public static String getMinecraftVersionsDir() {
+		if(minecraftVersionsDir != null)
+			return minecraftVersionsDir;
+		minecraftVersionsDir = getMinecraftRootDir() + "/versions/";
+		
+		String envPath = System.getenv("MIEX_MINECRAFT_VERSIONS_DIR");
+		if(envPath != null)
+			minecraftVersionsDir = envPath + "/";
+		
+		return minecraftVersionsDir;
 	}
 
 }

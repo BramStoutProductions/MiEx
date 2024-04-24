@@ -122,13 +122,22 @@ public class MCWorldExporter {
 			for(int i = 0; i < args.length; ++i) {
 				if(args[i].equalsIgnoreCase("-homeDir"))
 					FileUtil.homeDir = args[i+1];
-				else if(args[i].equalsIgnoreCase("-rpDir"))
-					FileUtil.resourcePackDir = args[i+1];
-				else if(args[i].equalsIgnoreCase("-rpUSDPrefix"))
+				else if(args[i].equalsIgnoreCase("-rpDir")) {
+					FileUtil.resourcePackDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.resourcePackDir.endsWith("/"))
+						FileUtil.resourcePackDir = FileUtil.resourcePackDir + "/";
+				}else if(args[i].equalsIgnoreCase("-rpUSDPrefix"))
 					FileUtil.resourcePackUSDPrefix = args[i+1];
-				else if(args[i].equalsIgnoreCase("-usdcatExe")) {
+				else if(args[i].equalsIgnoreCase("-mcVersionsDir")) {
+					FileUtil.minecraftVersionsDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.minecraftVersionsDir.endsWith("/"))
+						FileUtil.minecraftVersionsDir = FileUtil.minecraftVersionsDir + "/";
+				}else if(args[i].equalsIgnoreCase("-usdcatExe")) {
 					if(new File(args[i+1]).exists())
 						FileUtil.usdCatExe = args[i+1];
+				}else if(args[i].equalsIgnoreCase("-log")) {
+					if(new File(args[i+1]).exists())
+						FileUtil.logFile = args[i+1];
 				}else if(args[i].equalsIgnoreCase("-resourcePack")) {
 					defaultResourcePacks.add(args[i+1]);
 				}
@@ -149,6 +158,12 @@ public class MCWorldExporter {
 		}catch(Exception ex) {
 			System.out.println("Could not correctly parse command line arguments!");
 		}
+		
+		ReleaseChecker.checkRelease();
+		
+		Logger.init();
+		System.setOut(new Logger(System.out, false));
+		System.setErr(new Logger(System.err, true));
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

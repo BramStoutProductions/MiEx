@@ -68,6 +68,7 @@ public class Config {
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
+	public static List<String> powerLevel = new ArrayList<String>();
 	
 	public static boolean removeCaves = false;
 	public static boolean fillInCaves = false;
@@ -159,6 +160,7 @@ public class Config {
 		randomAnimationYOffset.clear();
 		lodNoUVScale.clear();
 		lodPriority.clear();
+		powerLevel.clear();
 		
 		fgFullnessThreshold = 0.25f;
 		bgFullnessThreshold = 0.05f;
@@ -167,6 +169,8 @@ public class Config {
 		removeCavesSearchRadius = 4;
 		removeCavesSearchEnergy = 5;
 		animatedTexturesFrameTimeMultiplier = 1.0f;
+		
+		Color.GAMUT = ColorGamut.ACEScg;
 		
 		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
 		resourcePacks.add("base_resource_pack");
@@ -215,6 +219,8 @@ public class Config {
 				
 				parseList("lodNoUVScale", data, lodNoUVScale);
 				
+				parseList("powerLevel", data, powerLevel);
+				
 				if(data.has("fgFullnessThreshold"))
 					fgFullnessThreshold = data.get("fgFullnessThreshold").getAsFloat();
 	
@@ -235,6 +241,20 @@ public class Config {
 				
 				if(data.has("animatedTexturesFrameTimeMultiplier"))
 					animatedTexturesFrameTimeMultiplier = data.get("animatedTexturesFrameTimeMultiplier").getAsFloat();
+				
+				if(data.has("renderGamut")) {
+					String gamutName = data.get("renderGamut").getAsString();
+					boolean foundGamut = false;
+					for(ColorGamut gamut : ColorGamut.values()) {
+						if(gamut.name().equalsIgnoreCase(gamutName)) {
+							Color.GAMUT = gamut;
+							foundGamut = true;
+							break;
+						}
+					}
+					if(foundGamut == false)
+						System.out.println("Found invalid render gamut in config: " + gamutName);
+				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

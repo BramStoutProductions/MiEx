@@ -50,7 +50,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	public BakedBlockStateLiquid(String name) {
 		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, false, false, 
 				Config.waterColormapBlocks.contains(name), // Only apply the water biome colour when we say to in the config.
-				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), false, 2);
+				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), false, 2, -1);
 	}
 	
 	public void getModels(int x, int y, int z, List<Model> res){

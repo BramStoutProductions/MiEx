@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.ui;
 import java.awt.BorderLayout;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 public class MainWindow extends JFrame{
 
@@ -42,6 +43,8 @@ public class MainWindow extends JFrame{
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private JPanel topPanel;
+	private ReleasePanel releasePanel;
 	private ToolBar toolbar;
 	private WorldViewer2D viewer;
 	private ProgressBar progressBar;
@@ -52,8 +55,16 @@ public class MainWindow extends JFrame{
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
 		
+		topPanel = new JPanel();
+		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+		topPanel.setBorder(new EmptyBorder(0,0,0,0));
+		add(topPanel, BorderLayout.NORTH);
+		
+		releasePanel = new ReleasePanel();
+		topPanel.add(releasePanel);
+		
 		toolbar = new ToolBar();
-		add(toolbar, BorderLayout.NORTH);
+		topPanel.add(toolbar);
 		
 		viewer = new WorldViewer2D();
 		add(viewer, BorderLayout.CENTER);

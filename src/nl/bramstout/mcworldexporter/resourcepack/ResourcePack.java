@@ -219,13 +219,14 @@ public class ResourcePack {
 	
 	public static void setupDefaults() {
 		String[] RESOURCES_OVERRIDE_IF_MISSING = new String[] {
-			"base_resource_pack/miex_config.json"
-		};
-		String[] RESOURCES_OVERRIDE_IF_DIR_EMPTY = new String[] {
+			"base_resource_pack/miex_config.json",
 			"base_resource_pack/materials/minecraft/templates/base.json",
 			"base_resource_pack/materials/minecraft/templates/emission.json",
 			"base_resource_pack/materials/minecraft/templates/grass_block_side.json",
-			"base_resource_pack/materials/minecraft/templates/grass_block_snow.json"
+			"base_resource_pack/materials/minecraft/templates/grass_block_snow.json",
+			"base_resource_pack/materials/minecraft/templates/redstone_wire.json"
+		};
+		String[] RESOURCES_OVERRIDE_IF_DIR_EMPTY = new String[] {
 		};
 		
 		try {
@@ -321,24 +322,54 @@ public class ResourcePack {
 		}
 	}
 	
+	private static String getJarFile(String versionsFolder, String versionName) {
+		String versionFolder = versionsFolder + versionName;
+		String versionJar = versionFolder + "/" + versionName + ".jar";
+		if(!(new File(versionJar).exists())) {
+			for(File f : new File(versionFolder).listFiles()) {
+				if(f.getName().endsWith(".jar"))
+					return f.getPath();
+			}
+			return null;
+		}
+		return versionJar;
+	}
+	
 	public static void updateBaseResourcePack(boolean updateToNewest) {
 		try {
-			String versionsFolder = System.getenv("APPDATA") + "/.minecraft/versions/";
+			String versionsFolder = FileUtil.getMinecraftVersionsDir();
 			String versionManifest = versionsFolder + "version_manifest_v2.json";
-			JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
 			List<String> versions = new ArrayList<String>();
-			for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
-				String name = e.getAsJsonObject().get("id").getAsString();
-				String versionFolder = versionsFolder + name;
-				if(!(new File(versionFolder).exists()))
-					continue;
-				if(!(new File(versionFolder).isDirectory()))
-					continue;
-				String versionJar = versionFolder + "/" + name + ".jar";
-				if(!(new File(versionJar).exists()))
-					continue;
-				versions.add(name);
+			if(new File(versionManifest).exists()) {
+				JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
+				for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
+					String name = e.getAsJsonObject().get("id").getAsString();
+					String versionFolder = versionsFolder + name;
+					if(!(new File(versionFolder).exists()))
+						continue;
+					if(!(new File(versionFolder).isDirectory()))
+						continue;
+					String versionJar = versionFolder + "/" + name + ".jar";
+					if(!(new File(versionJar).exists()))
+						continue;
+					versions.add(name);
+				}
+			}else if(new File(versionsFolder.substring(0, versionsFolder.length()-1)).exists()){
+				// If we don't have a version manifest file, but we do have a versions folder,
+				// just add in all folders
+				File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
+				for(File f : versionsFolderFile.listFiles()) {
+					if(f.isDirectory()) {
+						if(getJarFile(versionsFolder, f.getName()) != null) {
+							versions.add(f.getName());
+						}
+					}
+				}
+			}else {
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install and so cannot automatically create a base_resource_pack. Either manually create it or specify the MIEX_MINECRAFT_VERSIONS_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
 			}
+			
 			Object selectedValue = versions.get(0);
 			
 			if(!updateToNewest) {
@@ -352,8 +383,7 @@ public class ResourcePack {
 					return;
 			}
 			
-			String versionFolder = versionsFolder + ((String) selectedValue);
-			String versionJar = versionFolder + "/" + ((String) selectedValue) + ".jar";
+			String versionJar = getJarFile(versionsFolder, (String) selectedValue);
 			
 			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(versionJar));
 			try {

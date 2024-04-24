@@ -821,7 +821,7 @@ public class USDMaterials {
 		expression = expression.substring(2, expression.length()-1);
 		// Split the expression from the arguments
 		String[] exprTokens = expression.split("\\(");
-		expression = exprTokens[0].strip();
+		expression = exprTokens[0].trim();
 		Map<String, String> args = new HashMap<String, String>();
 		if(exprTokens.length > 1) {
 			// The split got rid of the opening '(', so here we get rid of the closing ')'.
@@ -834,7 +834,7 @@ public class USDMaterials {
 					// Also strip the white spaces and set it to lower case
 					// to make it easier to match different ways of writing
 					// names and values.
-					args.put(argTokens[0].strip().toLowerCase(), argTokens[1].strip().toLowerCase());
+					args.put(argTokens[0].trim().toLowerCase(), argTokens[1].trim().toLowerCase());
 				}
 			}
 		}

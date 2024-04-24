@@ -90,6 +90,7 @@
     "waterColormapBlocks": [
         "water"
     ],
+    "powerLevel": [ "redstone_wire" ],
     "doubleSided": [
         "water", "grass", "fern", "tall_grass", "large_fern", "dandelion", "poppy", "blue_orchid",
         "allium", "azure_bluet", "red_tulip", "orange_tulip", "white_tulip", "pink_tulip",
@@ -127,5 +128,6 @@
     "biomeBlendRadius": 8,
     "removeCavesSearchRadius": 4,
     "removeCavesSearchEnergy": 5,
-    "animatedTexturesFrameTimeMultiplier": 1.0
+    "animatedTexturesFrameTimeMultiplier": 1.0,
+    "renderGamut": "ACEScg"
 }

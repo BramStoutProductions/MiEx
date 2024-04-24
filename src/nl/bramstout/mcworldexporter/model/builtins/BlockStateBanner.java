@@ -138,7 +138,7 @@ public class BlockStateBanner extends BlockState{
 		modelBanner.rotate(0, rotY, false);
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, -1);
 	}
 	
 	private String getExtraData(TAG_Compound properties) {

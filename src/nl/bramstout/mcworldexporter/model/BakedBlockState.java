@@ -58,6 +58,7 @@ public class BakedBlockState {
 	private boolean randomAnimationYOffset;
 	private boolean lodNoUVScale;
 	private int lodPriority;
+	private int redstonePowerLevel;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
 							boolean transparentOcclusion, boolean leavesOcclusion, boolean detailedOcclusion,
@@ -65,7 +66,7 @@ public class BakedBlockState {
 							boolean randomOffset, boolean randomYOffset,
 							boolean grassColormap, boolean foliageColormap, boolean waterColormap,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, int lodPriority) {
+							boolean lodNoUVScale, int lodPriority, int redstonePowerLevel) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -93,6 +94,7 @@ public class BakedBlockState {
 		this.randomAnimationYOffset = randomAnimationYOffset;
 		this.lodNoUVScale = lodNoUVScale;
 		this.lodPriority = lodPriority;
+		this.redstonePowerLevel = redstonePowerLevel;
 	}
 	
 	public long getOccludes() {
@@ -213,6 +215,10 @@ public class BakedBlockState {
 	
 	public int getLodPriority() {
 		return lodPriority;
+	}
+	
+	public int getRedstonePowerLevel() {
+		return redstonePowerLevel;
 	}
 
 }

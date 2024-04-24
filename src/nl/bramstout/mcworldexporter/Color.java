@@ -33,6 +33,8 @@ package nl.bramstout.mcworldexporter;
 
 public class Color {
 	
+	public static ColorGamut GAMUT = ColorGamut.ACEScg;
+	
 	float r;
 	float g;
 	float b;
@@ -55,13 +57,13 @@ public class Color {
 		rF = (float) Math.pow(rF, 2.2f);
 		gF = (float) Math.pow(gF, 2.2f);
 		bF = (float) Math.pow(bF, 2.2f);
-		r = rF * 0.6131f + gF * 0.3395f + bF * 0.0474f;
-        g = rF * 0.0702f + gF * 0.9164f + bF * 0.0134f;
-        b = rF * 0.0206f + gF * 0.1096f + bF * 0.8698f;
+		r = rF * GAMUT.r0 + gF * GAMUT.r1 + bF * GAMUT.r2;
+        g = rF * GAMUT.g0 + gF * GAMUT.g1 + bF * GAMUT.g2;
+        b = rF * GAMUT.b0 + gF * GAMUT.b1 + bF * GAMUT.b2;
         a = 1.0f;
 	}
 	
-	public Color(int RGB, boolean hasAlpha, boolean toACEScg) {
+	public Color(int RGB, boolean hasAlpha, boolean toRenderGamut) {
 		int aI = (RGB >> 24) & 0xFF;
 		int rI = (RGB >> 16) & 0xFF;
 		int gI = (RGB >> 8) & 0xFF;
@@ -72,10 +74,10 @@ public class Color {
 		rF = (float) Math.pow(rF, 2.2f);
 		gF = (float) Math.pow(gF, 2.2f);
 		bF = (float) Math.pow(bF, 2.2f);
-		if(toACEScg) {
-			r = rF * 0.6131f + gF * 0.3395f + bF * 0.0474f;
-	        g = rF * 0.0702f + gF * 0.9164f + bF * 0.0134f;
-	        b = rF * 0.0206f + gF * 0.1096f + bF * 0.8698f;
+		if(toRenderGamut) {
+			r = rF * GAMUT.r0 + gF * GAMUT.r1 + bF * GAMUT.r2;
+	        g = rF * GAMUT.g0 + gF * GAMUT.g1 + bF * GAMUT.g2;
+	        b = rF * GAMUT.b0 + gF * GAMUT.b1 + bF * GAMUT.b2;
 		}else {
 			r = rF;
 			g = gF;

@@ -661,6 +661,10 @@ public class ChunkExporter {
 			return biome.getFoliageColour();
 		else if(block.isWaterColormap())
 			return biome.getWaterColour();
+		else if(block.getRedstonePowerLevel() >= 0) {
+			float value = ((float) block.getRedstonePowerLevel()) / 15f;
+			return new Color(value, value, value);
+		}
 		return null;
 	}
 	
