@@ -64,12 +64,6 @@ public class Logger extends PrintStream{
 	}
 	
 	@Override
-	public void writeBytes(byte[] buf) {
-		super.writeBytes(buf);
-		consoleOut.writeBytes(buf);
-	}
-	
-	@Override
 	public void println() {
 		super.println();
 		consoleOut.println();
