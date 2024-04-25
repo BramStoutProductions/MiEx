@@ -29,7 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package nl.bramstout.mcworldexporter;
+package nl.bramstout.mcworldexporter.world;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -37,42 +37,45 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
-public class ReleaseChecker {
+import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+
+public class Player {
 	
-	public static final String CURRENT_VERSION = "v1.2.2";
-	public static String LATEST_VERSION = CURRENT_VERSION;
-	public static String LATEST_VERSION_URL = "https://github.com/BramStoutProductions/MiEx/releases";
+	protected String uuid;
+	protected String name;
+	protected TAG_Compound data;
+	protected double x;
+	protected double y;
+	protected double z;
+	protected String dimension;
 	
-	public static void checkRelease(){
+	public Player(String uuid, TAG_Compound data, double x, double y, double z, String dimension) {
+		this.uuid = uuid;
+		this.name = uuid;
+		this.data = data;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.dimension = dimension;
+		
+		// Try to get the player name from the UUID
 		HttpURLConnection connection = null;
 		InputStream stream = null;
 		try {
-			URL url = new URL("https://api.github.com/repos/BramStoutProductions/MiEx/releases");
+			URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
 			connection = (HttpURLConnection) url.openConnection();
 			stream = connection.getInputStream();
 			
-			JsonArray releases = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonArray();
-			for(JsonElement el : releases.asList()) {
-				JsonObject release = el.getAsJsonObject();
-				if(release.has("tag_name")) {
-					LATEST_VERSION = release.get("tag_name").getAsString();
-					
-					if(release.has("html_url")) {
-						LATEST_VERSION_URL = release.get("html_url").getAsString();
-					}
-					break;
-				}
-			}
+			JsonObject jsonData = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonObject();
+			if(jsonData.has("name"))
+				this.name = jsonData.get("name").getAsString();
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
-		
 		try {
 			if(stream != null)
 				stream.close();
@@ -82,9 +85,33 @@ public class ReleaseChecker {
 				connection.disconnect();
 		}catch(Exception ex) {}
 	}
-	
-	public static boolean hasNewRelease() {
-		return !LATEST_VERSION.equalsIgnoreCase(CURRENT_VERSION);
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public TAG_Compound getData() {
+		return data;
+	}
+
+	public double getX() {
+		return x;
+	}
+
+	public double getY() {
+		return y;
+	}
+
+	public double getZ() {
+		return z;
+	}
+
+	public String getDimension() {
+		return dimension;
 	}
 	
 }

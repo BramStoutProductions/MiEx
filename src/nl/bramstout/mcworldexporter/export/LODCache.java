@@ -67,7 +67,7 @@ public class LODCache {
 			int width = 16 >> lodLevel;
 			int offset = (cy * width * width + cz * width + cx) * 4;
 			int[] cacheChunk = cache[lodLevel-1];
-			if(cacheChunk[offset] == -1)
+			if(cacheChunk[offset] == -2)
 				return false;
 			out[0] = cacheChunk[offset];
 			out[1] = cacheChunk[offset + 1];
@@ -82,7 +82,7 @@ public class LODCache {
 			int width = 16 >> lodLevel;
 			if(cache[lodLevel-1] == null) {
 				cache[lodLevel-1] = new int[width*width*((this.height >> lodLevelY) + 1)*4];
-				Arrays.fill(cache[lodLevel-1], -1);
+				Arrays.fill(cache[lodLevel-1], -2);
 			}
 			
 			cy -= minY;

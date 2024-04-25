@@ -29,33 +29,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package nl.bramstout.mcworldexporter;
+package nl.bramstout.mcworldexporter.world.anvil;
 
-public enum ColorGamut {
-	
-	sRGB(	1f, 0f, 0f,
-			0f, 1f, 0f,
-			0f, 0f, 1f),
-	ACEScg( 0.6131f, 0.3395f, 0.0474f,
-			0.0702f, 0.9164f, 0.0134f,
-			0.0206f, 0.1096f, 0.8698f),
-	LOOCSG2(0.634533540898306f, 0.32977634261913447f, 0.03569011648255932f,
-			0.0650591748685295f, 0.9000022563772223f, 0.03493856875424817f,
-			0.016500175883108165f, 0.08941001940767221f, 0.8940898047092195f);
-	
-	
-	public float r0, r1, r2, g0, g1, g2, b0, b1, b2;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.zip.GZIPInputStream;
 
-	private ColorGamut(float r0, float r1, float r2, float g0, float g1, float g2, float b0, float b1, float b2) {
-		this.r0 = r0;
-		this.r1 = r1;
-		this.r2 = r2;
-		this.g0 = g0;
-		this.g1 = g1;
-		this.g2 = g2;
-		this.b0 = b0;
-		this.b1 = b1;
-		this.b2 = b2;
+import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
+import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.TAG_Double;
+import nl.bramstout.mcworldexporter.nbt.TAG_List;
+import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.world.Player;
+
+public class PlayerAnvil extends Player{
+
+	public PlayerAnvil(String uuid, File playerFile) {
+		super(uuid, null, 0, 0, 0, null);
+		try {
+			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(playerFile)));
+			DataInputStream dis = new DataInputStream(is);
+			NBT_Tag nbtData = NBT_Tag.make(dis);
+			if(nbtData instanceof TAG_Compound) {
+				this.data = (TAG_Compound) nbtData;
+				
+				NBT_Tag posTag = this.data.getElement("Pos");
+				if(posTag != null && posTag instanceof TAG_List) {
+					x = ((TAG_Double)((TAG_List)posTag).getElement(0)).value;
+					y = ((TAG_Double)((TAG_List)posTag).getElement(1)).value;
+					z = ((TAG_Double)((TAG_List)posTag).getElement(2)).value;
+				}else {
+					System.out.println("Could not get position for player " + this.name);
+				}
+				
+				NBT_Tag dimensionTag = this.data.getElement("Dimension");
+				if(dimensionTag != null && dimensionTag instanceof TAG_String) {
+					this.dimension = ((TAG_String) dimensionTag).value;
+				}
+			}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
 	}
+	
+	
 	
 }

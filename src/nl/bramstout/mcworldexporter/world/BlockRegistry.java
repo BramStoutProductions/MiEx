@@ -74,7 +74,7 @@ public class BlockRegistry {
 	}
 	
 	public static Block getBlock(int id) {
-		return registeredBlocks.get(id);
+		return registeredBlocks.get(id < 0 ? 0 : id);
 	}
 	
 	private static Block getBlockFromName(String name, TAG_Compound properties, int id) {

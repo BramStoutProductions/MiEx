@@ -57,7 +57,6 @@ import nl.bramstout.mcworldexporter.world.Chunk;
 
 public class ChunkAnvil extends Chunk {
 
-	private RegionAnvil region;
 	private int dataOffset;
 	private int dataSize;
 	private int entityDataOffset;
@@ -65,7 +64,7 @@ public class ChunkAnvil extends Chunk {
 	private Object mutex;
 
 	public ChunkAnvil(int chunkX, int chunkZ, RegionAnvil region, int dataOffset, int dataSize, int entityDataOffset, int entityDataSize) {
-		super(chunkX, chunkZ);
+		super(region, chunkX, chunkZ);
 		this.region = region;
 		this.dataOffset = dataOffset;
 		this.dataSize = dataSize;
@@ -92,7 +91,7 @@ public class ChunkAnvil extends Chunk {
 			if(dataSize == 0)
 				return;
 			
-			FileChannel fileChannel = region.getRegionChannel();
+			FileChannel fileChannel = ((RegionAnvil)region).getRegionChannel();
 			MappedByteBuffer buffer = fileChannel.map(MapMode.READ_ONLY, dataOffset, dataSize);
 			int len = buffer.getInt();
 			int compressionType = buffer.get();
@@ -254,6 +253,9 @@ public class ChunkAnvil extends Chunk {
 					blockEntityZ = ((TAG_Int) blockEntity.getElement("z")).value;
 					blockEntityX -= chunkX * 16;
 					blockEntityZ -= chunkZ * 16;
+					// Make sure that the block entity is actually in the chunk.
+					if(blockEntityX < 0 || blockEntityX >= 15 || blockEntityZ < 0 || blockEntityZ >= 15)
+						continue;
 					
 					currentBlockId = getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ);
 					currentBlock = BlockRegistry.getBlock(currentBlockId);
@@ -277,7 +279,7 @@ public class ChunkAnvil extends Chunk {
 			
 			// Entities
 			if(entityDataSize > 0) {
-				fileChannel = region.getEntityChannel();
+				fileChannel = ((RegionAnvil)region).getEntityChannel();
 				buffer = fileChannel.map(MapMode.READ_ONLY, entityDataOffset, entityDataSize);
 				len = buffer.getInt();
 				compressionType = buffer.get();
@@ -323,11 +325,12 @@ public class ChunkAnvil extends Chunk {
 
 	@Override
 	public void unload() {
-		blocks = null;
-		biomes = null;
-		heightMap = null;
-		entities.clear();
-		chunkSectionOffset = 0;
+		synchronized(mutex) {
+			blocks = null;
+			biomes = null;
+			entities.clear();
+			chunkSectionOffset = 0;
+		}
 	}
 
 }

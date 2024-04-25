@@ -312,6 +312,8 @@ public class AtlasCreator {
 		
 		// We have processed all files and ordered them by template,
 		// now we need to add them into the actual atlasses.
+		String atlasPrefix = "miex:block/atlas_" + Integer.toHexString(resourcePack.hashCode()) + "_";
+		String atlasFilePrefix = "miex/textures/block/atlas_" + Integer.toHexString(resourcePack.hashCode()) + "_";
 		int atlasCounter = 0;
 		float numAtlases = (float) atlases.size();
 		float counter = 0f;
@@ -359,9 +361,9 @@ public class AtlasCreator {
 			}
 			
 			// Write out the image
-			atlas.name = "miex:block/atlas_" + ++atlasCounter;
-			File atlasFile = new File(assetsFolder, "miex/textures/block/atlas_" + atlasCounter + ".png");
-			atlasFile.mkdirs();
+			atlas.name = atlasPrefix + ++atlasCounter;
+			File atlasFile = new File(assetsFolder, atlasFilePrefix + atlasCounter + ".png");
+			atlasFile.getParentFile().mkdirs();
 			try {
 				ImageIO.write(atlas.img, "png", atlasFile);
 			}catch(Exception ex) {

@@ -50,7 +50,7 @@ public abstract class Chunk {
 	private static Queue<Chunk> loadedChunks = new Queue<Chunk>();
 	private static Queue<Chunk> loadedChunkImages = new Queue<Chunk>();
 	private static final int MAX_LOADED_CHUNKS = 64*64;
-	private static final int MAX_LOADED_CHUNK_IMAGES = 128*64;
+	private static final int MAX_LOADED_CHUNK_IMAGES = 512*512;
 	
 	private static class LoadedChunksGC implements Runnable{
 		
@@ -82,7 +82,7 @@ public abstract class Chunk {
 					putBackIn = new ArrayList<Chunk>();
 					chunk = null;
 					while((chunk = loadedChunkImages.pop()) != null) {
-						if((System.currentTimeMillis() - chunk.lastImageAccess) > 1000) {
+						if((System.currentTimeMillis() - chunk.lastImageAccess) > 10000) {
 							chunk.unloadImages();
 						}else {
 							putBackIn.add(chunk);
@@ -137,6 +137,8 @@ public abstract class Chunk {
 	 * UI. The array is in ZX order.
 	 */
 	protected short[] heightMap;
+	
+	protected Region region;
 
 	protected List<Entity> entities;
 
@@ -155,7 +157,8 @@ public abstract class Chunk {
 	
 	private SpinLock loadLock;
 
-	public Chunk(int chunkX, int chunkZ) {
+	public Chunk(Region region, int chunkX, int chunkZ) {
+		this.region = region;
 		this.chunkX = chunkX;
 		this.chunkZ = chunkZ;
 		this.loadError = false;
@@ -208,6 +211,10 @@ public abstract class Chunk {
 	public boolean hasLoadError() {
 		return loadError;
 	}
+	
+	public boolean isLoaded() {
+		return !loadError && this.blocks != null;
+	}
 
 	public int getBlockId(int worldX, int worldY, int worldZ) {
 		return getBlockIdLocal(worldX - chunkX * 16, worldY, worldZ - chunkZ * 16);
@@ -222,7 +229,7 @@ public abstract class Chunk {
 				e.printStackTrace();
 			}
 		if (blocks == null)
-			return 0;
+			return -1; // Couldn't load, so chunk doesn't exist.
 		int sectionY = (y >> 4) - chunkSectionOffset;
 		if (sectionY < 0 || sectionY >= blocks.length)
 			return 0;
@@ -271,6 +278,12 @@ public abstract class Chunk {
 			return 0;
 		return heightMap[z * 16 + x];
 	}
+	
+	public int getHeightLocalNoLoad(int x, int z) {
+		if (heightMap == null)
+			return 0;
+		return heightMap[z * 16 + x];
+	}
 
 	public List<Entity> getEntities() {
 		return entities;
@@ -298,6 +311,25 @@ public abstract class Chunk {
 		this.fullReRender = fullRerender;
 		if(fullRerender)
 			renderRequested = false;
+	}
+	
+	private int getColourForBlock(BlockState state, int x, int y, int z) {
+		int colour = 0;
+		String defaultTexture = state.getDefaultTexture();
+		if (defaultTexture != "") {
+			colour = ResourcePack.getDefaultColour(defaultTexture);
+
+			if (state.hasTint()) {
+				int biomeId = getBiomeIdLocal(x, y, z);
+				Biome biome = BiomeRegistry.getBiome(biomeId);
+				nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state);
+				Color color = new Color(colour);
+				color = new Color((int) (((float) color.getRed()) * tint.getR()),
+						(int) (((float) color.getGreen()) * tint.getG()), (int) (((float) color.getBlue()) * tint.getB()));
+				colour = color.getRGB();
+			}
+		}
+		return colour;
 	}
 
 	public void renderChunkImage() {
@@ -330,26 +362,35 @@ public abstract class Chunk {
 					int height = getHeightLocal(x, z);
 					int blockId = getBlockIdLocal(x, height, z);
 					int colour = 0;
-					// if (blockId != 0)
-					// blockId = Color.HSBtoRGB(blockId * 256.6536f, ((float) (blockId & 15)) /
-					// 32.0f,
-					// Math.min(Math.max(getHeightLocal(x, z) / 500.0f + 0.15f, 0.1f), 1.0f));
-					if (blockId != 0) {
+					if (blockId > 0) {
 						Block block = BlockRegistry.getBlock(blockId);
 						int stateId = BlockStateRegistry.getIdForName(block.getName());
 						BlockState state = BlockStateRegistry.getState(stateId);
-						String defaultTexture = state.getDefaultTexture();
-						if (defaultTexture != "") {
-							colour = ResourcePack.getDefaultColour(defaultTexture);
-
-							if (state.hasTint()) {
-								int biomeId = getBiomeIdLocal(x, height, z);
-								Biome biome = BiomeRegistry.getBiome(biomeId);
-								nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state);
-								Color color = new Color(colour);
-								color = new Color((int) (color.getRed() * tint.getR()),
-										(int) (color.getGreen() * tint.getG()), (int) (color.getBlue() * tint.getB()));
-								colour = color.getRGB();
+						colour = getColourForBlock(state, x, height, z);
+						
+						if(state.isWaterColormap()) {
+							// Let's make water transparent. We keep going down until we find
+							// a block that's not water. We get that block's colour
+							// and blend it with the water colour.
+							for(int sampleY = height - 1; sampleY >= MCWorldExporter.getApp().getExportBounds().getMinY(); --sampleY) {
+								blockId = getBlockIdLocal(x, sampleY, z);
+								block = BlockRegistry.getBlock(blockId);
+								stateId = BlockStateRegistry.getIdForName(block.getName());
+								state = BlockStateRegistry.getState(stateId);
+								if(state.isWaterColormap())
+									continue;
+								
+								// We have found a non-water block!
+								int bgColour = getColourForBlock(state, x, sampleY, z);
+								if(bgColour == 0)
+									bgColour = colour;
+								Color fgColor = new Color(colour);
+								Color bgColor = new Color(bgColour);
+								Color resColor = new Color((fgColor.getRed() * 2 + bgColor.getRed()) / 3,
+															(fgColor.getGreen() * 2 + bgColor.getGreen()) / 3,
+															(fgColor.getBlue() * 2 + bgColor.getBlue()) / 3);
+								colour = resColor.getRGB();
+								break;
 							}
 						}
 					}
@@ -379,6 +420,7 @@ public abstract class Chunk {
 			chunkImgSmallest = tmpChunkImgSmallest;
 			chunkColor = new Color(chunkImgSmallest.getRGB(0, 0));
 		} catch (Exception ex) {
+			//ex.printStackTrace();
 		}
 		isRendering = false;
 		this.renderRequested = false;
@@ -441,6 +483,7 @@ public abstract class Chunk {
 		this.chunkImgSmall = null;
 		this.chunkImgSmaller = null;
 		this.chunkImgSmaller2 = null;
+		this.heightMap = null;
 	}
 
 	protected void calculateHeightmap() {

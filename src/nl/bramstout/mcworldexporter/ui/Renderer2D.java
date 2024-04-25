@@ -31,6 +31,8 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -49,6 +51,7 @@ public class Renderer2D implements Runnable {
 	private static ThreadPool threadPool = new ThreadPool();
 
 	private BufferedImage buffer;
+	private BufferedImage heightBuffer;
 	private BufferedImage frontBuffer;
 	private int bufferWidth;
 	private int bufferHeight;
@@ -67,6 +70,7 @@ public class Renderer2D implements Runnable {
 
 	public Renderer2D() {
 		buffer = null;
+		heightBuffer = null;
 		frontBuffer = null;
 
 		renderRequested = new AtomicBoolean(false);
@@ -75,6 +79,66 @@ public class Renderer2D implements Runnable {
 		frontBufferLock = new SpinLock();
 
 		finishedChunksStack = new Vector<Chunk>(1024, 1024);
+	}
+	
+	private void drawChunk(Chunk chunk, BufferedImage img, Graphics g, 
+							CameraTransform bufferTransform) {
+		Point chunkPixelPos = bufferTransform.toScreen(
+				new Point(chunk.getChunkX() * 16, chunk.getChunkZ() * 16), buffer.getWidth(),
+				buffer.getHeight());
+		
+		int chunkRes = img.getWidth();
+		if(bufferTransform.zoomLevel > 4)
+			chunkRes *= 1 << (bufferTransform.zoomLevel - 4);
+
+		g.drawImage(img, chunkPixelPos.ix(), chunkPixelPos.iy(), chunkRes, chunkRes, null);
+		
+		// Draw the height info
+		
+		if(bufferTransform.zoomLevel > 4) {
+			int step = chunkRes / 16;
+			int imgI;
+			int imgJ = chunkPixelPos.iy() + 1;
+			int height = 0;
+			for(int j = 0; j < 16; ++j) {
+				imgI = chunkPixelPos.ix() + 1;
+				for(int i = 0; i < 16; ++i) {
+					height = chunk.getHeightLocalNoLoad(i, j);
+					for(int jj = 0; jj < step; ++jj) {
+						if((imgJ + jj) < 0 || (imgJ + jj) >= heightBuffer.getHeight())
+							continue;
+						for(int ii = 0; ii < step; ++ii) {
+							if((imgI + ii) < 0 || (imgI + ii) >= heightBuffer.getWidth())
+								continue;
+							heightBuffer.setRGB(imgI + ii, imgJ + jj, height);
+						}
+					}
+					
+					imgI += step;
+				}
+				imgJ += step;
+			}
+		}else {
+			int step = 16 / chunkRes;
+			int imgI;
+			int imgJ = chunkPixelPos.iy() + 1;
+			for(int j = 0; j < 16; j += step) {
+				if(imgJ < 0 || imgJ >= heightBuffer.getHeight()) {
+					imgJ++;
+					continue;
+				}
+				imgI = chunkPixelPos.ix() + 1;
+				for(int i = 0; i < 16; i += step) {
+					if(imgI < 0 || imgI >= heightBuffer.getWidth()) {
+						imgI++;
+						continue;
+					}
+					heightBuffer.setRGB(imgI, imgJ, chunk.getHeightLocalNoLoad(i, j));
+					imgI++;
+				}
+				imgJ++;
+			}
+		}
 	}
 
 	@Override
@@ -100,6 +164,7 @@ public class Renderer2D implements Runnable {
 				// Make sure that the buffer is the right size.
 				if (buffer == null || buffer.getWidth() != bufferWidth || buffer.getHeight() != bufferHeight) {
 					buffer = new BufferedImage(bufferWidth, bufferHeight, BufferedImage.TYPE_INT_ARGB);
+					heightBuffer = new BufferedImage(bufferWidth + 2, bufferHeight + 2, BufferedImage.TYPE_INT_ARGB);
 					fullRender = true;
 				}
 				// Copy the bufferTranform pointer, in case it gets updated during rendering.
@@ -120,6 +185,21 @@ public class Renderer2D implements Runnable {
 
 				if(fullRender)
 					g.clearRect(0, 0, buffer.getWidth(), buffer.getHeight());
+				
+				Graphics2D gHeight = (Graphics2D) heightBuffer.getGraphics();
+
+				gHeight.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
+						RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+				gHeight.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+				gHeight.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_SPEED);
+				gHeight.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+				gHeight.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+						RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+				gHeight.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+				gHeight.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_DEFAULT);
+
+				if(fullRender)
+					gHeight.clearRect(0, 0, heightBuffer.getWidth(), heightBuffer.getHeight());
 
 				// If there isn't a world to render, stop here.
 				if (MCWorldExporter.getApp().getWorld() == null)
@@ -155,14 +235,7 @@ public class Renderer2D implements Runnable {
 							if (img == null)
 								continue;
 
-							Point chunkPixelPos = bufferTransform.toScreen(new Point(chunkX * 16, chunkZ * 16),
-									buffer.getWidth(), buffer.getHeight());
-							
-							int chunkRes = img.getWidth();
-							if(bufferTransform.zoomLevel > 4)
-								chunkRes *= 1 << (bufferTransform.zoomLevel - 4);
-
-							g.drawImage(img, chunkPixelPos.ix(), chunkPixelPos.iy(), chunkRes, chunkRes, null);
+							drawChunk(chunk, img, g, bufferTransform);
 						}
 					}
 				}
@@ -179,15 +252,7 @@ public class Renderer2D implements Runnable {
 						if (img == null)
 							continue;
 
-						Point chunkPixelPos = bufferTransform.toScreen(
-								new Point(chunk.getChunkX() * 16, chunk.getChunkZ() * 16), buffer.getWidth(),
-								buffer.getHeight());
-						
-						int chunkRes = img.getWidth();
-						if(bufferTransform.zoomLevel > 4)
-							chunkRes *= 1 << (bufferTransform.zoomLevel - 4);
-
-						g.drawImage(img, chunkPixelPos.ix(), chunkPixelPos.iy(), chunkRes, chunkRes, null);
+						drawChunk(chunk, img, g, bufferTransform);
 					}
 					finishedChunksStack.clear();
 				}
@@ -198,7 +263,38 @@ public class Renderer2D implements Runnable {
 						|| frontBuffer.getHeight() != buffer.getHeight()) {
 					frontBuffer = new BufferedImage(buffer.getWidth(), buffer.getHeight(), BufferedImage.TYPE_INT_ARGB);
 				}
-				buffer.copyData(frontBuffer.getRaster());
+				// Process the heightmap and copy over the colours from buffer into frontBuffer
+				for(int j = 1; j < heightBuffer.getHeight() - 1; ++j) {
+					for(int i = 1; i < heightBuffer.getWidth() - 1; ++i) {
+						int centre = heightBuffer.getRGB(i, j);
+						int left = heightBuffer.getRGB(i - 1, j);
+						int right = heightBuffer.getRGB(i + 1, j);
+						int up = heightBuffer.getRGB(i, j + 1);
+						int down = heightBuffer.getRGB(i, j - 1);
+						left = centre - left;
+						right = centre - right;
+						up = centre - up;
+						down = centre - down;
+						
+						// Increase the difference from one side,
+						// so that we can see direction better.
+						right = right * 4;
+						down = down * 4;
+						
+						int total = left + right + up + down;
+						total = total > 0 ? 0 : total;
+						
+						float ftotal = (float) (0.5 + 1.0 / (1.0 + Math.exp(-0.25 * ((double) total))));
+						
+						int colour = buffer.getRGB(i-1, j-1);
+						Color color = new Color(colour);
+						color = new Color(	Math.min((int) (((float) color.getRed()) * ftotal), 255),
+											Math.min((int) (((float) color.getGreen()) * ftotal), 255), 
+											Math.min((int) (((float) color.getBlue()) * ftotal), 255));
+						colour = color.getRGB();
+						frontBuffer.setRGB(i-1, j-1, colour);
+					}
+				}
 				frontBufferTransform = bufferTransform;
 				frontBufferLock.release();
 

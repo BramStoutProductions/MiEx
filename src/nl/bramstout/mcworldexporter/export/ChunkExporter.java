@@ -174,6 +174,8 @@ public class ChunkExporter {
 					wx = bx + chunkWorldX;
 					
 					getLODBlockId(chunk, bx, by, bz, lodSize, lodYSize, blockId);
+					if(blockId[0] < 0)
+						continue;
 					state = BlockStateRegistry.getBakedStateForBlock(blockId[0]);
 					
 					if(state.isAir() || state.hasLiquid()) {
@@ -441,7 +443,7 @@ public class ChunkExporter {
 		int numBlocks = lodSize*lodSize*lodYSize;
 		int count = numBlocks * 5;
 		for(int i = 0; i < count; i += 5) {
-			lod_blockIds[i] = -1;
+			lod_blockIds[i] = -2;
 			lod_blockIds[i+1] = -1;
 		}
 		int blockId = 0;
@@ -485,7 +487,7 @@ public class ChunkExporter {
 									lod_blockIds[i+4] = z + chunkZ;
 								}
 								break;
-							}else if(lod_blockIds[i] == -1) {
+							}else if(lod_blockIds[i] == -2) {
 								lod_blockIds[i] = blockId;
 								lod_blockIds[i+1] = blockPriority;
 								lod_blockIds[i+2] = x + chunkX;
@@ -547,7 +549,7 @@ public class ChunkExporter {
 					(cz / sampleLodSize) * sampleLodSize, 
 					sampleLodSize, sampleLodYSize, out);
 		}else {
-			out[0] = -1;
+			out[0] = -2;
 			int lodXSize = lodSize;
 			int lodZSize = lodSize;
 			int startX = cx;
@@ -570,9 +572,9 @@ public class ChunkExporter {
 				for(int z = startZ; z < cz + lodZSize; z += sampleLodSize) {
 					for(int x = startX; x < cx + lodXSize; x += sampleLodSize) {
 						getLODBlockId(chunk, x, y, z, sampleLodSize, sampleLodYSize, out);
-						if(out[0] == 0) {
+						if(out[0] <= 0) {
 							// Early out for performance.
-							out[0] = 0;
+							//out[0] = 0;
 							out[1] = 0;
 							out[2] = 0;
 							out[3] = 0;
@@ -585,7 +587,7 @@ public class ChunkExporter {
 					}
 				}
 			}
-			if(out[0] == -1) {
+			if(out[0] == -2) {
 				out[0] = 0;
 				out[1] = 0;
 				out[2] = 0;
@@ -730,8 +732,16 @@ public class ChunkExporter {
 			by = cy + dir.y * lodYSize;
 			bz = cz + dir.z * lodSize;
 			getLODBlockIdOcclusion(chunk, bx, by, bz, lodSize, lodYSize, dir, OCCLUSION_BLOCK_ID);
-			if(OCCLUSION_BLOCK_ID[0] < 0)
+			if(OCCLUSION_BLOCK_ID[0] < 0) {
+				// If the block id is less than 0, that means
+				// that there was no chunk, so let's say that it does
+				// occlude. This gets rid of the side of the world.
+				occludes = 0b1111;
+				
+				occludes <<= dir.id * 4;
+				occlusion |= occludes;
 				continue;
+			}
 			state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0]);
 			
 			// Transparent blocks don't occlude non-transparent blocks
@@ -827,8 +837,8 @@ public class ChunkExporter {
 	
 	public int sampleHeight(int wx, int wz) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
-		if(chunk == null)
-			return Integer.MIN_VALUE;
+		if(chunk == null || !chunk.isLoaded())
+			return Integer.MAX_VALUE;
 		return chunk.getHeight(wx, wz);
 	}
 	
@@ -882,6 +892,10 @@ public class ChunkExporter {
 			foundLiquid = false;
 			foundAir = false;
 			blockId = lodSampleBlockId(x, y, z);
+			if(blockId < 0) {
+				yEnergy -= 5;
+				continue;
+			}
 			state = BlockStateRegistry.getBakedStateForBlock(blockId);
 			if(sampleHeight(x, z) < y) {
 				// Surface reached, so we aren't in a cave
@@ -912,6 +926,9 @@ public class ChunkExporter {
 			for(z = minZ; z <= maxZ; z += 2) {
 				for(x = minX; x <= maxX; x += 2) {
 					blockId = lodSampleBlockId(x, y, z);
+					if(blockId < 0) {
+						continue;
+					}
 					state = BlockStateRegistry.getBakedStateForBlock(blockId);
 					if(sampleHeight(x, z) < y) {
 						// Surface reached, so we aren't in a cave

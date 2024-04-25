@@ -3,18 +3,22 @@
     "selection": [ "minecraft:block/redstone_dust_*" ],
     "include": [ "base" ],
     "network": {
-        "@texture@": {
+        "@biomeColor@": {
             "REDSTONE_MULT": {
-                "type": "ND_multiply_color3",
+                "type": "ND_remap_color3",
                 "attributes": {
                     "outputs:out": {
                         "type": "color3f"
                     },
-                    "inputs:in1": {
+                    "inputs:in": {
                         "type": "color3f",
                         "connection": "${BIOME_MULT.inputs:in2}"
                     },
-                    "inputs:in2": {
+                    "inputs:outlow": {
+                        "type": "color3f",
+                        "value": [ 0.18, 0.001, 0.002 ]
+                    },
+                    "inputs:outhigh": {
                         "type": "color3f",
                         "value": [ 0.9, 0.05, 0.01 ]
                     }

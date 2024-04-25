@@ -50,7 +50,17 @@ public class WorldAnvil extends World{
 	
 	@Override
 	protected void loadWorldSettings() {
-		
+		players.clear();
+		File playerDataFolder = new File(worldDir, "playerdata");
+		if(playerDataFolder.exists()) {
+			for(File f : playerDataFolder.listFiles()) {
+				if(!f.isFile())
+					continue;
+				if(!f.getName().endsWith(".dat"))
+					continue;
+				players.add(new PlayerAnvil(f.getName().replace(".dat", ""), f));
+			}
+		}
 	}
 
 	@Override
@@ -97,7 +107,7 @@ public class WorldAnvil extends World{
 			regionMaxX = Math.max(regionMaxX, x);
 			regionMaxZ = Math.max(regionMaxZ, z);
 			
-			tmpRegions.add(new RegionAnvil(f, x, z));
+			tmpRegions.add(new RegionAnvil(this, f, x, z));
 		}
 		
 		regionsStride = regionMaxX - regionMinX + 1;

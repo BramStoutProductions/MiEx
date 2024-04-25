@@ -414,7 +414,6 @@ public class ResourcePackManager extends JPanel {
 					String versionName = data.get("version").getAsString();
 					labelText = name + " (" + versionName + ")";
 				}catch(Exception ex) {
-					ex.printStackTrace();
 				}
 			}
 			

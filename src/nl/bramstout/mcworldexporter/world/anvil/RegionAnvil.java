@@ -40,6 +40,7 @@ import java.nio.file.StandardOpenOption;
 
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.Region;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class RegionAnvil extends Region{
 
@@ -48,8 +49,8 @@ public class RegionAnvil extends Region{
 	private FileChannel regionFileChannel;
 	private FileChannel entityFileChannel;
 	
-	public RegionAnvil(File regionFile, int x, int z) {
-		super(regionFile, x, z);
+	public RegionAnvil(World world, File regionFile, int x, int z) {
+		super(world, regionFile, x, z);
 		this.mutex = new Object();
 		this.regionFileChannel = null;
 		this.entityFileChannel = null;
@@ -125,7 +126,7 @@ public class RegionAnvil extends Region{
 	
 	public FileChannel getRegionChannel() throws IOException{
 		synchronized(mutex) {
-			if(regionFileChannel == null)
+			if(regionFileChannel == null || !regionFileChannel.isOpen())
 				regionFileChannel = FileChannel.open(regionFile.toPath(), StandardOpenOption.READ);
 			return regionFileChannel;
 		}
@@ -133,7 +134,7 @@ public class RegionAnvil extends Region{
 	
 	public FileChannel getEntityChannel() throws IOException{
 		synchronized(mutex) {
-			if(entityFileChannel == null)
+			if(entityFileChannel == null || !entityFileChannel.isOpen())
 				entityFileChannel = FileChannel.open(new File(regionFile.getAbsolutePath().replace("\\", "/").replace("/region/", "/entities/")).toPath(), StandardOpenOption.READ);
 			return entityFileChannel;
 		}

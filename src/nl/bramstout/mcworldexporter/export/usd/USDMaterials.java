@@ -572,6 +572,8 @@ public class USDMaterials {
 		}
 		if(template == null)
 			template = new MaterialTemplate(file.getCanonicalPath());
+		else
+			template.name = file.getCanonicalPath();
 		
 		if(data.has("priority")) {
 			template.priority = data.get("priority").getAsInt();

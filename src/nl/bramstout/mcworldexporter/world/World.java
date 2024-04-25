@@ -49,9 +49,11 @@ public abstract class World {
 	protected int regionMaxX;
 	protected int regionMaxZ;
 	protected int regionsStride;
+	protected List<Player> players;
 
 	public World(File worldDir) {
 		dimensions = new ArrayList<String>();
+		players = new ArrayList<Player>();
 		currentDimension = "";
 		// regions = new HashMap<Long, Region>();
 		regions = null;
@@ -67,11 +69,15 @@ public abstract class World {
 	protected abstract void _unload();
 	
 	public void unload() {
-		for(Region region : regions) {
-			if(region == null)
-				continue;
-			region.unload();
+		if(regions != null) {
+			for(Region region : regions) {
+				if(region == null)
+					continue;
+				region.unload();
+			}
 		}
+		if(players != null)
+			players.clear();
 		_unload();
 	}
 
@@ -196,6 +202,10 @@ public abstract class World {
 
 	public String getCurrentDimensions() {
 		return currentDimension;
+	}
+	
+	public List<Player> getPlayers(){
+		return players;
 	}
 
 }

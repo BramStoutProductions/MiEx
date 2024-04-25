@@ -371,6 +371,10 @@ public class ResourcePack {
 				return;
 			}
 			
+			if(versions.isEmpty()) {
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_VERSIONS_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 			Object selectedValue = versions.get(0);
 			
 			if(!updateToNewest) {

@@ -45,7 +45,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JToggleButton;
@@ -101,9 +100,13 @@ public class ToolBar extends JPanel {
 	private JToggleButton editFGChunksButton;
 
 	private JButton exportButton;
+	
+	private File exportLastDirectory;
 
 	public ToolBar() {
 		super();
+		
+		exportLastDirectory = null;
 
 		setPreferredSize(new Dimension(1200, 156));
 		setMinimumSize(new Dimension(128, 156));
@@ -645,19 +648,9 @@ public class ToolBar extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				try {
-					String inputValue = JOptionPane.showInputDialog("Enter Coordinates (x,z)", "0,0");
-					if(inputValue == null)
-						return;
-					if (!inputValue.contains(","))
-						return;
-					String[] tokens = inputValue.split(",");
-					int x = Integer.parseInt(tokens[0].trim());
-					int z = Integer.parseInt(tokens[1].trim());
-					MCWorldExporter.getApp().getUI().getViewer().teleport(x, z);
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				}
+				TeleportDialog dialog = new TeleportDialog();
+				dialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				dialog.setVisible(true);
 			}
 
 		});
@@ -697,7 +690,9 @@ public class ToolBar extends JPanel {
 				chooser.setApproveButtonText("Export");
 				chooser.setDialogTitle("Export World");
 				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-				chooser.setCurrentDirectory(new File(FileUtil.getHomeDir()));
+				if(exportLastDirectory == null || !exportLastDirectory.exists())
+					exportLastDirectory = new File(FileUtil.getHomeDir());
+				chooser.setCurrentDirectory(exportLastDirectory);
 				FileFilter defaultFilter = null;
 				for(String extension : Converter.getExtensions()) {
 					FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
@@ -714,6 +709,9 @@ public class ToolBar extends JPanel {
 						FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
 						if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
 							file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+						
+						exportLastDirectory = file.getParentFile();
+						
 						Exporter.export(file);
 					} catch (Exception e1) {
 						e1.printStackTrace();

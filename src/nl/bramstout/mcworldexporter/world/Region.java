@@ -38,8 +38,10 @@ public abstract class Region {
 	protected File regionFile;
 	protected int x;
 	protected int z;
+	protected World world;
 	
-	public Region(File regionFile, int x, int z) {
+	public Region(World world, File regionFile, int x, int z) {
+		this.world = world;
 		this.regionFile = regionFile;
 		this.x = x;
 		this.z = z;
@@ -63,6 +65,10 @@ public abstract class Region {
 	
 	public int getZCoordinate() {
 		return z;
+	}
+	
+	public World getWorld() {
+		return world;
 	}
 	
 }

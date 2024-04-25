@@ -80,8 +80,6 @@ public class Model {
 
 		if (data.has("parent")) {
 			String parentName = data.get("parent").getAsString();
-			if (!parentName.contains(":"))
-				parentName = name.split(":")[0] + ":" + parentName;
 			int parentModelId = ModelRegistry.getIdForName(parentName, doubleSided);
 			Model parentModel = ModelRegistry.getModel(parentModelId);
 			if (parentModel != null) {

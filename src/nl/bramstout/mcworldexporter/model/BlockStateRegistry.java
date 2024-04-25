@@ -77,7 +77,7 @@ public class BlockStateRegistry {
 	}
 	
 	public static BlockState getState(int id) {
-		return registeredStates.get(id);
+		return registeredStates.get(id < 0 ? 0 : id);
 	}
 	
 	private static BlockState getStateFromName(String name) {
@@ -89,6 +89,8 @@ public class BlockStateRegistry {
 	}
 	
 	public static BakedBlockState getBakedStateForBlock(int blockId) {
+		if(blockId < 0)
+			blockId = 0;
 		if(blockId >= bakedBlockStates.size()) {
 			synchronized(mutex2) {
 				for(int i = bakedBlockStates.size(); i < blockId + 1; ++i) {
