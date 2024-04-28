@@ -65,7 +65,8 @@ public class EntityItemFrame extends EntityHangable{
 			
 			if(itemName.equals("minecraft:filled_map")) {
 				TAG_Compound mapTag = (TAG_Compound) ((TAG_Compound) itemTag).getElement("tag");
-				mapId = ((TAG_Int) mapTag.getElement("map")).value;
+				if(mapTag != null)
+					mapId = ((TAG_Int) mapTag.getElement("map")).value;
 			}
 		}
 

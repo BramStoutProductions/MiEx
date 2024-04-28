@@ -45,6 +45,7 @@ import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.CameraTransform;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.Point;
 import nl.bramstout.mcworldexporter.world.Chunk;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class Renderer2D implements Runnable {
 
@@ -361,7 +362,7 @@ public class Renderer2D implements Runnable {
 					renderer.finishedChunksStack.add(chunk);
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				World.handleError(e);
 			}
 		}
 

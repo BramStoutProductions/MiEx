@@ -104,7 +104,7 @@ public class ChunkAnvil extends Chunk {
 			else if (compressionType == 2)
 				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else
-				throw new Exception("Could not load chunk");
+				throw new Exception("Could not load chunk. Some chunks might not be loaded. Invalid compression type: " + compressionType);
 
 			DataInputStream dis = new DataInputStream(is);
 			TAG_Compound rootTag = (TAG_Compound) NBT_Tag.make(dis);
@@ -117,7 +117,7 @@ public class ChunkAnvil extends Chunk {
 
 			// Only support chunk formats from 21w43a and later
 			if (dataVersion < 2844)
-				throw new Exception("Chunk format not supported");
+				throw new Exception("Chunk format not supported. Some chunks might not be loaded. Data version: " + dataVersion);
 
 			if (!((TAG_String) rootTag.getElement("Status")).value.contains("full")) {
 				blocks = new int[1][];

@@ -73,6 +73,7 @@ public class Config {
 	public static boolean removeCaves = false;
 	public static boolean fillInCaves = false;
 	public static boolean onlyIndividualBlocks = false;
+	public static boolean runOptimiser = true;
 	public static float fgFullnessThreshold = 0.25f;
 	public static float bgFullnessThreshold = 0.05f;
 	public static int chunkSize = 4;
@@ -80,6 +81,7 @@ public class Config {
 	public static int removeCavesSearchRadius = 4;
 	public static int removeCavesSearchEnergy = 5;
 	public static float animatedTexturesFrameTimeMultiplier = 1.0f;
+	public static float blockSizeInUnits = 16.0f;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -169,6 +171,7 @@ public class Config {
 		removeCavesSearchRadius = 4;
 		removeCavesSearchEnergy = 5;
 		animatedTexturesFrameTimeMultiplier = 1.0f;
+		blockSizeInUnits = 16.0f;
 		
 		Color.GAMUT = ColorGamut.ACEScg;
 		
@@ -221,6 +224,9 @@ public class Config {
 				
 				parseList("powerLevel", data, powerLevel);
 				
+				if(data.has("runOptimiser"))
+					runOptimiser = data.get("runOptimiser").getAsBoolean();
+				
 				if(data.has("fgFullnessThreshold"))
 					fgFullnessThreshold = data.get("fgFullnessThreshold").getAsFloat();
 	
@@ -255,6 +261,9 @@ public class Config {
 					if(foundGamut == false)
 						System.out.println("Found invalid render gamut in config: " + gamutName);
 				}
+				
+				if(data.has("blockSizeInUnits"))
+					blockSizeInUnits = data.get("blockSizeInUnits").getAsFloat();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

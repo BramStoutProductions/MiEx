@@ -92,6 +92,7 @@ public class ToolBar extends JPanel {
 	private JButton zoomOutButton;
 	private JButton zoomInButton;
 
+	private JCheckBox runOptimiserCheckBox;
 	private JCheckBox removeCavesCheckBox;
 	private JCheckBox fillInCavesCheckBox;
 	private JCheckBox exportIndividualBlocksCheckBox;
@@ -381,6 +382,14 @@ public class ToolBar extends JPanel {
 		settingsPanel.setPreferredSize(settingsPanel.getMinimumSize());
 		settingsPanel.add(new JLabel(" "));
 		settingsPanel.add(new JPanel());
+		runOptimiserCheckBox = new JCheckBox("Run Optimiser");
+		runOptimiserCheckBox.setSelected(Config.runOptimiser);
+		runOptimiserCheckBox.setPreferredSize(new Dimension(410, 24));
+		runOptimiserCheckBox.setMinimumSize(new Dimension(410, 24));
+		runOptimiserCheckBox.setMaximumSize(new Dimension(410, 24));
+		settingsPanel.add(runOptimiserCheckBox);
+		runOptimiserCheckBox.setAlignmentX(1);
+		
 		removeCavesCheckBox = new JCheckBox("Remove Caves");
 		removeCavesCheckBox.setSelected(Config.removeCaves);
 		removeCavesCheckBox.setPreferredSize(new Dimension(410, 24));
@@ -683,6 +692,7 @@ public class ToolBar extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				Config.runOptimiser = runOptimiserCheckBox.isSelected();
 				Config.removeCaves = removeCavesCheckBox.isSelected();
 				Config.fillInCaves = Config.removeCaves && fillInCavesCheckBox.isSelected();
 				Config.onlyIndividualBlocks = exportIndividualBlocksCheckBox.isSelected();
@@ -781,6 +791,9 @@ public class ToolBar extends JPanel {
 		}
 		if (MCWorldExporter.getApp().getExportBounds().getLodYDetail() != ((Integer) lodYDetailSpinner.getValue()).intValue()) {
 			lodYDetailSpinner.setValue(MCWorldExporter.getApp().getExportBounds().getLodYDetail());
+		}
+		if (Config.runOptimiser != runOptimiserCheckBox.isSelected()) {
+			runOptimiserCheckBox.setSelected(Config.runOptimiser);
 		}
 		if (Config.chunkSize != ((Integer) chunkSizeSpinner.getValue()).intValue()) {
 			chunkSizeSpinner.setValue(Config.chunkSize);

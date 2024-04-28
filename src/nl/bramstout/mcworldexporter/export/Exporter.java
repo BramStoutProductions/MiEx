@@ -55,6 +55,7 @@ import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.model.ModelRegistry;
 
 public class Exporter {
 	
@@ -187,9 +188,23 @@ public class Exporter {
 				chunkFile.delete();
 		}
 		
-		System.out.println("Exported:" + usdFile.getPath());
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
-		JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "World exported successfully", "Done", JOptionPane.PLAIN_MESSAGE);
+		String message = "World exported successfully.";
+		if(BlockStateRegistry.missingBlockStates.size() > 0) {
+			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
+			for(String blockName : BlockStateRegistry.missingBlockStates) {
+				System.out.println("Missing blockstate: " + blockName);
+			}
+		}
+		
+		if(ModelRegistry.missingModels.size() > 0) {
+			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
+			for(String blockName : ModelRegistry.missingModels) {
+				System.out.println("Missing model: " + blockName);
+			}
+		}
+		System.out.println("Exported:" + usdFile.getPath());
+		JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), message, "Done", JOptionPane.PLAIN_MESSAGE);
 	}
 	
 	private static class ExportChunkTask implements Runnable {
@@ -206,7 +221,8 @@ public class Exporter {
 		public void run() {
 			try {
 				chunk.generateMeshes();
-				chunk.optimiseMeshes();
+				if(Config.runOptimiser)
+					chunk.optimiseMeshes();
 				chunk.writeMeshes(dos);
 				dos.close();
 				synchronized(mutex) {

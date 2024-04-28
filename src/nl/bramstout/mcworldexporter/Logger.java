@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JOptionPane;
@@ -49,6 +50,15 @@ public class Logger extends PrintStream{
 				File f = new File(FileUtil.getLogFile());
 				f.getParentFile().mkdirs();
 				logFileStream = new FileOutputStream(f);
+				logFileStream.write(("MiEx " + ReleaseChecker.CURRENT_VERSION + "\n").getBytes());
+				
+				for(Entry<Object, Object> property : System.getProperties().entrySet()) {
+					String key = String.valueOf(property.getKey());
+					if(key.contains("java.specification") || key.contains("os.") || key.contains("java.runtime") || 
+							key.contains("java.version") || key.contains("java.vm.name"))
+						logFileStream.write((key + " = " + String.valueOf(property.getValue()) + "\n").getBytes());
+				}
+				logFileStream.write("\n".getBytes());
 			}
 		}catch(Exception ex) {
 			ex.printStackTrace();

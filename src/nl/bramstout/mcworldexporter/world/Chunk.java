@@ -226,7 +226,7 @@ public abstract class Chunk {
 			try {
 				load();
 			} catch (Exception e) {
-				e.printStackTrace();
+				World.handleError(e);
 			}
 		if (blocks == null)
 			return -1; // Couldn't load, so chunk doesn't exist.
@@ -248,7 +248,7 @@ public abstract class Chunk {
 			try {
 				load();
 			} catch (Exception e) {
-				e.printStackTrace();
+				World.handleError(e);
 			}
 		if (biomes == null)
 			return 0;
@@ -272,7 +272,7 @@ public abstract class Chunk {
 			try {
 				load();
 			} catch (Exception e) {
-				e.printStackTrace();
+				World.handleError(e);
 			}
 		if (heightMap == null)
 			return 0;

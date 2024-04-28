@@ -36,6 +36,7 @@ import java.util.Arrays;
 
 import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 
 public class Mesh {
@@ -509,10 +510,14 @@ public class Mesh {
 			dos.writeInt(colors.size() / 3); // Vertex colours
 		}
 		
+		// Pretty much all of the code assumes that a block is 16 units.
+		// In order to not break any of that, we do the scaling here.
+		float worldScale = Config.blockSizeInUnits / 16.0f;
+		
 		// vertex data
 		int i = 0;
 		for(i = 0; i < vertices.size(); ++i)
-			dos.writeFloat(vertices.get(i));
+			dos.writeFloat(vertices.get(i) * worldScale);
 		// uv data
 		for(i = 0; i < us.size(); ++i)
 			dos.writeFloat(us.get(i));

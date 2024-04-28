@@ -56,7 +56,7 @@ import com.google.gson.stream.JsonReader;
 import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.export.usd.USDMaterials;
+import nl.bramstout.mcworldexporter.materials.Materials;
 
 public class AtlasCreator {
 	
@@ -218,12 +218,12 @@ public class AtlasCreator {
 		}
 	}
 	
-	private Map<USDMaterials.MaterialTemplate, List<String>> atlases;
+	private Map<Materials.MaterialTemplate, List<String>> atlases;
 	private List<AtlasData> finalAtlases;
 	private Set<String> excludeFromAtlas;
 	
 	public void process() {
-		atlases = new HashMap<USDMaterials.MaterialTemplate, List<String>>();
+		atlases = new HashMap<Materials.MaterialTemplate, List<String>>();
 		finalAtlases = new ArrayList<AtlasData>();
 		excludeFromAtlas = new HashSet<String>();
 		File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePack);
@@ -317,7 +317,7 @@ public class AtlasCreator {
 		int atlasCounter = 0;
 		float numAtlases = (float) atlases.size();
 		float counter = 0f;
-		for(Entry<USDMaterials.MaterialTemplate, List<String>> entry : atlases.entrySet()) {
+		for(Entry<Materials.MaterialTemplate, List<String>> entry : atlases.entrySet()) {
 			if(entry.getValue().size() <= 3) {
 				// If it's three or less textures,
 				// then it's not worth turning it into an atlas.
@@ -461,7 +461,7 @@ public class AtlasCreator {
 			if(skip)
 				continue;
 			
-			USDMaterials.MaterialTemplate template = USDMaterials.getMaterial(resourceName, false);
+			Materials.MaterialTemplate template = Materials.getMaterial(resourceName, false, "");
 			List<String> atlas = atlases.get(template);
 			if(atlas == null) {
 				atlas = new ArrayList<String>();

@@ -53,6 +53,9 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
+import nl.bramstout.mcworldexporter.export.materialx.MaterialXMaterialWriter;
+import nl.bramstout.mcworldexporter.materials.MaterialWriter;
+import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 
@@ -148,6 +151,8 @@ public class USDConverter extends Converter{
 		USDWriter rootWriter = new USDWriter(outputFile);
 		rootWriter.beginMetaData();
 		rootWriter.writeMetaDataString("defaultPrim", "world");
+		rootWriter.writeMetaDataFloat("metersPerUnit", 1.0f);
+		rootWriter.writeMetaDataString("upAxis", "Y");
 		rootWriter.endMetaData();
 		rootWriter.beginDef("Xform", "world");
 		rootWriter.beginMetaData();
@@ -236,30 +241,43 @@ public class USDConverter extends Converter{
 		Arrays.sort(chunkInfosFG, chunkInfoComparator);
 		Arrays.sort(chunkInfosBG, chunkInfoComparator);
 		
-		USDWriter materialsWriter = new USDWriter(materialsFile);
-		materialsWriter.beginMetaData();
-		materialsWriter.writeMetaDataString("defaultPrim", "materials");
-		materialsWriter.endMetaData();
-		materialsWriter.beginDef("Scope", "materials");
-		materialsWriter.beginChildren();
+		Materials.reload();
 		
-		USDMaterials.reload();
-		USDMaterials.writeSharedNodes(materialsWriter, "/materials");
+		MaterialWriter[] materialWriters = new MaterialWriter[] { 
+				new USDMaterialWriter(materialsFile), 
+				new MaterialXMaterialWriter(new File(materialsFile.getPath().replace(".usd", ".mtlx"))) };
+		
+		for(MaterialWriter materialWriter : materialWriters)
+			materialWriter.open();
+		
+		for(MaterialWriter materialWriter : materialWriters)
+			materialWriter.writeSharedNodes("/materials");
+		
 		for(Texture texture : usedTextures) {
-			USDMaterials.MaterialTemplate material = USDMaterials.getMaterial(texture.texture, texture.hasBiomeColor);
+			Materials.MaterialTemplate material = Materials.getMaterial(texture.texture, texture.hasBiomeColor, currentOutputDir.getCanonicalPath());
 			if(material != null)
-				USDMaterials.writeMaterial(materialsWriter, material, texture.texture, texture.hasBiomeColor, 
-											"/materials", "/materials/sharedNodes");
+				for(MaterialWriter materialWriter : materialWriters)
+					materialWriter.writeMaterial(material, texture.texture, texture.hasBiomeColor, 
+													"/materials", "/materials/sharedNodes");
 		}
 		
-		materialsWriter.endChildren();
-		materialsWriter.endDef();
-		materialsWriter.close();
+		for(MaterialWriter materialWriter : materialWriters) {
+			try {
+				materialWriter.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		List<String> materialReferences = new ArrayList<String>();
+		for(MaterialWriter materialWriter : materialWriters)
+			if(materialWriter.hasWrittenAnything())
+				materialReferences.add(materialWriter.getUSDAssetPath());
 		
 		
 		rootWriter.beginDef("Scope", "materials");
 		rootWriter.beginMetaData();
-		rootWriter.writeReference("./" + materialsFile.getName());
+		rootWriter.writeReferences(materialReferences);
 		rootWriter.endMetaData();
 		rootWriter.endDef();
 		

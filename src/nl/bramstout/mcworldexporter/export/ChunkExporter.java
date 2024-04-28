@@ -1009,12 +1009,17 @@ public class ChunkExporter {
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			mesh.getValue().write(dos);
 		}
+		
+		// Pretty much all of the code assumes that a block is 16 units.
+		// In order to not break any of that, we do the scaling here.
+		float worldScale = Config.blockSizeInUnits / 16.0f;
+				
 		dos.writeInt(individualBlocks.size());
 		for(Entry<Integer, FloatArray> blocks : individualBlocks.entrySet()) {
 			dos.writeInt(blocks.getKey());
 			dos.writeInt(blocks.getValue().size()/3);
 			for(int i = 0; i < blocks.getValue().size(); ++i)
-				dos.writeFloat(blocks.getValue().get(i));
+				dos.writeFloat(blocks.getValue().get(i) * worldScale);
 		}
 	}
 	

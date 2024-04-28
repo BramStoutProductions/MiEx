@@ -77,8 +77,10 @@ public class ResourcePackManager extends JPanel {
 	private JScrollPane activeScrollPane;
 	private JPanel activePanel;
 	private JButton updateBaseResourcePackButton;
+	private JButton extractModResourcePackButton;
 	private JButton createAtlassesButton;
 	private AtlasCreatorDialog atlasCreator;
+	private ResourcePackExtractorDialog resourcePackExtractor;
 	
 	public ResourcePackManager() {
 		super();
@@ -137,6 +139,12 @@ public class ResourcePackManager extends JPanel {
 		updateBaseResourcePackButton.setPreferredSize(new Dimension(300, 32));
 		add(updateBaseResourcePackButton);
 		
+		extractModResourcePackButton = new JButton("Extract Resourcepack from Modpack");
+		extractModResourcePackButton.setMinimumSize(new Dimension(300, 32));
+		extractModResourcePackButton.setMaximumSize(new Dimension(300, 32));
+		extractModResourcePackButton.setPreferredSize(new Dimension(300, 32));
+		add(extractModResourcePackButton);
+		
 		createAtlassesButton = new JButton("Create Atlasses");
 		createAtlassesButton.setMinimumSize(new Dimension(300, 32));
 		createAtlassesButton.setMaximumSize(new Dimension(300, 32));
@@ -144,6 +152,7 @@ public class ResourcePackManager extends JPanel {
 		add(createAtlassesButton);
 		
 		atlasCreator = new AtlasCreatorDialog();
+		resourcePackExtractor = new ResourcePackExtractorDialog();
 		
 		reset();
 		
@@ -173,6 +182,16 @@ public class ResourcePackManager extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				ResourcePack.updateBaseResourcePack(false);
+			}
+			
+		});
+		
+		extractModResourcePackButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				resourcePackExtractor.setVisible(true);
+				resourcePackExtractor.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
 			}
 			
 		});

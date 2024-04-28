@@ -104,7 +104,7 @@ public class USDWriter {
 		}
 	}
 	
-	public void close() throws IOException, InterruptedException{
+	public void close() throws IOException{
 		fw.close();
 		fw = null;
 		
@@ -174,7 +174,27 @@ public class USDWriter {
 	}
 	
 	public void writeReference(String path) throws IOException {
-		fw.write(getIndent() +"references = @" + path + "@\n");
+		if(path.startsWith("@"))
+			fw.write(getIndent() +"references = " + path + "\n");
+		else
+			fw.write(getIndent() +"references = @" + path + "@\n");
+	}
+	
+	public void writeReferences(List<String> paths) throws IOException {
+		fw.write(getIndent() +"references = [\n");
+		indent++;
+		for(int i = 0; i < paths.size() - 1; ++i) {
+			if(paths.get(i).startsWith("@"))
+				fw.write(getIndent() + paths.get(i) + ",\n");
+			else
+				fw.write(getIndent() + "@" + paths.get(i) + "@,\n");
+		}
+		if(paths.get(paths.size()-1).startsWith("@"))
+			fw.write(getIndent() + paths.get(paths.size()-1) + "\n");
+		else
+			fw.write(getIndent() + "@" + paths.get(paths.size()-1) + "@\n");
+		indent--;
+		fw.write(getIndent() + "]\n");
 	}
 	
 	public void writeInherit(String path) throws IOException {

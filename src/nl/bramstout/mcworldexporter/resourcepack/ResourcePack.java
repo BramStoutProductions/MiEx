@@ -40,6 +40,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -326,14 +327,18 @@ public class ResourcePack {
 	private static String getJarFile(String versionsFolder, String versionName) {
 		String versionFolder = versionsFolder + versionName;
 		String versionJar = versionFolder + "/" + versionName + ".jar";
-		if(!(new File(versionJar).exists())) {
-			for(File f : new File(versionFolder).listFiles()) {
-				if(f.getName().endsWith(".jar"))
-					return f.getPath();
-			}
-			return null;
+		if(new File(versionJar).exists())
+			return versionJar;
+		// It could also be located somewhere else, so let's try a few things.
+		versionJar = versionFolder + "/bin/minecraft.jar";
+		if(new File(versionJar).exists())
+			return versionJar;
+		// If the jar doesn't exist, just pick the first jar file in the versions folder.
+		for(File f : new File(versionFolder).listFiles()) {
+			if(f.getName().endsWith(".jar"))
+				return f.getPath();
 		}
-		return versionJar;
+		return null;
 	}
 	
 	public static void updateBaseResourcePack(boolean updateToNewest) {
@@ -366,9 +371,45 @@ public class ResourcePack {
 						}
 					}
 				}
-			}else {
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install and so cannot automatically create a base_resource_pack. Either manually create it or specify the MIEX_MINECRAFT_VERSIONS_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
-				return;
+			}
+			if(versions.isEmpty()) {
+				// Check multimc launchers
+				if(!FileUtil.getMultiMCRootDir().equals("")) {
+					File multimcVersionsFolder = new File(FileUtil.getMultiMCRootDir(), "libraries/com/mojang/minecraft");
+					if(multimcVersionsFolder.exists()) {
+						versionsFolder = multimcVersionsFolder.getPath();
+						for(File f : multimcVersionsFolder.listFiles()) {
+							if(f.isDirectory())
+								versions.add(f.getName());
+						}
+					}
+				}
+			}
+			if(versions.isEmpty()) {
+				// Check technic launchers
+				if(!FileUtil.getTechnicRootDir().equals("")) {
+					File technicVersionsFolder = new File(FileUtil.getTechnicRootDir(), "modpacks");
+					if(technicVersionsFolder.exists()) {
+						versionsFolder = technicVersionsFolder.getPath();
+						for(File f : technicVersionsFolder.listFiles()) {
+							if(f.isDirectory())
+								versions.add(f.getName());
+						}
+					}
+				}
+			}
+			if(versions.isEmpty()) {
+				// Check modrinth launchers
+				if(!FileUtil.getModrinthRootDir().equals("")) {
+					File modrinthVersionsFolder = new File(FileUtil.getModrinthRootDir(), "meta/versions");
+					if(modrinthVersionsFolder.exists()) {
+						versionsFolder = modrinthVersionsFolder.getPath();
+						for(File f : modrinthVersionsFolder.listFiles()) {
+							if(f.isDirectory())
+								versions.add(f.getName());
+						}
+					}
+				}
 			}
 			
 			if(versions.isEmpty()) {
@@ -390,38 +431,7 @@ public class ResourcePack {
 			
 			String versionJar = getJarFile(versionsFolder, (String) selectedValue);
 			
-			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(versionJar));
-			try {
-			    ZipEntry entry = null;
-			    byte[] bytesIn = new byte[64*1024*1024];
-			    
-			    while ((entry = zipIn.getNextEntry()) != null) {
-			    	String entryName = entry.getName();
-			    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/"))
-			    		continue;
-			    	
-			        String filePath = FileUtil.getResourcePackDir() + "base_resource_pack/" + entryName;
-			        if (!entry.isDirectory()) {
-			        	File outFile = new File(filePath);
-			        	File dir = outFile.getParentFile();
-			        	dir.mkdirs();
-			            OutputStream os = new FileOutputStream(filePath);
-			            try {
-			            	int read = 0;
-				            while ((read = zipIn.read(bytesIn)) != -1) {
-				                os.write(bytesIn, 0, read);
-				            }
-			            }catch(Exception ex) {
-			            	ex.printStackTrace();
-			            }
-			            os.close();
-			        }
-			        zipIn.closeEntry();
-			    }
-			}catch(Exception ex) {
-				ex.printStackTrace();
-			}
-		    zipIn.close();
+			extractResourcePackFromJar(new File(versionJar), new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
 		    
 		    // Write out packInfo file
 		    JsonWriter writer = new JsonWriter(new FileWriter(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json")));
@@ -436,6 +446,40 @@ public class ResourcePack {
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack", "Error", JOptionPane.ERROR_MESSAGE);
 		}
+	}
+	
+	public static void extractResourcePackFromJar(File jarFile, File resourcePackDir) throws IOException {
+		ZipInputStream zipIn = new ZipInputStream(new FileInputStream(jarFile));
+		try {
+		    ZipEntry entry = null;
+		    byte[] bytesIn = new byte[64*1024*1024];
+		    
+		    while ((entry = zipIn.getNextEntry()) != null) {
+		    	String entryName = entry.getName();
+		    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/"))
+		    		continue;
+		    	
+		        File outFile = new File(resourcePackDir, entryName);
+		        if (!entry.isDirectory()) {
+		        	File dir = outFile.getParentFile();
+		        	dir.mkdirs();
+		            OutputStream os = new FileOutputStream(outFile);
+		            try {
+		            	int read = 0;
+			            while ((read = zipIn.read(bytesIn)) != -1) {
+			                os.write(bytesIn, 0, read);
+			            }
+		            }catch(Exception ex) {
+		            	ex.printStackTrace();
+		            }
+		            os.close();
+		        }
+		        zipIn.closeEntry();
+		    }
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	    zipIn.close();
 	}
 
 }

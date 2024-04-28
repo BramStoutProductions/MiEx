@@ -52,14 +52,18 @@ public class EntityPainting extends EntityHangable{
 		NBT_Tag motiveTag = properties.getElement("Motive");
 		if(motiveTag == null)
 			motiveTag = properties.getElement("variant");
-		motive = ((TAG_String) motiveTag).value;
+		motive = "back";
+		if(motiveTag != null)
+			motive = ((TAG_String) motiveTag).value;
 		if(!motive.contains(":"))
 			motive = "minecraft:" + motive;
 		
 		NBT_Tag facingTag = properties.getElement("Facing");
 		if(facingTag == null)
 			facingTag = properties.getElement("facing");
-		byte facingByte = ((TAG_Byte) facingTag).value;
+		byte facingByte = 0;
+		if(facingTag != null)
+			facingByte = ((TAG_Byte) facingTag).value;
 		if(facingByte == 4)
 			facing = Direction.DOWN;
 		else if(facingByte == 5)

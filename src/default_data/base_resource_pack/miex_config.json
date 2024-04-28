@@ -132,6 +132,7 @@
         "flowering_azalea_leaves": 10
     },
     "lodNoUVScale": [],
+    "runOptimiser": true,
 	"fgFullnessThreshold": 0.15,
 	"bgFullnessThreshold": 0.01,
 	"chunkSize": 16,
@@ -139,5 +140,6 @@
     "removeCavesSearchRadius": 4,
     "removeCavesSearchEnergy": 5,
     "animatedTexturesFrameTimeMultiplier": 1.0,
-    "renderGamut": "ACEScg"
+    "renderGamut": "ACEScg",
+    "blockSizeInUnits": 16.0
 }

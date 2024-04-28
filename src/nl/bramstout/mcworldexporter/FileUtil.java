@@ -85,6 +85,25 @@ public class FileUtil {
 		return resourcePackUSDPrefix;
 	}
 	
+	protected static String resourcePackMTLXPrefix = null;
+	public static String getResourcePackMTLXPrefix() {
+		if(resourcePackMTLXPrefix != null)
+			return resourcePackMTLXPrefix;
+		try {
+			resourcePackMTLXPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
+			if(!resourcePackMTLXPrefix.endsWith("/"))
+				resourcePackMTLXPrefix = resourcePackMTLXPrefix + "/";
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		String envPath = System.getenv("MIEX_RESOURCEPACK_MTLX_PREFIX");
+		if(envPath != null)
+			resourcePackMTLXPrefix = envPath;
+		
+		return resourcePackMTLXPrefix;
+	}
+	
 	protected static String usdCatExe = null;
 	public static String getUSDCatExe() {
 		if(usdCatExe != null)
@@ -163,6 +182,45 @@ public class FileUtil {
 			minecraftVersionsDir = envPath + "/";
 		
 		return minecraftVersionsDir;
+	}
+	
+	protected static String multiMCRootDir = null;
+	public static String getMultiMCRootDir() {
+		if(multiMCRootDir != null)
+			return multiMCRootDir;
+		multiMCRootDir = "";
+		
+		String envPath = System.getenv("MIEX_MULTIMC_ROOT_DIR");
+		if(envPath != null)
+			multiMCRootDir = envPath + "/";
+		
+		return multiMCRootDir;
+	}
+	
+	protected static String technicRootDir = null;
+	public static String getTechnicRootDir() {
+		if(technicRootDir != null)
+			return technicRootDir;
+		technicRootDir = "";
+		
+		String envPath = System.getenv("MIEX_TECHNIC_ROOT_DIR");
+		if(envPath != null)
+			technicRootDir = envPath + "/";
+		
+		return technicRootDir;
+	}
+	
+	protected static String modrinthRootDir = null;
+	public static String getModrinthRootDir() {
+		if(modrinthRootDir != null)
+			return modrinthRootDir;
+		modrinthRootDir = "";
+		
+		String envPath = System.getenv("MIEX_TECHNIC_ROOT_DIR");
+		if(envPath != null)
+			modrinthRootDir = envPath + "/";
+		
+		return modrinthRootDir;
 	}
 
 }

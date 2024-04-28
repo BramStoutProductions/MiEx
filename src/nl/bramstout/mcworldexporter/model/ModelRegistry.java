@@ -36,8 +36,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class ModelRegistry {
 
@@ -45,6 +48,7 @@ public class ModelRegistry {
 	private static Map<String, Integer> nameToId = new HashMap<String, Integer>();
 	private static Object mutex = new Object();
 	private static int counter = 0;
+	public static List<String> missingModels = new ArrayList<String>();
 	
 	public static int getIdForName(String name, boolean doubleSided) {
 		if(!name.contains("/"))
@@ -84,7 +88,14 @@ public class ModelRegistry {
 			if(!ResourcePack.hasOverride(name, "models", ".json", "assets"))
 				return BuiltInModelRegistry.newModel(name);
 		}
-		return new Model(name, ResourcePack.getJSONData(name, "models", "assets"), doubleSided);
+		JsonObject data = ResourcePack.getJSONData(name, "models", "assets");
+		if(data == null) {
+			synchronized(missingModels) {
+				missingModels.add(name);
+			}
+			World.handleError(new RuntimeException("No blockstate file for " + name));
+		}
+		return new Model(name, data, doubleSided);
 	}
 	
 	public static void clearModelRegistry() {
@@ -92,6 +103,9 @@ public class ModelRegistry {
 			registeredModels.clear();
 			nameToId.clear();
 			counter = 0;
+		}
+		synchronized(missingModels) {
+			missingModels.clear();
 		}
 	}
 

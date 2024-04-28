@@ -36,11 +36,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class BlockStateRegistry {
 
@@ -50,6 +53,7 @@ public class BlockStateRegistry {
 	private static int counter = 0;
 	private static List<BakedBlockState> bakedBlockStates = new ArrayList<BakedBlockState>();
 	private static Object mutex2 = new Object();
+	public static List<String> missingBlockStates = new ArrayList<String>();
 	
 	public static int getIdForName(String name) {
 		if(!name.contains(":"))
@@ -85,7 +89,14 @@ public class BlockStateRegistry {
 			if(!ResourcePack.hasOverride(name, "blockstates", ".json", "assets"))
 				return BuiltInBlockStateRegistry.newBlockState(name);
 		}
-		return new BlockState(name, ResourcePack.getJSONData(name, "blockstates", "assets"));
+		JsonObject data = ResourcePack.getJSONData(name, "blockstates", "assets");
+		if(data == null) {
+			synchronized(missingBlockStates) {
+				missingBlockStates.add(name);
+			}
+			World.handleError(new RuntimeException("No blockstate file for " + name));
+		}
+		return new BlockState(name, data);
 	}
 	
 	public static BakedBlockState getBakedStateForBlock(int blockId) {
@@ -134,6 +145,9 @@ public class BlockStateRegistry {
 		synchronized(mutex2) {
 			bakedBlockStates.clear();
 			BakedBlockState.BAKED_WATER_STATE = new BakedBlockStateLiquid("minecraft:water");
+		}
+		synchronized(missingBlockStates) {
+			missingBlockStates.clear();
 		}
 	}
 	

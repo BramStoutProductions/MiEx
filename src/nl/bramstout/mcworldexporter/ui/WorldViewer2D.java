@@ -41,6 +41,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
@@ -51,7 +53,7 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 
-public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionListener{
+public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener{
 
 	/**
 	 * 
@@ -106,6 +108,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 
 		addMouseListener(this);
 		addMouseMotionListener(this);
+		addMouseWheelListener(this);
 	}
 	
 	public void zoomIn() {
@@ -159,8 +162,12 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		renderer.getFrameBufferLock().aqcuire();
 		BufferedImage frameBuffer = renderer.getFrameBuffer();
 		if(frameBuffer != null) {
-			Point bufferOffset = transform.getPixelDifference(renderer.getCameraTransform(), frameBuffer.getWidth(), frameBuffer.getHeight());
-			g.drawImage(frameBuffer, bufferOffset.ix(), bufferOffset.iy(), null);
+			double zoom = Math.pow(2.0, transform.zoomLevel - renderer.getCameraTransform().zoomLevel);
+			int bufferWidth = (int) (((double) frameBuffer.getWidth()) * zoom);
+			int bufferHeight = (int) (((double) frameBuffer.getHeight()) * zoom);
+			Point bufferOffset = transform.getPixelDifference(renderer.getCameraTransform(), 
+					frameBuffer.getWidth(), frameBuffer.getHeight(), bufferWidth, bufferHeight);
+			g.drawImage(frameBuffer, bufferOffset.ix(), bufferOffset.iy(), bufferWidth, bufferHeight, null);
 		}
 		renderer.getFrameBufferLock().release();
 		
@@ -552,9 +559,9 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			return new Point(x, y);
 		}
 		
-		public Point getPixelDifference(CameraTransform other, int width, int height) {
-			Point a = toScreen(new Point(0, 0), width, height);
-			Point b = other.toScreen(new Point(0, 0), width, height);
+		public Point getPixelDifference(CameraTransform other, int width, int height, int otherWidth, int otherHeight) {
+			Point a = toScreen(new Point(camPosX, camPosY), width, height);
+			Point b = other.toScreen(new Point(camPosX, camPosY), otherWidth, otherHeight);
 			return new Point(a.x - b.x, a.y - b.y);
 		}
 		
@@ -592,6 +599,21 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		if(MCWorldExporter.getApp().getWorld() != null)
 			MCWorldExporter.getApp().getWorld().forceReRender();
 		renderer.requestRender();
+	}
+	
+	private long lastWheelRotation = 0;
+
+	@Override
+	public void mouseWheelMoved(MouseWheelEvent e) {
+		e.consume();
+		// Prevent really fast zooming and accidental
+		// double zooms.
+		if((e.getWhen() - lastWheelRotation) < 500)
+			return;
+		if(e.getWheelRotation() < 0)
+			zoomIn();
+		if(e.getWheelRotation() > 0)
+			zoomOut();
 	}
 
 }

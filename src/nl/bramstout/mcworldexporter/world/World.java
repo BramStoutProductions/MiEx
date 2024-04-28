@@ -33,7 +33,12 @@ package nl.bramstout.mcworldexporter.world;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 
@@ -73,12 +78,20 @@ public abstract class World {
 			for(Region region : regions) {
 				if(region == null)
 					continue;
-				region.unload();
+				try {
+					region.unload();
+				}catch(Exception ex) {
+					handleError(ex);
+				}
 			}
 		}
 		if(players != null)
 			players.clear();
-		_unload();
+		try {
+			_unload();
+		}catch(Exception ex) {
+			handleError(ex);
+		}
 	}
 
 	// protected abstract long getRegionIdFromChunkPosition(int chunkX, int chunkZ);
@@ -127,7 +140,7 @@ public abstract class World {
 			if (chunk != null)
 				return chunk.getBlockId(blockX, blockY, blockZ);
 		} catch (Exception e) {
-			e.printStackTrace();
+			handleError(e);
 		}
 		return 0;
 	}
@@ -138,7 +151,7 @@ public abstract class World {
 			if (chunk != null)
 				return chunk.getBiomeId(blockX, blockY, blockZ);
 		} catch (Exception e) {
-			e.printStackTrace();
+			handleError(e);
 		}
 		return 0;
 	}
@@ -149,7 +162,7 @@ public abstract class World {
 			if (chunk != null)
 				return chunk.getHeight(blockX, blockZ);
 		} catch (Exception e) {
-			e.printStackTrace();
+			handleError(e);
 		}
 		return Integer.MIN_VALUE;
 	}
@@ -158,14 +171,19 @@ public abstract class World {
 		this.worldDir = worldDir;
 		this.dimensions.clear();
 		this.currentDimension = "";
-		findDimensions();
-		String newDimension = "";
-		if (!dimensions.isEmpty())
-			newDimension = dimensions.get(0);
-
-		loadWorldSettings();
-
-		loadDimension(newDimension);
+		handledErrors.clear();
+		try {
+			findDimensions();
+			String newDimension = "";
+			if (!dimensions.isEmpty())
+				newDimension = dimensions.get(0);
+	
+			loadWorldSettings();
+	
+			loadDimension(newDimension);
+		}catch(Exception ex) {
+			handleError(ex);
+		}
 	}
 
 	public void loadDimension(String dimension) {
@@ -206,6 +224,41 @@ public abstract class World {
 	
 	public List<Player> getPlayers(){
 		return players;
+	}
+	
+	private static Set<String> handledErrors = new HashSet<String>();
+	
+	public static void handleError(Exception ex) {
+		// It's possible that we send in a whole bunch of the same
+		// exception, but we don't want to spam the user.
+		// So we make sure to only show it once.
+		
+		// We need some identifier for each exception.
+		// In most cases .toString() will work just fine, but
+		// in some cases you could have the same error, but with
+		// some detail different. We don't want to then still
+		// spam the user, so in that case, we can check the top
+		// stack frame, which should be common among all of those
+		// duplicate errors.
+		String exceptionId = ex.toString();
+		if(ex.getStackTrace().length > 0)
+			exceptionId = ex.getStackTrace()[0].toString();
+		
+		synchronized(handledErrors) {
+			if(handledErrors.contains(exceptionId))
+				return;
+			handledErrors.add(exceptionId);
+		}
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), ex.getLocalizedMessage() == null ? "An error occured loading the world." : ex.getLocalizedMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+			
+		});
+		// Print is to out, because if we print it to err then we'd get another popup.
+		ex.printStackTrace(System.out);
 	}
 
 }

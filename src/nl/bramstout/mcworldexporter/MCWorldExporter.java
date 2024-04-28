@@ -138,10 +138,24 @@ public class MCWorldExporter {
 						FileUtil.resourcePackDir = FileUtil.resourcePackDir + "/";
 				}else if(args[i].equalsIgnoreCase("-rpUSDPrefix"))
 					FileUtil.resourcePackUSDPrefix = args[i+1];
+				else if(args[i].equalsIgnoreCase("-rpMTLXPrefix"))
+					FileUtil.resourcePackMTLXPrefix = args[i+1];
 				else if(args[i].equalsIgnoreCase("-mcVersionsDir")) {
 					FileUtil.minecraftVersionsDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.minecraftVersionsDir.endsWith("/"))
 						FileUtil.minecraftVersionsDir = FileUtil.minecraftVersionsDir + "/";
+				}else if(args[i].equalsIgnoreCase("-multimcRootDir")) {
+					FileUtil.multiMCRootDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.multiMCRootDir.endsWith("/"))
+						FileUtil.multiMCRootDir = FileUtil.multiMCRootDir + "/";
+				}else if(args[i].equalsIgnoreCase("-technicRootDir")) {
+					FileUtil.technicRootDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.technicRootDir.endsWith("/"))
+						FileUtil.technicRootDir = FileUtil.technicRootDir + "/";
+				}else if(args[i].equalsIgnoreCase("-modrinthRootDir")) {
+					FileUtil.modrinthRootDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.modrinthRootDir.endsWith("/"))
+						FileUtil.modrinthRootDir = FileUtil.modrinthRootDir + "/";
 				}else if(args[i].equalsIgnoreCase("-usdcatExe")) {
 					if(new File(args[i+1]).exists())
 						FileUtil.usdCatExe = args[i+1];
@@ -174,6 +188,7 @@ public class MCWorldExporter {
 		Logger.init();
 		System.setOut(new Logger(System.out, false));
 		System.setErr(new Logger(System.err, true));
+		
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

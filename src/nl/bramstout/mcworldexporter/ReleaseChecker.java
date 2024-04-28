@@ -45,7 +45,7 @@ import com.google.gson.stream.JsonReader;
 
 public class ReleaseChecker {
 	
-	public static final String CURRENT_VERSION = "v1.3.0";
+	public static final String CURRENT_VERSION = "v1.4.0";
 	public static String LATEST_VERSION = CURRENT_VERSION;
 	public static String LATEST_VERSION_URL = "https://github.com/BramStoutProductions/MiEx/releases";
 	

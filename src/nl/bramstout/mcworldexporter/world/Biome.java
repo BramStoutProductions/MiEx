@@ -111,7 +111,7 @@ public class Biome {
 				}
 			}
 		}else {
-			System.out.println("Can't find biome data for biome " + name);
+			World.handleError(new RuntimeException("Can't find biome data for biome " + name));
 		}
 		foliageColour = new Color(foliageColourI);
 		grassColour = new Color(grassColourI);
