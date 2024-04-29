@@ -45,6 +45,7 @@ public class ModelFace {
 	private String texture;
 	private Direction direction;
 	private boolean doubleSided;
+	private int tintIndex;
 
 	public ModelFace(ModelFace other) {
 		points = Arrays.copyOf(other.points, other.points.length);
@@ -57,6 +58,7 @@ public class ModelFace {
 		texture = other.texture;
 		direction = other.direction;
 		doubleSided = other.doubleSided;
+		tintIndex = other.tintIndex;
 	}
 
 	public ModelFace(float[] minMaxPoints, Direction direction, JsonObject faceData, boolean doubleSided) {
@@ -71,6 +73,10 @@ public class ModelFace {
 		texture = "";
 		if (faceData != null && faceData.has("texture"))
 			texture = faceData.get("texture").getAsString();
+		
+		tintIndex = -1;
+		if(faceData != null && faceData.has("tintindex"))
+			tintIndex = faceData.get("tintindex").getAsInt();
 
 		float minU = 0.0f;
 		float minV = 0.0f;
@@ -706,6 +712,10 @@ public class ModelFace {
 	
 	public Direction getDirection() {
 		return direction;
+	}
+	
+	public int getTintIndex() {
+		return tintIndex;
 	}
 	
 	public void translate(float x, float y, float z) {

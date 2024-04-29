@@ -53,6 +53,7 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
@@ -74,7 +75,7 @@ public class ChunkExporter {
 	private LODCache lodCache;
 	private CaveCache caveCache;
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool();
+	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 
 	
 	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name) {
@@ -176,7 +177,7 @@ public class ChunkExporter {
 					getLODBlockId(chunk, bx, by, bz, lodSize, lodYSize, blockId);
 					if(blockId[0] < 0)
 						continue;
-					state = BlockStateRegistry.getBakedStateForBlock(blockId[0]);
+					state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3]);
 					
 					if(state.isAir() || state.hasLiquid()) {
 						placeStone = false;
@@ -200,7 +201,8 @@ public class ChunkExporter {
 								}
 							}
 							if(placeStone)
-								state = BlockStateRegistry.getBakedStateForBlock(BlockRegistry.getIdForName("minecraft:stone", null));
+								state = BlockStateRegistry.getBakedStateForBlock(
+										BlockRegistry.getIdForName("minecraft:stone", null), blockId[1], blockId[2], blockId[3]);
 						}
 						if(!placeStone && state.isAir())
 							continue; // No need to do anything with air
@@ -463,7 +465,7 @@ public class ChunkExporter {
 				for(int x = cx; x < cx + lodSize; x += stepXZ) {
 					blockId = lodSampleBlockId(chunk, x, y, z);
 					allowed = true;
-					state = BlockStateRegistry.getBakedStateForBlock(blockId);
+					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ);
 					if(state.isAir())
 						allowed = false;
 					blockPriority = state.getLodPriority();
@@ -580,7 +582,7 @@ public class ChunkExporter {
 							out[3] = 0;
 							return;
 						}
-						state = BlockStateRegistry.getBakedStateForBlock(out[0]);
+						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3]);
 						if(state.isTransparentOcclusion() || state.isLeavesOcclusion()) {
 							return;
 						}
@@ -677,8 +679,14 @@ public class ChunkExporter {
 		if(texture == null || texture.equals(""))
 			return;
 		String meshName = texture;
-		if(tint != null)
+		if(tint != null) {
 			meshName = meshName + "_BIOME";
+			// If the face doesn't have a tintIndex, set the tint to white.
+			// This is also how Minecraft does it.
+			// But don't do it, if we want to force the biome colour anyways.
+			if(face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture))
+				tint = new Color(1.0f, 1.0f, 1.0f);
+		}
 		float lodSizeF = ((float) (lodSize-1)) / 2.0f;
 		float lodYSizeF = ((float) (lodYSize-1)) / 2.0f;
 		float lodScale = (float) lodSize;
@@ -742,7 +750,8 @@ public class ChunkExporter {
 				occlusion |= occludes;
 				continue;
 			}
-			state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0]);
+			state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
+															OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
 			
 			// Transparent blocks don't occlude non-transparent blocks
 			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
@@ -886,6 +895,18 @@ public class ChunkExporter {
 		boolean foundLiquid = false;
 		boolean foundAir = false;
 		
+		// Since we skip every other block (y += 2), this can cause
+		// some artefacts where one block ends up in a cave, but the 
+		// block above it not, and the block above that is in a cave
+		// again, etc.
+		// We take wy and make sure it's a multiple of two to get
+		// rid of this artefacting. We also do this for wx and wz
+		// later.
+		// Basically, we divide by two and then multiply again.
+		// We use bit shifting because it keeps -1 at -1 and doesn't
+		// make it 0, which allows it to still work with negative values
+		// which can happen in Minecraft.
+		wy = (wy >> 1) << 1;
 		
 		// For performance, first check straight up
 		for(y = wy; yEnergy > 0; y += 2) {
@@ -896,7 +917,7 @@ public class ChunkExporter {
 				yEnergy -= 5;
 				continue;
 			}
-			state = BlockStateRegistry.getBakedStateForBlock(blockId);
+			state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
 			if(sampleHeight(x, z) < y) {
 				// Surface reached, so we aren't in a cave
 				return false;
@@ -919,6 +940,11 @@ public class ChunkExporter {
 				
 		}
 		
+		minX = (minX >> 1) << 1;
+		minZ = (minZ >> 1) << 1;
+		maxX = (maxX >> 1) << 1;
+		maxZ = (maxZ >> 1) << 1;
+		
 		yEnergy = surfaceDepth * 3;
 		for(y = wy; yEnergy > 0; y += 2) {
 			foundLiquid = false;
@@ -929,7 +955,7 @@ public class ChunkExporter {
 					if(blockId < 0) {
 						continue;
 					}
-					state = BlockStateRegistry.getBakedStateForBlock(blockId);
+					state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
 					if(sampleHeight(x, z) < y) {
 						// Surface reached, so we aren't in a cave
 						return false;

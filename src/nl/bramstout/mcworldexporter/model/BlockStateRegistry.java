@@ -46,12 +46,13 @@ import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class BlockStateRegistry {
-
+	
 	private static List<BlockState> registeredStates = new ArrayList<BlockState>();
 	private static Map<String, Integer> nameToId = new HashMap<String, Integer>();
 	private static Object mutex = new Object();
 	private static int counter = 0;
 	private static List<BakedBlockState> bakedBlockStates = new ArrayList<BakedBlockState>();
+	private static List<Boolean> needsConnectionInfo = new ArrayList<Boolean>();
 	private static Object mutex2 = new Object();
 	public static List<String> missingBlockStates = new ArrayList<String>();
 	
@@ -99,21 +100,24 @@ public class BlockStateRegistry {
 		return new BlockState(name, data);
 	}
 	
-	public static BakedBlockState getBakedStateForBlock(int blockId) {
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z) {
 		if(blockId < 0)
 			blockId = 0;
 		if(blockId >= bakedBlockStates.size()) {
 			synchronized(mutex2) {
 				for(int i = bakedBlockStates.size(); i < blockId + 1; ++i) {
 					bakedBlockStates.add(null);
+					needsConnectionInfo.add(false);
 				}
 				
 				Block block = BlockRegistry.getBlock(blockId);
 				int stateId = getIdForName(block.getName());
 				BlockState state = getState(stateId);
 				
-				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties());
-				bakedBlockStates.set(blockId, bakedState);
+				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z);
+				if(!state.needsConnectionInfo())
+					bakedBlockStates.set(blockId, bakedState);
+				needsConnectionInfo.set(blockId, state.needsConnectionInfo());
 				return bakedState;
 			}
 		}
@@ -121,17 +125,33 @@ public class BlockStateRegistry {
 		if(bakedState != null)
 			return bakedState;
 		
+		if(needsConnectionInfo.get(blockId).booleanValue()) {
+			Block block = BlockRegistry.getBlock(blockId);
+			int stateId = getIdForName(block.getName());
+			BlockState state = getState(stateId);
+			return state.getBakedBlockState(block.getProperties(), x, y, z);
+		}
+		
 		synchronized(mutex2) {
 			bakedState = bakedBlockStates.get(blockId);
 			if(bakedState != null)
 				return bakedState;
 			
+			if(needsConnectionInfo.get(blockId).booleanValue()) {
+				Block block = BlockRegistry.getBlock(blockId);
+				int stateId = getIdForName(block.getName());
+				BlockState state = getState(stateId);
+				return state.getBakedBlockState(block.getProperties(), x, y, z);
+			}
+			
 			Block block = BlockRegistry.getBlock(blockId);
 			int stateId = getIdForName(block.getName());
 			BlockState state = getState(stateId);
 			
-			bakedState = state.getBakedBlockState(block.getProperties());
-			bakedBlockStates.set(blockId, bakedState);
+			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z);
+			if(!state.needsConnectionInfo())
+				bakedBlockStates.set(blockId, bakedState);
+			needsConnectionInfo.set(blockId, state.needsConnectionInfo());
 			return bakedState;
 		}
 	}
@@ -144,6 +164,7 @@ public class BlockStateRegistry {
 		}
 		synchronized(mutex2) {
 			bakedBlockStates.clear();
+			needsConnectionInfo.clear();
 			BakedBlockState.BAKED_WATER_STATE = new BakedBlockStateLiquid("minecraft:water");
 		}
 		synchronized(missingBlockStates) {

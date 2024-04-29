@@ -1,0 +1,1 @@
+This is a simple resource pack to show how you can query neighbouring block types to affect which models get selected. It's just meant as an example.

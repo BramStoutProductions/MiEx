@@ -74,7 +74,6 @@ public class Player {
 			if(jsonData.has("name"))
 				this.name = jsonData.get("name").getAsString();
 		}catch(Exception ex) {
-			ex.printStackTrace();
 		}
 		try {
 			if(stream != null)

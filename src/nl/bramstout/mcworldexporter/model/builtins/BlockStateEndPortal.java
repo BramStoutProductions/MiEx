@@ -50,7 +50,8 @@ public class BlockStateEndPortal extends BlockState{
 		return "minecraft:block/end_portal";
 	}
 	
-	public BakedBlockState getBakedBlockState(TAG_Compound properties) {
+	@Override
+	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();

@@ -98,7 +98,7 @@ public class Model {
 			for (Entry<String, JsonElement> element : data.get("textures").getAsJsonObject().entrySet()) {
 				String texName = element.getValue().getAsString();
 				if (!texName.contains(":") && !texName.startsWith("#"))
-					texName = name.split(":")[0] + ":" + texName;
+					texName = "minecraft:" + texName;
 				textures.put(element.getKey(), texName);
 			}
 		}

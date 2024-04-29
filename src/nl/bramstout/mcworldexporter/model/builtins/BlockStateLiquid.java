@@ -45,7 +45,8 @@ public class BlockStateLiquid extends BlockState{
 		return name.replace(":", ":block/") + "_still";
 	}
 	
-	public BakedBlockState getBakedBlockState(TAG_Compound properties) {
+	@Override
+	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
 		return new BakedBlockStateLiquid(name);
 	}
 

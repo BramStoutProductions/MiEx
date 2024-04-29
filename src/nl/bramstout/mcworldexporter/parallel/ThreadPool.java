@@ -35,8 +35,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import nl.bramstout.mcworldexporter.MCWorldExporter;
+
 public class ThreadPool {
 
+	public static int getNumThreads() {
+		return Math.max(Runtime.getRuntime().availableProcessors() - MCWorldExporter.numUIThreads, 2);
+	}
+	
 	private List<Thread> threads;
 	private Queue<Task> queue;
 
@@ -44,7 +50,7 @@ public class ThreadPool {
 		threads = new ArrayList<Thread>();
 		queue = new Queue<Task>();
 
-		for (int i = 0; i < Runtime.getRuntime().availableProcessors() - 2; i++) {
+		for (int i = 0; i < getNumThreads(); i++) {
 			Thread thread = new Thread(new Worker(this));
 			thread.setName("Threadpool-" + i);
 			thread.start();

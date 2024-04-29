@@ -319,7 +319,7 @@ public class USDConverter extends Converter{
 		
 		rootWriter.endChildren();
 		rootWriter.endDef();
-		rootWriter.close();
+		rootWriter.close(false);
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.95f);
 		
@@ -472,11 +472,11 @@ public class USDConverter extends Converter{
 				
 				chunkWriter.endChildren();
 				chunkWriter.endDef();
-				chunkWriter.close();
+				chunkWriter.close(false);
 				
 				chunkRenderWriter.endChildren();
 				chunkRenderWriter.endDef();
-				chunkRenderWriter.close();
+				chunkRenderWriter.close(false);
 				
 				synchronized(converter.mutex) {
 					if(isFG)
@@ -641,7 +641,25 @@ public class USDConverter extends Converter{
 			renderWriter.endDef();
 			
 			if(!noProxy) {
-				writeMesh(writer, proxyMesh2, materialsPrim, "proxy", "component");
+				writeMesh(writer, proxyMesh2, materialsPrim, null, "component");
+				
+				// If we do load in the render version of the chunk, then
+				// that will have the render purpose. This means that the
+				// proxy geometry should get the proxy purpose so that only
+				// one of the two meshes will show up in either the viewport
+				// or final render.
+				// We only set the proxy geometry's purpose if we also have
+				// the render meshes, because otherwise when we aren't
+				// loading in the render meshes and try to final render the set
+				// then it wouldn't show up because the final renderer only
+				// renders meshes with no purpose or the render purpose, and
+				// not the proxy purpose.
+				renderWriter.beginOver(proxyMesh2.getName());
+				renderWriter.beginChildren();
+				renderWriter.writeAttributeName("token", "purpose", true);
+				renderWriter.writeAttributeValueString("proxy");
+				renderWriter.endChildren();
+				renderWriter.endOver();
 			}
 			
 		}else {

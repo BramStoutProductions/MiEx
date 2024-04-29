@@ -54,6 +54,7 @@ public class MCWorldExporter {
 	public static String forceOutputPath = null;
 	public static String forceOpenWorld = null;
 	public static List<String> defaultResourcePacks = new ArrayList<String>();
+	public static int numUIThreads = 4;
 	
 	public static MCWorldExporter getApp() {
 		return instance;
@@ -129,6 +130,14 @@ public class MCWorldExporter {
 	
 	public static void main(String[] args) {
 		try {
+			String numUIThreadsEnvVar = System.getenv("MIEX_NUM_UI_THREADS");
+			if(numUIThreadsEnvVar != null) {
+				Integer val = Integer.parseInt(numUIThreadsEnvVar);
+				numUIThreads = val.intValue();
+			}
+		}catch(Exception ex) {}
+		
+		try {
 			for(int i = 0; i < args.length; ++i) {
 				if(args[i].equalsIgnoreCase("-homeDir"))
 					FileUtil.homeDir = args[i+1];
@@ -164,6 +173,11 @@ public class MCWorldExporter {
 						FileUtil.logFile = args[i+1];
 				}else if(args[i].equalsIgnoreCase("-resourcePack")) {
 					defaultResourcePacks.add(args[i+1]);
+				}else if(args[i].equalsIgnoreCase("-numUIThreads")) {
+					try {
+						Integer val = Integer.parseInt(args[i+1]);
+						numUIThreads = val.intValue();
+					}catch(Exception ex) {}
 				}
 				else if(args[i].equalsIgnoreCase("-output")) {
 					forceOutputPath = args[i+1];

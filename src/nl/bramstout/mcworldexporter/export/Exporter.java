@@ -56,14 +56,19 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 
 public class Exporter {
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool();
+	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 	private static Object mutex = new Object();
 	private static Set<Integer> individualBlockIds = new HashSet<Integer>();
 
 	public static void export(File usdFile) throws Exception {
+		if(MCWorldExporter.getApp().getWorld() == null) {
+			throw new RuntimeException("No valid world loaded.");
+		}
+		
 		String extensionTokens[] = usdFile.getName().split("\\.");
 		String extension = extensionTokens[extensionTokens.length-1];
 		
@@ -130,7 +135,7 @@ public class Exporter {
 		List<Model> models = new ArrayList<Model>();
 		for(Integer blockId : individualBlockIds) {
 			dos.writeInt(blockId);
-			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, 0, 0, 0);
 			dos.writeUTF(state.getName());
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();

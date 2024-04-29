@@ -333,14 +333,16 @@ public class ResourcePack {
 		versionJar = versionFolder + "/bin/minecraft.jar";
 		if(new File(versionJar).exists())
 			return versionJar;
+		
+		// In some cases, it might be in a sub folder with the version name
+		if(!(new File(versionFolder)).exists())
+			versionFolder = versionFolder + "/" + versionName;
+		
+		if(!(new File(versionFolder)).exists())
+			return null;
+		
 		// If the jar doesn't exist, just pick the first jar file in the versions folder.
-		File[] versionFolderFiles = new File(versionFolder).listFiles();
-		if (versionFolderFiles == null) {
-			// Try adding a "/" to the middle of the path
-			versionFolder = versionsFolder + "/" + versionName;
-			versionFolderFiles = new File(versionFolder).listFiles();
-		}
-		for(File f : versionFolderFiles) {
+		for(File f : new File(versionFolder).listFiles()) {
 			if(f.getName().endsWith(".jar"))
 				return f.getPath();
 		}
@@ -370,13 +372,8 @@ public class ResourcePack {
 				// If we don't have a version manifest file, but we do have a versions folder,
 				// just add in all folders
 				File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
-				File[] versionFolderContents = versionsFolderFile.listFiles();
-				
-				// Check if this is null, as this will be null 
-				// in some cases and throw an exception when 
-				// attempting to perform operations on the file
-				if (versionFolderContents != null) {
-					for(File f : versionFolderContents) {
+				if(versionsFolderFile.exists() && versionsFolderFile.isDirectory()) {
+					for(File f : versionsFolderFile.listFiles()) {
 						if(f.isDirectory()) {
 							if(getJarFile(versionsFolder, f.getName()) != null) {
 								versions.add(f.getName());

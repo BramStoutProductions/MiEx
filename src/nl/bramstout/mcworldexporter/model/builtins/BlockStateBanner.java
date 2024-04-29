@@ -54,7 +54,8 @@ public class BlockStateBanner extends BlockState{
 		return "minecraft:entity/banner_base";
 	}
 	
-	public BakedBlockState getBakedBlockState(TAG_Compound properties) {
+	@Override
+	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();

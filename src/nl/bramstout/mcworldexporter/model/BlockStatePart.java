@@ -34,7 +34,11 @@ package nl.bramstout.mcworldexporter.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.resourcepack.Tags;
+import nl.bramstout.mcworldexporter.world.Block;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public abstract class BlockStatePart {
 	
@@ -48,7 +52,9 @@ public abstract class BlockStatePart {
 		return models;
 	}
 
-	public abstract boolean usePart(TAG_Compound properties);
+	public abstract boolean usePart(TAG_Compound properties, int x, int y, int z);
+	
+	public abstract boolean needsConnectionInfo();
 	
 	public void noOcclusion() {
 		for(Model model : models) {
@@ -62,6 +68,59 @@ public abstract class BlockStatePart {
 		if(models.size() == 0)
 			return "";
 		return models.get(0).getDefaultTexture();
+	}
+	
+	protected boolean testMiExConnection(String key, String value, int x, int y, int z) {
+		// format: miex_connect_<x offset>_<y ofset>_<z ofset>
+		// where the x, y, and z offsets are the block position
+		// offsets from the current block to check.
+		String[] tokens = key.split("_");
+		if(tokens.length != 5)
+			return false;
+		try {
+			int xOffset = Integer.parseInt(tokens[2]);
+			int yOffset = Integer.parseInt(tokens[3]);
+			int zOffset = Integer.parseInt(tokens[4]);
+			
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x + xOffset, y + yOffset, z + zOffset);
+			Block block = BlockRegistry.getBlock(blockId);
+			
+			boolean match = false;
+			
+			for(String valueItem : value.split("\\|")) {
+				boolean invert = false;
+				if(valueItem.startsWith("!")) {
+					invert = true;
+					valueItem = valueItem.substring(1);
+				}
+				
+				if(valueItem.equalsIgnoreCase("this")) {
+					// Check if the block is the same as the current block.
+					int thisBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+					if(invert)
+						match |= blockId != thisBlockId;
+					else
+						match |= blockId == thisBlockId;
+				}else if(valueItem.startsWith("#")) {
+					// Check if the sampled block is in the specified tag.
+					List<String> blockNames = Tags.getNamesInTag(valueItem);
+					if(invert)
+						match |= !blockNames.contains(block.getName());
+					else
+						match |= blockNames.contains(block.getName());
+				}else {
+					// Check if the sampled block has the same name.
+					if(!valueItem.contains(":"))
+						valueItem = "minecraft:" + valueItem;
+					if(invert)
+						match |= !valueItem.equals(block.getName());
+					else
+						match |= valueItem.equals(block.getName());
+				}
+			}
+			return match;
+		}catch(Exception ex) {}
+		return false;
 	}
 	
 }

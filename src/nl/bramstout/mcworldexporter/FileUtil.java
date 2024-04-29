@@ -158,7 +158,7 @@ public class FileUtil {
 		return System.getProperty("os.name", "none").toLowerCase().contains("mac") ||
 				System.getProperty("os.name", "none").toLowerCase().contains("darwin");
 	}
-
+	
 	public static boolean isLinux() {
 		return System.getProperty("os.name", "none").toLowerCase().contains("linux");
 	}
@@ -226,7 +226,7 @@ public class FileUtil {
 			return modrinthRootDir;
 		modrinthRootDir = "";
 		
-		String envPath = System.getenv("MIEX_TECHNIC_ROOT_DIR");
+		String envPath = System.getenv("MIEX_MODRINTH_ROOT_DIR");
 		if(envPath != null)
 			modrinthRootDir = envPath + "/";
 		

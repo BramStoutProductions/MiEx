@@ -31,8 +31,11 @@
 
 package nl.bramstout.mcworldexporter.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
 
@@ -48,15 +51,25 @@ import nl.bramstout.mcworldexporter.nbt.TAG_String;
 
 public class BlockStateVariant extends BlockStatePart{
 	
-	private Map<String, String> check;
+	private List<Map<String, String>> checks;
+	private boolean _needsConnectionInfo;
 	
 	public BlockStateVariant(String checkString, JsonElement data, boolean doubleSided) {
 		super();
 		
-		check = new HashMap<String, String>();
-		for(String checkToken : checkString.split(",")) {
-			if(checkToken.contains("="))
-				check.put(checkToken.split("=")[0], checkToken.split("=")[1]);
+		_needsConnectionInfo = false;
+		checks = new ArrayList<Map<String, String>>();
+		for(String checkToken : checkString.split("\\|\\|")) {
+			Map<String, String> check = new HashMap<String, String>();
+			for(String checkToken2 : checkToken.split(",")) {
+				if(checkToken2.contains("=")) {
+					String[] tokens = checkToken2.split("=");
+					if(tokens[0].startsWith("miex_connect"))
+						_needsConnectionInfo = true;
+					check.put(tokens[0], tokens[1]);
+				}
+			}
+			checks.add(check);
 		}
 		
 		if(data.isJsonArray()) {
@@ -95,11 +108,26 @@ public class BlockStateVariant extends BlockStatePart{
 			models.add(model);
 		}
 	}
+	
+	@Override
+	public boolean needsConnectionInfo() {
+		return this._needsConnectionInfo;
+	}
 
 	@Override
-	public boolean usePart(TAG_Compound properties) {
-		if(check.isEmpty())
+	public boolean usePart(TAG_Compound properties, int x, int y, int z) {
+		if(checks.isEmpty())
 			return true;
+		
+		for(Map<String, String> check : checks) {
+			boolean res = doCheck(properties, check, x, y, z);
+			if(res)
+				return true;
+		}
+		return false;
+	}
+	
+	private boolean doCheck(TAG_Compound properties, Map<String, String> check, int x, int y, int z) {
 		for(NBT_Tag tag : properties.elements) {
 			String value = check.get(tag.getName());
 			String propValue = null;
@@ -142,6 +170,18 @@ public class BlockStateVariant extends BlockStatePart{
 						if(!((value.equals("false") && propValue.equals("0")) || (value.equals("true") && propValue.equals("1"))))
 							return false;
 					}
+				}
+			}
+		}
+		// Check for connection info
+		if(needsConnectionInfo()) {
+			for(Entry<String, String> entry : check.entrySet()) {
+				if(entry.getKey().startsWith("miex_connect")) {
+					// Test the neighbouring block.
+					boolean res = testMiExConnection(entry.getKey(), entry.getValue(), x, y, z);
+					// If it doesn't match, then we shouldn't use this part.
+					if(!res)
+						return false;
 				}
 			}
 		}

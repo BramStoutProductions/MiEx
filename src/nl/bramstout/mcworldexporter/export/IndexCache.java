@@ -142,23 +142,31 @@ public class IndexCache {
 				// This is a leaf node.
 				// If they key matches or it's empty,
 				// put it in that slot.
-				if(key == key1 || key1 == -1)
+				if(key == key1 || key1 == -1) {
+					key1 = key;
 					value1 = value;
-				else if(key == key2 || key2 == -1)
+				}else if(key == key2 || key2 == -1) {
+					key2 = key;
 					value2 = value;
-				else if(key == key3 || key3 == -1)
+				}else if(key == key3 || key3 == -1) {
+					key3 = key;
 					value3 = value;
-				else if(key == key4 || key4 == -1)
+				}else if(key == key4 || key4 == -1) {
+					key4 = key;
 					value4 = value;
-				else if(key == key5 || key5 == -1)
+				}else if(key == key5 || key5 == -1) {
+					key5 = key;
 					value5 = value;
-				else if(key == key6 || key6 == -1)
+				}else if(key == key6 || key6 == -1) {
+					key6 = key;
 					value6 = value;
-				else if(key == key7 || key7 == -1)
+				}else if(key == key7 || key7 == -1) {
+					key7 = key;
 					value7 = value;
-				else if(key == key8 || key8 == -1)
+				}else if(key == key8 || key8 == -1) {
+					key8 = key;
 					value8 = value;
-				else {
+				}else {
 					// We've reached the end
 					// which means that we need to
 					// split this node up.

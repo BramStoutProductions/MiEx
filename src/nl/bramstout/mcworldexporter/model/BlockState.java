@@ -67,6 +67,7 @@ public class BlockState {
 	protected boolean lodNoUVScale;
 	protected int lodPriority;
 	protected boolean hasPowerLevel;
+	protected boolean _needsConnectionInfo;
 	
 	public BlockState(String name, JsonObject data) {
 		this.name = name;
@@ -99,6 +100,14 @@ public class BlockState {
 		} else if(data.has("multipart")) {
 			for(JsonElement part : data.get("multipart").getAsJsonArray().asList()) {
 				parts.add(new BlockStateMultiPart(part, doubleSided));
+			}
+		}
+		
+		_needsConnectionInfo = false;
+		for(BlockStatePart part : parts) {
+			if(part.needsConnectionInfo()) {
+				_needsConnectionInfo = true;
+				break;
 			}
 		}
 		
@@ -164,10 +173,14 @@ public class BlockState {
 		return lodPriority;
 	}
 	
-	public BakedBlockState getBakedBlockState(TAG_Compound properties) {
+	public boolean needsConnectionInfo() {
+		return _needsConnectionInfo;
+	}
+	
+	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		for(BlockStatePart part : parts) {
-			if(part.usePart(properties)) {
+			if(part.usePart(properties, x, y, z)) {
 				models.add(part.models);
 			}
 		}

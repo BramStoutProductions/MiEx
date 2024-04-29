@@ -308,22 +308,39 @@ public class ExportBounds {
 	}
 	
 	private void setLodMinX(int minX) {
-		setLod(minX, getLodMinZ(), getLodMaxX(), getLodMaxZ());
+		setLod2(minX, getLodMinZ(), getLodMaxX(), getLodMaxZ());
 	}
 	
 	private void setLodMaxX(int maxX) {
-		setLod(getLodMinX(), getLodMinZ(), maxX, getLodMaxZ());
+		setLod2(getLodMinX(), getLodMinZ(), maxX, getLodMaxZ());
 	}
 	
 	private void setLodMinZ(int minZ) {
-		setLod(getLodMinX(), minZ, getLodMaxX(), getLodMaxZ());
+		setLod2(getLodMinX(), minZ, getLodMaxX(), getLodMaxZ());
 	}
 	
 	private void setLodMaxZ(int maxZ) {
-		setLod(getLodMinX(), getLodMinZ(), getLodMaxX(), maxZ);
+		setLod2(getLodMinX(), getLodMinZ(), getLodMaxX(), maxZ);
 	}
 	
-	private void setLod(int minX, int minZ, int maxX, int maxZ) {
+	public void setLod(int minX, int minZ, int maxX, int maxZ) {
+		int minX2 = Math.min(minX, maxX);
+		int minZ2 = Math.min(minZ, maxZ);
+		int maxX2 = Math.max(minX, maxX);
+		int maxZ2 = Math.max(minZ, maxZ);
+		
+		minX = Math.max(minX2, this.minX);
+		minZ = Math.max(minZ2, this.minZ);
+		maxX = Math.min(maxX2, this.maxX);
+		maxZ = Math.min(maxZ2, this.maxZ);
+		lodWidth = Math.max(maxX - minX, 0);
+		lodDepth = Math.max(maxZ - minZ, 0);
+		lodCenterX = minX + lodWidth / 2;
+		lodCenterZ = minZ + lodDepth / 2;
+		MCWorldExporter.getApp().getUI().update();
+	}
+	
+	private void setLod2(int minX, int minZ, int maxX, int maxZ) {
 		lodWidth = Math.max(maxX - minX, 0);
 		lodDepth = Math.max(maxZ - minZ, 0);
 		lodCenterX = minX + lodWidth / 2;

@@ -119,7 +119,6 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			angle = (float) Math.toDegrees(Math.atan2(gradientX, -gradientZ));
 			// Change the angle to be in steps of 22.5 degrees
 			angle = (float) Math.floor(angle / 22.5f + 0.5f) * 22.5f;
-			angle -= 180.0f;
 		}
 		
 		float[] minMaxPoints = new float[] { 0, 0, 0, 16, Math.min(Math.min(Math.min(cheight00, cheight01), cheight10), cheight11), 16 };
@@ -133,7 +132,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			topFace.getPoints()[2*3+1] = cheight10;
 			topFace.getPoints()[3*3+1] = cheight00;
 		}
-		BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z));
+		BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
 		if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
 			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still");
 		
@@ -201,7 +200,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		// Check the block above. If there is a liquid block above, then this block should be
 		// a full liquid block. Which is the size of an entire block (a source block is less tall).
-		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z));
+		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z), x, y + 1, z);
 		if(blockAbove != null && blockAbove.hasLiquid()) {
 			return 8;
 		}
@@ -224,7 +223,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			for(int j = y; j <= y+1; ++j) {
 				for(int k = z-1; k <= z+1; ++k) {
 					for(int i = x-1; i <= x+1; ++i) {
-						blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(i, j, k));
+						blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(i, j, k), i, j, k);
 						if(blockAbove == null || (!blockAbove.hasLiquid() && blockAbove.getOccludes() == 0 && 
 								!blockAbove.isTransparentOcclusion() && !blockAbove.isLeavesOcclusion())) {
 							fullSourceBlock = false;

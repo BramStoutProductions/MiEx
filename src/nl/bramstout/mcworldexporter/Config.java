@@ -46,6 +46,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.Tags;
 
 public class Config {
 	
@@ -63,6 +64,7 @@ public class Config {
 	public static List<String> grassColormapBlocks = new ArrayList<String>();
 	public static List<String> foliageColormapBlocks = new ArrayList<String>();
 	public static List<String> waterColormapBlocks = new ArrayList<String>();
+	public static List<String> forceBiomeColor = new ArrayList<String>();
 	public static List<String> doubleSided = new ArrayList<String>();
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
@@ -87,27 +89,46 @@ public class Config {
 		if(data.has(key + ".remove")) {
 			for(JsonElement e : data.get(key + ".remove").getAsJsonArray().asList()) {
 				String name = e.getAsString();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
-				list.remove(name);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						list.remove(name2);
+				}else {
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					list.remove(name);
+				}
 			}
 		}
 		if(data.has(key + ".add")) {
 			for(JsonElement e : data.get(key + ".add").getAsJsonArray().asList()) {
 				String name = e.getAsString();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
-				if(!list.contains(name))
-					list.add(name);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						if(!list.contains(name2))
+							list.add(name2);
+				}else {
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					if(!list.contains(name))
+						list.add(name);
+				}
 			}
 		}
 		if(data.has(key)) {
 			list.clear();
 			for(JsonElement e : data.get(key).getAsJsonArray().asList()) {
 				String name = e.getAsString();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
-				list.add(name);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						list.add(name2);
+				}else {
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					list.add(name);
+				}
 			}
 		}
 	}
@@ -116,33 +137,53 @@ public class Config {
 		if(data.has(key + ".remove")) {
 			for(JsonElement e : data.get(key + ".remove").getAsJsonArray().asList()) {
 				String name = e.getAsString();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
-				map.remove(key);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						map.remove(name2);
+				}else{
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					map.remove(key);
+				}
 			}
 		}
 		if(data.has(key + ".add")) {
 			for(Entry<String, JsonElement> e : data.get(key + ".add").getAsJsonObject().entrySet()) {
 				String name = e.getKey();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
 				int val = e.getValue().getAsInt();
-				map.put(name, val);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						map.put(name2, val);
+				}else{
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					map.put(name, val);
+				}
 			}
 		}
 		if(data.has(key)) {
 			map.clear();
 			for(Entry<String, JsonElement> e : data.get(key).getAsJsonObject().entrySet()) {
 				String name = e.getKey();
-				if(!name.contains(":"))
-					name = "minecraft:" + name;
 				int val = e.getValue().getAsInt();
-				map.put(name, val);
+				if(name.startsWith("#")) {
+					List<String> names = Tags.getNamesInTag(name);
+					for(String name2 : names)
+						map.put(name2, val);
+				}else {
+					if(!name.contains(":"))
+						name = "minecraft:" + name;
+					map.put(name, val);
+				}
 			}
 		}
 	}
 	
 	public static void load() {
+		Tags.load();
+		
 		liquid.clear();
 		waterlogged.clear();
 		transparentOcclusion.clear();
@@ -157,6 +198,17 @@ public class Config {
 		grassColormapBlocks.clear();
 		foliageColormapBlocks.clear();
 		waterColormapBlocks.clear();
+		forceBiomeColor.clear();
+		// We only tint faces with biome colours if they have tintindex specified
+		// in the block model file, but in MiEx we don't use the grass_block_side_overlay
+		// as a seprate mesh like Minecraft does. Instead, we composite it over the texture
+		// in the material. This means that we need the biome tint on the side of the
+		// block, which Minecraft by default doesn't provide. In previous versions of MiEx
+		// we apply biome colours on every face. By having it now only on tintindex to make
+		// it closer to how Minecraft does it, it will break the grass side.
+		// Most people don't delete their miex_config.json when updating which would really
+		// break things. Therefore, we add it in here just to avoid giving people headaches.
+		forceBiomeColor.add("minecraft:block/grass_block_side");
 		doubleSided.clear();
 		randomAnimationXZOffset.clear();
 		randomAnimationYOffset.clear();
@@ -211,6 +263,8 @@ public class Config {
 				parseList("foliageColormapBlocks", data, foliageColormapBlocks);
 				
 				parseList("waterColormapBlocks", data, waterColormapBlocks);
+				
+				parseList("forceBiomeColor", data, forceBiomeColor);
 				
 				parseList("doubleSided", data, doubleSided);
 				

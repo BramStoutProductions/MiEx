@@ -61,23 +61,20 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 
 	@Override
 	public void close() throws IOException {
-		writer.endChildren();
-		writer.endNode("materialx");
-		writer.close();
-		
-		usdWriter.endChildren();
-		usdWriter.endDef();
-		usdWriter.close();
-
 		// If we haven't written anything, then we can just as well delete the file.
 		// It probably would be nicer if we'd never have to write the file at all,
 		// but then we'd have to go through all of the materials first to figure
 		// out which file types are used. That seems a bit excessive.
 		// So while not idea, this is fine for now.
-		if (!hasWrittenAnything()) {
-			outputFile.delete();
-			usdOutputFile.delete();
-		}
+		// We do it by telling in the close() func to delete it.
+		
+		writer.endChildren();
+		writer.endNode("materialx");
+		writer.close(!hasWrittenAnything());
+		
+		usdWriter.endChildren();
+		usdWriter.endDef();
+		usdWriter.close(!hasWrittenAnything());
 	}
 
 	@Override

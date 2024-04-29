@@ -22,9 +22,12 @@ public class MaterialXWriter {
 		fw.write("<?xml version=\"1.0\"?>\n");
 	}
 	
-	public void close() throws IOException{
+	public void close(boolean delete) throws IOException{
 		fw.close();
 		fw = null;
+		
+		if(delete)
+			outFile.delete();
 	}
 	
 	private static String indentString = "    ";

@@ -68,6 +68,11 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	 * corner
 	 */
 	private int mouseGrabType;
+	/**
+	 * 0: Export bounds
+	 * 1: LOD area
+	 */
+	private int mouseSelection;
 	private int mouseButton;
 	private int mouseDragStartX;
 	private int mouseDragStartY;
@@ -83,6 +88,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		
 		transform = new CameraTransform();
 		mouseGrabType = 0;
+		mouseSelection = 0;
 		mouseButton = 0;
 		mouseDragStartX = 0;
 		mouseDragStartY = 0;
@@ -279,10 +285,21 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			mouseGrabType = 0;
 			return;
 		}
-		Point selectionMinPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getMinX(), 
-				MCWorldExporter.getApp().getExportBounds().getMinZ()), getWidth(), getHeight());
-		Point selectionMaxPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getMaxX() + 1, 
-						MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1), getWidth(), getHeight());
+		mouseSelection = 0;
+		if(e.isShiftDown())
+			mouseSelection = 1;
+		int worldMinX = MCWorldExporter.getApp().getExportBounds().getMinX();
+		int worldMinZ = MCWorldExporter.getApp().getExportBounds().getMinZ();
+		int worldMaxX = MCWorldExporter.getApp().getExportBounds().getMaxX();
+		int worldMaxZ = MCWorldExporter.getApp().getExportBounds().getMaxZ();
+		if(mouseSelection == 1) {
+			worldMinX = MCWorldExporter.getApp().getExportBounds().getLodMinX();
+			worldMinZ = MCWorldExporter.getApp().getExportBounds().getLodMinZ();
+			worldMaxX = MCWorldExporter.getApp().getExportBounds().getLodMaxX();
+			worldMaxZ = MCWorldExporter.getApp().getExportBounds().getLodMaxZ();
+		}
+		Point selectionMinPos = transform.toScreen(new Point(worldMinX, worldMinZ), getWidth(), getHeight());
+		Point selectionMaxPos = transform.toScreen(new Point(worldMaxX + 1, worldMaxZ + 1), getWidth(), getHeight());
 		int selectionMinX = selectionMinPos.ix();
 		int selectionMinZ = selectionMinPos.iy();
 		int selectionMaxX = selectionMaxPos.ix();
@@ -292,7 +309,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		int mouseY = e.getY();
 
 		if (mouseX >= selectionMinX - 4 && mouseX <= selectionMaxX + 4 && mouseY >= selectionMinZ - 4
-				&& mouseY <= selectionMaxZ + 4) {
+				&& mouseY <= selectionMaxZ + 4 && (mouseSelection != 1 || MCWorldExporter.getApp().getExportBounds().hasLod())) {
 			if (mouseY <= selectionMinZ + 4) {
 				// Top Edge
 				if (mouseX <= selectionMinX + 4) {
@@ -344,6 +361,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	
 	@Override
 	public void mousePressed(MouseEvent e) {
+		mouseSelection = e.isShiftDown() ? 1 : 0;
 		mouseDragStartX = e.getX();
 		mouseDragStartY = e.getY();
 		mouseButton = e.getButton();
@@ -403,89 +421,175 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			
 			if(mouseGrabType == 0) {
 				// New selection
-				MCWorldExporter.getApp().getExportBounds().set(mouseBlockStart.ix(), MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						mouseBlockStart.iy(), mouseBlockCurrent.ix(), MCWorldExporter.getApp().getExportBounds().getMaxY(), mouseBlockCurrent.iy());
+				
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							mouseBlockStart.ix(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							mouseBlockStart.iy(), 
+							mouseBlockCurrent.ix(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							mouseBlockCurrent.iy());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							mouseBlockStart.ix(), 
+							mouseBlockStart.iy(), 
+							mouseBlockCurrent.ix(), 
+							mouseBlockCurrent.iy());
+				}
 			} else if(mouseGrabType == 1) {
 				// Move whole selection
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ() + deltaZ, 
-						selectionStart.getMaxX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ() + deltaZ);
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ() + deltaZ, 
+							selectionStart.getMaxX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ() + deltaZ);
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX() + deltaX,  
+							selectionStart.getLodMinZ() + deltaZ, 
+							selectionStart.getLodMaxX() + deltaX,  
+							selectionStart.getLodMaxZ() + deltaZ);
+				}
 			} else if(mouseGrabType == 2) {
 				// Move left side
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ(), 
-						selectionStart.getMaxX(), 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ());
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ(), 
+							selectionStart.getMaxX(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX() + deltaX,  
+							selectionStart.getLodMinZ(), 
+							selectionStart.getLodMaxX(),  
+							selectionStart.getLodMaxZ());
+				}
 			} else if(mouseGrabType == 3) {
 				// Move right side
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX(), 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ(), 
-						selectionStart.getMaxX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ());
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ(), 
+							selectionStart.getMaxX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX(),  
+							selectionStart.getLodMinZ(), 
+							selectionStart.getLodMaxX() + deltaX,  
+							selectionStart.getLodMaxZ());
+				}
 			} else if(mouseGrabType == 4) {
 				// Move top side
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX(), 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ() + deltaZ, 
-						selectionStart.getMaxX(), 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ());
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ() + deltaZ, 
+							selectionStart.getMaxX(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX(),  
+							selectionStart.getLodMinZ() + deltaZ, 
+							selectionStart.getLodMaxX(),  
+							selectionStart.getLodMaxZ());
+				}
 			} else if(mouseGrabType == 5) {
 				// Move bottom side
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX(), 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ(), 
-						selectionStart.getMaxX(), 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ() + deltaZ);
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ(), 
+							selectionStart.getMaxX(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ() + deltaZ);
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX(), 
+							selectionStart.getLodMinZ(), 
+							selectionStart.getLodMaxX(), 
+							selectionStart.getLodMaxZ() + deltaZ);
+				}
 			} else if(mouseGrabType == 6) {
 				// Move top left corner
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ() + deltaZ, 
-						selectionStart.getMaxX(), 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ());
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ() + deltaZ, 
+							selectionStart.getMaxX(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX() + deltaX, 
+							selectionStart.getLodMinZ() + deltaZ, 
+							selectionStart.getLodMaxX(),  
+							selectionStart.getLodMaxZ());
+				}
 			} else if(mouseGrabType == 7) {
 				// Move top right corner
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX(), 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ() + deltaZ, 
-						selectionStart.getMaxX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ());
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ() + deltaZ, 
+							selectionStart.getMaxX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ());
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX(),  
+							selectionStart.getLodMinZ() + deltaZ, 
+							selectionStart.getLodMaxX() + deltaX,  
+							selectionStart.getLodMaxZ());
+				}
 			} else if(mouseGrabType == 8) {
 				// Move bottom left corner
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ(), 
-						selectionStart.getMaxX(), 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ() + deltaZ);
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ(), 
+							selectionStart.getMaxX(), 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ() + deltaZ);
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX() + deltaX,  
+							selectionStart.getLodMinZ(), 
+							selectionStart.getLodMaxX(),  
+							selectionStart.getLodMaxZ() + deltaZ);
+				}
 			} else if(mouseGrabType == 9) {
 				// Move bottom right corner
-				MCWorldExporter.getApp().getExportBounds().set(
-						selectionStart.getMinX(), 
-						MCWorldExporter.getApp().getExportBounds().getMinY(), 
-						selectionStart.getMinZ(), 
-						selectionStart.getMaxX() + deltaX, 
-						MCWorldExporter.getApp().getExportBounds().getMaxY(), 
-						selectionStart.getMaxZ() + deltaZ);
+				if(mouseSelection == 0) {
+					MCWorldExporter.getApp().getExportBounds().set(
+							selectionStart.getMinX(), 
+							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							selectionStart.getMinZ(), 
+							selectionStart.getMaxX() + deltaX, 
+							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							selectionStart.getMaxZ() + deltaZ);
+				}else if(mouseSelection == 1) {
+					MCWorldExporter.getApp().getExportBounds().setLod(
+							selectionStart.getLodMinX(),  
+							selectionStart.getLodMinZ(), 
+							selectionStart.getLodMaxX() + deltaX,  
+							selectionStart.getLodMaxZ() + deltaZ);
+				}
 			}
 		} else if (mouseButton == MouseEvent.BUTTON3) {
 			teleport(transformStart.camPosX - mouseBlockDelta.x, transformStart.camPosY - mouseBlockDelta.y);

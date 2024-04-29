@@ -65,6 +65,7 @@ public class WorldAnvil extends World{
 
 	@Override
 	protected void findDimensions() {
+		dimensions.clear();
 		if(new File(worldDir, "region").exists()) {
 			dimensions.add("Overworld");
 		}
@@ -72,6 +73,12 @@ public class WorldAnvil extends World{
 			if(new File(f, "region").exists()) {
 				dimensions.add(f.getName());
 			}
+		}
+		
+		if(dimensions.isEmpty()) {
+			// If we couldn't find any dimensions, then this
+			// must be an invalid world, so let the user know.
+			throw new RuntimeException("Invalid world selected");
 		}
 	}
 

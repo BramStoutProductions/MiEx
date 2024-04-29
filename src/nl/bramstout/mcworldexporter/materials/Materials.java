@@ -746,9 +746,9 @@ public class Materials {
 			int frameTime = animData.getFrames()[frameIndex*2 + 1];
 			float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
 			
-			// UVs have (0,0) at the bottom left, while MC has it at the top left,
-			// so we need to invert frameId in order to get the correct result
-			frameId = animData.getFrameCount() - frameId - 1;
+			if(args.getOrDefault("reverse", "false").equals("true"))
+				frameId = animData.getFrameCount() - frameId - 1;
+			
 			float value = ((float) frameId) / ((float) animData.getFrameCount());
 			if(args.getOrDefault("powerof2", "false").equals("true"))
 				value *= animData.getPowerOfTwoScaleCompensation();
@@ -800,9 +800,9 @@ public class Materials {
 			int frameTime = animData.getFrames()[frameIndex*2 + 1];
 			float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
 			
-			// UVs have (0,0) at the bottom left, while MC has it at the top left,
-			// so we need to invert frameId in order to get the correct result
-			frameId = animData.getFrameCount() - frameId - 1;
+			if(args.getOrDefault("reverse", "false").equals("true"))
+				frameId = animData.getFrameCount() - frameId - 1;
+			
 			float value = ((float) frameId) / ((float) animData.getFrameCount());
 			if(args.getOrDefault("powerof2", "false").equals("true"))
 				value *= animData.getPowerOfTwoScaleCompensation();

@@ -100,6 +100,9 @@
     "waterColormapBlocks": [
         "water"
     ],
+    "forceBiomeColor": [
+        "block/grass_block_side"
+    ],
     "powerLevel": [ "redstone_wire" ],
     "doubleSided": [
         "water", "grass", "fern", "short_grass", "tall_grass", "large_fern", "dandelion", "poppy", "blue_orchid",

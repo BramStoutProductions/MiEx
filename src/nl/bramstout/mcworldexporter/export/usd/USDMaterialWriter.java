@@ -47,7 +47,7 @@ public class USDMaterialWriter extends MaterialWriter{
 	public void close() throws IOException {
 		writer.endChildren();
 		writer.endDef();
-		writer.close();
+		writer.close(!_hasWrittenAnything);
 	}
 	
 	@Override

@@ -104,9 +104,18 @@ public class USDWriter {
 		}
 	}
 	
-	public void close() throws IOException{
+	public void close(boolean delete) throws IOException{
 		fw.close();
 		fw = null;
+		
+		if(delete) {
+			if(FileUtil.hasUSDCat())
+				usdaFile.delete();
+			else
+				outFile.delete();
+			return;
+		}
+			
 		
 		if(FileUtil.hasUSDCat()) {
 			String usdCatExe = FileUtil.getUSDCatExe();

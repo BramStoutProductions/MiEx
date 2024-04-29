@@ -31,6 +31,8 @@
 
 package nl.bramstout.mcworldexporter.model;
 
+import java.util.Map.Entry;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -47,13 +49,35 @@ import nl.bramstout.mcworldexporter.nbt.TAG_String;
 public class BlockStateMultiPart extends BlockStatePart{
 	
 	private JsonObject check;
+	private boolean _needsConnectionInfo;
 	
 	public BlockStateMultiPart(JsonElement data, boolean doubleSided) {
 		super();
 		
+		_needsConnectionInfo = false;
 		check = null;
-		if(data.getAsJsonObject().has("when"))
+		if(data.getAsJsonObject().has("when")) {
 			check = data.getAsJsonObject().get("when").getAsJsonObject();
+			for(Entry<String, JsonElement> el : check.entrySet()) {
+				if(el.getValue().isJsonPrimitive()) {
+					if(el.getKey().startsWith("miex_connect")) {
+						_needsConnectionInfo = true;
+						break;
+					}
+				} else if(el.getValue().isJsonArray()) {
+					for(JsonElement el2 : el.getValue().getAsJsonArray().asList()) {
+						if(el2.isJsonObject()) {
+							for(Entry<String, JsonElement> el3 : el2.getAsJsonObject().entrySet()) {
+								if(el3.getKey().startsWith("miex_connect")) {
+									_needsConnectionInfo = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 		
 		JsonElement modelData = data.getAsJsonObject().get("apply");
 		if(modelData.isJsonArray()) {
@@ -92,29 +116,34 @@ public class BlockStateMultiPart extends BlockStatePart{
 			models.add(model);
 		}
 	}
+	
+	@Override
+	public boolean needsConnectionInfo() {
+		return this._needsConnectionInfo;
+	}
 
 	@Override
-	public boolean usePart(TAG_Compound properties) {
+	public boolean usePart(TAG_Compound properties, int x, int y, int z) {
 		if(check == null)
 			return true;
 		if(check.has("OR")) {
 			for(JsonElement checkObj : check.get("OR").getAsJsonArray().asList()) {
-				if(testProperties(properties, checkObj.getAsJsonObject()))
+				if(testProperties(properties, checkObj.getAsJsonObject(), x, y, z))
 					return true;
 			}
 			return false;
 		} else if(check.has("AND")) {
 			for(JsonElement checkObj : check.get("AND").getAsJsonArray().asList()) {
-				if(!testProperties(properties, checkObj.getAsJsonObject()))
+				if(!testProperties(properties, checkObj.getAsJsonObject(), x, y, z))
 					return false;
 			}
 			return true;
 		} else {
-			return testProperties(properties, check);
+			return testProperties(properties, check, x, y, z);
 		}
 	}
 	
-	private boolean testProperties(TAG_Compound properties, JsonObject checkObject) {
+	private boolean testProperties(TAG_Compound properties, JsonObject checkObject, int x, int y, int z) {
 		for(NBT_Tag tag : properties.elements) {
 			if(!checkObject.has(tag.getName()))
 				continue;
@@ -166,6 +195,19 @@ public class BlockStateMultiPart extends BlockStatePart{
 				}
 				if(!found)
 					return false;
+			}
+		}
+		
+		// Check for connection info
+		if(needsConnectionInfo()) {
+			for(Entry<String, JsonElement> entry : checkObject.entrySet()) {
+				if(entry.getKey().startsWith("miex_connect")) {
+					// Test the neighbouring block.
+					boolean res = testMiExConnection(entry.getKey(), entry.getValue().getAsString(), x, y, z);
+					// If it doesn't match, then we shouldn't use this part.
+					if(!res)
+						return false;
+				}
 			}
 		}
 		return true;
