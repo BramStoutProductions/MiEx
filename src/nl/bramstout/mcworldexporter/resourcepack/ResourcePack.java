@@ -334,9 +334,12 @@ public class ResourcePack {
 		if(new File(versionJar).exists())
 			return versionJar;
 		// If the jar doesn't exist, just pick the first jar file in the versions folder.
-		for(File f : new File(versionFolder).listFiles()) {
-			if(f.getName().endsWith(".jar"))
-				return f.getPath();
+		File[] versionFolderFiles = new File(versionFolder).listFiles();
+		if (versionFolderFiles != null) {
+			for(File f : versionFolderFiles) {
+				if(f.getName().endsWith(".jar"))
+					return f.getPath();
+			}
 		}
 		return null;
 	}
@@ -364,10 +367,17 @@ public class ResourcePack {
 				// If we don't have a version manifest file, but we do have a versions folder,
 				// just add in all folders
 				File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
-				for(File f : versionsFolderFile.listFiles()) {
-					if(f.isDirectory()) {
-						if(getJarFile(versionsFolder, f.getName()) != null) {
-							versions.add(f.getName());
+				File[] versionFolderContents = versionsFolderFile.listFiles();
+				
+				// Check if this is null, as this will be null 
+				// in some cases and throw an exception when 
+				// attempting to perform operations on the file
+				if (versionFolderContents != null) {
+					for(File f : versionFolderContents) {
+						if(f.isDirectory()) {
+							if(getJarFile(versionsFolder, f.getName()) != null) {
+								versions.add(f.getName());
+							}
 						}
 					}
 				}
