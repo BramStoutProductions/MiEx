@@ -369,72 +369,63 @@ public class ResourcePack {
 	public static void updateBaseResourcePack(boolean updateToNewest) {
 		try {
 			String versionsFolder = FileUtil.getMinecraftVersionsDir();
-			String versionManifest = versionsFolder + "version_manifest_v2.json";
+			File versionsFolderF = new File(versionsFolder);
 			List<String> versions = new ArrayList<String>();
-			if(new File(versionManifest).exists()) {
-				JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
-				for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
-					String name = e.getAsJsonObject().get("id").getAsString();
-					String versionFolder = versionsFolder + name;
-					if(!(new File(versionFolder).exists()))
-						continue;
-					if(!(new File(versionFolder).isDirectory()))
-						continue;
-					String versionJar = versionFolder + "/" + name + ".jar";
-					if(!(new File(versionJar).exists()))
-						continue;
-					versions.add(name);
-				}
-			}else if(new File(versionsFolder.substring(0, versionsFolder.length()-1)).exists()){
-				// If we don't have a version manifest file, but we do have a versions folder,
-				// just add in all folders
-				File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
-				if(versionsFolderFile.exists() && versionsFolderFile.isDirectory()) {
-					for(File f : versionsFolderFile.listFiles()) {
-						if(f.isDirectory()) {
-							if(getJarFile(versionsFolder, f.getName()) != null) {
-								versions.add(f.getName());
+			
+			if (versionsFolderF.exists()) {
+				String versionManifest = versionsFolder + "version_manifest_v2.json";
+				if(new File(versionManifest).exists()) {
+					JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
+					for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
+						String name = e.getAsJsonObject().get("id").getAsString();
+						String versionFolder = versionsFolder + name;
+						if(!(new File(versionFolder).exists()))
+							continue;
+						if(!(new File(versionFolder).isDirectory()))
+							continue;
+						String versionJar = versionFolder + "/" + name + ".jar";
+						if(!(new File(versionJar).exists()))
+							continue;
+						versions.add(name);
+					}
+				}else if(new File(versionsFolder.substring(0, versionsFolder.length()-1)).exists()){
+					// If we don't have a version manifest file, but we do have a versions folder,
+					// just add in all folders
+					File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
+					if(versionsFolderFile.exists() && versionsFolderFile.isDirectory()) {
+						for(File f : versionsFolderFile.listFiles()) {
+							if(f.isDirectory()) {
+								if(getJarFile(versionsFolder, f.getName()) != null) {
+									versions.add(f.getName());
+								}
 							}
 						}
 					}
 				}
-			}
-			if(versions.isEmpty()) {
-				// Check multimc launchers
-				if(!FileUtil.getMultiMCRootDir().equals("")) {
-					File multimcVersionsFolder = new File(FileUtil.getMultiMCRootDir(), "libraries/com/mojang/minecraft");
-					if(multimcVersionsFolder.exists()) {
-						versionsFolder = multimcVersionsFolder.getPath();
-						for(File f : multimcVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+			} else {
+				File multimcVersionsFolder = new File(FileUtil.getMultiMCRootDir(), "libraries/com/mojang/minecraft");
+				File technicVersionsFolder = new File(FileUtil.getTechnicRootDir(), "modpacks");
+				File modrinthVersionsFolder = new File(FileUtil.getModrinthRootDir(), "meta/versions");
+				if (multimcVersionsFolder.exists()) {
+					// Check multimc launchers
+					versionsFolder = multimcVersionsFolder.getPath();
+					for(File f : multimcVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(f.getName());
 					}
-				}
-			}
-			if(versions.isEmpty()) {
-				// Check technic launchers
-				if(!FileUtil.getTechnicRootDir().equals("")) {
-					File technicVersionsFolder = new File(FileUtil.getTechnicRootDir(), "modpacks");
-					if(technicVersionsFolder.exists()) {
-						versionsFolder = technicVersionsFolder.getPath();
-						for(File f : technicVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+				} else if (technicVersionsFolder.exists()) {
+					// Check technic launchers
+					versionsFolder = technicVersionsFolder.getPath();
+					for(File f : technicVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(f.getName());
 					}
-				}
-			}
-			if(versions.isEmpty()) {
-				// Check modrinth launchers
-				if(!FileUtil.getModrinthRootDir().equals("")) {
-					File modrinthVersionsFolder = new File(FileUtil.getModrinthRootDir(), "meta/versions");
-					if(modrinthVersionsFolder.exists()) {
-						versionsFolder = modrinthVersionsFolder.getPath();
-						for(File f : modrinthVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+				} else if(modrinthVersionsFolder.exists()) {
+					// Check modrinth launchers
+					versionsFolder = modrinthVersionsFolder.getPath();
+					for(File f : modrinthVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(f.getName());
 					}
 				}
 			}
