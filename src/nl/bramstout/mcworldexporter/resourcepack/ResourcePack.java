@@ -324,29 +324,46 @@ public class ResourcePack {
 		}
 	}
 	
-	private static String getJarFile(String versionsFolder, String versionName) {
-		String versionFolder = versionsFolder + versionName;
-		String versionJar = versionFolder + "/" + versionName + ".jar";
-		if(new File(versionJar).exists())
-			return versionJar;
-		// It could also be located somewhere else, so let's try a few things.
-		versionJar = versionFolder + "/bin/minecraft.jar";
-		if(new File(versionJar).exists())
-			return versionJar;
-		
-		// In some cases, it might be in a sub folder with the version name
-		if(!(new File(versionFolder)).exists())
-			versionFolder = versionFolder + "/" + versionName;
-		
-		if(!(new File(versionFolder)).exists())
+	private static String recurseVersionFolder(File folder) {
+		/*
+		 * Recursively iterate the given folder
+		 * until a JAR file is found. If a directory is 
+		 * found in the given folder, the function will 
+		 * recurse the directory in search for the JAR file
+		 */
+		if (!folder.exists()) {
 			return null;
-		
-		// If the jar doesn't exist, just pick the first jar file in the versions folder.
-		for(File f : new File(versionFolder).listFiles()) {
-			if(f.getName().endsWith(".jar"))
-				return f.getPath();
+		}	
+		File[] contents = folder.listFiles();
+		if (contents != null) {
+			for (File f : folder.listFiles()) {
+				if (f.isDirectory()) {
+					String res = recurseVersionFolder(f);
+					if (res != null)
+						return res;
+				}
+				if (f.getName().endsWith(".jar"))
+					return f.getPath();
+			}
 		}
 		return null;
+	}
+	
+	private static String getJarFile(String versionsFolder, String versionName) {
+		String versionFolder = versionsFolder + versionName;
+		File versionFolderF = new File(versionFolder);
+		if (!versionFolderF.exists() || !versionFolderF.isDirectory()) {
+			// Try adding a "/" to the middle of the path
+			versionFolder = versionsFolder + "/" + versionName;
+			versionFolderF = new File(versionFolder);
+			if (!versionFolderF.exists()) {
+				return null;
+			}
+		}	
+		
+		// This will return a string if the file is found, and 
+		// null if not found
+		return recurseVersionFolder(versionFolderF);
 	}
 	
 	public static void updateBaseResourcePack(boolean updateToNewest) {
