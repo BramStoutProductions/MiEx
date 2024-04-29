@@ -158,13 +158,23 @@ public class FileUtil {
 		return System.getProperty("os.name", "none").toLowerCase().contains("mac") ||
 				System.getProperty("os.name", "none").toLowerCase().contains("darwin");
 	}
+
+	public static boolean isLinux() {
+		return System.getProperty("os.name", "none").toLowerCase().contains("linux");
+	}
 	
 	public static String getMinecraftRootDir() {
 		if(isWindows())
 			return System.getenv("APPDATA") + "/.minecraft";
 		else if(isMacOs())
 			return "~/Library/Application Support/minecraft";
-		throw new RuntimeException("Could not find minecraft directory");
+		else if (isLinux())
+			return "~/.config/.minecraft";
+
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
 	}
 	
 	public static String getMinecraftSavesDir() {
