@@ -126,7 +126,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		float[] minMaxUVsStill = new float[] { 0, 0, 16, 16 };
 		
 		if(height11 < 16f) {
-			ModelFace topFace = model.addFace(minMaxPoints, gradientLength > 0f ? minMaxUVs : minMaxUVsStill, Direction.UP, gradientLength > 0f ? "#flow" : "#still", angle);
+			ModelFace topFace = model.addFace(minMaxPoints, gradientLength > 0f ? minMaxUVs : minMaxUVsStill, Direction.UP, gradientLength > 0f ? "#flow" : "#still", angle, 0);
 			topFace.getPoints()[0*3+1] = cheight01;
 			topFace.getPoints()[1*3+1] = cheight11;
 			topFace.getPoints()[2*3+1] = cheight10;
@@ -134,10 +134,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		}
 		BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
 		if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
-			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still");
+			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still", 0);
 		
 		if(height10 <= 0f) {
-			ModelFace northFace = model.addFace(minMaxPoints, minMaxUVs, Direction.NORTH, "#flow");
+			ModelFace northFace = model.addFace(minMaxPoints, minMaxUVs, Direction.NORTH, "#flow", 0);
 			northFace.getPoints()[2*3+1] = cheight00;
 			northFace.getPoints()[3*3+1] = cheight10;
 			northFace.getUVs()[2*2+1] = cheight00 * 0.5f + 4.0f;
@@ -148,7 +148,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		}
 		
 		if(height12 <= 0f) {
-			ModelFace southFace = model.addFace(minMaxPoints, minMaxUVs, Direction.SOUTH, "#flow");
+			ModelFace southFace = model.addFace(minMaxPoints, minMaxUVs, Direction.SOUTH, "#flow", 0);
 			southFace.getPoints()[2*3+1] = cheight11;
 			southFace.getPoints()[3*3+1] = cheight01;
 			southFace.getUVs()[2*2+1] = cheight11 * 0.5f + 4.0f;
@@ -159,7 +159,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		}
 		
 		if(height01 <= 0f) {
-			ModelFace westFace = model.addFace(minMaxPoints, minMaxUVs, Direction.WEST, "#flow");
+			ModelFace westFace = model.addFace(minMaxPoints, minMaxUVs, Direction.WEST, "#flow", 0);
 			westFace.getPoints()[2*3+1] = cheight01;
 			westFace.getPoints()[3*3+1] = cheight00;
 			westFace.getUVs()[2*2+1] = cheight01 * 0.5f + 4.0f;
@@ -170,7 +170,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		}
 		
 		if(height21 <= 0f) {
-			ModelFace eastFace = model.addFace(minMaxPoints, minMaxUVs, Direction.EAST, "#flow");
+			ModelFace eastFace = model.addFace(minMaxPoints, minMaxUVs, Direction.EAST, "#flow", 0);
 			eastFace.getPoints()[2*3+1] = cheight10;
 			eastFace.getPoints()[3*3+1] = cheight11;
 			eastFace.getUVs()[2*2+1] = cheight10 * 0.5f + 4.0f;

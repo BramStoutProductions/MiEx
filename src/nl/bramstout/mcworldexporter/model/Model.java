@@ -323,20 +323,33 @@ public class Model {
 	}
 	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture) {
-		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f);
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, -1);
+	}
+	
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, int tintIndex) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, tintIndex);
+	}
+	
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+							float rotX, float rotY) {
+	return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, -1);
 	}
 
-	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, float rotX, float rotY) {
-		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f);
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float rotX, float rotY, int tintIndex) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, tintIndex);
 	}
 	
-	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, float uvRot) {
-		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, uvRot);
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float uvRot, int tintIndex) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, uvRot, tintIndex);
 	}
 	
-	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, float rotX, float rotY, float uvRot) {
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float rotX, float rotY, float uvRot, int tintIndex) {
 		JsonObject faceData = new JsonObject();
 		faceData.addProperty("texture", texture);
+		faceData.addProperty("tintindex", tintIndex);
 		JsonArray uvData = new JsonArray();
 		for (int i = 0; i < minMaxUVs.length; ++i)
 			uvData.add(minMaxUVs[i]);
