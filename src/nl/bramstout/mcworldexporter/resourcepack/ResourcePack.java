@@ -335,11 +335,14 @@ public class ResourcePack {
 			return versionJar;
 		// If the jar doesn't exist, just pick the first jar file in the versions folder.
 		File[] versionFolderFiles = new File(versionFolder).listFiles();
-		if (versionFolderFiles != null) {
-			for(File f : versionFolderFiles) {
-				if(f.getName().endsWith(".jar"))
-					return f.getPath();
-			}
+		if (versionFolderFiles == null) {
+			// Try adding a "/" to the middle of the path
+			versionFolder = versionsFolder + "/" + versionName;
+			versionFolderFiles = new File(versionFolder).listFiles();
+		}
+		for(File f : versionFolderFiles) {
+			if(f.getName().endsWith(".jar"))
+				return f.getPath();
 		}
 		return null;
 	}
