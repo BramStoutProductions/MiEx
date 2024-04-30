@@ -31,3 +31,6 @@ For more information on how to use MiEx, please visit [our wiki!](https://github
 
 # Forum
 Talk about MiEx, ask for help, help others, and share your creations on our [GitHub Discussions page!](https://github.com/BramStoutProductions/MiEx/discussions)
+
+# Blender Implementation
+Download the `MiEx_helper.py` addon and install it in Blender. When selecting the `world` empty you can now execute the `miex.prep` operator when looking for it in the search bar. You will be able to correct the materials and add basic texture animations as well as resizing the world to a more representative scale.
