@@ -6,7 +6,7 @@ import os
 bl_info = {
     "name" : "MiEx Helper",
     "author" : "BlueEvilGFX, michael212345",
-    "version" : (0, 1, 2),
+    "version" : (0, 1, 3),
     "blender" : (4, 1, 0),
     "description" : "This addon preps the world created by MiEx",
     "wiki_url" : "https://github.com/BramStoutProductions/MiEx/",
@@ -22,7 +22,7 @@ bl_info = {
 
 class PrepWorld(bpy.types.Operator):
     bl_idname = "miex.prep"
-    bl_label = "Prep MiEx"
+    bl_label = "Prep MiEx World"
     bl_options = {'REGISTER', 'UNDO'}
 
     resize : bpy.props.BoolProperty(
@@ -249,9 +249,13 @@ class PrepWorld(bpy.types.Operator):
             dr.driver.expression = f'round(frame/{self.frame_spacing})/{frames}'
             bpy.context.view_layer.update()       
 
+def menu_func(self, context):
+    self.layout.operator('miex.prep')
 
 def register():
     bpy.utils.register_class(PrepWorld)
+    bpy.types.VIEW3D_MT_object.append(menu_func)
 
 def unregister():
+    bpy.types.VIEW3D_MT_object.remove(menu_func)
     bpy.utils.unregister_class(PrepWorld)
