@@ -1,0 +1,138 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_side" ],
+    "include": [ "json_base", "json_grass_block_side" ],
+    "network": {
+        "@texture@_overlay": {
+            "AIFILE_OVERLAY": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "outAlpha": {
+                        "type": "float"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_overlay"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "aiFilter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "AIUV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "AIUV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "AIUV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "AIUV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "AIUV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "AIUV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "AIUV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "AIUV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "AIUV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "AIUV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "AIUV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "AIUV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "AIUV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "AIUV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "AIUV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "AIUV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "AIUV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "AIUV.wrapV"
+                    }
+                }
+            },
+            "AIBIOME_MULT": {
+                "attributes": {
+                    "input1": {
+                        "connection": "AIFILE_OVERLAY.outColor"
+                    }
+                }
+            },
+            "AIOVERLAY_COMPOSITE": {
+                "type": "JSON:blendColors",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "AIFILE.outColor"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "AIBIOME_MULT.output"
+                    },
+                    "blender": {
+                        "type": "float",
+                        "connection": "AIFILE_OVERLAY.outAlpha"
+                    }
+                }
+            },
+            "AIMAT": {
+                "attributes": {
+                    "baseColor": {
+                        "connection": "AIOVERLAY_COMPOSITE.output"
+                    }
+                }
+            }
+        }
+    }
+}

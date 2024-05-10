@@ -45,25 +45,30 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
-import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
@@ -78,9 +83,13 @@ public class ResourcePack {
 
 	public static void setActiveResourcePacks(List<String> names) {
 		activeResourcePacks.clear();
-		for(String name : names)
-			if (!name.equals("base_resource_pack"))
-				activeResourcePacks.add(name);
+		for(String name : names) {
+			if (name.equals("base_resource_pack"))
+				continue;
+			if(!(new File(FileUtil.getResourcePackDir(), name)).exists())
+				continue;
+			activeResourcePacks.add(name);
+		}
 		grassColorMap = null;
 		foliageColorMap = null;
 		synchronized(mutex) {
@@ -184,6 +193,18 @@ public class ResourcePack {
 	}
 
 	public static String getFilePath(String resource, String type, String extension, String category) {
+		if(resource.contains(";")) {
+			// MiEx specific stuff, in some cases (like with Optifine connected textures)
+			// textures might not be located in the textures folder, but the optifine folder.
+			// This means that the "type" is different. In order to facilitate this,
+			// resource identifiers can override the default type by prefixing the
+			// resource identifier with the type and then a semicolon.
+			String[] tokens = resource.split(";");
+			if(tokens.length == 2) {
+				type = tokens[0];
+				resource = tokens[1];
+			}
+		}
 		if (!resource.contains(":"))
 			resource = "minecraft:" + resource;
 		String[] tokens = resource.split(":");
@@ -221,12 +242,14 @@ public class ResourcePack {
 	public static void setupDefaults() {
 		String[] RESOURCES_OVERRIDE_IF_MISSING = new String[] {
 			"base_resource_pack/miex_config.json",
+			"base_resource_pack/miex_block_tints.json",
 			"base_resource_pack/materials/minecraft/templates/base.json",
 			"base_resource_pack/materials/minecraft/templates/emission.json",
 			"base_resource_pack/materials/minecraft/templates/grass_block_side.json",
 			"base_resource_pack/materials/minecraft/templates/grass_block_snow.json",
-			"base_resource_pack/materials/minecraft/templates/redstone_wire.json",
-			"UsdPreviewSurface/materials/minecraft/templates/base.json"
+			"UsdPreviewSurface/materials/minecraft/templates/base.json",
+			"UsdPreviewSurface/materials/minecraft/templates/grass_block_side.json",
+			"UsdPreviewSurface/materials/minecraft/templates/water.json"
 		};
 		String[] RESOURCES_OVERRIDE_IF_DIR_EMPTY = new String[] {
 		};
@@ -335,7 +358,7 @@ public class ResourcePack {
 			return versionJar;
 		
 		// In some cases, it might be in a sub folder with the version name
-		if(!(new File(versionFolder)).exists())
+		if(new File(versionFolder + "/" + versionName).exists())
 			versionFolder = versionFolder + "/" + versionName;
 		
 		if(!(new File(versionFolder)).exists())
@@ -351,73 +374,84 @@ public class ResourcePack {
 	
 	public static void updateBaseResourcePack(boolean updateToNewest) {
 		try {
-			String versionsFolder = FileUtil.getMinecraftVersionsDir();
-			String versionManifest = versionsFolder + "version_manifest_v2.json";
+			Map<String, String> versionsFolders = new HashMap<String, String>();
 			List<String> versions = new ArrayList<String>();
-			if(new File(versionManifest).exists()) {
-				JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
-				for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
-					String name = e.getAsJsonObject().get("id").getAsString();
-					String versionFolder = versionsFolder + name;
-					if(!(new File(versionFolder).exists()))
-						continue;
-					if(!(new File(versionFolder).isDirectory()))
-						continue;
-					String versionJar = versionFolder + "/" + name + ".jar";
-					if(!(new File(versionJar).exists()))
-						continue;
-					versions.add(name);
-				}
-			}else if(new File(versionsFolder.substring(0, versionsFolder.length()-1)).exists()){
-				// If we don't have a version manifest file, but we do have a versions folder,
-				// just add in all folders
-				File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
-				if(versionsFolderFile.exists() && versionsFolderFile.isDirectory()) {
-					for(File f : versionsFolderFile.listFiles()) {
-						if(f.isDirectory()) {
-							if(getJarFile(versionsFolder, f.getName()) != null) {
-								versions.add(f.getName());
+			{
+				String prefixID = "MC/";
+				String versionsFolder = FileUtil.getMinecraftVersionsDir();
+				String versionManifest = versionsFolder + "version_manifest_v2.json";
+				
+				versionsFolders.put(prefixID, versionsFolder);
+				
+				if(new File(versionManifest).exists()) {
+					JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(versionManifest))))).getAsJsonObject();
+					for(JsonElement e : data.get("versions").getAsJsonArray().asList()) {
+						String name = e.getAsJsonObject().get("id").getAsString();
+						String versionFolder = versionsFolder + name;
+						if(!(new File(versionFolder).exists()))
+							continue;
+						if(!(new File(versionFolder).isDirectory()))
+							continue;
+						String versionJar = versionFolder + "/" + name + ".jar";
+						if(!(new File(versionJar).exists()))
+							continue;
+						versions.add(prefixID + name);
+					}
+				}else if(new File(versionsFolder.substring(0, versionsFolder.length()-1)).exists()){
+					// If we don't have a version manifest file, but we do have a versions folder,
+					// just add in all folders
+					File versionsFolderFile = new File(versionsFolder.substring(0, versionsFolder.length()-1));
+					if(versionsFolderFile.exists() && versionsFolderFile.isDirectory()) {
+						for(File f : versionsFolderFile.listFiles()) {
+							if(f.isDirectory()) {
+								if(getJarFile(versionsFolder, f.getName()) != null) {
+									versions.add(prefixID + f.getName());
+								}
 							}
 						}
 					}
 				}
 			}
-			if(versions.isEmpty()) {
-				// Check multimc launchers
-				if(!FileUtil.getMultiMCRootDir().equals("")) {
-					File multimcVersionsFolder = new File(FileUtil.getMultiMCRootDir(), "libraries/com/mojang/minecraft");
-					if(multimcVersionsFolder.exists()) {
-						versionsFolder = multimcVersionsFolder.getPath();
-						for(File f : multimcVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+			
+			// Check multimc launchers
+			if(!FileUtil.getMultiMCRootDir().equals("")) {
+				String prefixId = "MultiMC/";
+				
+				File multimcVersionsFolder = new File(FileUtil.getMultiMCRootDir(), "libraries/com/mojang/minecraft");
+				if(multimcVersionsFolder.exists()) {
+					versionsFolders.put(prefixId, multimcVersionsFolder.getPath());
+					for(File f : multimcVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(prefixId + f.getName());
 					}
 				}
 			}
-			if(versions.isEmpty()) {
-				// Check technic launchers
-				if(!FileUtil.getTechnicRootDir().equals("")) {
-					File technicVersionsFolder = new File(FileUtil.getTechnicRootDir(), "modpacks");
-					if(technicVersionsFolder.exists()) {
-						versionsFolder = technicVersionsFolder.getPath();
-						for(File f : technicVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+			
+			
+			// Check technic launchers
+			if(!FileUtil.getTechnicRootDir().equals("")) {
+				String prefixId = "Technic/";
+				
+				File technicVersionsFolder = new File(FileUtil.getTechnicRootDir(), "modpacks");
+				if(technicVersionsFolder.exists()) {
+					versionsFolders.put(prefixId, technicVersionsFolder.getPath());
+					for(File f : technicVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(prefixId + f.getName());
 					}
 				}
 			}
-			if(versions.isEmpty()) {
-				// Check modrinth launchers
-				if(!FileUtil.getModrinthRootDir().equals("")) {
-					File modrinthVersionsFolder = new File(FileUtil.getModrinthRootDir(), "meta/versions");
-					if(modrinthVersionsFolder.exists()) {
-						versionsFolder = modrinthVersionsFolder.getPath();
-						for(File f : modrinthVersionsFolder.listFiles()) {
-							if(f.isDirectory())
-								versions.add(f.getName());
-						}
+			
+			// Check modrinth launchers
+			if(!FileUtil.getModrinthRootDir().equals("")) {
+				String prefixId = "Modrinth/";
+				
+				File modrinthVersionsFolder = new File(FileUtil.getModrinthRootDir(), "meta/versions");
+				if(modrinthVersionsFolder.exists()) {
+					versionsFolders.put(prefixId, modrinthVersionsFolder.getPath());
+					for(File f : modrinthVersionsFolder.listFiles()) {
+						if(f.isDirectory())
+							versions.add(prefixId + f.getName());
 					}
 				}
 			}
@@ -439,7 +473,9 @@ public class ResourcePack {
 					return;
 			}
 			
-			String versionJar = getJarFile(versionsFolder, (String) selectedValue);
+			String selectedVersion = (String) selectedValue;
+			
+			String versionJar = getJarFile(versionsFolders.get(selectedVersion.split("\\/")[0] + "/"), selectedVersion.split("\\/")[1]);
 			
 			extractResourcePackFromJar(new File(versionJar), new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
 		    
@@ -447,7 +483,7 @@ public class ResourcePack {
 		    JsonWriter writer = new JsonWriter(new FileWriter(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json")));
 		    writer.beginObject();
 		    writer.name("version");
-		    writer.value((String) selectedValue);
+		    writer.value(selectedVersion);
 		    writer.endObject();
 		    writer.close();
 		    
@@ -490,6 +526,295 @@ public class ResourcePack {
 			ex.printStackTrace();
 		}
 	    zipIn.close();
+	}
+	
+	private static class MiExConfigData{
+		Set<String> transparentOcclusion = new HashSet<String>();
+		Set<String> leavesOcclusion = new HashSet<String>();
+		Set<String> grassColormapBlocks = new HashSet<String>();
+		Set<String> foliageColormapBlocks = new HashSet<String>();
+	}
+	
+	public static void inferMiExConfigFromResourcePack(File resourcePack) {
+		// Go through all of the block states and gather the models per block state.
+		Map<String, List<String>> models = new HashMap<String, List<String>>();
+		File assetsFolder = new File(resourcePack, "assets");
+		if(assetsFolder.exists() && assetsFolder.isDirectory()) {
+			for(File namespace : assetsFolder.listFiles()) {
+				if(!namespace.isDirectory())
+					continue;
+				File blockStates = new File(namespace, "blockstates");
+				if(!blockStates.exists() || !blockStates.isDirectory())
+					continue;
+				miexConfigProcessFolder(namespace.getName(), blockStates, "", models);
+			}
+		}
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.93f);
+		
+		MiExConfigData configData = new MiExConfigData();
+		
+		// Now parse the models
+		float counter = 0;
+		float numBlocks = (float) models.size();
+		for(Entry<String, List<String>> block : models.entrySet()) {
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.94f + 0.05f * (counter / numBlocks));
+			counter++;
+			for(String model : block.getValue()) {
+				miexConfigProcessModel(block.getKey(), model, resourcePack, configData);
+			}
+		}
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.98f);
+		
+		File configFile = new File(resourcePack, "miex_config.json");
+		
+		// Time to write it out.
+		// It could be that there is already a miex_config.json file,
+		// in that case we want to append our stuff to it rather than
+		// override it.
+		JsonObject configRoot = new JsonObject();
+		if(configFile.exists()) {
+			try {
+				configRoot = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(configFile)))).getAsJsonObject();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		JsonArray transparentOcclusion = new JsonArray();
+		if(configRoot.has("transparentOcclusion.add"))
+			transparentOcclusion = configRoot.get("transparentOcclusion.add").getAsJsonArray();
+		if(configRoot.has("transparentOcclusion"))
+			transparentOcclusion = configRoot.get("transparentOcclusion").getAsJsonArray();
+		for(String val : configData.transparentOcclusion) {
+			boolean found = false;
+			for(JsonElement el : transparentOcclusion.asList()) {
+				if(el.getAsString().equals(val)) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				transparentOcclusion.add(val);
+		}
+		
+		JsonArray leavesOcclusion = new JsonArray();
+		if(configRoot.has("leavesOcclusion.add"))
+			leavesOcclusion = configRoot.get("leavesOcclusion.add").getAsJsonArray();
+		if(configRoot.has("leavesOcclusion"))
+			leavesOcclusion = configRoot.get("leavesOcclusion").getAsJsonArray();
+		for(String val : configData.leavesOcclusion) {
+			boolean found = false;
+			for(JsonElement el : leavesOcclusion.asList()) {
+				if(el.getAsString().equals(val)) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				leavesOcclusion.add(val);
+		}
+		
+		JsonArray grassColormapBlocks = new JsonArray();
+		if(configRoot.has("grassColormapBlocks.add"))
+			grassColormapBlocks = configRoot.get("grassColormapBlocks.add").getAsJsonArray();
+		if(configRoot.has("grassColormapBlocks"))
+			grassColormapBlocks = configRoot.get("grassColormapBlocks").getAsJsonArray();
+		for(String val : configData.grassColormapBlocks) {
+			boolean found = false;
+			for(JsonElement el : grassColormapBlocks.asList()) {
+				if(el.getAsString().equals(val)) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				grassColormapBlocks.add(val);
+		}
+		
+		JsonArray foliageColormapBlocks = new JsonArray();
+		if(configRoot.has("foliageColormapBlocks.add"))
+			foliageColormapBlocks = configRoot.get("foliageColormapBlocks.add").getAsJsonArray();
+		if(configRoot.has("foliageColormapBlocks"))
+			foliageColormapBlocks = configRoot.get("foliageColormapBlocks").getAsJsonArray();
+		for(String val : configData.foliageColormapBlocks) {
+			boolean found = false;
+			for(JsonElement el : foliageColormapBlocks.asList()) {
+				if(el.getAsString().equals(val)) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				foliageColormapBlocks.add(val);
+		}
+		
+		// Normally we want to add the blocks to the normal vanilla blocks,
+		// but if the miex_config file already there fully overrides the list
+		// then we have to add it to that.
+		if(configRoot.has("transparentOcclusion"))
+			configRoot.add("transparentOcclusion", transparentOcclusion);
+		else
+			configRoot.add("transparentOcclusion.add", transparentOcclusion);
+		
+		if(configRoot.has("leavesOcclusion"))
+			configRoot.add("leavesOcclusion", leavesOcclusion);
+		else
+			configRoot.add("leavesOcclusion.add", leavesOcclusion);
+		
+		if(configRoot.has("grassColormapBlocks"))
+			configRoot.add("grassColormapBlocks", grassColormapBlocks);
+		else
+			configRoot.add("grassColormapBlocks.add", grassColormapBlocks);
+		
+		if(configRoot.has("foliageColormapBlocks"))
+			configRoot.add("foliageColormapBlocks", foliageColormapBlocks);
+		else
+			configRoot.add("foliageColormapBlocks.add", foliageColormapBlocks);
+		
+		FileWriter writer = null;
+		try {
+			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
+			String jsonString = gson.toJson(configRoot);
+			writer = new FileWriter(configFile);
+			writer.write(jsonString);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		if(writer != null) {
+			try {
+				writer.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+	
+	private static void miexConfigProcessFolder(String namespace, File folder, String parent, Map<String, List<String>> models) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory())
+				miexConfigProcessFolder(namespace, f, parent + f.getName() + "/", models);
+			else if(f.isFile() && f.getName().endsWith(".json")) {
+				try {
+					JsonElement data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(f))));
+					
+					List<String> blockModels = new ArrayList<String>();
+					miexConfigFindModels(data, blockModels);
+					
+					models.put(namespace + ":" + parent + f.getName().replace(".json", ""), blockModels);
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	private static void miexConfigFindModels(JsonElement parent, List<String> models) {
+		// No need to properly parse it, we just need to find the values for the "model" keys
+		if(parent.isJsonObject()) {
+			for(Entry<String, JsonElement> entry : parent.getAsJsonObject().entrySet()) {
+				if(entry.getKey().equalsIgnoreCase("model") && entry.getValue().isJsonPrimitive()) {
+					models.add(entry.getValue().getAsString());
+				} else {
+					miexConfigFindModels(entry.getValue(), models);
+				}
+			}
+		}else if(parent.isJsonArray()) {
+			for(JsonElement el : parent.getAsJsonArray().asList())
+				miexConfigFindModels(el, models);
+		}
+	}
+	
+	private static void miexConfigProcessModel(String blockName, String modelName, File resourcePack, MiExConfigData configData) {
+		if(!modelName.contains(":"))
+			modelName = "minecraft:" + modelName;
+		String[] modelTokens = modelName.split(":");
+		
+		String modelPath = "assets/" + modelTokens[0] + "/models/" + modelTokens[1] + ".json";
+		File modelFile = new File(resourcePack, modelPath);
+		if(!modelFile.exists())
+			modelFile = new File(FileUtil.getResourcePackDir(), "base_resource_pack/" + modelPath);
+		if(!modelFile.exists())
+			return;
+		
+		// We got the model file, now read it in.
+		try {
+			JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(modelFile)))).getAsJsonObject();
+			
+			if(data.has("parent")) {
+				// It has a parent, so process that one as well
+				miexConfigProcessModel(blockName, data.get("parent").getAsString(), resourcePack, configData);
+			}
+			
+			if(data.has("textures")) {
+				for(Entry<String, JsonElement> entry : data.get("textures").getAsJsonObject().entrySet()) {
+					miexConfigProcessTexture(blockName, entry.getValue().getAsString(), resourcePack, configData);
+				}
+			}
+			
+			boolean usesBiomeColours = false;
+			
+			if(data.has("elements")) {
+				for(JsonElement el : data.get("elements").getAsJsonArray().asList()) {
+					if(!el.isJsonObject())
+						continue;
+					if(el.getAsJsonObject().has("faces")) {
+						for(Entry<String, JsonElement> entry : el.getAsJsonObject().get("faces").getAsJsonObject().entrySet()) {
+							if(entry.getValue().isJsonObject()) {
+								if(entry.getValue().getAsJsonObject().has("tintindex")) {
+									// This model has a tint index, and so it uses biome colours
+									usesBiomeColours = true;
+									break;
+								}
+							}
+						}
+					}
+					if(usesBiomeColours)
+						break;
+				}
+			}
+			
+			if(usesBiomeColours) {
+				// Now let's figure out if it's the grass biome colours or foliage.
+				// Pretty much everything is grass colours, except leaves.
+				// So we assume that if it has "leaves" in the name, it's foliage colours
+				// otherwise it's grass colours.
+				if(blockName.toLowerCase().contains("leaves")) {
+					configData.foliageColormapBlocks.add(blockName);
+				}else {
+					configData.grassColormapBlocks.add(blockName);
+				}
+			}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private static void miexConfigProcessTexture(String blockName, String texture, File resourcePack, MiExConfigData configData) {
+		if(!texture.contains(":"))
+			texture = "minecraft:" + texture;
+		String[] textureTokens = texture.split(":");
+		if(textureTokens.length != 2)
+			return;
+		
+		String texturePath = "assets/" + textureTokens[0] + "/textures/" + textureTokens[1] + ".png";
+		File textureFile = new File(resourcePack, texturePath);
+		if(!textureFile.exists())
+			textureFile = new File(FileUtil.getResourcePackDir(), "base_resource_pack/" + texturePath);
+		if(!textureFile.exists())
+			return;
+		
+		boolean hasAlpha = FileUtil.hasAlpha(textureFile);
+		if(hasAlpha) {
+			// It has alpha, so we need to add it to either transparent occlusion or leaves occlusion
+			boolean leavesOcclusion = blockName.toLowerCase().contains("leaves");
+			if(leavesOcclusion) {
+				configData.leavesOcclusion.add(blockName);
+			}else {
+				configData.transparentOcclusion.add(blockName);
+			}
+		}
 	}
 
 }

@@ -103,7 +103,6 @@
     "forceBiomeColor": [
         "block/grass_block_side"
     ],
-    "powerLevel": [ "redstone_wire" ],
     "doubleSided": [
         "water", "grass", "fern", "short_grass", "tall_grass", "large_fern", "dandelion", "poppy", "blue_orchid",
         "allium", "azure_bluet", "red_tulip", "orange_tulip", "white_tulip", "pink_tulip",
@@ -136,6 +135,8 @@
     },
     "lodNoUVScale": [],
     "runOptimiser": true,
+    "runRaytracingOptimiser": true,
+    "runFaceOptimiser": true,
 	"fgFullnessThreshold": 0.15,
 	"bgFullnessThreshold": 0.01,
 	"chunkSize": 16,
@@ -144,5 +145,7 @@
     "removeCavesSearchEnergy": 5,
     "animatedTexturesFrameTimeMultiplier": 1.0,
     "renderGamut": "ACEScg",
-    "blockSizeInUnits": 16.0
+    "blockSizeInUnits": 16.0,
+    "atlasMaxResolution": 4096,
+    "atlasMaxTileResolution": 256
 }

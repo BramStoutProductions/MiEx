@@ -1,0 +1,496 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "PLACEHOLDER.surface",
+        "json:rman__surface": "RIMAT.outColor"
+    },
+    "include": [ "json_base" ],
+    "network": {
+        "@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "RIMAT": {
+                "type": "JSON:PxrSurface",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "diffuseColor": {
+                        "type": "float3",
+                        "connection": "RIFILE.resultRGB"
+                    },
+                    "diffuseDoubleSided": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "diffuseRoughness": {
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "specularFaceColor": {
+                        "type": "float3",
+                        "value": [ 0.0, 0.0, 0.0 ]
+                    },
+                    "specularEdgeColor": {
+                        "type": "float3",
+                        "value": [ 0.25, 0.25, 0.25 ]
+                    },
+                    "specularDoubleSided": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "specularRoughness": {
+                        "type": "float",
+                        "connection": "RIROUGHNESS.resultF"
+                    }
+                }
+            },
+            "RIFILE": {
+                "type": "JSON:PxrTexture",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "filename": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "filter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIROUGHNESS": {
+                "type": "JSON:PxrToFloat",
+                "attributes": {
+                    "resultF": {
+                        "type": "float"
+                    },
+                    "input": {
+                        "type": "float3",
+                        "connection": "RIROUGHNESS_REMAP.resultRGB"
+                    },
+                    "mode": {
+                        "type": "int",
+                        "value": 4
+                    }
+                }
+            },
+            "RIROUGHNESS_REMAP": {
+                "type": "JSON:PxrRemap",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "colof3f"
+                    },
+                    "inputRGB": {
+                        "type": "float3",
+                        "connection": "RIFILE.resultRGB"
+                    },
+                    "outputMax": {
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "outputMin": {
+                        "type": "float",
+                        "value": 1.0
+                    }
+                }
+            }
+        },
+        "@texture@.animated": {
+            "RIUV_ANIMATED": {
+                "type": "JSON:PxrManifold2D",
+                "attributes": {
+                    "result": {
+                        "type": "token"
+                    },
+                    "scaleT": {
+                        "type": "float",
+                        "expression": "${frameScale(inverse=true,powerOf2=true)}"
+                    },
+                    "offsetT": {
+                        "type": "float",
+                        "expression": "${frameId(inverse=true,powerOf2=true)}"
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIFILE": {
+                "attributes": {
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED.result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated": {
+            "RIUV_ANIMATED": {
+                "type": "JSON:PxrManifold2D",
+                "attributes": {
+                    "result": {
+                        "type": "token"
+                    },
+                    "scaleT": {
+                        "type": "float",
+                        "expression": "${frameScale(inverse=true,powerOf2=true)}"
+                    },
+                    "offsetT": {
+                        "type": "float",
+                        "expression": "${frameId(inverse=true,powerOf2=true)}"
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIUV_ANIMATED2": {
+                "type": "JSON:PxrManifold2D",
+                "attributes": {
+                    "result": {
+                        "type": "token"
+                    },
+                    "scaleT": {
+                        "type": "float",
+                        "expression": "${frameScale(inverse=true,powerOf2=true)}"
+                    },
+                    "offsetT": {
+                        "type": "float",
+                        "expression": "${frameId(inverse=true,powerOf2=true,offset=1)}"
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIFILE": {
+                "attributes": {
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED.result"
+                    }
+                }
+            },
+            "RIFILE2": {
+                "type": "JSON:PxrTexture",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "filename": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "filter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED2.result"
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIINTERPOLATE": {
+                "type": "JSON:PxrMix",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "RIFILE.resultRGB"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "RIFILE2.resultRGB"
+                    },
+                    "mixer": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "RIMAT": {
+                "attributes": {
+                    "diffuseColor": {
+                        "type": "float3",
+                        "connection": "RIINTERPOLATE.resultRGB"
+                    }
+                }
+            },
+            "RIROUGHNESS_REMAP": {
+                "attributes": {
+                    "inputRGB": {
+                        "type": "float3",
+                        "connection": "RIINTERPOLATE.resultRGB"
+                    }
+                }
+            }
+        },
+        "@texture@.a": {
+            "RIFILE": {
+                "attributes": {
+                    "resultA": {
+                        "type": "float"
+                    }
+                }
+            },
+            "RIMAT": {
+                "attributes": {
+                    "presence": {
+                        "type": "float",
+                        "connection": "RIFILE.resultA"
+                    },
+                    "presenceCached": {
+                        "type": "int",
+                        "value": 0
+                    }
+                }
+            }
+        },
+        "@texture@.a&&@texture@.interpolated": {
+            "RIFILE": {
+                "attributes": {
+                    "resultA": {
+                        "type": "float"
+                    }
+                }
+            },
+            "RIFILE2": {
+                "attributes": {
+                    "resultA": {
+                        "type": "float"
+                    }
+                }
+            },
+            "RIALPHA_TO_FLOAT3": {
+                "type": "JSON:PxrToFloat3",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "colof3f"
+                    },
+                    "input": {
+                        "type": "float",
+                        "connection": "RIFILE.resultA"
+                    }
+                }
+            },
+            "RIALPHA2_TO_FLOAT3": {
+                "type": "JSON:PxrToFloat3",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "colof3f"
+                    },
+                    "input": {
+                        "type": "float",
+                        "connection": "RIFILE2.resultA"
+                    }
+                }
+            },
+            "RIALPHA_INTERPOLATE": {
+                "type": "JSON:PxrMix",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "RIALPHA_TO_FLOAT3.resultRGB"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "RIALPHA2_TO_FLOAT3.resultRGB"
+                    },
+                    "mixer": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "RI_ALPHA_INTERPOLATED": {
+                "type": "JSON:PxrToFloat",
+                "attributes": {
+                    "resultF": {
+                        "type": "float"
+                    },
+                    "input": {
+                        "type": "colof3f",
+                        "connection": "RIALPHA_INTERPOLATE.resultRGB"
+                    }
+                }
+            },
+            "RIMAT": {
+                "attributes": {
+                    "presence": {
+                        "type": "float",
+                        "connection": "RI_ALPHA_INTERPOLATED.resultF"
+                    }
+                }
+            }
+        },
+        "@biomeColor@":{
+            "RIBIOME": {
+                "type": "JSON:PxrPrimvar",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "type": {
+                        "type": "token",
+                        "value": "color"
+                    },
+                    "varname": {
+                        "type": "string",
+                        "value": "Cs"
+                    }
+                }
+            },
+            "RIFILE": {
+                "attributes": {
+                    "colorScale": {
+                        "type": "float3",
+                        "connection": "RIBIOME.resultRGB"
+                    }
+                }
+            }
+        },
+        "@biomeColor@&&@texture@.interpolated": {
+            "RIFILE2": {
+                "attributes": {
+                    "colorScale": {
+                        "type": "float3",
+                        "connection": "RIBIOME.resultRGB"
+                    }
+                }
+            }
+        },
+        "@texture@_emission": {
+            "RIMAT": {
+                "attributes": {
+                    "glowGain": {
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "glowColor": {
+                        "type": "float3",
+                        "connection": "RIFILE_EMISSION.resultRGB"
+                    }
+                }
+            },
+            "RIFILE_EMISSION": {
+                "type": "JSON:PxrTexture",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "filename": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "filter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            }
+        },
+        "@texture@_emission.animated": {
+            "RIFILE_EMISSION": {
+                "attributes": {
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED.result"
+                    }
+                }
+            }
+        },
+        "@texture@_emission.interpolated": {
+            "RIFILE_EMISSION": {
+                "attributes": {
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED.result"
+                    }
+                }
+            },
+            "RIFILE2_EMISSION": {
+                "type": "JSON:PxrTexture",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "filename": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "filter": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "manifold": {
+                        "type": "token",
+                        "connection": "RIUV_ANIMATED2.result"
+                    },
+                    "invertT": {
+                        "type": "int",
+                        "value": 1
+                    }
+                }
+            },
+            "RIINTERPOLATE_EMISSION": {
+                "type": "JSON:PxrMix",
+                "attributes": {
+                    "resultRGB": {
+                        "type": "float3"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "RIFILE_EMISSION.resultRGB"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "RIFILE2_EMISSION.resultRGB"
+                    },
+                    "mixer": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "RIMAT": {
+                "attributes": {
+                    "glowColor": {
+                        "type": "float3",
+                        "connection": "RIINTERPOLATE_EMISSION.resultRGB"
+                    }
+                }
+            }
+        }
+    }
+}

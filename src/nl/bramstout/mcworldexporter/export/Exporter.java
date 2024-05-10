@@ -48,15 +48,19 @@ import java.util.concurrent.Future;
 
 import javax.swing.JOptionPane;
 
-import nl.bramstout.mcworldexporter.Atlas;
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
+import nl.bramstout.mcworldexporter.world.Biome;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
 	
@@ -68,6 +72,8 @@ public class Exporter {
 		if(MCWorldExporter.getApp().getWorld() == null) {
 			throw new RuntimeException("No valid world loaded.");
 		}
+		
+		BannerTextureCreator.load();
 		
 		String extensionTokens[] = usdFile.getName().split("\\.");
 		String extension = extensionTokens[extensionTokens.length-1];
@@ -83,11 +89,21 @@ public class Exporter {
 		
 		int centerX = MCWorldExporter.getApp().getExportBounds().getCenterX();
 		int centerZ = MCWorldExporter.getApp().getExportBounds().getCenterZ();
+		if(MCWorldExporter.getApp().getExportBounds().hasLod()) {
+			centerX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
+			centerZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
+		}
+		MCWorldExporter.getApp().getExportBounds().setOffsetX(centerX);
 		MCWorldExporter.getApp().getExportBounds().setOffsetY(MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ) + 1);
+		MCWorldExporter.getApp().getExportBounds().setOffsetZ(centerZ);
 		
 		LargeDataOutputStream dos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 		dos.writeInt(2); // Version
 		dos.writeLong(0); // Offset for individual blocks
+		
+		// Export settings
+		ExportData exportData = ExportData.fromApp();
+		exportData.write(dos);
 		
 
 		int numChunksX = (chunkEndX - chunkStartX + 1 + chunkSize - 1) / chunkSize;
@@ -130,6 +146,14 @@ public class Exporter {
 			}
 		}
 		
+		int defaultBiomeId = MCWorldExporter.getApp().getWorld().getBiomeId(
+													centerX, 
+													MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ), 
+													centerZ);
+		Biome defaultBiome = BiomeRegistry.getBiome(defaultBiomeId);
+		BlendedBiome defaultBlendedBiome = new BlendedBiome();
+		defaultBlendedBiome.addBiome(defaultBiome, 1.0f);
+		
 		long individualBlocksOffset = dos.size();
 		dos.writeInt(individualBlockIds.size());
 		List<Model> models = new ArrayList<Model>();
@@ -140,21 +164,27 @@ public class Exporter {
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();
 			state.getDefaultModels(models);
+			
+			Color tint = defaultBlendedBiome.getBiomeColor(state);
+			
 			for(Model model : models) {
 				for(ModelFace face : model.getFaces()) {
 					String texture = model.getTexture(face.getTexture());
 					if(Config.bannedMaterials.contains(texture))
 						continue;
+					Color faceTint = tint;
+					if(face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture))
+						faceTint = new Color(1.0f, 1.0f, 1.0f);
 					Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 					if(atlas != null)
 						texture = atlas.atlas;
 					Mesh mesh = meshes.get(texture);
 					if(mesh == null) {
 						mesh = new Mesh(texture, texture, model.isDoubleSided());
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, null);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint);
 						meshes.put(texture, mesh);
 					}else {
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, null);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint);
 					}
 					mesh.setExtraData(model.getExtraData());
 				}

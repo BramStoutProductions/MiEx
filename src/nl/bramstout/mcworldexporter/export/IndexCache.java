@@ -197,6 +197,7 @@ public class IndexCache {
 					put(key6, value6);
 					put(key7, value7);
 					put(key8, value8);
+					put(key, value);
 				}
 			}
 		}

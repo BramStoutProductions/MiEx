@@ -72,8 +72,6 @@ public class FileUtil {
 			return resourcePackUSDPrefix;
 		try {
 			resourcePackUSDPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
-			if(!resourcePackUSDPrefix.endsWith("/"))
-				resourcePackUSDPrefix = resourcePackUSDPrefix + "/";
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -81,6 +79,9 @@ public class FileUtil {
 		String envPath = System.getenv("MIEX_RESOURCEPACK_USD_PREFIX");
 		if(envPath != null)
 			resourcePackUSDPrefix = envPath;
+		
+		if(!resourcePackUSDPrefix.endsWith("/"))
+			resourcePackUSDPrefix = resourcePackUSDPrefix + "/";
 		
 		return resourcePackUSDPrefix;
 	}
@@ -91,8 +92,6 @@ public class FileUtil {
 			return resourcePackMTLXPrefix;
 		try {
 			resourcePackMTLXPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
-			if(!resourcePackMTLXPrefix.endsWith("/"))
-				resourcePackMTLXPrefix = resourcePackMTLXPrefix + "/";
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -101,7 +100,30 @@ public class FileUtil {
 		if(envPath != null)
 			resourcePackMTLXPrefix = envPath;
 		
+		if(!resourcePackMTLXPrefix.endsWith("/"))
+			resourcePackMTLXPrefix = resourcePackMTLXPrefix + "/";
+		
 		return resourcePackMTLXPrefix;
+	}
+	
+	protected static String resourcePackJSONPrefix = null;
+	public static String getResourcePackJSONPrefix() {
+		if(resourcePackJSONPrefix != null)
+			return resourcePackJSONPrefix;
+		try {
+			resourcePackJSONPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		String envPath = System.getenv("MIEX_RESOURCEPACK_JSON_PREFIX");
+		if(envPath != null)
+			resourcePackJSONPrefix = envPath;
+		
+		if(!resourcePackJSONPrefix.endsWith("/"))
+			resourcePackJSONPrefix = resourcePackJSONPrefix + "/";
+		
+		return resourcePackJSONPrefix;
 	}
 	
 	protected static String usdCatExe = null;
@@ -148,6 +170,26 @@ public class FileUtil {
 			ex.printStackTrace();
 		}
 		return false;
+	}
+	
+	public static boolean hasCutout(File file) {
+		boolean hasAlpha = false;
+		try {
+			BufferedImage tex = ImageIO.read(file);
+			for(int i = 0; i < tex.getWidth(); ++i) {
+				for(int j = 0; j < tex.getHeight(); ++j) {
+					Color color = new Color(tex.getRGB(i, j), true);
+					if(color.getAlpha() > 0 && color.getAlpha() < 255) {
+						return false;
+					}
+					if(color.getAlpha() < 255)
+						hasAlpha = true;
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return hasAlpha;
 	}
 	
 	public static boolean isWindows() {
@@ -207,11 +249,25 @@ public class FileUtil {
 		return multiMCRootDir;
 	}
 	
+	private static String getTechnicRootDir2() {
+		if(isWindows())
+			return System.getenv("APPDATA") + "/.technic/";
+		else if(isMacOs())
+			return "~/Library/Application Support/technic/";
+		else if (isLinux())
+			return "~/.config/.technic/";
+
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
+	}
+	
 	protected static String technicRootDir = null;
 	public static String getTechnicRootDir() {
 		if(technicRootDir != null)
 			return technicRootDir;
-		technicRootDir = "";
+		technicRootDir = getTechnicRootDir2();
 		
 		String envPath = System.getenv("MIEX_TECHNIC_ROOT_DIR");
 		if(envPath != null)
@@ -220,11 +276,25 @@ public class FileUtil {
 		return technicRootDir;
 	}
 	
+	private static String getModrinthRootDir2() {
+		if(isWindows())
+			return System.getenv("APPDATA") + "/com.modrinth.theseus/";
+		else if(isMacOs())
+			return "~/Library/Application Support/com.modrinth.theseus/";
+		else if (isLinux())
+			return "~/.config/com.modrinth.theseus/";
+
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
+	}
+	
 	protected static String modrinthRootDir = null;
 	public static String getModrinthRootDir() {
 		if(modrinthRootDir != null)
 			return modrinthRootDir;
-		modrinthRootDir = "";
+		modrinthRootDir = getModrinthRootDir2();
 		
 		String envPath = System.getenv("MIEX_MODRINTH_ROOT_DIR");
 		if(envPath != null)

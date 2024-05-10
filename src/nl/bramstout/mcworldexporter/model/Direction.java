@@ -72,7 +72,7 @@ public enum Direction {
 	}
 	
 	public static Direction getDirection(String name) {
-		return Direction.valueOf(name.toUpperCase().replace("BOTTOM", "DOWN"));
+		return Direction.valueOf(name.toUpperCase().replace("BOTTOM", "DOWN").replace("TOP", "UP"));
 	}
 	
 	public static Direction[] CACHED_VALUES = values();

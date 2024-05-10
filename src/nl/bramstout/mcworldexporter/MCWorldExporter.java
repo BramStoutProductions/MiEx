@@ -39,6 +39,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
@@ -123,6 +124,10 @@ public class MCWorldExporter {
 	public List<String> getFGChunks(){
 		return fgChunks;
 	}
+	
+	public void setFGChunks(List<String> fgChunks) {
+		this.fgChunks = fgChunks;
+	}
 
 	
 	
@@ -145,11 +150,19 @@ public class MCWorldExporter {
 					FileUtil.resourcePackDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.resourcePackDir.endsWith("/"))
 						FileUtil.resourcePackDir = FileUtil.resourcePackDir + "/";
-				}else if(args[i].equalsIgnoreCase("-rpUSDPrefix"))
+				}else if(args[i].equalsIgnoreCase("-rpUSDPrefix")) {
 					FileUtil.resourcePackUSDPrefix = args[i+1];
-				else if(args[i].equalsIgnoreCase("-rpMTLXPrefix"))
+					if(!FileUtil.resourcePackUSDPrefix.endsWith("/"))
+						FileUtil.resourcePackUSDPrefix = FileUtil.resourcePackUSDPrefix + "/";
+				}else if(args[i].equalsIgnoreCase("-rpMTLXPrefix")) {
 					FileUtil.resourcePackMTLXPrefix = args[i+1];
-				else if(args[i].equalsIgnoreCase("-mcVersionsDir")) {
+					if(!FileUtil.resourcePackMTLXPrefix.endsWith("/"))
+						FileUtil.resourcePackMTLXPrefix = FileUtil.resourcePackMTLXPrefix + "/";
+				}else if(args[i].equalsIgnoreCase("-rpJSONPrefix")) {
+					FileUtil.resourcePackJSONPrefix = args[i+1];
+					if(!FileUtil.resourcePackJSONPrefix.endsWith("/"))
+						FileUtil.resourcePackJSONPrefix = FileUtil.resourcePackJSONPrefix + "/";
+				}else if(args[i].equalsIgnoreCase("-mcVersionsDir")) {
 					FileUtil.minecraftVersionsDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.minecraftVersionsDir.endsWith("/"))
 						FileUtil.minecraftVersionsDir = FileUtil.minecraftVersionsDir + "/";

@@ -64,7 +64,7 @@ public class BlockStateEndPortal extends BlockState{
 		model.addFace(new float[] { 0f, 12f, 0f, 16f, 12f, 16f } , Direction.UP, "#texture");
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, false, 1, -1);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, false, 1, null);
 	}
 
 }

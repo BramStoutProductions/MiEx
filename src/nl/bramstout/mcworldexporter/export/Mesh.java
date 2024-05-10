@@ -34,9 +34,9 @@ package nl.bramstout.mcworldexporter.export;
 import java.io.IOException;
 import java.util.Arrays;
 
-import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 
 public class Mesh {
@@ -158,7 +158,9 @@ public class Mesh {
 			float[] colorData = colors.getData();
 			int colorsSize = colors.size();
 			for(int i = colorsSize - 3; i >= 0; i -= 3) {
-				if(colorData[i] == r && colorData[i + 1] == g && colorData[i + 2] == b) {
+				if(Math.abs(colorData[i] - r) < 0.00001f && 
+						Math.abs(colorData[i + 1] - g) < 0.00001f && 
+						Math.abs(colorData[i + 2] - b) < 0.00001f) {
 					colorIndex = i / 3;
 					break;
 				}
@@ -355,7 +357,7 @@ public class Mesh {
 	}
 	
 	public void getColor(int faceIndex, int vertexIndex, float[] out) {
-		if(colorIndices == null) {
+		if(colorIndices == null || colors == null) {
 			out[0] = 1.0f;
 			out[1] = 1.0f;
 			out[2] = 1.0f;
@@ -428,6 +430,46 @@ public class Mesh {
 		addEdge(v3Data, v0Data);
 		
 		int normalIndex = addNormal(_normal[0], _normal[1], _normal[2]);
+		normalIndices.add(normalIndex);
+		normalIndices.add(normalIndex);
+		normalIndices.add(normalIndex);
+		normalIndices.add(normalIndex);
+	}
+	
+	public void addFace(float[] vertices, float[] us, float[] vs, float[] normal, float[] color) {
+		if(color != null) {
+			if(this.colors == null) {
+				this.colors = new FloatArray();
+				this.colorIndices = new IntArray();
+				// If there is already data in here, then we need to fill in for every face so far.
+				if(this.edgeIndices.size() > 0) {
+					this.colors.add(1.0f);
+					this.colors.add(1.0f);
+					this.colors.add(1.0f);
+					for(int i = 0; i < this.edgeIndices.size(); ++i)
+						this.colorIndices.add(0);
+				}
+			}
+		}
+		
+		if(color != null) {
+			addPoint(vertices[0], vertices[1], vertices[2],   us[0], vs[0], color[0], color[1], color[2], v0Data);
+			addPoint(vertices[3], vertices[4], vertices[5],   us[1], vs[1], color[0], color[1], color[2], v1Data);
+			addPoint(vertices[6], vertices[7], vertices[8],   us[2], vs[2], color[0], color[1], color[2], v2Data);
+			addPoint(vertices[9], vertices[10], vertices[11], us[3], vs[3], color[0], color[1], color[2], v3Data);
+		}else {
+			addPoint(vertices[0], vertices[1], vertices[2],   us[0], vs[0], 1f, 1f, 1f, v0Data);
+			addPoint(vertices[3], vertices[4], vertices[5],   us[1], vs[1], 1f, 1f, 1f, v1Data);
+			addPoint(vertices[6], vertices[7], vertices[8],   us[2], vs[2], 1f, 1f, 1f, v2Data);
+			addPoint(vertices[9], vertices[10], vertices[11], us[3], vs[3], 1f, 1f, 1f, v3Data);
+		}
+		
+		addEdge(v0Data, v1Data);
+		addEdge(v1Data, v2Data);
+		addEdge(v2Data, v3Data);
+		addEdge(v3Data, v0Data);
+		
+		int normalIndex = addNormal(normal[0], normal[1], normal[2]);
 		normalIndices.add(normalIndex);
 		normalIndices.add(normalIndex);
 		normalIndices.add(normalIndex);

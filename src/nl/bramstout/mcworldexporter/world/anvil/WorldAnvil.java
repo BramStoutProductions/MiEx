@@ -32,9 +32,13 @@
 package nl.bramstout.mcworldexporter.world.anvil;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -71,7 +75,12 @@ public class WorldAnvil extends World{
 		}
 		for(File f : worldDir.listFiles()) {
 			if(new File(f, "region").exists()) {
-				dimensions.add(f.getName());
+				String dim = f.getName();
+				if(dim.equals("DIM-1"))
+					dim = "Nether";
+				else if(dim.equals("DIM1"))
+					dim = "End";
+				dimensions.add(dim);
 			}
 		}
 		
@@ -84,9 +93,29 @@ public class WorldAnvil extends World{
 
 	@Override
 	protected void findRegions() {
+		File sessionLock = new File(worldDir, "session.lock");
+		if(sessionLock.exists()) {
+			try {
+				// If the world is open in Minecraft, this will fail.
+				FileOutputStream out = new FileOutputStream(sessionLock);
+				out.write(0xE2);
+				out.write(0x98);
+				out.write(0x83);
+				out.close();
+			}catch(Exception ex) {
+				// We couldn't acquire a session, so error out.
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world is open in another program.", "Locked world", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+		}
+		
 		File regionFolder = new File(new File(worldDir, currentDimension), "region");
 		if(currentDimension == "Overworld")
 			regionFolder = new File(worldDir, "region");
+		if(currentDimension == "Nether")
+			regionFolder = new File(worldDir, "DIM-1/region");
+		if(currentDimension == "End")
+			regionFolder = new File(worldDir, "DIM1/region");
 		
 		if(!regionFolder.exists())
 			return;

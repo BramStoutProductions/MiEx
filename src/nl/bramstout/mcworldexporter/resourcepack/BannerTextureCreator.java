@@ -32,8 +32,12 @@
 package nl.bramstout.mcworldexporter.resourcepack;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -41,15 +45,25 @@ import javax.imageio.ImageIO;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.FileUtil;
 
 public class BannerTextureCreator {
 	
 	private static Map<String, String> patternMap = new HashMap<String, String>();
-	private static Map<Integer, Color> colorMap = new HashMap<Integer, Color>();
+	private static Map<String, Color> colorMap = new HashMap<String, Color>();
 	
-	static {
+	public static void load(){
+		// Pre 1.20.5 banners use codes for patterns and numbers for colours.
+		// After that, patterns are registered in resource packs and
+		// colours are now strings.
+		// So, we need to make sure that patternMap and colorMap contains
+		// both.
+		
+		patternMap.clear();
+		
 		patternMap.put("", "minecraft:entity/banner/base");
 		patternMap.put("b", "minecraft:entity/banner/base");
 		patternMap.put("bs", "minecraft:entity/banner/stripe_bottom");
@@ -93,22 +107,72 @@ public class BannerTextureCreator {
 		patternMap.put("glb", "minecraft:entity/banner/globe");
 		patternMap.put("pig", "minecraft:entity/banner/piglin");
 		
-		colorMap.put(0, new Color(0xFFFFFFFF, true, false));
-		colorMap.put(1, new Color(0xFFD87F33, true, false));
-		colorMap.put(2, new Color(0xFFB24CD8, true, false));
-		colorMap.put(3, new Color(0xFF6699D8, true, false));
-		colorMap.put(4, new Color(0xFFE5E533, true, false));
-		colorMap.put(5, new Color(0xFF7FCC19, true, false));
-		colorMap.put(6, new Color(0xFFF27FA5, true, false));
-		colorMap.put(7, new Color(0xFF4C4C4C, true, false));
-		colorMap.put(8, new Color(0xFF999999, true, false));
-		colorMap.put(9, new Color(0xFF4C7F99, true, false));
-		colorMap.put(10, new Color(0xFF7F3FB2, true, false));
-		colorMap.put(11, new Color(0xFF334CB2, true, false));
-		colorMap.put(12, new Color(0xFF664C33, true, false));
-		colorMap.put(13, new Color(0xFF667F33, true, false));
-		colorMap.put(14, new Color(0xFF993333, true, false));
-		colorMap.put(15, new Color(0xFF191919, true, false));
+		colorMap.clear();
+		
+		colorMap.put("0", new Color(0xFFFFFFFF, true, false));
+		colorMap.put("1", new Color(0xFFD87F33, true, false));
+		colorMap.put("2", new Color(0xFFB24CD8, true, false));
+		colorMap.put("3", new Color(0xFF6699D8, true, false));
+		colorMap.put("4", new Color(0xFFE5E533, true, false));
+		colorMap.put("5", new Color(0xFF7FCC19, true, false));
+		colorMap.put("6", new Color(0xFFF27FA5, true, false));
+		colorMap.put("7", new Color(0xFF4C4C4C, true, false));
+		colorMap.put("8", new Color(0xFF999999, true, false));
+		colorMap.put("9", new Color(0xFF4C7F99, true, false));
+		colorMap.put("10", new Color(0xFF7F3FB2, true, false));
+		colorMap.put("11", new Color(0xFF334CB2, true, false));
+		colorMap.put("12", new Color(0xFF664C33, true, false));
+		colorMap.put("13", new Color(0xFF667F33, true, false));
+		colorMap.put("14", new Color(0xFF993333, true, false));
+		colorMap.put("15", new Color(0xFF191919, true, false));
+		
+		colorMap.put("white", new Color(0xFFFFFFFF, true, false));
+		colorMap.put("orange", new Color(0xFFD87F33, true, false));
+		colorMap.put("magenta", new Color(0xFFB24CD8, true, false));
+		colorMap.put("light_blue", new Color(0xFF6699D8, true, false));
+		colorMap.put("yellow", new Color(0xFFE5E533, true, false));
+		colorMap.put("lime", new Color(0xFF7FCC19, true, false));
+		colorMap.put("pink", new Color(0xFFF27FA5, true, false));
+		colorMap.put("gray", new Color(0xFF4C4C4C, true, false));
+		colorMap.put("light_gray", new Color(0xFF999999, true, false));
+		colorMap.put("cyan", new Color(0xFF4C7F99, true, false));
+		colorMap.put("purple", new Color(0xFF7F3FB2, true, false));
+		colorMap.put("blue", new Color(0xFF334CB2, true, false));
+		colorMap.put("brown", new Color(0xFF664C33, true, false));
+		colorMap.put("green", new Color(0xFF667F33, true, false));
+		colorMap.put("red", new Color(0xFF993333, true, false));
+		colorMap.put("black", new Color(0xFF191919, true, false));
+		
+		
+		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
+		resourcePacks.add("base_resource_pack");
+		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
+			File dataFolder = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/data");
+			if(!dataFolder.exists() || !dataFolder.isDirectory())
+				continue;
+			for(File namespace : dataFolder.listFiles()) {
+				File bannerPatternFolder = new File(namespace, "banner_pattern");
+				if(!bannerPatternFolder.exists() || !bannerPatternFolder.isDirectory())
+					continue;
+				for(File bannerPattern : bannerPatternFolder.listFiles()) {
+					if(!bannerPattern.isFile() || !bannerPattern.getName().endsWith(".json"))
+						continue;
+					try {
+						JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(bannerPattern)))).getAsJsonObject();
+						if(data.has("asset_id")) {
+							String id = data.get("asset_id").getAsString();
+							if(!id.contains(":"))
+								id = "minecraft:" + id;
+							String[] tokens = id.split(":");
+							patternMap.put(namespace.getName() + ":" + bannerPattern.getName().replace(".json", ""), 
+									tokens[0] + ":entity/banner/" + tokens[1]);
+						}
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}
 	}
 	
 	public static void createBannerTexture(String data, File textureFolder, String name) throws Exception {
@@ -119,7 +183,7 @@ public class BannerTextureCreator {
 			for(int i = 0; i < baseImg.getWidth(); ++i)
 				resImg.setRGB(i, j, baseImg.getRGB(i, j));
 		if(jsonData.has("color")) {
-			tint(resImg, colorMap.getOrDefault(jsonData.get("color").getAsInt(), new Color(1f, 1f, 1f, 1f)));
+			tint(resImg, colorMap.getOrDefault(jsonData.get("color").getAsString(), new Color(1f, 1f, 1f, 1f)));
 		}
 		if(jsonData.has("patterns")) {
 			for(JsonElement el : jsonData.get("patterns").getAsJsonArray().asList()) {
@@ -127,7 +191,7 @@ public class BannerTextureCreator {
 						patternMap.getOrDefault(el.getAsJsonObject().get("name").getAsString(), ""), 
 						"textures", ".png", "assets"));
 				composite(resImg, img, 
-						colorMap.getOrDefault(el.getAsJsonObject().get("color").getAsInt(), new Color(1f, 1f, 1f, 1f)));
+						colorMap.getOrDefault(el.getAsJsonObject().get("color").getAsString(), new Color(1f, 1f, 1f, 1f)));
 			}
 		}
 		

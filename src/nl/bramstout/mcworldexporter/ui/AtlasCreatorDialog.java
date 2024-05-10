@@ -31,26 +31,26 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import nl.bramstout.mcworldexporter.Atlas;
-import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.atlas.AtlasCreator;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 
 public class AtlasCreatorDialog extends JDialog {
 
@@ -59,62 +59,76 @@ public class AtlasCreatorDialog extends JDialog {
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private JTextField saveToInput;
+	
 	public AtlasCreatorDialog() {
 		super(MCWorldExporter.getApp().getUI());
 		JPanel root = new JPanel();
-		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
-		root.setBorder(new EmptyBorder(16, 16, 16, 16));
+		root.setLayout(new BoxLayout(root, BoxLayout.X_AXIS));
+		root.setBorder(new EmptyBorder(0, 0, 0, 0));
 		add(root);
 		
-		JLabel resourcePackLabel = new JLabel("Resource Pack");
-		root.add(resourcePackLabel);
-		
-		List<String> resourcePacks = new ArrayList<String>();
-		File dir = new File(FileUtil.getResourcePackDir().substring(0, FileUtil.getResourcePackDir().length()-1));
-		if(dir.exists()) {
-			File[] files = dir.listFiles();
-			if(files != null)
-				for (File f : files)
-					if (f.isDirectory())
-						resourcePacks.add(f.getName());
-		}
-		String[] resourcePacksArray = new String[resourcePacks.size()];
-		resourcePacks.toArray(resourcePacksArray);
-		JComboBox<String> resourcePackSelector = new JComboBox<String>(resourcePacksArray);
-		resourcePackSelector.setEditable(false);
-		root.add(resourcePackSelector);
-		
-		root.add(new JPanel());
+		JPanel leftSide = new JPanel();
+		leftSide.setLayout(new BoxLayout(leftSide, BoxLayout.Y_AXIS));
+		root.add(leftSide);
+		leftSide.setBorder(new EmptyBorder(16, 16, 16, 8));
 		
 		JLabel excludeTexturesLabel = new JLabel("Exclude Textures");
-		root.add(excludeTexturesLabel);
+		leftSide.add(excludeTexturesLabel);
 		JTextArea excludeTexturesCtrl = new JTextArea();
-		root.add(excludeTexturesCtrl);
+		leftSide.add(excludeTexturesCtrl);
 		
-		root.add(new JPanel());
+		leftSide.add(new JPanel());
 		
 		JLabel utilityTexturesLabel = new JLabel("Utility Texture Suffixes");
-		root.add(utilityTexturesLabel);
-		JTextArea utilityTexturesCtrl = new JTextArea("emission\nbump\nnormal\nspecular\nroughness");
-		root.add(utilityTexturesCtrl);
+		leftSide.add(utilityTexturesLabel);
+		JTextArea utilityTexturesCtrl = new JTextArea("emission\nbump\nnormal\nspecular\nroughness\nn\ns");
+		leftSide.add(utilityTexturesCtrl);
 		
-		root.add(new JPanel());
+		leftSide.add(new JPanel());
+		
+		JPanel createPanel = new JPanel();
+		createPanel.setLayout(new BoxLayout(createPanel, BoxLayout.X_AXIS));
+		createPanel.setBorder(new EmptyBorder(0,0,0,0));
+		createPanel.setPreferredSize(new Dimension(1000, 24));
+		createPanel.setMaximumSize(new Dimension(1000, 24));
+		leftSide.add(createPanel);
+		
+		saveToInput = new JTextField();
+		saveToInput.setToolTipText("The resource pack name to save the atlases to.");
+		createPanel.add(saveToInput);
 		
 		JButton createButton = new JButton("Create Atlasses");
-		root.add(createButton);
+		createPanel.add(createButton);
 		
+		ResourcePackSelector resourcePackSelector = new ResourcePackSelector();
+		resourcePackSelector.setBorder(new EmptyBorder(16, 8, 16, 16));
+		resourcePackSelector.setMaximumSize(new Dimension(324, 1000));
+		resourcePackSelector.setPreferredSize(new Dimension(324, 1000));
+		root.add(resourcePackSelector);
+		resourcePackSelector.reset();
+		resourcePackSelector.clear();
+		for(int i = ResourcePack.getActiveResourcePacks().size()-1; i >= 0; --i)
+			resourcePackSelector.enableResourcePack(ResourcePack.getActiveResourcePacks().get(i));
 		
-		setSize(400, 600);
+		setSize(800, 600);
 		setTitle("Atlas Creator");
 		
 		createButton.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				AtlasCreator creator = new AtlasCreator();
-				creator.resourcePack = (String) resourcePackSelector.getSelectedItem();
-				if(creator.resourcePack == null)
+				if(saveToInput.getText().toLowerCase().contains("save to resource pack") || saveToInput.getText().trim().isEmpty()) {
+					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Please specify a name for the resource pack to save the atlases to.", "Error", JOptionPane.ERROR_MESSAGE);
 					return;
+				}
+				
+				// Set the resource packs
+				List<String> oldResourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
+				ResourcePack.setActiveResourcePacks(resourcePackSelector.getActiveResourcePacks());
+				
+				AtlasCreator creator = new AtlasCreator();
+				creator.resourcePack = saveToInput.getText();
 				String excludeTexturesArray[] = excludeTexturesCtrl.getText().split("\\n");
 				for(String s : excludeTexturesArray) {
 					if(!s.startsWith("block/"))
@@ -135,9 +149,25 @@ public class AtlasCreatorDialog extends JDialog {
 				
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Atlases created successfully", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
+				
+				// Restore resource packs.
+				ResourcePack.setActiveResourcePacks(oldResourcePacks);
+				
+				MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
+				MCWorldExporter.getApp().getUI().getResourcePackManager().clear();
+				for(int i = oldResourcePacks.size()-1; i >= 0; --i)
+					MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(oldResourcePacks.get(i));
 			}
 			
 		});
+	}
+	
+	@Override
+	public void setVisible(boolean b) {
+		super.setVisible(b);
+		if(b) {
+			saveToInput.setText("Save To Resource Pack");
+		}
 	}
 
 }

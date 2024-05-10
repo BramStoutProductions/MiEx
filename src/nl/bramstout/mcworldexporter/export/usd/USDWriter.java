@@ -178,6 +178,20 @@ public class USDWriter {
 		fw.write("]\n");
 	}
 	
+	public void writeMetaData(String name) throws IOException{
+		fw.write(getIndent() + name);
+	}
+	
+	public void beginDict() throws IOException{
+		fw.write(" = {\n");
+		indent++;
+	}
+	
+	public void endDict() throws IOException{
+		indent--;
+		fw.write(getIndent() + "}\n");
+	}
+	
 	public void writePayload(String path, boolean append) throws IOException {
 		fw.write(getIndent() + (append ? "append " : "") + "payload = @" + path + "@\n");
 	}
@@ -318,6 +332,15 @@ public class USDWriter {
 			fw.write("\"" + value[i] + "\",");
 		if(value.length > 0)
 			fw.write("\"" + value[value.length - 1] + "\"");
+		fw.write("]");
+	}
+	
+	public void writeAttributeValueStringArray(List<String> value) throws IOException{
+		fw.write(" = [");
+		for(int i = 0; i < value.size() - 1; ++i)
+			fw.write("\"" + value.get(i) + "\",");
+		if(value.size() > 0)
+			fw.write("\"" + value.get(value.size() - 1) + "\"");
 		fw.write("]");
 	}
 	

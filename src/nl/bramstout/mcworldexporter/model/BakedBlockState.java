@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.model;
 
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
 
@@ -58,7 +59,7 @@ public class BakedBlockState {
 	private boolean randomAnimationYOffset;
 	private boolean lodNoUVScale;
 	private int lodPriority;
-	private int redstonePowerLevel;
+	private Color tint;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
 							boolean transparentOcclusion, boolean leavesOcclusion, boolean detailedOcclusion,
@@ -66,7 +67,7 @@ public class BakedBlockState {
 							boolean randomOffset, boolean randomYOffset,
 							boolean grassColormap, boolean foliageColormap, boolean waterColormap,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, int lodPriority, int redstonePowerLevel) {
+							boolean lodNoUVScale, int lodPriority, Color tint) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -94,7 +95,7 @@ public class BakedBlockState {
 		this.randomAnimationYOffset = randomAnimationYOffset;
 		this.lodNoUVScale = lodNoUVScale;
 		this.lodPriority = lodPriority;
-		this.redstonePowerLevel = redstonePowerLevel;
+		this.tint = tint;
 	}
 	
 	public long getOccludes() {
@@ -140,6 +141,13 @@ public class BakedBlockState {
 				res.add(modelList.get(0));
 			}
 		}
+	}
+	
+	public String getDefaultTexture() {
+		for(int i = 0; i < models.size(); ++i)
+			if(models.get(i).size() > 0)
+				return models.get(i).get(0).getDefaultTexture();
+		return null;
 	}
 	
 	public boolean isTransparentOcclusion() {
@@ -217,8 +225,8 @@ public class BakedBlockState {
 		return lodPriority;
 	}
 	
-	public int getRedstonePowerLevel() {
-		return redstonePowerLevel;
+	public Color getTint() {
+		return tint;
 	}
 
 }

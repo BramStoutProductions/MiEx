@@ -1,0 +1,64 @@
+{
+    "birch_leaves": {
+        "tint": "#80A755"
+    },
+    "spruce_leaves": {
+        "tint": "#619961"
+    },
+    "lily_pad": {
+        "tint": "#208030"
+    },
+    "attached_pumpkin_stem": {
+        "tint": "#E0C71C"
+    },
+    "attached_melon_stem": {
+        "tint": "#E0C71C"
+    },
+    "pumpkin_stem": {
+        "tint": "#00FF00",
+        "states": {
+            "age=0": "#00FF00",
+            "age=1": "#20F704",
+            "age=2": "#40EF08",
+            "age=3": "#60E70C",
+            "age=4": "#80DF10",
+            "age=5": "#A0D714",
+            "age=6": "#C0CF18",
+            "age=7": "#E0C71C"
+        }
+    },
+    "melon_stem": {
+        "tint": "#00FF00",
+        "states": {
+            "age=0": "#00FF00",
+            "age=1": "#20F704",
+            "age=2": "#40EF08",
+            "age=3": "#60E70C",
+            "age=4": "#80DF10",
+            "age=5": "#A0D714",
+            "age=6": "#C0CF18",
+            "age=7": "#E0C71C"
+        }
+    },
+    "redstone_wire": {
+        "tint": "#FC3100",
+        "states": {
+            "power=0": "#4B0000",
+            "power=1": "#6F0000",
+            "power=2": "#790000",
+            "power=3": "#820000",
+            "power=4": "#8C0000",
+            "power=5": "#970000",
+            "power=6": "#A10000",
+            "power=7": "#AB0000",
+            "power=8": "#B50000",
+            "power=9": "#BF0000",
+            "power=10": "#CA0000",
+            "power=11": "#D30000",
+            "power=12": "#DD0000",
+            "power=13": "#E70600",
+            "power=14": "#F11B00",
+            "power=15": "#FC3100"
+        }
+    }
+}

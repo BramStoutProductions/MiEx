@@ -53,10 +53,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
-import nl.bramstout.mcworldexporter.Atlas;
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.materials.Materials;
+import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 
 public class AtlasCreator {
 	
@@ -79,6 +81,8 @@ public class AtlasCreator {
 		int padding;
 		BufferedImage img;
 		Set<String> textures;
+		boolean full;
+		int fullCounter;
 		
 		public AtlasData() {
 			name = "";
@@ -86,6 +90,8 @@ public class AtlasCreator {
 			size = 256;
 			padding = 4;
 			textures = new HashSet<String>();
+			full = false;
+			fullCounter = 4;
 			img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
 			// Fill it with black
 			for(int j = 0; j < size; ++j)
@@ -99,7 +105,20 @@ public class AtlasCreator {
 			
 			int itemX = (int) ((item.x / item.width) * ((float) size));
 			int itemY = (int) ((item.y / item.height) * ((float) size));
-			drawTexture(itemX, itemY, item.padding, img);
+			
+			int width = img.getWidth();
+			int height = img.getHeight();
+			int maxRes = Math.max(width, height);
+			int scaling = 1;
+			if(maxRes > Config.atlasMaxTileResolution) {
+				// The texture is too big, so we need to downscale it.
+				float fscaling = ((float) maxRes) / ((float) Config.atlasMaxTileResolution);
+				scaling = (int) Math.ceil(fscaling);
+				width /= scaling;
+				height /= scaling;
+			}
+			
+			drawTexture(itemX, itemY, item.padding, scaling, img);
 		}
 		
 		public boolean place(String texture, int width, int height, BufferedImage tex) {
@@ -107,12 +126,22 @@ public class AtlasCreator {
 			if(textures.contains(texture))
 				return true;
 			
+			int maxRes = Math.max(width, height);
+			int scaling = 1;
+			if(maxRes > Config.atlasMaxTileResolution) {
+				// The texture is too big, so we need to downscale it.
+				float fscaling = ((float) maxRes) / ((float) Config.atlasMaxTileResolution);
+				scaling = (int) Math.ceil(fscaling);
+				width /= scaling;
+				height /= scaling;
+			}
+			
 			// Try to find a place that doesn't intersect with any existing textures.
 			Atlas.AtlasItem intersected = null;
 			int minIntersectionHeight = Integer.MAX_VALUE;
-			for(int j = 0; j <= size - height;) {
+			for(int j = 0; j <= size - (height*this.padding);) {
 				minIntersectionHeight = Integer.MAX_VALUE;
-				for(int i = 0; i <= size - width;) {
+				for(int i = 0; i <= size - (width*this.padding);) {
 					intersected = intersect(i, j, width, height);
 					if(intersected != null) {
 						// We intersected with another texture,
@@ -131,7 +160,7 @@ public class AtlasCreator {
 					item.y = (((float) j) / ((float) size)) * item.height;
 					item.padding = this.padding;
 					items.add(item);
-					drawTexture(i, j, item.padding, tex);
+					drawTexture(i, j, item.padding, scaling, tex);
 					return true;
 				}
 				j += Math.max(minIntersectionHeight, 1);
@@ -139,8 +168,16 @@ public class AtlasCreator {
 			
 			// We couldn't find a place, so let's increase the atlas size;
 			// But, we are going to put a maximum size of 4096 pixels.
-			if(size >= 4096)
+			if(size >= Config.atlasMaxResolution) {
+				fullCounter--;
+				if(fullCounter <= 0) {
+					fullCounter = 0;
+					// If we couldn't place a texture x times,
+					// we consider this atlas full
+					full = true;
+				}
 				return false;
+			}
 			
 			int newSize = size << 1;
 			// We need to go through all atlas items and update the values;
@@ -178,7 +215,7 @@ public class AtlasCreator {
 			size = newSize;
 			
 			// Try placing it again
-			return place(texture, width, height, tex);
+			return place(texture, tex.getWidth(), tex.getHeight(), tex);
 		}
 		
 		private Atlas.AtlasItem intersect(int x, int y, int width, int height) {
@@ -207,29 +244,29 @@ public class AtlasCreator {
 			return null;
 		}
 		
-		private void drawTexture(int x, int y, int padding, BufferedImage image) {
-			int width = image.getWidth() * padding;
-			int height = image.getHeight() * padding;
+		private void drawTexture(int x, int y, int padding, int scaling, BufferedImage image) {
+			int width = (image.getWidth() / scaling) * padding;
+			int height = (image.getHeight() / scaling) * padding;
 			for(int j = 0; j < height; ++j) {
 				for(int i = 0; i < width; ++i) {
-					img.setRGB(x + i, y + j, image.getRGB(i % image.getWidth(), j % image.getHeight()));
+					img.setRGB(x + i, y + j, image.getRGB((i * scaling) % image.getWidth(), (j * scaling) % image.getHeight()));
 				}
 			}
 		}
 	}
 	
-	private Map<Materials.MaterialTemplate, List<String>> atlases;
+	private Map<Materials.MaterialTemplate, Set<String>> atlases;
 	private List<AtlasData> finalAtlases;
 	private Set<String> excludeFromAtlas;
+	private int atlasCounter;
 	
 	public void process() {
-		atlases = new HashMap<Materials.MaterialTemplate, List<String>>();
+		atlases = new HashMap<Materials.MaterialTemplate, Set<String>>();
 		finalAtlases = new ArrayList<AtlasData>();
 		excludeFromAtlas = new HashSet<String>();
 		File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePack);
-		File assetsFolder = new File(resourcePackFolder, "assets");
-		if(!assetsFolder.exists())
-			return;
+		if(!resourcePackFolder.exists())
+			resourcePackFolder.mkdirs();
 		File atlasJsonFile = new File(resourcePackFolder, "miex_atlas.json");
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
@@ -267,7 +304,7 @@ public class AtlasCreator {
 							
 							// Get the size of it
 							String[] tokens = atlas.name.split(":");
-							File texFile = new File(assetsFolder, tokens[0] + "/textures/" + tokens[1] + ".png");
+							File texFile = new File(resourcePackFolder, "assets/" + tokens[0] + "/textures/" + tokens[1] + ".png");
 							try {
 								BufferedImage img = ImageIO.read(texFile);
 								atlas.size = img.getWidth();
@@ -283,11 +320,11 @@ public class AtlasCreator {
 						}
 						
 						try {
-							String[] tokens = atlas.name.split(":");
-							File texFile = new File(assetsFolder, tokens[0] + "/textures/" + tokens[1] + ".png");
-							
-							BufferedImage img = ImageIO.read(texFile);
-							atlas.addItem(item, img);
+							File texFile = ResourcePack.getFile(item.name, "textures", ".png", "assets");
+							if(texFile.exists()) {
+								BufferedImage img = ImageIO.read(texFile);
+								atlas.addItem(item, img);
+							}
 						}catch(Exception ex) {
 							ex.printStackTrace();
 						}
@@ -302,10 +339,19 @@ public class AtlasCreator {
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.2f);
 		
-		for(String f : assetsFolder.list()) {
-			if(f.equalsIgnoreCase("miex"))
+		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
+		resourcePacks.add("base_resource_pack");
+		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
+			File assetsFolder = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/assets");
+			if(!assetsFolder.exists() || !assetsFolder.isDirectory())
 				continue;
-			processNamespace(f, assetsFolder);
+			for(File f : assetsFolder.listFiles()) {
+				if(!f.isDirectory())
+					continue;
+				if(f.getName().equalsIgnoreCase("miex"))
+					continue;
+				processNamespace(f.getName(), assetsFolder);
+			}
 		}
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.3f);
@@ -313,11 +359,10 @@ public class AtlasCreator {
 		// We have processed all files and ordered them by template,
 		// now we need to add them into the actual atlasses.
 		String atlasPrefix = "miex:block/atlas_" + Integer.toHexString(resourcePack.hashCode()) + "_";
-		String atlasFilePrefix = "miex/textures/block/atlas_" + Integer.toHexString(resourcePack.hashCode()) + "_";
-		int atlasCounter = 0;
+		atlasCounter = 0;
 		float numAtlases = (float) atlases.size();
 		float counter = 0f;
-		for(Entry<Materials.MaterialTemplate, List<String>> entry : atlases.entrySet()) {
+		for(Entry<Materials.MaterialTemplate, Set<String>> entry : atlases.entrySet()) {
 			if(entry.getValue().size() <= 3) {
 				// If it's three or less textures,
 				// then it's not worth turning it into an atlas.
@@ -329,6 +374,7 @@ public class AtlasCreator {
 			
 			AtlasData atlas = new AtlasData();
 			atlas.padding = this.padding;
+			atlas.name = atlasPrefix + ++atlasCounter;
 			
 			float numTextures = (float) entry.getValue().size();
 			float texCounter = 0f;
@@ -339,8 +385,7 @@ public class AtlasCreator {
 				if(excludeFromAtlas.contains(texture))
 					continue;
 				
-				String[] tokens = texture.split(":");
-				File texFile = new File(assetsFolder, tokens[0] + "/textures/" + tokens[1] + ".png");
+				File texFile = ResourcePack.getFile(texture, "textures", ".png", "assets");
 				if(!texFile.exists())
 					continue;
 				try {
@@ -351,31 +396,75 @@ public class AtlasCreator {
 					// Place it.
 					boolean success = atlas.place(texture, width, height, img);
 					
-					// If it wasn't able to place it,
-					// then we just don't include it in any atlas.
-					if(!success)
-						excludeFromAtlas.add(texture);
+					if(!success) {
+						// It couldn't place it, so check if the atlas is full.
+						if(atlas.full) {
+							// The atlas is too full, so write it out
+							// and set up a new atlas.
+							finishUpAtlas(atlas, resourcePackFolder);
+							finalAtlases.add(atlas);
+							
+							atlas = new AtlasData();
+							atlas.padding = this.padding;
+							atlas.name = atlasPrefix + ++atlasCounter;
+						}else {
+							// Texture was probably to big, so we exclude it
+							// from the atlases.
+							excludeFromAtlas.add(texture);
+						}
+					}
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
 			}
 			
-			// Write out the image
-			atlas.name = atlasPrefix + ++atlasCounter;
-			File atlasFile = new File(assetsFolder, atlasFilePrefix + atlasCounter + ".png");
-			atlasFile.getParentFile().mkdirs();
-			try {
-				ImageIO.write(atlas.img, "png", atlasFile);
-			}catch(Exception ex) {
-				ex.printStackTrace();
-			}
-			
+			finishUpAtlas(atlas, resourcePackFolder);
 			finalAtlases.add(atlas);
 			
 			counter += 1f;
 		}
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
+		
+		// Make the utility atlases
+		for(String utilitySuffix : utilityTextures) {
+			for(AtlasData atlas : finalAtlases) {
+				AtlasData utilityAtlas = new AtlasData();
+				utilityAtlas.name = atlas.name + "_" + utilitySuffix;
+				utilityAtlas.padding = atlas.padding;
+				utilityAtlas.size = atlas.size;
+				utilityAtlas.img = new BufferedImage(utilityAtlas.size, utilityAtlas.size, BufferedImage.TYPE_INT_ARGB);
+				// Fill it with transparency.
+				// Any block that doesn't have this utility texture will be transparent,
+				// so the alpha channel can be used as an optional mask in the material.
+				for(int j = 0; j < utilityAtlas.size; ++j)
+					for(int i = 0; i < utilityAtlas.size; ++i)
+						utilityAtlas.img.setRGB(i, j, 0x00000000);
+				
+				boolean written = false;
+				
+				for(Atlas.AtlasItem item : atlas.items) {
+					Atlas.AtlasItem utilityItem = new Atlas.AtlasItem(item);
+					utilityItem.name = utilityItem.name + "_" + utilitySuffix;
+					
+					try {
+						File texFile = ResourcePack.getFile(utilityItem.name, "textures", ".png", "assets");
+						if(texFile.exists()) {
+							BufferedImage img = ImageIO.read(texFile);
+							utilityAtlas.addItem(utilityItem, img);
+							written = true;
+						}
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+				
+				if(written)
+					finishUpAtlas(utilityAtlas, resourcePackFolder);
+			}
+		}
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.95f);
 		
 		// We now have a bunch of atlasses, so let's write out the json file.
 		JsonObject root = new JsonObject();
@@ -414,13 +503,26 @@ public class AtlasCreator {
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 	}
 	
+	private void finishUpAtlas(AtlasData atlas, File resourcePackFolder) {
+		String[] tokens = atlas.name.split(":");
+		File atlasFile = new File(resourcePackFolder, "assets/" + tokens[0] + "/textures/" + tokens[1] + ".png");
+		atlasFile.getParentFile().mkdirs();
+		try {
+			ImageIO.write(atlas.img, "png", atlasFile);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
 	public void processNamespace(String namespace, File assetsFolder) {
 		File namespaceFolder = new File(assetsFolder, namespace);
 		File blocksFolder = new File(namespaceFolder, "textures/block");
-		if(!blocksFolder.exists())
-			return;
+		if(blocksFolder.exists())
+			processFolder("block", namespace, new File(namespaceFolder, "textures"));
 		
-		processFolder("block", namespace, new File(namespaceFolder, "textures"));
+		File optifineFolder = new File(namespaceFolder, "optifine/ctm");
+		if(optifineFolder.exists())
+			processFolder("ctm", "optifine;" + namespace, new File(namespaceFolder, "optifine"));
 	}
 	
 	public void processFolder(String folder, String namespace, File texturesFolder) {
@@ -437,8 +539,11 @@ public class AtlasCreator {
 			String resourceName = namespace + ":" + folder + "/" + fileStr.split("\\.")[0];
 			// Ignore animated textures.
 			if(new File(folderFile, fileStr + ".mcmeta").exists()) {
-				excludeFromAtlas.add(resourceName);
-				continue;
+				MCMeta mcmeta = new MCMeta(resourceName);
+				if(mcmeta.isAnimate() || mcmeta.isInterpolate()) {
+					excludeFromAtlas.add(resourceName);
+					continue;
+				}
 			}
 			
 			boolean skip = false;
@@ -462,9 +567,9 @@ public class AtlasCreator {
 				continue;
 			
 			Materials.MaterialTemplate template = Materials.getMaterial(resourceName, false, "");
-			List<String> atlas = atlases.get(template);
+			Set<String> atlas = atlases.get(template);
 			if(atlas == null) {
-				atlas = new ArrayList<String>();
+				atlas = new HashSet<String>();
 				atlases.put(template, atlas);
 			}
 			atlas.add(resourceName);

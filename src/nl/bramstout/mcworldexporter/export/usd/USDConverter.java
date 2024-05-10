@@ -32,9 +32,12 @@
 package nl.bramstout.mcworldexporter.export.usd;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -49,10 +52,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.export.Converter;
+import nl.bramstout.mcworldexporter.export.ExportData;
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
+import nl.bramstout.mcworldexporter.export.json.JsonMaterialWriter;
 import nl.bramstout.mcworldexporter.export.materialx.MaterialXMaterialWriter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
@@ -111,6 +118,9 @@ public class USDConverter extends Converter{
 	public static File currentOutputDir = null;
 	
 	public USDConverter(File inputFile, File outputFile) throws IOException {
+		if(inputFile == null || outputFile == null)
+			return;
+		
 		this.inputFile = inputFile;
 		dis = new LargeDataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
 		this.outputFile = outputFile;
@@ -147,12 +157,26 @@ public class USDConverter extends Converter{
 			throw new IOException("Unsupport input file version");
 		
 		long invididualBlocksOffset = dis.readLong();
+		ExportData exportData = ExportData.fromStream(dis);
+		
 		
 		USDWriter rootWriter = new USDWriter(outputFile);
 		rootWriter.beginMetaData();
 		rootWriter.writeMetaDataString("defaultPrim", "world");
 		rootWriter.writeMetaDataFloat("metersPerUnit", 1.0f);
 		rootWriter.writeMetaDataString("upAxis", "Y");
+		
+		// Export settings
+		rootWriter.writeMetaData("customLayerData");
+		rootWriter.beginDict();
+		rootWriter.writeAttributeName("dictionary", "MiEx", false);
+		rootWriter.beginDict();
+		
+		writeExportData(rootWriter, exportData);
+		
+		rootWriter.endDict();
+		rootWriter.endDict();
+		
 		rootWriter.endMetaData();
 		rootWriter.beginDef("Xform", "world");
 		rootWriter.beginMetaData();
@@ -175,7 +199,7 @@ public class USDConverter extends Converter{
 			for(int i = 0; i < numBaseMeshes; ++i) {
 				int baseMeshId = dis.readInt();
 				String blockName = dis.readUTF();
-				String primName = "_class_" + blockName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + baseMeshId;
+				String primName = "_class_" + Util.makeSafeName(blockName) + baseMeshId;
 				
 				rootWriter.beginClass("Xform", primName);
 				rootWriter.beginMetaData();
@@ -245,7 +269,8 @@ public class USDConverter extends Converter{
 		
 		MaterialWriter[] materialWriters = new MaterialWriter[] { 
 				new USDMaterialWriter(materialsFile), 
-				new MaterialXMaterialWriter(new File(materialsFile.getPath().replace(".usd", ".mtlx"))) };
+				new MaterialXMaterialWriter(new File(materialsFile.getPath().replace(".usd", ".mtlx"))),
+				new JsonMaterialWriter(new File(materialsFile.getPath().replace(".usd", ".json")))};
 		
 		for(MaterialWriter materialWriter : materialWriters)
 			materialWriter.open();
@@ -270,9 +295,13 @@ public class USDConverter extends Converter{
 		}
 		
 		List<String> materialReferences = new ArrayList<String>();
-		for(MaterialWriter materialWriter : materialWriters)
-			if(materialWriter.hasWrittenAnything())
-				materialReferences.add(materialWriter.getUSDAssetPath());
+		for(MaterialWriter materialWriter : materialWriters) {
+			if(materialWriter.hasWrittenAnything()) {
+				String refPath = materialWriter.getUSDAssetPath();
+				if(refPath != null)
+					materialReferences.add(refPath);
+			}
+		}
 		
 		
 		rootWriter.beginDef("Scope", "materials");
@@ -326,6 +355,63 @@ public class USDConverter extends Converter{
 		USDWriter.finalCleanup();
 	}
 	
+	private void writeExportData(USDWriter rootWriter, ExportData data) throws IOException{
+		rootWriter.writeAttributeName("string", "world", false);
+		rootWriter.writeAttributeValueString(data.world.replace('\\', '/'));
+		
+		rootWriter.writeAttributeName("string", "dimension", false);
+		rootWriter.writeAttributeValueString(data.dimension);
+		
+		rootWriter.writeAttributeName("int", "chunkSize", false);
+		rootWriter.writeAttributeValueInt(data.chunkSize);
+		
+		rootWriter.writeAttributeName("int", "exportMinX", false);
+		rootWriter.writeAttributeValueInt(data.exportMinX);
+		rootWriter.writeAttributeName("int", "exportMinY", false);
+		rootWriter.writeAttributeValueInt(data.exportMinY);
+		rootWriter.writeAttributeName("int", "exportMinZ", false);
+		rootWriter.writeAttributeValueInt(data.exportMinZ);
+		
+		rootWriter.writeAttributeName("int", "exportMaxX", false);
+		rootWriter.writeAttributeValueInt(data.exportMaxX);
+		rootWriter.writeAttributeName("int", "exportMaxY", false);
+		rootWriter.writeAttributeValueInt(data.exportMaxY);
+		rootWriter.writeAttributeName("int", "exportMaxZ", false);
+		rootWriter.writeAttributeValueInt(data.exportMaxZ);
+		
+		rootWriter.writeAttributeName("int", "hasLOD", false);
+		rootWriter.writeAttributeValueInt(data.hasLOD ? 1 : 0);
+		
+		rootWriter.writeAttributeName("int", "lodCenterX", false);
+		rootWriter.writeAttributeValueInt(data.lodCenterX);
+		rootWriter.writeAttributeName("int", "lodCenterZ", false);
+		rootWriter.writeAttributeValueInt(data.lodCenterZ);
+		rootWriter.writeAttributeName("int", "lodWidth", false);
+		rootWriter.writeAttributeValueInt(data.lodWidth);
+		rootWriter.writeAttributeName("int", "lodDepth", false);
+		rootWriter.writeAttributeValueInt(data.lodDepth);
+		rootWriter.writeAttributeName("int", "lodYDetail", false);
+		rootWriter.writeAttributeValueInt(data.lodYDetail);
+		
+		rootWriter.writeAttributeName("string[]", "fgChunks", false);
+		rootWriter.writeAttributeValueStringArray(data.fgChunks);
+		
+		rootWriter.writeAttributeName("string[]", "resourcePacks", false);
+		rootWriter.writeAttributeValueStringArray(data.resourcePacks);
+		
+		rootWriter.writeAttributeName("int", "runOptimiser", false);
+		rootWriter.writeAttributeValueInt(data.runOptimiser ? 1 : 0);
+		
+		rootWriter.writeAttributeName("int", "removeCaves", false);
+		rootWriter.writeAttributeValueInt(data.removeCaves ? 1 : 0);
+		
+		rootWriter.writeAttributeName("int", "fillInCaves", false);
+		rootWriter.writeAttributeValueInt(data.fillInCaves ? 1 : 0);
+		
+		rootWriter.writeAttributeName("int", "onlyIndividualBlocks", false);
+		rootWriter.writeAttributeValueInt(data.onlyIndividualBlocks ? 1 : 0);
+	}
+	
 	private void writeChunks(USDWriter rootWriter, ChunkInfo[] chunkInfos) throws IOException{
 		for(ChunkInfo chunkInfo : chunkInfos) {
 			rootWriter.beginDef("Xform", chunkInfo.name);
@@ -337,34 +423,20 @@ public class USDConverter extends Converter{
 			rootWriter.writeAttributeName("bool", "isFG", true);
 			rootWriter.writeAttributeValueBoolean(chunkInfo.isFG);
 			
-			/*rootWriter.beginDef("Xform", "meshes");
-			rootWriter.beginMetaData();
-			rootWriter.writePayload("./" + chunksFolder.getName() + "/" + chunkInfo.name + ".usd", false);
-			rootWriter.endMetaData();
-			rootWriter.beginChildren();*/
-			
 			rootWriter.beginOver("materials");
 			rootWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				rootWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
+				rootWriter.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
-				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
+				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + Util.makeSafeName(tex.texture) + 
 												(tex.hasBiomeColor ? "_BIOME" : "") + ">");
 			}
 			rootWriter.endChildren();
 			rootWriter.endOver();
 			
-			/*rootWriter.endChildren();
-			rootWriter.endDef();*/
-			
-			/*rootWriter.beginDef("Xform", "individual_blocks");
-			rootWriter.beginChildren();*/
-			
 			for(Entry<Integer, List<Float>> instancer : chunkInfo.instancers.entrySet()) {
 				IndividualBlockInfo baseInfo = individualBlocksRegistry.get(instancer.getKey());
 				
-				/*rootWriter.beginDef("Xform", baseInfo.path.replace("_class_", ""));
-				rootWriter.beginChildren();*/
 				for(int i = 0; i < instancer.getValue().size()/3; ++i) {
 					rootWriter.beginDef("Xform", baseInfo.path.replace("_class_", "") + "_" + i);
 					rootWriter.beginMetaData();
@@ -383,12 +455,7 @@ public class USDConverter extends Converter{
 					rootWriter.endChildren();
 					rootWriter.endDef();
 				}
-				/*rootWriter.endChildren();
-				rootWriter.endDef();*/
 			}
-			
-			/*rootWriter.endChildren();
-			rootWriter.endDef();*/
 			
 			rootWriter.endChildren();
 			rootWriter.endDef();
@@ -398,15 +465,9 @@ public class USDConverter extends Converter{
 	private void writeChunkRenderVariants(USDWriter rootWriter, ChunkInfo[] chunkInfos) throws IOException{
 		for(ChunkInfo chunkInfo : chunkInfos) {
 			rootWriter.beginOver(chunkInfo.name);
-			/*rootWriter.beginChildren();
-			
-			rootWriter.beginOver("meshes");*/
 			rootWriter.beginMetaData();
 			rootWriter.writePayload("./" + chunksFolder.getName() + "/" + chunkInfo.name + "_render.usd", true);
 			rootWriter.endMetaData();
-			/*rootWriter.endOver();
-			
-			rootWriter.endChildren();*/
 			rootWriter.endOver();
 		}
 	}
@@ -501,7 +562,7 @@ public class USDConverter extends Converter{
 			chunkWriter.beginDef("Scope", "materials");
 			chunkWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				chunkWriter.writeAttributeName("rel", "MAT_" + tex.texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
+				chunkWriter.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
 												(tex.hasBiomeColor ? "_BIOME" : ""), false);
 			}
 			chunkWriter.endChildren();
@@ -518,7 +579,7 @@ public class USDConverter extends Converter{
 			if(meshName.equals(""))
 				meshName = "mesh";
 			else
-				meshName = meshName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
+				meshName = Util.makeSafeName(meshName);
 			boolean doubleSided = dis.readInt() > 0;
 			String texture = dis.readUTF();
 			String extraData = dis.readUTF();
@@ -611,7 +672,7 @@ public class USDConverter extends Converter{
 			if(groupName.equals(""))
 				groupName = "mesh";
 			else
-				groupName = groupName.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
+				groupName = Util.makeSafeName(groupName);
 			int numChildren = dis.readInt();
 			
 			
@@ -722,6 +783,12 @@ public class USDConverter extends Converter{
 		writer.writeAttributeName("int", "primvars:ri:attributes:Ri:Sides", false);
 		writer.writeAttributeValueInt(doubleSided ? 2 : 1);
 		
+		// Blender doesn't respect the doubSided attribute, so
+		// add the data in here so that it can be recovered
+		// by the import script.
+		writer.writeAttributeName("custom bool", "userProperties:doubleSided", false);
+		writer.writeAttributeValueInt(doubleSided ? 1 : 0);
+		
 		writer.writeAttributeName("token", "subdivisionScheme", true);
 		writer.writeAttributeValueString("none");
 		
@@ -773,7 +840,7 @@ public class USDConverter extends Converter{
 		
 		
 		writer.writeAttributeName("rel", "material:binding", false);
-		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + 
+		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + Util.makeSafeName(texture) + 
 				(numColors > 0 ? "_BIOME" : "")+ ">");
 		
 		writer.endChildren();
@@ -793,6 +860,120 @@ public class USDConverter extends Converter{
 		}
 		
 		instancers.put(blockId, points);
+	}
+	
+	@Override
+	public ExportData getExportData(File file) {
+		if(!file.exists() || !file.getName().endsWith(".usd"))
+			return null;
+		
+		BufferedReader in = null;
+		try {
+			in = new BufferedReader(new FileReader(file));
+			String firstLine = in.readLine();
+			if(!firstLine.startsWith("#usda 1.0")) {
+				// It's not a usda file, so we first have to convert it into
+				// usda.
+				in.close();
+				
+				if(!FileUtil.hasUSDCat())
+					return null;
+				
+				File outFile = File.createTempFile("miex_", ".usd");
+				outFile.deleteOnExit();
+				// Convert from Crate to ASCII
+				String usdCatExe = FileUtil.getUSDCatExe();
+				ProcessBuilder builder = new ProcessBuilder(new File(usdCatExe).getCanonicalPath(), 
+															file.getCanonicalPath(), 
+															"--out", outFile.getCanonicalPath(), "--usdFormat", "usda");
+				builder.directory(new File(usdCatExe).getParentFile());
+				Process usdCatProcess = builder.start();
+				int returnCode = usdCatProcess.waitFor();
+				if(returnCode != 0)
+					return null;
+				
+				// It's been converted, so read it
+				in = new BufferedReader(new FileReader(outFile));
+				firstLine = in.readLine();
+				if(!firstLine.startsWith("#usda 1.0")) {
+					in.close();
+					return null;
+				}
+			}
+			
+			ExportData data = new ExportData();
+			
+			// Go through each line to find the start of the MiEx dict
+			boolean foundDict = false;
+			while(true) {
+				String line = in.readLine();
+				if(line == null)
+					break;
+				
+				if(line.trim().equals(")"))
+					break; // We've reached the end of the metadata part. 
+				
+				if(line.contains("dictionary MiEx")) {
+					foundDict = true;
+					continue;
+				}
+				if(!foundDict)
+					continue;
+				
+				if(line.contains("}")) {
+					// We've reached the end of the dict.
+					break;
+				}
+				
+				// Now it's reading in the data
+				if(!line.contains("="))
+					continue; // Not a valid line
+				
+				String[] tokens = line.split("=");
+				String[] nameTokens = tokens[0].trim().split("\\s");
+				String name = nameTokens[nameTokens.length-1];
+				String type = nameTokens[nameTokens.length-2];
+				String value = tokens[1].trim();
+				
+				try {
+					Field field = ExportData.class.getField(name);
+					if(type.equals("int")) {
+						if(field.getType() == Boolean.TYPE)
+							field.set(data, Integer.parseInt(value) > 0 ? true : false);
+						else
+							field.set(data, Integer.parseInt(value));
+					}else if(type.equals("string")) {
+						field.set(data, value.substring(1, value.length()-1));
+					}else if(type.equals("string[]")) {
+						String[] values = value.substring(1, value.length()-1).split(",");
+						List<String> valuesList = new ArrayList<String>();
+						for(String val : values) {
+							val = val.trim();
+							if(val.length() > 2)
+								valuesList.add(val.substring(1, val.length()-1));
+						}
+						field.set(data, valuesList);
+					}
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			
+			in.close();
+			return data;
+			
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		if(in != null) {
+			try {
+				in.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		return null;
 	}
 	
 }

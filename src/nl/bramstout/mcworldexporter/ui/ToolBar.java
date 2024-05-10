@@ -62,6 +62,7 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Converter;
+import nl.bramstout.mcworldexporter.export.ExportData;
 import nl.bramstout.mcworldexporter.export.Exporter;
 
 public class ToolBar extends JPanel {
@@ -72,6 +73,7 @@ public class ToolBar extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private JButton loadWorldButton;
+	private JButton loadWorldFromExportButton;
 	private JComboBox<String> dimensionChooser;
 
 	private JSpinner minXSpinner;
@@ -123,7 +125,7 @@ public class ToolBar extends JPanel {
 
 		JPanel worldPanel = new JPanel();
 		worldPanel.setLayout(new BoxLayout(worldPanel, BoxLayout.Y_AXIS));
-		worldPanel.setMinimumSize(new Dimension(250, 140));
+		worldPanel.setMinimumSize(new Dimension(300, 140));
 		worldPanel.setMaximumSize(worldPanel.getMinimumSize());
 		worldPanel.setPreferredSize(worldPanel.getMinimumSize());
 		JLabel worldPanelLabel = new JLabel("World");
@@ -132,11 +134,31 @@ public class ToolBar extends JPanel {
 		worldPanel.add(new JPanel());
 		JPanel worldCtrlPanel = new JPanel();
 		worldCtrlPanel.setLayout(new BoxLayout(worldCtrlPanel, BoxLayout.X_AXIS));
+		
+		JPanel loadButtonsPanel = new JPanel();
+		loadButtonsPanel.setLayout(new BoxLayout(loadButtonsPanel, BoxLayout.Y_AXIS));
+		loadButtonsPanel.setBorder(new EmptyBorder(0,0,0,0));
+		worldCtrlPanel.add(loadButtonsPanel);
+		
 		loadWorldButton = new JButton("Load");
-		loadWorldButton.setPreferredSize(new Dimension(80, 24));
+		loadWorldButton.setPreferredSize(new Dimension(130, 24));
 		loadWorldButton.setMinimumSize(loadWorldButton.getPreferredSize());
 		loadWorldButton.setMaximumSize(loadWorldButton.getPreferredSize());
-		worldCtrlPanel.add(loadWorldButton);
+		loadButtonsPanel.add(loadWorldButton);
+		
+		JPanel loadButtonsPadding = new JPanel();
+		loadButtonsPadding.setPreferredSize(new Dimension(10, 4));
+		loadButtonsPadding.setMinimumSize(new Dimension(10, 4));
+		loadButtonsPadding.setMaximumSize(new Dimension(10, 4));
+		loadButtonsPadding.setBorder(new EmptyBorder(0,0,0,0));
+		loadButtonsPanel.add(loadButtonsPadding);
+		
+		loadWorldFromExportButton = new JButton("Load From Export");
+		loadWorldFromExportButton.setPreferredSize(new Dimension(130, 24));
+		loadWorldFromExportButton.setMinimumSize(loadWorldFromExportButton.getPreferredSize());
+		loadWorldFromExportButton.setMaximumSize(loadWorldFromExportButton.getPreferredSize());
+		loadButtonsPanel.add(loadWorldFromExportButton);
+		
 		worldCtrlPanel.add(new JPanel());
 		dimensionChooser = new JComboBox<String>();
 		dimensionChooser.setPreferredSize(new Dimension(150, 24));
@@ -496,6 +518,47 @@ public class ToolBar extends JPanel {
 			}
 
 		});
+		
+		loadWorldFromExportButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setApproveButtonText("Load");
+				chooser.setDialogTitle("Load Export");
+				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				if(exportLastDirectory == null || !exportLastDirectory.exists())
+					exportLastDirectory = new File(FileUtil.getHomeDir());
+				chooser.setCurrentDirectory(exportLastDirectory);
+				FileFilter defaultFilter = null;
+				for(String extension : Converter.getExtensions()) {
+					FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
+					chooser.addChoosableFileFilter(filter);
+					if(defaultFilter == null)
+						defaultFilter = filter;
+				}
+				chooser.setFileFilter(defaultFilter);
+				chooser.setAcceptAllFileFilterUsed(false);
+				int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
+				if (result == JFileChooser.APPROVE_OPTION) {
+					File file = chooser.getSelectedFile();
+					FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+					if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
+						file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+					
+					exportLastDirectory = file.getParentFile();
+					
+					String[] tokens = file.getName().split("\\.");
+					
+					Converter converter = Converter.getConverter(tokens[tokens.length-1], null, null);
+					
+					ExportData exportData = converter.getExportData(file);
+					if(exportData != null)
+						exportData.apply();
+				}
+			}
+
+		});
 
 		dimensionChooser.addItemListener(new ItemListener() {
 
@@ -621,10 +684,10 @@ public class ToolBar extends JPanel {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
+				if(MCWorldExporter.getApp().getExportBounds().hasLod() == lodEnableCheckBox.isSelected())
+					return;
 				if(!lodEnableCheckBox.isSelected()) {
-					if(MCWorldExporter.getApp().getExportBounds().hasLod() != lodEnableCheckBox.isSelected()) {
-						MCWorldExporter.getApp().getExportBounds().disableLod();
-					}
+					MCWorldExporter.getApp().getExportBounds().disableLod();
 				}else {
 					MCWorldExporter.getApp().getExportBounds().setLodWidth(Math.min(1024, 
 													MCWorldExporter.getApp().getExportBounds().getWidth()/2));
@@ -660,6 +723,42 @@ public class ToolBar extends JPanel {
 				TeleportDialog dialog = new TeleportDialog();
 				dialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
 				dialog.setVisible(true);
+			}
+
+		});
+		
+		runOptimiserCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Config.runOptimiser = runOptimiserCheckBox.isSelected();
+			}
+
+		});
+		
+		removeCavesCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Config.removeCaves = removeCavesCheckBox.isSelected();
+			}
+
+		});
+		
+		fillInCavesCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Config.fillInCaves = fillInCavesCheckBox.isSelected();
+			}
+
+		});
+		
+		exportIndividualBlocksCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Config.onlyIndividualBlocks = exportIndividualBlocksCheckBox.isSelected();
 			}
 
 		});
@@ -794,6 +893,15 @@ public class ToolBar extends JPanel {
 		}
 		if (Config.runOptimiser != runOptimiserCheckBox.isSelected()) {
 			runOptimiserCheckBox.setSelected(Config.runOptimiser);
+		}
+		if (Config.removeCaves != removeCavesCheckBox.isSelected()) {
+			removeCavesCheckBox.setSelected(Config.removeCaves);
+		}
+		if (Config.fillInCaves != fillInCavesCheckBox.isSelected()) {
+			fillInCavesCheckBox.setSelected(Config.fillInCaves);
+		}
+		if (Config.onlyIndividualBlocks != exportIndividualBlocksCheckBox.isSelected()) {
+			exportIndividualBlocksCheckBox.setSelected(Config.onlyIndividualBlocks);
 		}
 		if (Config.chunkSize != ((Integer) chunkSizeSpinner.getValue()).intValue()) {
 			chunkSizeSpinner.setValue(Config.chunkSize);

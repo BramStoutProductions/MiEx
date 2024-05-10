@@ -11,6 +11,7 @@ import java.util.Set;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.export.usd.USDConverter;
 import nl.bramstout.mcworldexporter.export.usd.USDWriter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
@@ -100,7 +101,7 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 		// processing to change the order.
 		Set<String> writtenNodes = new HashSet<String>();
 		
-		String suffix = "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + (hasBiomeColor ? "_BIOME" : "");
+		String suffix = "_" + Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME" : "");
 		
 		String matName = "MAT" + suffix;
 		

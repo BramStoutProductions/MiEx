@@ -99,17 +99,6 @@ public class BlockStateChest extends BlockState{
 			model.addEntityCube(new float[] {7f, 8f, 0f, 9f, 12f, 1f}, new float[] {0f, 0f, 1.5f, 1.25f}, "#texture");
 		} else if(type.equals("_left")) {
 			// Bottom
-			model.addEntityCube(new float[] {1f, 10f, 1f, 16f, 0f, 15f}, new float[] {0f, 4.75f, 14.5f, 10.75f}, "#texture",
-					Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
-			// Top
-			model.addEntityCube(new float[] {1f, 14f, 1f, 16f, 9f, 15f}, new float[] {0f, 0f, 14.5f, 4.75f}, "#texture",
-					Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
-			// Lock
-			model.addEntityCube(new float[] {15f, 8f, 0f, 16f, 12f, 1f}, new float[] {0f, 0f, 1.0f, 1.25f}, "#texture",
-					Direction.UP, Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
-			
-		} else if(type.equals("_right")) {
-			// Bottom
 			model.addEntityCube(new float[] {0f, 10f, 1f, 15f, 0f, 15f}, new float[] {0f, 4.75f, 14.5f, 10.75f}, "#texture",
 					Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST);
 			// Top
@@ -118,13 +107,25 @@ public class BlockStateChest extends BlockState{
 			// Lock
 			model.addEntityCube(new float[] {0f, 8f, 0f, 1f, 12f, 1f}, new float[] {0f, 0f, 1.0f, 1.25f}, "#texture",
 					Direction.UP, Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST);
+			model.flip(true, false, false);
+		} else if(type.equals("_right")) {
+			// Bottom
+			model.addEntityCube(new float[] {1f, 10f, 1f, 16f, 0f, 15f}, new float[] {0f, 4.75f, 14.5f, 10.75f}, "#texture",
+					Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
+			// Top
+			model.addEntityCube(new float[] {1f, 14f, 1f, 16f, 9f, 15f}, new float[] {0f, 0f, 14.5f, 4.75f}, "#texture",
+					Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
+			// Lock
+			model.addEntityCube(new float[] {15f, 8f, 0f, 16f, 12f, 1f}, new float[] {0f, 0f, 1.0f, 1.25f}, "#texture",
+					Direction.UP, Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST);
+			model.flip(true, false, false);
 		}
 		model.rotate(0, rotY, false);
 		list.add(model);
 		models.add(list);
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, -1);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, true, false, false, true, 1, null);
 	}
 
 }

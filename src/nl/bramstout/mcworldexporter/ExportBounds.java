@@ -39,7 +39,9 @@ public class ExportBounds {
 	private int maxX;
 	private int maxY;
 	private int maxZ;
+	private int offsetX;
 	private int offsetY;
+	private int offsetZ;
 	private int lodCenterX;
 	private int lodCenterZ;
 	private int lodWidth;
@@ -53,7 +55,9 @@ public class ExportBounds {
 		maxX = 0;
 		maxY = 320;
 		maxZ = 0;
+		offsetX = 0;
 		offsetY = 0;
+		offsetZ = 0;
 		lodCenterX = 0;
 		lodCenterZ = 0;
 		lodWidth = 0;
@@ -61,15 +65,18 @@ public class ExportBounds {
 		lodYDetail = 4;
 	}
 	
-	public ExportBounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, int offsetY,
-						int lodCenterX, int lodCenterZ, int lodWidth, int lodDepth, int lodYDetail) {
+	public ExportBounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, 
+						int offsetX, int offsetY, int offsetZ, int lodCenterX, int lodCenterZ, 
+						int lodWidth, int lodDepth, int lodYDetail) {
 		this.minX = minX;
 		this.minY = minY;
 		this.minZ = minZ;
 		this.maxX = maxX;
 		this.maxY = maxY;
 		this.maxZ = maxZ;
+		this.offsetX = offsetX;
 		this.offsetY = offsetY;
+		this.offsetZ = offsetZ;
 		this.lodCenterX = lodCenterX;
 		this.lodCenterZ = lodCenterZ;
 		this.lodWidth = lodWidth;
@@ -101,8 +108,16 @@ public class ExportBounds {
 		return maxZ;
 	}
 	
+	public int getOffsetX() {
+		return offsetX;
+	}
+	
 	public int getOffsetY() {
 		return offsetY;
+	}
+	
+	public int getOffsetZ() {
+		return offsetZ;
 	}
 	
 	public int getWidth() {
@@ -279,8 +294,16 @@ public class ExportBounds {
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
+	public void setOffsetX(int offsetX) {
+		this.offsetX = offsetX;
+	}
+	
 	public void setOffsetY(int offsetY) {
 		this.offsetY = offsetY;
+	}
+	
+	public void setOffsetZ(int offsetZ) {
+		this.offsetZ = offsetZ;
 	}
 	
 	public void setLodCenterX(int lodCenterX) {
@@ -305,6 +328,7 @@ public class ExportBounds {
 	
 	public void setLodYDetail(int lodYDetail) {
 		this.lodYDetail = lodYDetail;
+		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	private void setLodMinX(int minX) {
@@ -361,7 +385,7 @@ public class ExportBounds {
 	}
 
 	public ExportBounds copy() {
-		return new ExportBounds(minX, minY, minZ, maxX, maxY, maxZ, offsetY,
+		return new ExportBounds(minX, minY, minZ, maxX, maxY, maxZ, offsetX, offsetY, offsetZ,
 								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail);
 	}
 	

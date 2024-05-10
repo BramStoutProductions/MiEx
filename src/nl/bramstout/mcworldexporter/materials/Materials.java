@@ -47,10 +47,13 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 
-import nl.bramstout.mcworldexporter.Atlas;
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.world.Biome;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Materials {
 	
@@ -304,11 +307,16 @@ public class Materials {
 				}
 				String fullPath = condition.replace("@texture@", texture);
 				boolean checkAlpha = false;
+				boolean checkCutout = false;
 				boolean checkAnimated = false;
 				boolean checkInterpolated = false;
 				if(fullPath.endsWith(".a")) {
 					checkAlpha = true;
 					fullPath = fullPath.substring(0, fullPath.length() - 2);
+				}
+				if(fullPath.endsWith(".cutout")) {
+					checkCutout = true;
+					fullPath = fullPath.substring(0, fullPath.length() - 7);
 				}
 				if(fullPath.endsWith(".animated")) {
 					checkAnimated = true;
@@ -319,7 +327,7 @@ public class Materials {
 					fullPath = fullPath.substring(0, fullPath.length() - 13);
 				}
 				File file = getTextureFile(fullPath, currentWorkingDirectory);
-				if(invert && (!checkAlpha && !checkAnimated && !checkInterpolated)) {
+				if(invert && (!checkAlpha && !checkCutout && !checkAnimated && !checkInterpolated)) {
 					if(file.exists())
 						return false;
 				}else {
@@ -333,6 +341,15 @@ public class Materials {
 							return false;
 					}else {
 						if(!FileUtil.hasAlpha(file))
+							return false;
+					}
+				}
+				if(checkCutout) {
+					if(invert) {
+						if(FileUtil.hasCutout(file))
+							return false;
+					}else {
+						if(!FileUtil.hasCutout(file))
 							return false;
 					}
 				}
@@ -695,13 +712,17 @@ public class Materials {
 		if(obj.has("connection")) {
 			attr.value = null;
 			attr.expression = null;
-			attr.connection = obj.get("connection").getAsString();
+			attr.connection = null;
+			if(!obj.get("connection").isJsonNull())
+				attr.connection = obj.get("connection").getAsString();
 		}
 		
 		if(obj.has("expression")) {
 			attr.value = null;
 			attr.connection = null;
-			attr.expression = obj.get("expression").getAsString();
+			attr.expression = null;
+			if(!obj.get("expression").isJsonNull())
+				attr.expression = obj.get("expression").getAsString();
 		}
 		
 		return attr;
@@ -821,6 +842,26 @@ public class Materials {
 			timeCode += frameTimeF;
 			i++;
 		}
+	}
+	
+	public static Color getBiomeColor(Map<String, String> args) {
+		String type = args.getOrDefault("type", "grass");
+		String biome = args.getOrDefault("biome", "plains");
+		if(!biome.contains(":"))
+			biome = "minecraft:" + biome;
+		
+		int biomeId = BiomeRegistry.getIdForName(biome);
+		Biome biomeData = BiomeRegistry.getBiome(biomeId);
+		if(biomeData == null)
+			return new Color();
+		
+		if(type.equalsIgnoreCase("grass"))
+			return biomeData.getGrassColour();
+		else if(type.equalsIgnoreCase("foliage"))
+			return biomeData.getFoliageColour();
+		else if(type.equalsIgnoreCase("water"))
+			return biomeData.getWaterColour();
+		return new Color();
 	}
 		
 }

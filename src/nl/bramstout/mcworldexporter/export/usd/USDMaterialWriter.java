@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.materials.Materials.MaterialNetwork;
@@ -69,16 +71,18 @@ public class USDMaterialWriter extends MaterialWriter{
 	@Override
 	public void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor,
 										String parentPrim, String sharedPrims) throws IOException{
-		String matName = "MAT_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_') + (hasBiomeColor ? "_BIOME" : "");
+		String matName = "MAT_" + Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME" : "");
 		writer.beginDef("Material", matName);
 		writer.beginChildren();
 		for(Entry<String, String> conn : material.shadingGroup.entrySet()) {
+			if(conn.getKey().startsWith("json:"))
+				continue; // Ignore JSON specific terminals
 			String connPath = "";
 			if(conn.getValue().startsWith("shared/")) {
 				connPath = sharedPrims + "/" + conn.getValue().substring(6);
 			}else {
 				String[] tokens = conn.getValue().split("\\.");
-				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
+				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -109,10 +113,13 @@ public class USDMaterialWriter extends MaterialWriter{
 		if(node.type.contains(":") && !node.type.startsWith("USD:"))
 			return;
 		_hasWrittenAnything = true;
-		writer.beginDef("Shader", node.name + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_'));
+		writer.beginDef("Shader", node.name + "_" + Util.makeSafeName(texture));
 		writer.beginChildren();
 		writer.writeAttributeName("token", "info:id", true);
-		writer.writeAttributeValueString(node.type);
+		if(node.type.startsWith("USD:"))
+			writer.writeAttributeValueString(node.type.substring("USD:".length()));
+		else
+			writer.writeAttributeValueString(node.type);
 		for(ShadingAttribute attr : node.attributes) {
 			writeShadingAttribute(attr, texture, parentPrim, sharedPrims);
 		}
@@ -131,7 +138,7 @@ public class USDMaterialWriter extends MaterialWriter{
 				connPath = sharedPrims + "/" + attr.connection.substring(6);
 			}else {
 				String[] tokens = attr.connection.split("\\.");
-				connPath = parentPrim + "/" + tokens[0] + "_" + texture.replace('.', '_').replace(':', '_').replace('/', '_').replace('-', '_').replace(' ', '_');
+				connPath = parentPrim + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
 				for(int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -292,6 +299,29 @@ public class USDMaterialWriter extends MaterialWriter{
 			}else {
 				writer.writeAttributeValueTimeSamplesFloat(timeCodes, values);
 			}
+		}else if(expression.equalsIgnoreCase("biomeColor")) {
+			Color color = Materials.getBiomeColor(args);
+			float[] data = null;
+			String attrTypeLower = attrType.toLowerCase();
+			if(attrTypeLower.contains("2"))
+				data = new float[] { color.getR(), color.getG() };
+			else if(attrTypeLower.contains("3"))
+				data = new float[] { color.getR(), color.getG(), color.getB() };
+			else if(attrTypeLower.contains("4"))
+				data = new float[] { color.getR(), color.getG(), color.getB(), color.getA() };
+			else if(attrTypeLower.contains("RGBA"))
+				data = new float[] { color.getR(), color.getG(), color.getB(), color.getA() };
+			else if(attrTypeLower.contains("RGB"))
+				data = new float[] { color.getR(), color.getG(), color.getB() };
+			else if(attrTypeLower.contains("color"))
+				data = new float[] { color.getR(), color.getG(), color.getB() };
+			else
+				data = new float[] { color.getR() };
+			
+			if(data.length == 1)
+				writer.writeAttributeValueFloat(data[0]);
+			else
+				writer.writeAttributeValueFloatCompound(data);
 		}
 	}
 	

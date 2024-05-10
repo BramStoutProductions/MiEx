@@ -139,10 +139,13 @@ public class ResourcePackExtractorDialog extends JDialog {
 					}catch(Exception ex) {
 						ex.printStackTrace();
 					}
-					MCWorldExporter.getApp().getUI().getProgressBar().setProgress(((float) counter) / ((float) mods.length));
+					MCWorldExporter.getApp().getUI().getProgressBar().setProgress((((float) counter) / ((float) mods.length)) * 0.9f);
 					counter++;
 				}
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1f);
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
+				ResourcePack.inferMiExConfigFromResourcePack(resourcePackFolder);
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1.0f);
+				
 				
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mod resource pack extracted successfully!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);

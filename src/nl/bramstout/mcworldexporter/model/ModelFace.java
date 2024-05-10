@@ -674,6 +674,41 @@ public class ModelFace {
 		calculateOcclusion(minMaxPoints);
 	}
 	
+	public void flip(boolean x, boolean y, boolean z) {
+		float scaleX = x ? -1f : 1f;
+		float scaleY = y ? -1f : 1f;
+		float scaleZ = z ? -1f : 1f;
+		
+		for(int i = 0; i < 4; ++i) {
+			points[i*3+0] = (points[i*3+0] - 8f) * scaleX + 8f;
+			points[i*3+1] = (points[i*3+1] - 8f) * scaleY + 8f;
+			points[i*3+2] = (points[i*3+2] - 8f) * scaleZ + 8f;
+		}
+		
+		if(x) {
+			if(direction == Direction.EAST || direction == Direction.WEST)
+				direction = direction.getOpposite();
+		}
+		if(y) {
+			if(direction == Direction.UP || direction == Direction.DOWN)
+				direction = direction.getOpposite();
+		}
+		if(z) {
+			if(direction == Direction.NORTH || direction == Direction.SOUTH)
+				direction = direction.getOpposite();
+		}
+		
+		float[] minMaxPoints = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateOcclusion(minMaxPoints);
+	}
+	
 	public long getOccludes() {
 		return occludes;
 	}

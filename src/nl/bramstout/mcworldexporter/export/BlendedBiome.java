@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.export;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.world.Biome;
 
 public class BlendedBiome {
@@ -81,6 +82,18 @@ public class BlendedBiome {
 		foliageColor.addWeighted(biome.getFoliageColour(), weight);
 		waterColor.addWeighted(biome.getWaterColour(), weight);
 		this.weight += weight;
+	}
+	
+	public Color getBiomeColor(BakedBlockState block) {
+		if(block.getTint() != null)
+			return block.getTint();
+		if(block.isGrassColormap())
+			return getGrassColour();
+		else if(block.isFoliageColormap())
+			return getFoliageColour();
+		else if(block.isWaterColormap())
+			return getWaterColour();
+		return null;
 	}
 	
 }

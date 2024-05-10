@@ -181,7 +181,7 @@ public class BlockStateSkull extends BlockState{
 		model.rotate(0, rotY, false);
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, -1);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null);
 	}
 	
 	private void addCube(Model model, float pMinX, float pMinY, float pMinZ, float pMaxX, float pMaxY, float pMaxZ, 

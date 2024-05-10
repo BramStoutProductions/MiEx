@@ -38,13 +38,12 @@ import java.util.Map.Entry;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Byte;
 import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_Int;
-import nl.bramstout.mcworldexporter.nbt.TAG_Short;
 import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 
 public class BlockState {
 
@@ -66,7 +65,6 @@ public class BlockState {
 	protected boolean randomAnimationYOffset;
 	protected boolean lodNoUVScale;
 	protected int lodPriority;
-	protected boolean hasPowerLevel;
 	protected boolean _needsConnectionInfo;
 	
 	public BlockState(String name, JsonObject data) {
@@ -88,7 +86,6 @@ public class BlockState {
 		randomAnimationYOffset = Config.randomAnimationYOffset.contains(name);
 		lodNoUVScale = Config.lodNoUVScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
-		hasPowerLevel = Config.powerLevel.contains(name);
 		
 		if(data == null)
 			return;
@@ -184,10 +181,14 @@ public class BlockState {
 				models.add(part.models);
 			}
 		}
+		Tint tint = Tints.getTint(getName());
+		Color tintColor = null;
+		if(tint != null)
+			tintColor = tint.getTint(properties);
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
 				individualBlocks, hasLiquid(properties), caveBlock, randomOffset, randomYOffset,
 				grassColormap, foliageColormap, waterColormap, doubleSided, randomAnimationXZOffset,
-				randomAnimationYOffset, lodNoUVScale, lodPriority, getPowerLevel(properties));
+				randomAnimationYOffset, lodNoUVScale, lodPriority, tintColor);
 	}
 	
 	protected boolean hasLiquid(TAG_Compound properties) {
@@ -199,23 +200,6 @@ public class BlockState {
 			return false;
 		}
 		return waterloggedTag.value.equalsIgnoreCase("true");
-	}
-	
-	protected int getPowerLevel(TAG_Compound properties) {
-		if(!hasPowerLevel)
-			return -1;
-		NBT_Tag tag = properties.getElement("power");
-		if(tag == null)
-			return 0;
-		if(tag instanceof TAG_Byte)
-			return ((TAG_Byte)tag).value;
-		if(tag instanceof TAG_Short)
-			return ((TAG_Short)tag).value;
-		if(tag instanceof TAG_Int)
-			return ((TAG_Int)tag).value;
-		if(tag instanceof TAG_String)
-			return Integer.valueOf(((TAG_String)tag).value).intValue();
-		return 0;
 	}
 	
 	public String getDefaultTexture() {

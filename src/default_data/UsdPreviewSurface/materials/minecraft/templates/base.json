@@ -72,24 +72,22 @@
                 }
             }
         },
-        "@biomeColor@":{
-            "BIOME": {
-                "type": "UsdPrimvarReader_float3",
+        "@texture@.cutout": {
+            "MAT": {
                 "attributes": {
-                    "outputs:result": {
-                        "type": "float3"
-                    },
-                    "inputs:varname": {
-                        "type": "string",
-                        "value": "Cd"
+                    "inputs:opacityThreshold": {
+                        "type": "float",
+                        "value": 0.5
                     }
                 }
-            },
+            }
+        },
+        "@biomeColor@":{
             "FILE": {
                 "attributes": {
                     "inputs:scale": {
                         "type": "float4",
-                        "connection": "BIOME.outputs:result"
+                        "expression": "${biomeColor(type=grass,biome=plains)}"
                     }
                 }
             }

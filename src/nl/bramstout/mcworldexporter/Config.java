@@ -47,6 +47,8 @@ import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
+import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures;
 
 public class Config {
 	
@@ -70,20 +72,24 @@ public class Config {
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
-	public static List<String> powerLevel = new ArrayList<String>();
 	
 	public static boolean removeCaves = false;
 	public static boolean fillInCaves = false;
 	public static boolean onlyIndividualBlocks = false;
 	public static boolean runOptimiser = true;
+	public static boolean runRaytracingOptimiser = true;
+	public static boolean runFaceOptimiser = true;
 	public static float fgFullnessThreshold = 0.25f;
 	public static float bgFullnessThreshold = 0.05f;
 	public static int chunkSize = 4;
+	public static int defaultChunkSize = 4;
 	public static int biomeBlendRadius = 4;
 	public static int removeCavesSearchRadius = 4;
 	public static int removeCavesSearchEnergy = 5;
 	public static float animatedTexturesFrameTimeMultiplier = 1.0f;
 	public static float blockSizeInUnits = 16.0f;
+	public static int atlasMaxResolution = 4096;
+	public static int atlasMaxTileResolution = 256;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -183,6 +189,8 @@ public class Config {
 	
 	public static void load() {
 		Tags.load();
+		Tints.load();
+		ConnectedTextures.load();
 		
 		liquid.clear();
 		waterlogged.clear();
@@ -214,16 +222,19 @@ public class Config {
 		randomAnimationYOffset.clear();
 		lodNoUVScale.clear();
 		lodPriority.clear();
-		powerLevel.clear();
 		
 		fgFullnessThreshold = 0.25f;
 		bgFullnessThreshold = 0.05f;
-		chunkSize = 4;
+		boolean updateChunkSize = defaultChunkSize == chunkSize;
+		if(updateChunkSize)
+			chunkSize = 4;
 		biomeBlendRadius = 4;
 		removeCavesSearchRadius = 4;
 		removeCavesSearchEnergy = 5;
 		animatedTexturesFrameTimeMultiplier = 1.0f;
 		blockSizeInUnits = 16.0f;
+		atlasMaxResolution = 4096;
+		atlasMaxTileResolution = 256;
 		
 		Color.GAMUT = ColorGamut.ACEScg;
 		
@@ -276,10 +287,14 @@ public class Config {
 				
 				parseList("lodNoUVScale", data, lodNoUVScale);
 				
-				parseList("powerLevel", data, powerLevel);
-				
 				if(data.has("runOptimiser"))
 					runOptimiser = data.get("runOptimiser").getAsBoolean();
+				
+				if(data.has("runRaytracingOptimiser"))
+					runRaytracingOptimiser = data.get("runRaytracingOptimiser").getAsBoolean();
+				
+				if(data.has("runFaceOptimiser"))
+					runFaceOptimiser = data.get("runFaceOptimiser").getAsBoolean();
 				
 				if(data.has("fgFullnessThreshold"))
 					fgFullnessThreshold = data.get("fgFullnessThreshold").getAsFloat();
@@ -287,8 +302,10 @@ public class Config {
 				if(data.has("bgFullnessThreshold"))
 					bgFullnessThreshold = data.get("bgFullnessThreshold").getAsFloat();
 				
-				if(data.has("chunkSize"))
+				if(data.has("chunkSize") && updateChunkSize) {
 					chunkSize = data.get("chunkSize").getAsInt();
+					defaultChunkSize = chunkSize;
+				}
 				
 				if(data.has("biomeBlendRadius"))
 					biomeBlendRadius = data.get("biomeBlendRadius").getAsInt();
@@ -318,6 +335,12 @@ public class Config {
 				
 				if(data.has("blockSizeInUnits"))
 					blockSizeInUnits = data.get("blockSizeInUnits").getAsFloat();
+				
+				if(data.has("atlasMaxResolution"))
+					atlasMaxResolution = data.get("atlasMaxResolution").getAsInt();
+				
+				if(data.has("atlasMaxTileResolution"))
+					atlasMaxTileResolution = data.get("atlasMaxTileResolution").getAsInt();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

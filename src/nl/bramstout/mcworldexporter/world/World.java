@@ -199,6 +199,7 @@ public abstract class World {
 
 		MCWorldExporter.getApp().getUI().setTitle(this.worldDir.getName() + " - " + dimension);
 		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 
 	public void forceReRender() {

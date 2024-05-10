@@ -64,8 +64,10 @@ public class BiomeRegistry {
 	}
 
 	public static void recalculateTints() {
-		for(Biome biome : registeredBiomes)
-			biome.calculateTints();
+		synchronized(mutex) {
+			for(Biome biome : registeredBiomes)
+				biome.calculateTints();
+		}
 	}
 	
 	public static Biome getBiome(int id) {

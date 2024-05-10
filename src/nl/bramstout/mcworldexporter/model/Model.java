@@ -113,12 +113,18 @@ public class Model {
 					JsonArray from = element.get("from").getAsJsonArray();
 					JsonArray to = element.get("to").getAsJsonArray();
 
-					float minX = Math.min(from.get(0).getAsFloat(), to.get(0).getAsFloat());
+					/*float minX = Math.min(from.get(0).getAsFloat(), to.get(0).getAsFloat());
 					float minY = Math.min(from.get(1).getAsFloat(), to.get(1).getAsFloat());
 					float minZ = Math.min(from.get(2).getAsFloat(), to.get(2).getAsFloat());
 					float maxX = Math.max(from.get(0).getAsFloat(), to.get(0).getAsFloat());
 					float maxY = Math.max(from.get(1).getAsFloat(), to.get(1).getAsFloat());
-					float maxZ = Math.max(from.get(2).getAsFloat(), to.get(2).getAsFloat());
+					float maxZ = Math.max(from.get(2).getAsFloat(), to.get(2).getAsFloat());*/
+					float minX = from.get(0).getAsFloat();
+					float minY = from.get(1).getAsFloat();
+					float minZ = from.get(2).getAsFloat();
+					float maxX = to.get(0).getAsFloat();
+					float maxY = to.get(1).getAsFloat();
+					float maxZ = to.get(2).getAsFloat();
 
 					boolean flatX = (maxX - minX) < 0.01f;
 					boolean flatY = (maxY - minY) < 0.01f;
@@ -282,6 +288,14 @@ public class Model {
 		this.occludes = 0;
 		for(ModelFace face : faces)
 			face.scale(scale);
+	}
+	
+	public void flip(boolean x, boolean y, boolean z) {
+		this.occludes = 0;
+		for(ModelFace face : faces) {
+			face.flip(x, y, z);
+			this.occludes |= face.getOccludes();
+		}
 	}
 	
 	public void translate(float x, float y, float z) {

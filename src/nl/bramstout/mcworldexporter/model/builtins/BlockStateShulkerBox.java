@@ -100,7 +100,7 @@ public class BlockStateShulkerBox extends BlockState{
 		model.rotate(rotX, rotY, false);
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, -1);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, null);
 	}
 
 }

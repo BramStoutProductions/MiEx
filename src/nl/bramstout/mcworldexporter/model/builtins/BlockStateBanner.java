@@ -139,7 +139,7 @@ public class BlockStateBanner extends BlockState{
 		modelBanner.rotate(0, rotY, false);
 		
 		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, -1);
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null);
 	}
 	
 	private String getExtraData(TAG_Compound properties) {
@@ -149,14 +149,28 @@ public class BlockStateBanner extends BlockState{
 
 		extraData = extraData + "\"patterns\": [";
 		NBT_Tag patternsTag = properties.getElement("Patterns");
+		if(patternsTag == null)
+			patternsTag = properties.getElement("patterns");
 		if (patternsTag != null) {
 			int i = 0;
 			for (NBT_Tag patternNBTTag : ((TAG_List) patternsTag).elements) {
 				TAG_Compound patternTag = (TAG_Compound) patternNBTTag;
-				String patternName = ((TAG_String) patternTag.getElement("Pattern")).value;
-				int color = ((TAG_Int) patternTag.getElement("Color")).value;
+				NBT_Tag patternNameTag = patternTag.getElement("Pattern");
+				if(patternNameTag == null)
+					patternNameTag = patternTag.getElement("pattern");
+				String patternName = ((TAG_String) patternNameTag).value;
+				NBT_Tag patternColorTag = patternTag.getElement("Color");
+				String colorString = "0";
+				if(patternColorTag != null)
+					colorString = Integer.toString(((TAG_Int) patternTag.getElement("Color")).value);
+				else {
+					patternColorTag = patternTag.getElement("color");
+					if(patternColorTag != null) {
+						colorString = "\"" + ((TAG_String) patternColorTag).value + "\"";
+					}
+				}
 
-				extraData = extraData + " { \"name\": \"" + patternName + "\", \"color\": " + color
+				extraData = extraData + " { \"name\": \"" + patternName + "\", \"color\": " + colorString
 						+ (i >= (((TAG_List) patternsTag).elements.length - 1) ? "} " : "}, ");
 				++i;
 			}

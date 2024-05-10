@@ -42,18 +42,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import nl.bramstout.mcworldexporter.Atlas;
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.export.optimiser.FaceOptimiser;
+import nl.bramstout.mcworldexporter.export.optimiser.RaytracingOptimiser;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
@@ -84,9 +88,9 @@ public class ChunkExporter {
 		this.chunkX = chunkX;
 		this.chunkZ = chunkZ;
 		this.chunkSize = chunkSize;
-		this.worldOffsetX = (bounds.getMaxX() + bounds.getMinX()) / 2;
+		this.worldOffsetX = bounds.getOffsetX();
 		this.worldOffsetY = bounds.getOffsetY();
-		this.worldOffsetZ = (bounds.getMaxZ() + bounds.getMinZ()) / 2;
+		this.worldOffsetZ = bounds.getOffsetZ();
 		this.meshes = new HashMap<String, Mesh>();
 		this.individualBlocks = new HashMap<Integer, FloatArray>();
 		this.name = name;
@@ -234,7 +238,8 @@ public class ChunkExporter {
 						uvOffsetY = (float) Math.floor(Noise.get(0, by, 0) * 32.0f);
 					
 					
-					if(state.isGrassColormap() || state.isFoliageColormap() || state.isWaterColormap() || liquidState != null)
+					if(state.isGrassColormap() || state.isFoliageColormap() || state.isWaterColormap() || 
+							liquidState != null || state.getTint() != null)
 						getBlendedBiome(wx, by, wz, biome);
 					
 					if(state.isIndividualBlocks() || Config.onlyIndividualBlocks) {
@@ -295,8 +300,8 @@ public class ChunkExporter {
 					if(occluded)
 						continue;
 				}
-				addFace(meshes, face, model.getTexture(face.getTexture()), wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY,
-						model.getExtraData(), getBiomeColor(state, biome), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale());
+				addFace(meshes, state.getName(), face, model.getTexture(face.getTexture()), wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY,
+						model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale());
 			}
 		}
 	}
@@ -313,7 +318,7 @@ public class ChunkExporter {
 				face = model.getFaces().get(j);
 				if(face.getOccludedBy() != 0 && (face.getOccludedBy() & occlusion) == face.getOccludedBy())
 					continue;
-				addFace(meshes, face, model.getTexture(face.getTexture()), wx, by, wz, 0f, 0f, 0f, 0f, model.getExtraData(), 
+				addFace(meshes, "minecraft:water", face, model.getTexture(face.getTexture()), wx, by, wz, 0f, 0f, 0f, 0f, model.getExtraData(), 
 						biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale());
 			}
 		}
@@ -335,7 +340,7 @@ public class ChunkExporter {
 				model = models.get(j);
 				for(int k = 0; k < model.getFaces().size(); ++k) {
 					face = model.getFaces().get(k);
-					addFace(meshes, face, model.getTexture(face.getTexture()), entity.getX(), entity.getY(), entity.getZ(), 
+					addFace(meshes, entity.getName(), face, model.getTexture(face.getTexture()), entity.getX(), entity.getY(), entity.getZ(), 
 							0f, 0f, 0f, 0f, model.getExtraData(), null, model.isDoubleSided(),
 							1, 1, false);
 				}
@@ -658,26 +663,23 @@ public class ChunkExporter {
 		res.normalise();
 	}
 	
-	private Color getBiomeColor(BakedBlockState block, BlendedBiome biome) {
-		if(block.isGrassColormap())
-			return biome.getGrassColour();
-		else if(block.isFoliageColormap())
-			return biome.getFoliageColour();
-		else if(block.isWaterColormap())
-			return biome.getWaterColour();
-		else if(block.getRedstonePowerLevel() >= 0) {
-			float value = ((float) block.getRedstonePowerLevel()) / 15f;
-			return new Color(value, value, value);
-		}
-		return null;
-	}
-	
-	private void addFace(Map<String, Mesh> meshes, ModelFace face, String texture, 
+	private void addFace(Map<String, Mesh> meshes, String blockName, ModelFace face, String texture, 
 			float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
 			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale) {
 		if(texture == null || texture.equals(""))
 			return;
+		
+		// Connected textures
+		ConnectedTexture connectedTexture = ConnectedTextures.getConnectedTexture(blockName, texture);
+		if(connectedTexture != null) {
+			if(connectedTexture.getFacesToConnect().contains(face.getDirection())) {
+				String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, face);
+				if(newTexture != null)
+					texture = newTexture;
+			}
+		}
+		
 		String meshName = texture;
 		if(tint != null) {
 			meshName = meshName + "_BIOME";
@@ -1075,7 +1077,23 @@ public class ChunkExporter {
 			final String key = mesh.getKey();
 			futures.add(threadPool.submit(new Runnable() {
 				public void run() {
-					Mesh newMesh = MeshOptimiser.optimiseMesh(inMesh, threshold);
+					Mesh newMesh = inMesh;
+					
+					if(Config.runRaytracingOptimiser)
+						newMesh = RaytracingOptimiser.optimiseMesh(inMesh, threshold);
+					
+					if(Config.runFaceOptimiser) {
+						if(newMesh instanceof MeshGroup) {
+							MeshGroup newMeshGroup = (MeshGroup) newMesh;
+							for(int i = 0; i < newMeshGroup.getNumChildren(); ++i) {
+								Mesh faceOptimsed = FaceOptimiser.optimise(newMeshGroup.getChildren().get(i));
+								newMeshGroup.getChildren().set(i, faceOptimsed);
+							}
+						}else {
+							newMesh = FaceOptimiser.optimise(newMesh);
+						}
+					}
+					
 					synchronized(optimisedMeshes) {
 						optimisedMeshes.put(key, newMesh);
 					}
