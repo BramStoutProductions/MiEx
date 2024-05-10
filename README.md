@@ -8,8 +8,9 @@ MiEx is a modern Minecraft World Exporter written in Java, originally created fo
 * Level-of-Detail system to reduce polygon count in the far background, making it feasable to have massive sets.
 * Remove caves feature to reduce polygon count.
 * Ability to export certain blocks as a new instance for each occurence of the block, making it easy to replace those block (like a chest or a door) with a rig of the block.
-* Up to 3x faster rendering with ray tracers (like Renderman, Arnold, Redshift, and Cycles) due to a custom made optimiser.
-* Powerful USD material templating system.
+* Up to 3x faster rendering with ray tracers (like Renderman, Arnold, Redshift, and Cycles) due to a custom made raytracing optimiser.
+* Face optimiser that combines faces into larger faces, whenever possible, in order to reduce polycount.
+* Powerful material templating system.
 * Support for pipeline integration.
 * Option to separate the world out into a foreground section and a background section.
 * Custom random noise generator for block model selection to make randomly rotated textures appear nicer to the eye.
@@ -19,6 +20,7 @@ MiEx is a modern Minecraft World Exporter written in Java, originally created fo
 * Support for random frame offsets on animated textures.
 * Support for grouping textures together into atlases in order to reduce material count.
 * Support for adding a random offset to certain blocks (like vegetation) to reproduce what happens in Minecraft.
+* Support for connected textures using Optifine's CTM format.
 * ***Currently not yet implemented, but groundwork laid out for:*** Potential support for Minecraft Bedrock worlds.
 
 MiEx currently supports worlds from Minecraft 21w43a and later.
