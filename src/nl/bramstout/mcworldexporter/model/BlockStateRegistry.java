@@ -121,16 +121,19 @@ public class BlockStateRegistry {
 				return bakedState;
 			}
 		}
-		BakedBlockState bakedState = bakedBlockStates.get(blockId);
-		if(bakedState != null)
-			return bakedState;
-		
-		if(needsConnectionInfo.get(blockId).booleanValue()) {
-			Block block = BlockRegistry.getBlock(blockId);
-			int stateId = getIdForName(block.getName());
-			BlockState state = getState(stateId);
-			return state.getBakedBlockState(block.getProperties(), x, y, z);
-		}
+		BakedBlockState bakedState = null;
+		try {
+			bakedState = bakedBlockStates.get(blockId);
+			if(bakedState != null)
+				return bakedState;
+			
+			if(needsConnectionInfo.get(blockId).booleanValue()) {
+				Block block = BlockRegistry.getBlock(blockId);
+				int stateId = getIdForName(block.getName());
+				BlockState state = getState(stateId);
+				return state.getBakedBlockState(block.getProperties(), x, y, z);
+			}
+		}catch(Exception ex) {} // Empty catch because due to race condition it could fail, but that's fine.
 		
 		synchronized(mutex2) {
 			bakedState = bakedBlockStates.get(blockId);

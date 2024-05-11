@@ -67,6 +67,7 @@ public class Exporter {
 	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 	private static Object mutex = new Object();
 	private static Set<Integer> individualBlockIds = new HashSet<Integer>();
+	public static int NUM_CHUNKS = 0;
 
 	public static void export(File usdFile) throws Exception {
 		if(MCWorldExporter.getApp().getWorld() == null) {
@@ -109,6 +110,7 @@ public class Exporter {
 		int numChunksX = (chunkEndX - chunkStartX + 1 + chunkSize - 1) / chunkSize;
 		int numChunksZ = (chunkEndZ - chunkStartZ + 1 + chunkSize - 1) / chunkSize;
 		int numChunks = numChunksX * numChunksZ;
+		NUM_CHUNKS = numChunks;
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
 		MCWorldExporter.getApp().getUI().getProgressBar().setNumChunks(numChunks);

@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.export.optimiser;
 
+import java.util.Arrays;
 import java.util.List;
 
 import nl.bramstout.mcworldexporter.atlas.Atlas;
@@ -48,16 +49,44 @@ public class FaceOptimiser {
 		outMesh.setExtraData(inMesh.getExtraData());
 		
 		boolean[] processedFaces = new boolean[inMesh.getEdgeIndices().size()/4];
-		process(inMesh, outMesh, processedFaces, 0);
+		int[][] facesPerVertex = getFacesPerVertex(inMesh);
+		process(inMesh, outMesh, processedFaces, facesPerVertex, 0);
 		
 		// Go left and right
 		Mesh outMesh2 = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
 		outMesh2.setExtraData(inMesh.getExtraData());
 		
 		processedFaces = new boolean[outMesh.getEdgeIndices().size()/4];
-		process(outMesh, outMesh2, processedFaces, 1);
+		facesPerVertex = getFacesPerVertex(outMesh);
+		process(outMesh, outMesh2, processedFaces, facesPerVertex, 1);
 		
 		return outMesh2;
+	}
+	
+	private static int[][] getFacesPerVertex(Mesh mesh){
+		int[][] facesPerVertex = new int[mesh.getVertices().size()/3][];
+		
+		for(int faceIndex = 0; faceIndex < mesh.getEdgeIndices().size()/4; ++faceIndex) {
+			for(int i = 0; i < 4; ++i) {
+				int edgeIndex = mesh.getEdgeIndices().get(faceIndex * 4 + i);
+				int vertexId = mesh.getEdges().get(edgeIndex * 3);
+				
+				if(facesPerVertex[vertexId] == null) {
+					facesPerVertex[vertexId] = new int[5];
+					facesPerVertex[vertexId][0] = 0;
+				}
+				int arrayLength = facesPerVertex[vertexId][0];
+				if((arrayLength+1) >= facesPerVertex[vertexId].length) {
+					// We hit the limit of the array, so increase the size.
+					facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+				}
+				arrayLength += 1;
+				facesPerVertex[vertexId][arrayLength] = faceIndex;
+				facesPerVertex[vertexId][0] = arrayLength;
+			}
+		}
+		
+		return facesPerVertex;
 	}
 	
 	private static class CombinedFace{
@@ -156,7 +185,7 @@ public class FaceOptimiser {
 		
 	}
 	
-	private static void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int edgeId) {
+	private static void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[][] facesPerVertex, int edgeId) {
 		// Get the atlas items if this mesh uses an atlas.
 		// If this mesh doesn't use an atlas, then Atlas.getItems()
 		// will return null.
@@ -184,10 +213,10 @@ public class FaceOptimiser {
 				}
 			}
 			
-			processFace(inMesh, processedFaces, faceIndex, edgeId, combinedFace, atlas, currentAtlasItem);
+			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, edgeId, combinedFace, atlas, currentAtlasItem);
 			
 			// Also go the other direction.
-			processFace(inMesh, processedFaces, faceIndex, (edgeId+2) % 4, combinedFace, atlas, currentAtlasItem);
+			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, (edgeId+2) % 4, combinedFace, atlas, currentAtlasItem);
 			
 			if(currentAtlasItem != null) {
 				// Transform the UVs back into atlas space from local space,
@@ -209,7 +238,7 @@ public class FaceOptimiser {
 		}
 	}
 	
-	private static void processFace(Mesh inMesh, boolean[] processedFaces, int faceIndex, 
+	private static void processFace(Mesh inMesh, boolean[] processedFaces, int[][] facesPerVertex, int faceIndex, 
 										int edgeId, CombinedFace combinedFace,
 										List<AtlasItem> atlas, AtlasItem currentAtlasItem) {
 		int origEdgeId = edgeId;
@@ -251,8 +280,11 @@ public class FaceOptimiser {
 			
 			boolean addedFace = false;
 			
+			int[] facesToCheck = facesPerVertex[vertexId1];
+			int facesToCheckSize = facesToCheck[0];
 			// Now try to find another face that also shares those vertices
-			for(int faceIndex2 = 0; faceIndex2 < inMesh.getEdgeIndices().size()/4; ++faceIndex2) {
+			for(int faceIndex2Index = 0; faceIndex2Index < facesToCheckSize; ++faceIndex2Index) {
+				int faceIndex2 = facesToCheck[faceIndex2Index+1];
 				if(processedFaces[faceIndex2] || faceIndex2 == faceIndex)
 					continue; // Already processed, so skip
 				

@@ -54,6 +54,7 @@ public class Renderer2D implements Runnable {
 	private BufferedImage buffer;
 	private BufferedImage heightBuffer;
 	private BufferedImage frontBuffer;
+	private BufferedImage postBuffer;
 	private int bufferWidth;
 	private int bufferHeight;
 	private CameraTransform bufferTransform;
@@ -73,6 +74,7 @@ public class Renderer2D implements Runnable {
 		buffer = null;
 		heightBuffer = null;
 		frontBuffer = null;
+		postBuffer = null;
 
 		renderRequested = new AtomicBoolean(false);
 		bufferTransform = new CameraTransform();
@@ -257,12 +259,11 @@ public class Renderer2D implements Runnable {
 					}
 					finishedChunksStack.clear();
 				}
-
-				// Swap the buffer
-				frontBufferLock.aqcuire();
-				if (frontBuffer == null || frontBuffer.getWidth() != buffer.getWidth()
-						|| frontBuffer.getHeight() != buffer.getHeight()) {
-					frontBuffer = new BufferedImage(buffer.getWidth(), buffer.getHeight(), BufferedImage.TYPE_INT_ARGB);
+				
+				// Do post process
+				if (postBuffer == null || postBuffer.getWidth() != buffer.getWidth()
+						|| postBuffer.getHeight() != buffer.getHeight()) {
+					postBuffer = new BufferedImage(buffer.getWidth(), buffer.getHeight(), BufferedImage.TYPE_INT_ARGB);
 				}
 				// Process the heightmap and copy over the colours from buffer into frontBuffer
 				for(int j = 1; j < heightBuffer.getHeight() - 1; ++j) {
@@ -293,9 +294,17 @@ public class Renderer2D implements Runnable {
 											Math.min((int) (((float) color.getGreen()) * ftotal), 255), 
 											Math.min((int) (((float) color.getBlue()) * ftotal), 255));
 						colour = color.getRGB();
-						frontBuffer.setRGB(i-1, j-1, colour);
+						postBuffer.setRGB(i-1, j-1, colour);
 					}
 				}
+
+				// Swap the buffer
+				frontBufferLock.aqcuire();
+				
+				BufferedImage tmp = frontBuffer;
+				frontBuffer = postBuffer;
+				postBuffer = tmp;
+				
 				frontBufferTransform = bufferTransform;
 				frontBufferLock.release();
 

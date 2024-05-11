@@ -37,11 +37,8 @@ public class IndexCache {
 		
 		long startKey;
 		long keyLength;
-		long keyLength2;
 		Node child00;
 		Node child01;
-		Node child10;
-		Node child11;
 		long key1;
 		int value1;
 		long key2;
@@ -58,15 +55,29 @@ public class IndexCache {
 		int value7;
 		long key8;
 		int value8;
+		long key9;
+		int value9;
+		long key10;
+		int value10;
+		long key11;
+		int value11;
+		long key12;
+		int value12;
+		long key13;
+		int value13;
+		long key14;
+		int value14;
+		long key15;
+		int value15;
+		long key16;
+		int value16;
+		boolean leafNode;
 		
 		public Node() {
 			startKey = 0;
 			keyLength = 1l << 63;
-			keyLength2 = 1l << 62;
 			child00 = null;
 			child01 = null;
-			child10 = null;
-			child11 = null;
 			key1 = -1;
 			value1 = -1;
 			key2 = -1;
@@ -83,22 +94,37 @@ public class IndexCache {
 			value7 = -1;
 			key8 = -1;
 			value8 = -1;
+			key9 = -1;
+			value9 = -1;
+			key10 = -1;
+			value10 = -1;
+			key11 = -1;
+			value11 = -1;
+			key12 = -1;
+			value12 = -1;
+			key13 = -1;
+			value13 = -1;
+			key14 = -1;
+			value14 = -1;
+			key15 = -1;
+			value15 = -1;
+			key16 = -1;
+			value16 = -1;
+			leafNode = true;
 		}
 		
 		public int getOrDefault(long key, int defaultValue) {
-			if(child00 != null || child01 != null || child10 != null || child11 != null) {
+			if(!leafNode) {
 				// This is an intermediate node.
 				// Check if it's in the left or right child.
 				if(((key - startKey) & keyLength) == 0) {
-					if(((key - startKey) & keyLength2) == 0)
-						return child00.getOrDefault(key, defaultValue);
-					else
-						return child01.getOrDefault(key, defaultValue);
+					if(child00 == null)
+						return defaultValue;
+					return child00.getOrDefault(key, defaultValue);
 				}else {
-					if(((key - startKey) & keyLength2) == 0)
-						return child10.getOrDefault(key, defaultValue);
-					else
-						return child11.getOrDefault(key, defaultValue);
+					if(child01 == null)
+						return defaultValue;
+					return child01.getOrDefault(key, defaultValue);
 				}
 			}else{
 				// This is a leaf node, so check the keys for a hit.
@@ -118,25 +144,47 @@ public class IndexCache {
 					return value7;
 				else if(key == key8)
 					return value8;
+				else if(key == key9)
+					return value9;
+				else if(key == key10)
+					return value10;
+				else if(key == key11)
+					return value11;
+				else if(key == key12)
+					return value12;
+				else if(key == key13)
+					return value13;
+				else if(key == key14)
+					return value14;
+				else if(key == key15)
+					return value15;
+				else if(key == key16)
+					return value16;
 				else
 					return defaultValue;
 			}
 		}
 		
 		public void put(long key, int value) {
-			if(child00 != null || child01 != null || child10 != null || child11 != null) {
+			if(!leafNode) {
 				// This is an intermediate node.
 				// Check if it's in the left or right child.
 				if(((key - startKey) & keyLength) == 0) {
-					if(((key - startKey) & keyLength2) == 0)
-						child00.put(key, value);
-					else
-						child01.put(key, value);
+					if(child00 == null) {
+						long childKeyLength = keyLength >>> 1;
+						child00 = new Node();
+						child00.startKey = startKey;
+						child00.keyLength = childKeyLength;
+					}
+					child00.put(key, value);
 				}else {
-					if(((key - startKey) & keyLength2) == 0)
-						child10.put(key, value);
-					else
-						child11.put(key, value);
+					if(child01 == null) {
+						long childKeyLength = keyLength >>> 1;
+						child01 = new Node();
+						child01.startKey = startKey + keyLength;
+						child01.keyLength = childKeyLength;
+					}
+					child01.put(key, value);
 				}
 			}else {
 				// This is a leaf node.
@@ -166,28 +214,35 @@ public class IndexCache {
 				}else if(key == key8 || key8 == -1) {
 					key8 = key;
 					value8 = value;
+				}else if(key == key9 || key9 == -1) {
+					key9 = key;
+					value9 = value;
+				}else if(key == key10 || key10 == -1) {
+					key10 = key;
+					value10 = value;
+				}else if(key == key11 || key11 == -1) {
+					key11 = key;
+					value11 = value;
+				}else if(key == key12 || key12 == -1) {
+					key12 = key;
+					value12 = value;
+				}else if(key == key13 || key13 == -1) {
+					key13 = key;
+					value13 = value;
+				}else if(key == key14 || key14 == -1) {
+					key14 = key;
+					value14 = value;
+				}else if(key == key15 || key15 == -1) {
+					key15 = key;
+					value15 = value;
+				}else if(key == key16 || key16 == -1) {
+					key16 = key;
+					value16 = value;
 				}else {
 					// We've reached the end
 					// which means that we need to
 					// split this node up.
-					long childKeyLength = keyLength >>> 2;
-					long childKeyLength2 = keyLength2 >>> 2;
-					child00 = new Node();
-					child01 = new Node();
-					child10 = new Node();
-					child11 = new Node();
-					child00.startKey = startKey;
-					child00.keyLength = childKeyLength;
-					child00.keyLength2 = childKeyLength2;
-					child01.startKey = startKey + keyLength2;
-					child01.keyLength = childKeyLength;
-					child01.keyLength2 = childKeyLength2;
-					child10.startKey = startKey + keyLength;
-					child10.keyLength = childKeyLength;
-					child10.keyLength2 = childKeyLength2;
-					child11.startKey = startKey + keyLength + keyLength2;
-					child11.keyLength = childKeyLength;
-					child11.keyLength2 = childKeyLength2;
+					leafNode = false;
 					
 					put(key1, value1);
 					put(key2, value2);
@@ -197,6 +252,14 @@ public class IndexCache {
 					put(key6, value6);
 					put(key7, value7);
 					put(key8, value8);
+					put(key9, value9);
+					put(key10, value10);
+					put(key11, value11);
+					put(key12, value12);
+					put(key13, value13);
+					put(key14, value14);
+					put(key15, value15);
+					put(key16, value16);
 					put(key, value);
 				}
 			}

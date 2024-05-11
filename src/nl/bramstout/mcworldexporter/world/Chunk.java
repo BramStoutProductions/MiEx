@@ -137,6 +137,7 @@ public abstract class Chunk {
 	 * UI. The array is in ZX order.
 	 */
 	protected short[] heightMap;
+	protected short heightMapMaxVal;
 	
 	protected Region region;
 
@@ -165,6 +166,7 @@ public abstract class Chunk {
 		this.blocks = null;
 		this.biomes = null;
 		this.heightMap = null;
+		this.heightMapMaxVal = 320;
 		this.entities = new ArrayList<Entity>();
 		this.chunkSectionOffset = 0;
 		this.chunkImg = null;
@@ -244,13 +246,13 @@ public abstract class Chunk {
 
 	public int getBiomeIdLocal(int x, int y, int z) {
 		this.lastAccess = System.currentTimeMillis();
-		if (biomes == null)
+		if (biomes == null || blocks == null)
 			try {
 				load();
 			} catch (Exception e) {
 				World.handleError(e);
 			}
-		if (biomes == null)
+		if (biomes == null || blocks == null)
 			return 0;
 		int sectionY = (y >> 4) - chunkSectionOffset;
 		if (sectionY < 0 || sectionY >= blocks.length)
@@ -362,6 +364,29 @@ public abstract class Chunk {
 					int height = getHeightLocal(x, z);
 					int blockId = getBlockIdLocal(x, height, z);
 					int colour = 0;
+					if(MCWorldExporter.getApp().getExportBounds().getMaxY() < 320) {
+						// Cave mode. If the block at maxY equals blockId, then keep moving
+						// down until we find an air block and then pick the next non-air block.
+						if((height+1) >= heightMapMaxVal) {
+							// Do cave mode
+							blockId = 0;
+							boolean foundAir = false;
+							for(int sampleY = height; sampleY >= MCWorldExporter.getApp().getExportBounds().getMinY(); --sampleY) {
+								int sampleBlockId = getBlockIdLocal(x, sampleY, z);
+								Block block = BlockRegistry.getBlock(sampleBlockId);
+								if(sampleBlockId == 0) {
+									foundAir = true;
+								}else {
+									if(foundAir || block.hasLiquid()) {
+										// Found our block to show
+										height = sampleY;
+										blockId = sampleBlockId;
+										break;
+									}
+								}
+							}
+						}
+					}
 					if (blockId > 0) {
 						Block block = BlockRegistry.getBlock(blockId);
 						int stateId = BlockStateRegistry.getIdForName(block.getName());
@@ -501,6 +526,7 @@ public abstract class Chunk {
 		int maxY = minY + blocks.length * 16;
 		minY = Math.max(minY, MCWorldExporter.getApp().getExportBounds().getMinY());
 		maxY = Math.min(maxY, MCWorldExporter.getApp().getExportBounds().getMaxY());
+		heightMapMaxVal = (short) maxY;
 		int sectionIndex = ((maxY - 1) >> 4) - chunkSectionOffset;
 		int sectionY = (maxY - 1) % 16;
 		if (sectionY < 0)

@@ -304,9 +304,11 @@ public class Mesh {
 		// Scale the UVs
 		if(uvScale != 1.0f || yuvScale != 1.0f) {
 			uvs = Arrays.copyOf(uvs, uvs.length);
+			float pivotU = Math.min(uvs[0], uvs[4]);
+			float pivotV = Math.min(uvs[1], uvs[5]);
 			for(int i = 2; i < uvs.length; i += 2) {
-				uvs[i] = (uvs[i] - uvs[0]) * uvScale + uvs[0];
-				uvs[i + 1] = (uvs[i + 1] - uvs[1]) * yuvScale + uvs[1];
+				uvs[i] = (uvs[i] - pivotU) * uvScale + pivotU;
+				uvs[i + 1] = (uvs[i + 1] - pivotV) * yuvScale + pivotV;
 			}
 		}
 		addPoint((points[0] - 8f) * scale + 8f + ox, (points[1] - 8f) * yScale + 8f + oy, (points[2] - 8f) * scale + 8f + oz, 

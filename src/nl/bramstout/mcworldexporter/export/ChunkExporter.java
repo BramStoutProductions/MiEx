@@ -79,7 +79,7 @@ public class ChunkExporter {
 	private LODCache lodCache;
 	private CaveCache caveCache;
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
+	public static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 
 	
 	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name) {
@@ -1122,11 +1122,11 @@ public class ChunkExporter {
 		float threshold = (MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
-		Map<String, Mesh> optimisedMeshes = new HashMap<String, Mesh>();
+		final Map<String, Mesh> optimisedMeshes = new HashMap<String, Mesh>();
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			final Mesh inMesh = mesh.getValue();
 			final String key = mesh.getKey();
-			futures.add(threadPool.submit(new Runnable() {
+			Runnable workItem = new Runnable() {
 				public void run() {
 					Mesh newMesh = inMesh;
 					
@@ -1150,8 +1150,18 @@ public class ChunkExporter {
 					}
 					MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size());
 				}
-			}));
+			};
 			
+			// If we are exporting out a bunch of chunks,
+			// then with the exporter working in parallel,
+			// if can stress the garbage collector too much.
+			// So, in those cases we run it directly on this thread
+			// rather than putting each mesh into a queue.
+			if(Exporter.NUM_CHUNKS >= 16) {
+				workItem.run();
+			}else {
+				futures.add(threadPool.submit(workItem));
+			}
 		}
 		for(Future<?> future : futures) {
 			try {
