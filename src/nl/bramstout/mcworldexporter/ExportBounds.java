@@ -47,6 +47,7 @@ public class ExportBounds {
 	private int lodWidth;
 	private int lodDepth;
 	private int lodYDetail;
+	private boolean enableLOD;
 	
 	public ExportBounds() {
 		minX = 0;
@@ -63,11 +64,12 @@ public class ExportBounds {
 		lodWidth = 0;
 		lodDepth = 0;
 		lodYDetail = 4;
+		enableLOD = false;
 	}
 	
 	public ExportBounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, 
 						int offsetX, int offsetY, int offsetZ, int lodCenterX, int lodCenterZ, 
-						int lodWidth, int lodDepth, int lodYDetail) {
+						int lodWidth, int lodDepth, int lodYDetail, boolean enableLOD) {
 		this.minX = minX;
 		this.minY = minY;
 		this.minZ = minZ;
@@ -82,6 +84,7 @@ public class ExportBounds {
 		this.lodWidth = lodWidth;
 		this.lodDepth = lodDepth;
 		this.lodYDetail = lodYDetail;
+		this.enableLOD = enableLOD;
 	}
 	
 	public int getMinX() {
@@ -168,59 +171,23 @@ public class ExportBounds {
 		return lodCenterZ + ((int) Math.ceil(((double) lodDepth) / 2.0));
 	}
 	
-	public boolean isLodMinXConstraint() {
-		return getLodMinX() <= minX;
-	}
-	
-	public boolean isLodMaxXConstraint() {
-		return getLodMaxX() >= maxX;
-	}
-	
-	public boolean isLodMinZConstraint() {
-		return getLodMinZ() <= minZ;
-	}
-	
-	public boolean isLodMaxZConstraint() {
-		return getLodMaxZ() >= maxZ;
-	}
-	
 	public boolean hasLod() {
-		return (lodDepth > 1 && lodWidth > 1) && !(
-				isLodMinXConstraint() && isLodMaxXConstraint() &&
-				isLodMinZConstraint() && isLodMaxZConstraint());
+		return enableLOD;
 	}
 
 	public void set(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-		boolean constraintMinX = isLodMinXConstraint();
-		boolean constraintMinZ = isLodMinZConstraint();
-		boolean constraintMaxX = isLodMaxXConstraint();
-		boolean constraintMaxZ = isLodMaxZConstraint();
 		this.minX = Math.min(minX, maxX);
 		this.minY = Math.min(minY, maxY);
 		this.minZ = Math.min(minZ, maxZ);
 		this.maxX = Math.max(minX, maxX);
 		this.maxY = Math.max(minY, maxY);
 		this.maxZ = Math.max(minZ, maxZ);
-		if(constraintMinX)
-			setLodMinX(minX);
-		if(constraintMinZ)
-			setLodMinZ(minZ);
-		if(constraintMaxX)
-			setLodMaxX(maxX);
-		if(constraintMaxZ)
-			setLodMaxZ(maxZ);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMinX(int minX) {
-		boolean constraintMinX = isLodMinXConstraint();
-		boolean constraintMaxX = isLodMaxXConstraint();
 		this.minX = Math.min(minX, maxX);
 		this.maxX = Math.max(minX, maxX);
-		if(constraintMinX)
-			setLodMinX(minX);
-		if(constraintMaxX)
-			setLodMaxX(maxX);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -231,26 +198,14 @@ public class ExportBounds {
 	}
 	
 	public void setMinZ(int minZ) {
-		boolean constraintMinZ = isLodMinZConstraint();
-		boolean constraintMaxZ = isLodMaxZConstraint();
 		this.minZ = Math.min(minZ, maxZ);
 		this.maxZ = Math.max(minZ, maxZ);
-		if(constraintMinZ)
-			setLodMinZ(minZ);
-		if(constraintMaxZ)
-			setLodMaxZ(maxZ);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMaxX(int maxX) {
-		boolean constraintMinX = isLodMinXConstraint();
-		boolean constraintMaxX = isLodMaxXConstraint();
 		this.minX = Math.min(minX, maxX);
 		this.maxX = Math.max(minX, maxX);
-		if(constraintMinX)
-			setLodMinX(minX);
-		if(constraintMaxX)
-			setLodMaxX(maxX);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -261,36 +216,18 @@ public class ExportBounds {
 	}
 	
 	public void setMaxZ(int maxZ) {
-		boolean constraintMinZ = isLodMinZConstraint();
-		boolean constraintMaxZ = isLodMaxZConstraint();
 		this.minZ = Math.min(minZ, maxZ);
 		this.maxZ = Math.max(minZ, maxZ);
-		if(constraintMinZ)
-			setLodMinZ(minZ);
-		if(constraintMaxZ)
-			setLodMaxZ(maxZ);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void includePoint(int x, int y, int z) {
-		boolean constraintMinX = isLodMinXConstraint();
-		boolean constraintMinZ = isLodMinZConstraint();
-		boolean constraintMaxX = isLodMaxXConstraint();
-		boolean constraintMaxZ = isLodMaxZConstraint();
 		minX = Math.min(minX, x);
 		minY = Math.min(minY, y);
 		minZ = Math.min(minZ, z);
 		maxX = Math.max(maxX, x);
 		maxY = Math.max(maxY, y);
 		maxZ = Math.max(maxZ, z);
-		if(constraintMinX)
-			setLodMinX(minX);
-		if(constraintMinZ)
-			setLodMinZ(minZ);
-		if(constraintMaxX)
-			setLodMaxX(maxX);
-		if(constraintMaxZ)
-			setLodMaxZ(maxZ);
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -331,22 +268,6 @@ public class ExportBounds {
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
-	private void setLodMinX(int minX) {
-		setLod2(minX, getLodMinZ(), getLodMaxX(), getLodMaxZ());
-	}
-	
-	private void setLodMaxX(int maxX) {
-		setLod2(getLodMinX(), getLodMinZ(), maxX, getLodMaxZ());
-	}
-	
-	private void setLodMinZ(int minZ) {
-		setLod2(getLodMinX(), minZ, getLodMaxX(), getLodMaxZ());
-	}
-	
-	private void setLodMaxZ(int maxZ) {
-		setLod2(getLodMinX(), getLodMinZ(), getLodMaxX(), maxZ);
-	}
-	
 	public void setLod(int minX, int minZ, int maxX, int maxZ) {
 		int minX2 = Math.min(minX, maxX);
 		int minZ2 = Math.min(minZ, maxZ);
@@ -361,18 +282,17 @@ public class ExportBounds {
 		lodDepth = Math.max(maxZ - minZ, 0);
 		lodCenterX = minX + lodWidth / 2;
 		lodCenterZ = minZ + lodDepth / 2;
+		enableLOD = true;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
-	private void setLod2(int minX, int minZ, int maxX, int maxZ) {
-		lodWidth = Math.max(maxX - minX, 0);
-		lodDepth = Math.max(maxZ - minZ, 0);
-		lodCenterX = minX + lodWidth / 2;
-		lodCenterZ = minZ + lodDepth / 2;
+	public void disableLod() {
+		enableLOD = false;
+		MCWorldExporter.getApp().getUI().update();
 	}
 	
-	public void disableLod() {
-		setLod(minX, minZ, maxX, maxZ);
+	public void enableLod() {
+		enableLOD = true;
 		MCWorldExporter.getApp().getUI().update();
 	}
 
@@ -386,7 +306,7 @@ public class ExportBounds {
 
 	public ExportBounds copy() {
 		return new ExportBounds(minX, minY, minZ, maxX, maxY, maxZ, offsetX, offsetY, offsetZ,
-								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail);
+								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail, enableLOD);
 	}
 	
 }

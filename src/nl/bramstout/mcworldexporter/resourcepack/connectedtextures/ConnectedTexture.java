@@ -10,11 +10,15 @@ import nl.bramstout.mcworldexporter.model.ModelFace;
 
 public abstract class ConnectedTexture {
 	
+	public static final String DELETE_FACE = "MIEX:DELETE_FACE";
+	
 	private String name;
 	private int priority;
 	protected List<String> tiles;
 	private Set<Direction> facesToConnect;
 	private ConnectLogic connectLogic;
+	private Integer tintIndex;
+	private String tintBlock;
 	
 	public ConnectedTexture(String name, int priority) {
 		this.name = name;
@@ -22,9 +26,15 @@ public abstract class ConnectedTexture {
 		this.tiles = new ArrayList<String>();
 		this.facesToConnect = new HashSet<Direction>();
 		this.connectLogic = null;
+		this.tintIndex = null;
+		this.tintBlock = null;
 	}
 	
 	public abstract String getTexture(int x, int y, int z, ModelFace face);
+	
+	public boolean isOverlay() {
+		return false;
+	}
 	
 	protected boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
 		if(!facesToConnect.contains(face.getDirection()))
@@ -276,6 +286,22 @@ public abstract class ConnectedTexture {
 	
 	public void setConnectLogic(ConnectLogic logic) {
 		this.connectLogic = logic;
+	}
+	
+	public Integer getTintIndex() {
+		return tintIndex;
+	}
+	
+	public void setTintIndex(Integer tintIndex) {
+		this.tintIndex = tintIndex;
+	}
+	
+	public String getTintBlock() {
+		return tintBlock;
+	}
+	
+	public void setTintBlock(String tintBlock) {
+		this.tintBlock = tintBlock;
 	}
 	
 }

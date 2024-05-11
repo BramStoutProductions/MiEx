@@ -301,7 +301,7 @@ public class ChunkExporter {
 						continue;
 				}
 				addFace(meshes, state.getName(), face, model.getTexture(face.getTexture()), wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY,
-						model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale());
+						model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale(), false);
 			}
 		}
 	}
@@ -319,7 +319,7 @@ public class ChunkExporter {
 				if(face.getOccludedBy() != 0 && (face.getOccludedBy() & occlusion) == face.getOccludedBy())
 					continue;
 				addFace(meshes, "minecraft:water", face, model.getTexture(face.getTexture()), wx, by, wz, 0f, 0f, 0f, 0f, model.getExtraData(), 
-						biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale());
+						biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale(), false);
 			}
 		}
 	}
@@ -342,7 +342,7 @@ public class ChunkExporter {
 					face = model.getFaces().get(k);
 					addFace(meshes, entity.getName(), face, model.getTexture(face.getTexture()), entity.getX(), entity.getY(), entity.getZ(), 
 							0f, 0f, 0f, 0f, model.getExtraData(), null, model.isDoubleSided(),
-							1, 1, false);
+							1, 1, false, false);
 				}
 			}
 		}
@@ -666,17 +666,68 @@ public class ChunkExporter {
 	private void addFace(Map<String, Mesh> meshes, String blockName, ModelFace face, String texture, 
 			float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
 			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
-			boolean lodNoUVScale) {
+			boolean lodNoUVScale, boolean noConnectedTextures) {
 		if(texture == null || texture.equals(""))
 			return;
 		
 		// Connected textures
-		ConnectedTexture connectedTexture = ConnectedTextures.getConnectedTexture(blockName, texture);
-		if(connectedTexture != null) {
-			if(connectedTexture.getFacesToConnect().contains(face.getDirection())) {
-				String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, face);
-				if(newTexture != null)
-					texture = newTexture;
+		if(!noConnectedTextures) {
+			Entry<ConnectedTexture, List<ConnectedTexture>> connectedTextures = 
+										ConnectedTextures.getConnectedTexture(blockName, texture);
+			if(connectedTextures != null) {
+				ConnectedTexture connectedTexture = connectedTextures.getKey();
+				if(connectedTexture != null) {
+					if(connectedTexture.getFacesToConnect().contains(face.getDirection())) {
+						String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, face);
+						if(newTexture != null)
+							texture = newTexture;
+						if(newTexture == ConnectedTexture.DELETE_FACE)
+							return;
+					}
+				}
+				List<ConnectedTexture> overlayTextures = connectedTextures.getValue();
+				if(overlayTextures != null) {
+					float faceOffset = 0.0125f;
+					for(ConnectedTexture overlayTexture : overlayTextures) {
+						if(overlayTexture.getFacesToConnect().contains(face.getDirection())) {
+							String newTexture = overlayTexture.getTexture((int) bx, (int) by, (int) bz, face);
+							if(newTexture != null && newTexture != ConnectedTexture.DELETE_FACE) {
+								ModelFace overlayFace = new ModelFace(face);
+								overlayFace.translate(((float) face.getDirection().x) * faceOffset, 
+														((float) face.getDirection().y) * faceOffset, 
+														((float) face.getDirection().z) * faceOffset);
+								faceOffset += 0.0125f;
+								Color overlayTint = null;
+								if(overlayTexture.getTintIndex() != null) {
+									overlayFace.setTintIndex(overlayTexture.getTintIndex().intValue());
+									if(overlayTexture.getTintIndex().intValue() < 0)
+										overlayTint = null;
+									else {
+										if(overlayTexture.getTintBlock() != null) {
+											// It's the biome colour from some other block,
+											// so figure that out.
+											
+											// Get the biome
+											BlendedBiome biome = new BlendedBiome();
+											getBlendedBiome((int) bx, (int) by, (int) bz, biome);
+											
+											// Get a block state for the tintBlock name
+											int blockId = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null);
+											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId, 
+																						(int) bx, (int) by, (int) bz);
+											overlayTint = biome.getBiomeColor(blockState);
+										}else {
+											overlayTint = tint;
+										}
+									}
+								}
+								
+								addFace(meshes, blockName, overlayFace, newTexture, bx, by, bz, ox, oy, oz, uvOffsetY,
+										extraData, overlayTint, doubleSided, lodSize, lodYSize, lodNoUVScale, true);
+							}
+						}
+					}
+				}
 			}
 		}
 		

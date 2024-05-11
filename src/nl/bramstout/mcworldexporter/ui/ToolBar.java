@@ -689,10 +689,23 @@ public class ToolBar extends JPanel {
 				if(!lodEnableCheckBox.isSelected()) {
 					MCWorldExporter.getApp().getExportBounds().disableLod();
 				}else {
-					MCWorldExporter.getApp().getExportBounds().setLodWidth(Math.min(1024, 
-													MCWorldExporter.getApp().getExportBounds().getWidth()/2));
-					MCWorldExporter.getApp().getExportBounds().setLodDepth(Math.min(1024,
-													MCWorldExporter.getApp().getExportBounds().getDepth()/2));
+					MCWorldExporter.getApp().getExportBounds().enableLod();
+					int lodCenterX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
+					int lodCenterZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
+					if(lodCenterX < MCWorldExporter.getApp().getExportBounds().getMinX() || 
+							lodCenterX > MCWorldExporter.getApp().getExportBounds().getMaxX() ||
+							lodCenterZ < MCWorldExporter.getApp().getExportBounds().getMinZ() ||
+							lodCenterZ > MCWorldExporter.getApp().getExportBounds().getMaxZ() ||
+							MCWorldExporter.getApp().getExportBounds().getLodWidth() <= 1 || 
+							MCWorldExporter.getApp().getExportBounds().getLodDepth() <= 1) {
+						// The LOD area is outside of our selection, so reset the LOD area.
+						MCWorldExporter.getApp().getExportBounds().setLodCenterX(MCWorldExporter.getApp().getExportBounds().getCenterX());
+						MCWorldExporter.getApp().getExportBounds().setLodCenterZ(MCWorldExporter.getApp().getExportBounds().getCenterZ());
+						MCWorldExporter.getApp().getExportBounds().setLodWidth(Math.min(1024, 
+														MCWorldExporter.getApp().getExportBounds().getWidth()/2));
+						MCWorldExporter.getApp().getExportBounds().setLodDepth(Math.min(1024,
+														MCWorldExporter.getApp().getExportBounds().getDepth()/2));
+					}
 				}
 			}
 			
@@ -856,6 +869,8 @@ public class ToolBar extends JPanel {
 				}
 				dimensionChooser.setSelectedItem(MCWorldExporter.getApp().getWorld().getCurrentDimensions());
 			}
+			if(!dimensionChooser.getSelectedItem().equals(MCWorldExporter.getApp().getWorld().getCurrentDimensions()))
+				dimensionChooser.setSelectedItem(MCWorldExporter.getApp().getWorld().getCurrentDimensions());
 		}
 
 		if (MCWorldExporter.getApp().getExportBounds().getMinX() != ((Integer) minXSpinner.getValue()).intValue()) {
@@ -890,6 +905,9 @@ public class ToolBar extends JPanel {
 		}
 		if (MCWorldExporter.getApp().getExportBounds().getLodYDetail() != ((Integer) lodYDetailSpinner.getValue()).intValue()) {
 			lodYDetailSpinner.setValue(MCWorldExporter.getApp().getExportBounds().getLodYDetail());
+		}
+		if (MCWorldExporter.getApp().getExportBounds().hasLod() != lodEnableCheckBox.isSelected()) {
+			lodEnableCheckBox.setSelected(MCWorldExporter.getApp().getExportBounds().hasLod());
 		}
 		if (Config.runOptimiser != runOptimiserCheckBox.isSelected()) {
 			runOptimiserCheckBox.setSelected(Config.runOptimiser);

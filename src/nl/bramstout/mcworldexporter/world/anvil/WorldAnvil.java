@@ -71,23 +71,31 @@ public class WorldAnvil extends World{
 	protected void findDimensions() {
 		dimensions.clear();
 		if(new File(worldDir, "region").exists()) {
-			dimensions.add("Overworld");
+			dimensions.add("overworld");
 		}
 		for(File f : worldDir.listFiles()) {
-			if(new File(f, "region").exists()) {
-				String dim = f.getName();
-				if(dim.equals("DIM-1"))
-					dim = "Nether";
-				else if(dim.equals("DIM1"))
-					dim = "End";
-				dimensions.add(dim);
-			}
+			findDimensionsInFolder(f, "");
 		}
 		
 		if(dimensions.isEmpty()) {
 			// If we couldn't find any dimensions, then this
 			// must be an invalid world, so let the user know.
 			throw new RuntimeException("Invalid world selected");
+		}
+	}
+	
+	private void findDimensionsInFolder(File folder, String parent) {
+		if(new File(folder, "region").exists()) {
+			String dim = folder.getName();
+			if(dim.equals("DIM-1"))
+				dim = "the_nether";
+			else if(dim.equals("DIM1"))
+				dim = "the_end";
+			dimensions.add(parent + dim);
+		}else if(folder.isDirectory()){
+			for(File f : folder.listFiles()) {
+				findDimensionsInFolder(f, parent + folder.getName() + "/");
+			}
 		}
 	}
 
@@ -110,11 +118,11 @@ public class WorldAnvil extends World{
 		}
 		
 		File regionFolder = new File(new File(worldDir, currentDimension), "region");
-		if(currentDimension == "Overworld")
+		if(currentDimension == "overworld")
 			regionFolder = new File(worldDir, "region");
-		if(currentDimension == "Nether")
+		if(currentDimension == "the_nether")
 			regionFolder = new File(worldDir, "DIM-1/region");
-		if(currentDimension == "End")
+		if(currentDimension == "the_end")
 			regionFolder = new File(worldDir, "DIM1/region");
 		
 		if(!regionFolder.exists())

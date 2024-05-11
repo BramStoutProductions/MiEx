@@ -74,6 +74,9 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		String width = null;
 		String height = null;
 		String connectTiles = null;
+		String connectBlocks = null;
+		String tintIndex = null;
+		String tintBlock = null;
 		
 		BufferedReader reader = null;
 		try {
@@ -91,11 +94,13 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 					method = value;
 				else if(key.equalsIgnoreCase("tiles"))
 					tiles = value;
-				else if(key.equalsIgnoreCase("matchTiles"))
+				else if(key.equalsIgnoreCase("matchTiles")) {
 					matchTiles = value;
-				else if(key.equalsIgnoreCase("matchBlocks"))
+					matchBlocks = null;
+				}else if(key.equalsIgnoreCase("matchBlocks")) {
 					matchBlocks = value;
-				else if(key.equalsIgnoreCase("weight"))
+					matchTiles = null;
+				}else if(key.equalsIgnoreCase("weight"))
 					weight = value;
 				else if(key.equalsIgnoreCase("connect"))
 					connect = value;
@@ -121,6 +126,12 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 					height = value;
 				else if(key.equalsIgnoreCase("connectTiles"))
 					connectTiles = value;
+				else if(key.equalsIgnoreCase("connectBlocks"))
+					connectBlocks = value;
+				else if(key.equalsIgnoreCase("tintIndex"))
+					tintIndex = value;
+				else if(key.equalsIgnoreCase("tintBlock"))
+					tintBlock = value;
 			}
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -141,6 +152,8 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		}
 		
 		ConnectedTexture connectedTexture = null;
+		if(method == null)
+			return;
 		if(method.equalsIgnoreCase("ctm")) {
 			connectedTexture = new ConnectedTextureFull(parent + f.getName(), priority);
 			if(innerSeams != null) {
@@ -158,9 +171,9 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		}else if(method.equalsIgnoreCase("vertical")) {
 			connectedTexture = new ConnectedTextureVertical(parent + f.getName(), priority);
 		}else if(method.equalsIgnoreCase("horizontal+vertical")) {
-			// TODO: Implement
+			connectedTexture = new ConnectedTextureHorizontalVertical(parent + f.getName(), priority);
 		}else if(method.equalsIgnoreCase("vertical+horizontal")) {
-			// TODO: Implement
+			connectedTexture = new ConnectedTextureVerticalHorizontal(parent + f.getName(), priority);
 		}else if(method.equalsIgnoreCase("top")) {
 			connectedTexture = new ConnectedTextureTop(parent + f.getName(), priority);
 		}else if(method.equalsIgnoreCase("random")) {
@@ -295,6 +308,15 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 				((ConnectLogic.ConnectLogicTextures)connectLogic).textures.add(tile);
 			}
 		}
+		if(connectBlocks != null) {
+			String[] blocksTokens = connectBlocks.split("[ ,]");
+			connectLogic = new ConnectLogic.ConnectLogicBlockNames();
+			for(String block : blocksTokens) {
+				if(!block.contains(":"))
+					block = "minecraft:" + block;
+				((ConnectLogic.ConnectLogicBlockNames)connectLogic).blockNames.add(block);
+			}
+		}
 		connectedTexture.setConnectLogic(connectLogic);
 		
 		if(faces != null) {
@@ -317,6 +339,19 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		}else {
 			for(Direction dir : Direction.CACHED_VALUES)
 				connectedTexture.getFacesToConnect().add(dir);
+		}
+		
+		if(tintIndex != null) {
+			try {
+				int tintIndexI = Integer.parseInt(tintIndex);
+				connectedTexture.setTintIndex(tintIndexI);
+			}catch(Exception ex) {}
+		}
+		
+		if(tintBlock != null) {
+			if(!tintBlock.contains(":"))
+				tintBlock = "minecraft:" + tintBlock;
+			connectedTexture.setTintBlock(tintBlock);
 		}
 		
 		if(biomes != null) {

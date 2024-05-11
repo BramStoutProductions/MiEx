@@ -303,7 +303,8 @@ public class CtmUtils {
 	};
 	public static int[] OverlayDataToTile = new int[256];
 	static {
-		Arrays.fill(OverlayDataToTile, -1);
+		Arrays.fill(OverlayDataToTile, -2);
+		OverlayDataToTile[0b00000000] = -1;
 		OverlayDataToTile[0b00001000] = 0;
 		OverlayDataToTile[0b00001110] = 1;
 		OverlayDataToTile[0b00000010] = 2;
@@ -321,6 +322,49 @@ public class CtmUtils {
 		OverlayDataToTile[0b00100000] = 14;
 		OverlayDataToTile[0b11100000] = 15;
 		OverlayDataToTile[0b10000000] = 16;
+		
+		// If on two opposite sides.
+		// Optifine's CTM Overlay format doesn't have
+		// a good tile for it, so just pick something.
+		OverlayDataToTile[0b11101110] = 1;
+		OverlayDataToTile[0b10111011] = 7;
+		
+		for(int i = 0; i < OverlayDataToTile.length; ++i) {
+			if(OverlayDataToTile[i] >= -1)
+				continue;
+			// We don't have connection info for this,
+			// so let's fill in missing data.
+			// If the corners are connected but not the sides
+			// then we want to use the texture as if the corners also
+			// aren't connected.
+			
+			int tileIndex = i;
+			// Loop over each corner
+			for(int cornerBit = 1; cornerBit < 8; cornerBit += 2) {
+				// Check the side bits on both sides
+				int leftSideBit = cornerBit - 1;
+				if(leftSideBit < 0)
+					leftSideBit += 8;
+				int rightSideBit = cornerBit + 1;
+				if(rightSideBit >= 8)
+					rightSideBit -= 8;
+				
+				int leftSide = tileIndex & (1 << leftSideBit);
+				int rightSide = tileIndex & (1 << rightSideBit);
+				
+				// If either sides are connected, then set this corner
+				// to be connected as well.
+				if(leftSide > 0 || rightSide > 0)
+					tileIndex |= 1 << cornerBit;
+				// If both sides aren't connected, then set this corner
+				// to not be connected as well.
+				if(leftSide == 0 && rightSide == 0)
+					tileIndex &= ~(1 << cornerBit);
+			}
+			
+			// Copy the file to use from the tileIndex
+			OverlayDataToTile[i] = OverlayDataToTile[tileIndex];
+		}
 	}
 	
 }

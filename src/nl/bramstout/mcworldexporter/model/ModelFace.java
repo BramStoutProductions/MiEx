@@ -807,4 +807,8 @@ public class ModelFace {
 		out[2] = ((float) Math.round(out[2] * 1000000.0f)) / 1000000.0f;
 	}
 
+	public void setTintIndex(int tintIndex) {
+		this.tintIndex = tintIndex;
+	}
+
 }

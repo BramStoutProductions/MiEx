@@ -194,6 +194,18 @@ public abstract class World {
 		this.currentDimension = dimension;
 
 		BlockRegistry.clearBlockRegistry();
+		
+		if(regions != null) {
+			for(Region region : regions) {
+				if(region == null)
+					continue;
+				try {
+					region.unload();
+				}catch(Exception ex) {
+					handleError(ex);
+				}
+			}
+		}
 
 		findRegions();
 

@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class ConnectedTextures {
 	
@@ -39,7 +40,44 @@ public class ConnectedTextures {
 		connectedTextures.add(connectedTexture);
 	}
 	
-	public static ConnectedTexture getConnectedTexture(String block, String texture) {
+	public static Entry<ConnectedTexture, List<ConnectedTexture>> getConnectedTexture(String block, String texture) {
+		List<ConnectedTexture> connectedTextures = getConnectedTextures(block, texture);
+		if(connectedTextures == null)
+			return null;
+		ConnectedTexture main = null;
+		List<ConnectedTexture> overlays = null;
+		for(int i = 0; i < connectedTextures.size(); ++i) {
+			if(connectedTextures.get(i).isOverlay()) {
+				if(overlays == null)
+					overlays = new ArrayList<ConnectedTexture>();
+				overlays.add(connectedTextures.get(i));
+			}
+			if(!connectedTextures.get(i).isOverlay() && main == null)
+				main = connectedTextures.get(i);
+		}
+		final ConnectedTexture fMain = main;
+		final List<ConnectedTexture> fOverlays = overlays;
+		return new Entry<ConnectedTexture, List<ConnectedTexture>>(){
+			
+			@Override
+			public ConnectedTexture getKey() {
+				return fMain;
+			}
+
+			@Override
+			public List<ConnectedTexture> getValue() {
+				return fOverlays;
+			}
+
+			@Override
+			public List<ConnectedTexture> setValue(List<ConnectedTexture> value) {
+				return null;
+			}
+			
+		};
+	}
+	
+	private static List<ConnectedTexture> getConnectedTextures(String block, String texture) {
 		List<ConnectedTexture> byBlock = connectedTexturesByBlock.get(block);
 		List<ConnectedTexture> byTile = connectedTexturesByTile.get(texture);
 		
@@ -73,7 +111,7 @@ public class ConnectedTextures {
 		if(res.size() <= 0)
 			return null;
 		if(res.size() == 1)
-			return res.get(0);
+			return res;
 		// Sort based on names
 		res.sort(new Comparator<ConnectedTexture>() {
 
@@ -91,7 +129,7 @@ public class ConnectedTextures {
 			}
 			
 		});
-		return res.get(0);
+		return res;
 	}
 	
 }

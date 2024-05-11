@@ -158,6 +158,20 @@ public class TeleportDialog extends JDialog {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
+					String dimension = player.getDimension();
+					if(dimension.startsWith("minecraft:")) {
+						dimension = dimension.substring("minecraft".length());
+					}else {
+						dimension = dimension.replace(':', '/');
+						if(!MCWorldExporter.getApp().getWorld().getDimensions().contains(dimension)) {
+							dimension = "dimensions/" + dimension;
+						}
+					}
+					if(!MCWorldExporter.getApp().getWorld().getCurrentDimensions().equals(dimension)) {
+						if(MCWorldExporter.getApp().getWorld().getDimensions().contains(dimension)) {
+							MCWorldExporter.getApp().getWorld().loadDimension(dimension);
+						}
+					}
 					MCWorldExporter.getApp().getUI().getViewer().teleport((int) player.getX(), (int)player.getZ());
 					parent.setVisible(false);
 				}

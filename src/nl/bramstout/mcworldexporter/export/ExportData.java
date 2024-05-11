@@ -157,6 +157,7 @@ public class ExportData {
 		MCWorldExporter.getApp().getExportBounds().set(exportMinX, exportMinY, exportMinZ, exportMaxX, exportMaxY, exportMaxZ);
 		MCWorldExporter.getApp().getExportBounds().disableLod();
 		if(hasLOD) {
+			MCWorldExporter.getApp().getExportBounds().enableLod();
 			MCWorldExporter.getApp().getExportBounds().setLodCenterX(lodCenterX);
 			MCWorldExporter.getApp().getExportBounds().setLodCenterZ(lodCenterZ);
 			MCWorldExporter.getApp().getExportBounds().setLodWidth(lodWidth);

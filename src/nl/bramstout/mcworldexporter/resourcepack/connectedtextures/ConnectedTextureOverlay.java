@@ -17,9 +17,17 @@ public class ConnectedTextureOverlay extends ConnectedTexture{
 		int tile = CtmUtils.OverlayDataToTile[connectionBits];
 		
 		if(tile < 0 || tile >= tiles.size())
-			return null;
+			return DELETE_FACE;
 		
-		return tiles.get(tile);
+		String tileStr = tiles.get(tile);
+		if(tileStr == null)
+			return DELETE_FACE;
+		return tileStr;
+	}
+	
+	@Override
+	public boolean isOverlay() {
+		return true;
 	}
 	
 }
