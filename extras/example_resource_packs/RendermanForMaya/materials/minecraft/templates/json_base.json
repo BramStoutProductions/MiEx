@@ -2,7 +2,7 @@
     "priority": 0,
     "selection": [ "*" ],
     "shadingGroup": {
-        "surface": "PLACEHOLDER.surface",
+        "surface": "PLACEHOLDER.outputs:surface",
         "json:rman__surface": "RIMAT.outColor"
     },
     "include": [ "json_base" ],
@@ -11,7 +11,7 @@
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
-                    "surface": {
+                    "outputs:surface": {
                         "type": "token"
                     }
                 }
