@@ -189,7 +189,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId}"
+                        "expression": "${frameId(reverse=true)}"
                     }
                 }
             }
@@ -203,7 +203,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId}"
+                        "expression": "${frameId(reverse=true)}"
                     }
                 }
             },
@@ -270,7 +270,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId(offset=1)}"
+                        "expression": "${frameId(reverse=true,offset=1)}"
                     }
                 }
             },

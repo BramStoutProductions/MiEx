@@ -1,0 +1,342 @@
+[
+    {
+        "id": 0,
+        "name": "ocean"
+    },
+    {
+        "id": 10,
+        "name": "legacy_frozen_ocean"
+    },
+    {
+        "id": 46,
+        "name": "frozen_ocean"
+    },
+    {
+        "id": 47,
+        "name": "deep_frozen_ocean"
+    },
+    {
+        "id": 44,
+        "name": "cold_ocean"
+    },
+    {
+        "id": 45,
+        "name": "deep_cold_ocean"
+    },
+    {
+        "id": 42,
+        "name": "lukewarm_ocean"
+    },
+    {
+        "id": 43,
+        "name": "deep_lukewarm_ocean"
+    },
+    {
+        "id": 40,
+        "name": "warm_ocean"
+    },
+    {
+        "id": 41,
+        "name": "deep_warm_ocean"
+    },
+    {
+        "id": 7,
+        "name": "river"
+    },
+    {
+        "id": 11,
+        "name": "frozen_river"
+    },
+    {
+        "id": 16,
+        "name": "beach"
+    },
+    {
+        "id": 25,
+        "name": "stone_beach"
+    },
+    {
+        "id": 26,
+        "name": "cold_beach"
+    },
+    {
+        "id": 4,
+        "name": "forest"
+    },
+    {
+        "id": 18,
+        "name": "forest_hills"
+    },
+    {
+        "id": 132,
+        "name": "flower_forest"
+    },
+    {
+        "id": 27,
+        "name": "birch_forest"
+    },
+    {
+        "id": 28,
+        "name": "birch_forest_hills"
+    },
+    {
+        "id": 155,
+        "name": "birch_forest_mutated"
+    },
+    {
+        "id": 156,
+        "name": "birch_forest_hills_mutated"
+    },
+    {
+        "id": 29,
+        "name": "roofed_forest"
+    },
+    {
+        "id": 157,
+        "name": "roofed_forest_mutated"
+    },
+    {
+        "id": 21,
+        "name": "jungle"
+    },
+    {
+        "id": 22,
+        "name": "jungle_hills"
+    },
+    {
+        "id": 149,
+        "name": "jungle_mutated"
+    },
+    {
+        "id": 23,
+        "name": "jungle_edge"
+    },
+    {
+        "id": 151,
+        "name": "jungle_edge_mutated"
+    },
+    {
+        "id": 48,
+        "name": "bamboo_jungle"
+    },
+    {
+        "id": 49,
+        "name": "bamboo_jungle_hills"
+    },
+    {
+        "id": 5,
+        "name": "taiga"
+    },
+    {
+        "id": 19,
+        "name": "taiga_hills"
+    },
+    {
+        "id": 133,
+        "name": "taiga_mutated"
+    },
+    {
+        "id": 30,
+        "name": "cold_taiga"
+    },
+    {
+        "id": 31,
+        "name": "cold_taiga_hills"
+    },
+    {
+        "id": 158,
+        "name": "cold_taiga_mutated"
+    },
+    {
+        "id": 32,
+        "name": "mega_taiga"
+    },
+    {
+        "id": 33,
+        "name": "mega_taiga_hills"
+    },
+    {
+        "id": 160,
+        "name": "redwood_taiga_mutated"
+    },
+    {
+        "id": 161,
+        "name": "redwood_taiga_hills_mutated"
+    },
+    {
+        "id": 14,
+        "name": "mushroom_island"
+    },
+    {
+        "id": 15,
+        "name": "mushroom_island_shore"
+    },
+    {
+        "id": 6,
+        "name": "swampland"
+    },
+    {
+        "id": 134,
+        "name": "swampland_mutated"
+    },
+    {
+        "id": 35,
+        "name": "savanna"
+    },
+    {
+        "id": 36,
+        "name": "savanna_plateau"
+    },
+    {
+        "id": 163,
+        "name": "savanna_mutated"
+    },
+    {
+        "id": 164,
+        "name": "savanna_plateau_mutated"
+    },
+    {
+        "id": 1,
+        "name": "plains"
+    },
+    {
+        "id": 129,
+        "name": "sunflower_plains"
+    },
+    {
+        "id": 2,
+        "name": "desert"
+    },
+    {
+        "id": 17,
+        "name": "desert_hills"
+    },
+    {
+        "id": 130,
+        "name": "desert_mutated"
+    },
+    {
+        "id": 12,
+        "name": "ice_plains"
+    },
+    {
+        "id": 13,
+        "name": "ice_mountains"
+    },
+    {
+        "id": 140,
+        "name": "ice_plains_spikes"
+    },
+    {
+        "id": 3,
+        "name": "extreme_hills"
+    },
+    {
+        "id": 34,
+        "name": "extreme_hills_plus_trees"
+    },
+    {
+        "id": 131,
+        "name": "extreme_hills_mutated"
+    },
+    {
+        "id": 162,
+        "name": "extreme_hills_plus_trees_mutated"
+    },
+    {
+        "id": 20,
+        "name": "extreme_hills_edge"
+    },
+    {
+        "id": 37,
+        "name": "mesa"
+    },
+    {
+        "id": 39,
+        "name": "mesa_plateau"
+    },
+    {
+        "id": 167,
+        "name": "mesa_plateau_mutated"
+    },
+    {
+        "id": 38,
+        "name": "mesa_plateau_stone"
+    },
+    {
+        "id": 166,
+        "name": "mesa_plateau_stone_mutated"
+    },
+    {
+        "id": 165,
+        "name": "mesa_bryce"
+    },
+    {
+        "id": 186,
+        "name": "meadow"
+    },
+    {
+        "id": 185,
+        "name": "grove"
+    },
+    {
+        "id": 184,
+        "name": "snowy_slopes"
+    },
+    {
+        "id": 182,
+        "name": "jagged_peaks"
+    },
+    {
+        "id": 183,
+        "name": "frozen_peaks"
+    },
+    {
+        "id": 189,
+        "name": "stony_peaks"
+    },
+    {
+        "id": 187,
+        "name": "lush_caves"
+    },
+    {
+        "id": 188,
+        "name": "dripstone_caves"
+    },
+    {
+        "id": 190,
+        "name": "deep_dark"
+    },
+    {
+        "id": 191,
+        "name": "mangrove_swamp"
+    },
+    {
+        "id": 8,
+        "name": "hell"
+    },
+    {
+        "id": 179,
+        "name": "crimson_forest"
+    },
+    {
+        "id": 180,
+        "name": "warped_forest"
+    },
+    {
+        "id": 178,
+        "name": "soulsand_valley"
+    },
+    {
+        "id": 181,
+        "name": "basalt_deltas"
+    },
+    {
+        "id": 9,
+        "name": "the_end"
+    },
+    {
+        "id": 192,
+        "name": "cherry_grove"
+    }
+]
