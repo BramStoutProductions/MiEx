@@ -23,7 +23,7 @@
                     },
                     "filename": {
                         "type": "asset",
-                        "value": "@texture@"
+                        "value": "@texture@_overlay"
                     },
                     "filter": {
                         "type": "int",
