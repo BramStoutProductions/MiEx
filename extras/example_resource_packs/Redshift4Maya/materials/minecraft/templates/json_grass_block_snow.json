@@ -1,0 +1,17 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_snow" ],
+    "include": [ "json_base", "json_grass_block_snow" ],
+    "network": {
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "diffuse_color": {
+                        "type": "float3",
+                        "connection": "FILE.outColor"
+                    }
+                }
+            }
+        }
+    }
+}
