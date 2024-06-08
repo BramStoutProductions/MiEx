@@ -38,7 +38,7 @@ import json
 
 class ProgressInterrupt(KeyboardInterrupt):
 
-    def __init__(self, *args: object) -> None:
+    def __init__(self, *args):
         super().__init__(*args)
 
 MIEX_PROGRESS_PROGRESSBAR_COUNTER = 0
@@ -51,7 +51,7 @@ class ProgressBar():
     This is used with the \"with\" statement.
     It will therefore automatically close."""
 
-    def __init__(self, name : str, isInterruptable : bool = False) -> None:
+    def __init__(self, name, isInterruptable = False):
         self.name = name
         self.isInterruptable = isInterruptable
         self.value = 0
@@ -80,7 +80,7 @@ class ProgressBar():
             gMainProgressBar = maya.mel.eval('$tmpgMainProgressBar = $gMainProgressBar')
             cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
-    def checkInterrupt(self) -> None:
+    def checkInterrupt(self):
         """Checks if the progress is interrupted, and if so,
         raise the ProgressInterrupt exception.
         This exception is derived from KeyboardInterrupt,
@@ -89,13 +89,13 @@ class ProgressBar():
         if(self.isInterrupted()):
             raise ProgressInterrupt()
 
-    def isInterrupted(self) -> bool:
+    def isInterrupted(self):
         """Checks if the progress bar has been interrupted
         and returns true if that is the case."""
         gMainProgressBar = maya.mel.eval('$tmpgMainProgressBar = $gMainProgressBar')
         return cmds.progressBar(gMainProgressBar, query=True, isCancelled=True)
     
-    def set(self, progress : float, status : str) -> None:
+    def set(self, progress, status):
         """Sets the progress and status of the progress bar.
         The progress goes from 0 to 1."""
         newValue = int(progress * 100.0)
@@ -106,12 +106,12 @@ class ProgressBar():
             cmds.progressBar(gMainProgressBar, edit=True, progress=self.value, 
                                 status=status)
 
-    def setFromIndex(self, index, size, status : str) -> None:
+    def setFromIndex(self, index, size, status):
         """Sets the progress and status of the progress bar.
         The progress is calculated from the index and size."""
         self.set(float(index) / float(size), status)
 
-    def setProgress(self, progress : float) -> None:
+    def setProgress(self, progress):
         """Sets the progress of the progress bar.
         The progress goes from 0 to 1."""
         newValue = int(progress * 100.0)
@@ -120,12 +120,12 @@ class ProgressBar():
             gMainProgressBar = maya.mel.eval('$tmpgMainProgressBar = $gMainProgressBar')
             cmds.progressBar(gMainProgressBar, edit=True, progress=self.value)
 
-    def setProgressFromIndex(self, index, size) -> None:
+    def setProgressFromIndex(self, index, size):
         """Sets the progress of the progress bar.
         The progress is calculated from the index and size."""
         self.setProgress(float(index) / float(size))
 
-    def setStatus(self, status : str) -> None:
+    def setStatus(self, status):
         """Sets the status of the progress bar."""
         if(self.status != status):
             self.status = status
@@ -137,7 +137,7 @@ class ProgressBar():
 class FileInput(QtWidgets.QWidget):
     """Shows a QLineEdit together with a browse button"""
 
-    def __init__(self, directoryMode : bool = False, fileFilter : str = None, open : bool = False) -> None:
+    def __init__(self, directoryMode = False, fileFilter = None, open = False):
         """If directoryMode is True, you can create or select directories.
         If directoryMode is False, you can select files.
         fileFilter is passed to the dialog as the fileFilter"""
@@ -158,7 +158,7 @@ class FileInput(QtWidgets.QWidget):
         self.browserButton.clicked.connect(self.browse)
         self.layout.addWidget(self.browserButton)
     
-    def browse(self) -> None:
+    def browse(self):
         """Launch the browse dialog"""
         startFolder = self.getPath()
         if not os.path.exists(startFolder):
@@ -177,17 +177,17 @@ class FileInput(QtWidgets.QWidget):
         self.input.setText(result[0])
         
 
-    def getPath(self) -> str:
+    def getPath(self):
         """Get the path specified in the QLineEdit"""
         return OpenMaya.MFileObject.getResolvedFullName(self.input.text()).replace("\\", "/")
     
-    def setPath(self, path : str) -> None:
+    def setPath(self, path):
         """Set the path shown in the QLineEdit"""
         self.input.setText(path)
 
 class MiExImporter(QtWidgets.QWidget):
 
-    def __init__(self) -> None:
+    def __init__(self):
         main_window_ptr = omui.MQtUtil.mainWindow()
         if main_window_ptr is None:
             return None
@@ -236,13 +236,13 @@ class MiExImporter(QtWidgets.QWidget):
         self.adjustSize()
         self.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
     
-    def run(self, *args) -> None:
+    def run(self, *args):
         self.setEnabled(True)
 
         self.fileInput.setPath("")
         self.show()
     
-    def importObj(self) -> None:
+    def importObj(self):
         self.setEnabled(False)
 
         filePath = self.fileInput.getPath()
@@ -269,7 +269,7 @@ except:
     MIEX_IMPORTER_WINDOW = MiExImporter()
     MIEX_IMPORTER_WINDOW.run()
 
-def MIEX_IMPORT(path : str, namespace : str, variant : str):
+def MIEX_IMPORT(path, namespace, variant):
     variantOption = "proxy"
     if variant == "Render":
         variantOption = "render"
@@ -282,7 +282,7 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
 
     cmds.namespace(set=":")
     
-    meshes : list[str] = cmds.ls(namespace + ":**", type="mesh", long=True)
+    meshes = cmds.ls(namespace + ":**", type="mesh", long=True)
     for mesh in meshes:
         cmds.setAttr(mesh + ".displayColors", 0)
         try:
@@ -308,7 +308,7 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
 
         deleteIncomingNodes(shadingEngine)
 
-        connectionsToMake : list[tuple[str, str]] = []
+        connectionsToMake = []
 
         network = data["network"]
         for name, nodeData in network.items():
@@ -327,7 +327,7 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
         
         for name, attr in data["terminals"].items():
             try:
-                inputAttr : str = attr
+                inputAttr = attr
                 inputAttr = inputAttr.split("/")
                 inputAttr = inputAttr[len(inputAttr)-1]
                 cmds.connectAttr(namespace + ":" + inputAttr, shadingEngine + "." + name)
@@ -336,18 +336,18 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
                 print("Could not make connection: ", attr, shadingEngine + "." + name)
 
 
-    def deleteIncomingNodes(node : str):
-        connections : list[str] = cmds.listConnections(node, d = False, s = True)
+    def deleteIncomingNodes(node):
+        connections = cmds.listConnections(node, d = False, s = True)
         for node in connections:
             # We only want to delete dgNodes and not dagNodes, so check for dagNodes
-            types : list[str] = cmds.nodeType(node, inherited=True)
+            types = cmds.nodeType(node, inherited=True)
             if "dagNode" in types:
                 continue
 
             # Delete it
             cmds.delete(node)
     
-    def importNode(name : str, data : dict, connectionsToMake : list[tuple[str, str]]):
+    def importNode(name, data, connectionsToMake):
         classifications = cmds.getClassification(data["type"])
         node = None
         for classification in classifications:
@@ -373,7 +373,7 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
                     print(e)
                     print("Could not import attribute " + node + "." + attrName)
     
-    def importAttr(node : str, name : str, data : dict, connectionsToMake : list[tuple[str, str]]):
+    def importAttr(node, name, data, connectionsToMake):
         if "value" in data:
             if isinstance(data["value"], list):
                 if len(data["value"]) == 1:
@@ -390,13 +390,13 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
                 else:
                     cmds.setAttr(node + "." + name, data["value"])
         elif "connection" in data:
-            inputAttr : str = data["connection"]
+            inputAttr = data["connection"]
             inputAttr = inputAttr.split("/")
             inputAttr = inputAttr[len(inputAttr)-1]
             connectionsToMake.append((namespace + ":" + inputAttr, node + "." + name))
         elif "keyframes" in data:
-            keyframes : list[float] = data["keyframes"]
-            numFrames : int = len(keyframes) / 2
+            keyframes = data["keyframes"]
+            numFrames = len(keyframes) / 2
             i = 0
             if data["type"] == "float":
                 while i < numFrames:
@@ -404,7 +404,7 @@ def MIEX_IMPORT(path : str, namespace : str, variant : str):
 
                     i += 1
             elif data["type"] == "float2":
-                childAttrs : list[str] = cmds.attributeQuery(name, node=node, listChildren=True)
+                childAttrs = cmds.attributeQuery(name, node=node, listChildren=True)
                 numCompounds = len(childAttrs)
                 j = 0
                 while j < numCompounds:
