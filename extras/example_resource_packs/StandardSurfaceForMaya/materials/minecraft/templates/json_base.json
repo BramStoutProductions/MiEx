@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "@texture@": {
+        "": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -24,11 +24,29 @@
                     },
                     "baseColor": {
                         "type": "float3",
-                        "connection": "FILE.outColor"
+                        "value": [1.0, 1.0, 1.0]
                     },
                     "specular": {
                         "type": "float",
                         "value": 0.0
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "baseColor": {
+                        "type": "float3",
+                        "connection": "FILE.outColor"
                     }
                 }
             },
