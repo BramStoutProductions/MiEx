@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "@texture@": {
+        "": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -24,11 +24,21 @@
                     },
                     "diffuse_color": {
                         "type": "float3",
-                        "connection": "FILE.outColor"
+                        "value": [1.0, 1.0, 1.0]
                     },
                     "refl_weight": {
                         "type": "float",
                         "value": 0.0
+                    }
+                }
+            }
+        }
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "diffuse_color": {
+                        "type": "float3",
+                        "connection": "FILE.outColor"
                     }
                 }
             },
