@@ -5,7 +5,7 @@
         "mtlx:surface": "MAT.outputs:out"
     },
     "network": {
-        "@texture@": {
+        "": {
             "MAT": {
                 "type": "ND_standard_surface_surfaceshader",
                 "attributes": {
@@ -14,11 +14,21 @@
                     },
                     "inputs:base_color": {
                         "type": "color3f",
-                        "connection": "FILE.outputs:out"
+                        "value": [1.0, 1.0, 1.0]
                     },
                     "inputs:specular": {
                         "type": "float",
                         "value": 0.0
+                    }
+                }
+            },
+        },
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "inputs:base_color": {
+                        "type": "color3f",
+                        "connection": "FILE.outputs:out"
                     }
                 }
             },
