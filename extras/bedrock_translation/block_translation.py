@@ -115,7 +115,9 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "head_piece_bit": {
         "false": { "part": "foot" },
-        "true": { "part": "head" }
+        "0": { "part": "foot" },
+        "true": { "part": "head" },
+        "1": { "part": "head" }
     },
     "attachment": {
         "standing": { "attachment": "floor" },
@@ -131,7 +133,9 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "extinguished": {
         "false": { "lit": "true" },
-        "true": { "lit": "false" }
+        "0": { "lit": "true" },
+        "true": { "lit": "false" },
+        "1": { "lit": "false" }
     },
     "fill_level": {
         "0": { "level": "0" },
@@ -150,11 +154,15 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "door_hinge_bit": {
         "false": { "hinge": "left" },
-        "true": { "hinge": "true" }
+        "0": { "hinge": "left" },
+        "true": { "hinge": "true" },
+        "1": { "hinge": "true" }
     },
     "upper_block_bit": {
         "false": { "half": "lower" },
-        "true": { "half": "upper" }
+        "0": { "half": "lower" },
+        "true": { "half": "upper" },
+        "1": { "half": "upper" }
     },
     "lever_direction": {
         "east": { "face": "wall", "facing": "east" },
@@ -193,7 +201,9 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "hanging": {
         "false": { "vertical_direction": "up" },
-        "true": { "vertical_direction": "down" }
+        "0": { "vertical_direction": "up" },
+        "true": { "vertical_direction": "down" },
+        "1": { "vertical_direction": "down" }
     },
     "rail_direction": {
         "0": { "shape": "north_south" },
@@ -209,7 +219,9 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "output_subtract_bit": {
         "false": { "mode": "compare" },
-        "true": { "mode": "subtract" }
+        "0": { "mode": "compare" },
+        "true": { "mode": "subtract" },
+        "1": { "mode": "subtract" }
     },
     "sculk_sensor_phase": {
         "0": { "sculk_sensor_phase": "active" },
@@ -224,7 +236,9 @@ BEDROCK_VALUES_TO_JAVA : dict[str, dict[str, dict[str, str]]] = {
     },
     "upside_down_bit": {
         "false": { "half": "bottom" },
-        "true": { "half": "top" }
+        "0": { "half": "bottom" },
+        "true": { "half": "top" },
+        "1": { "half": "top" }
     },
     "turtle_egg_count": {
         "one_egg": { "eggs": "1" },
@@ -1106,7 +1120,7 @@ def parseBlockStates(path : str) -> tuple[set[BlockState], set[BlockState]]:
 
         i += 1
     
-    def parseString(string : str, resSet : set[BlockState]):
+    def parseString(string : str, resSet : set[BlockState], isBedrock : bool):
         def removePipes(matchObj):
             return matchObj.group(0).replace("|", "_")
         string = string.replace("\n", "")
@@ -1164,6 +1178,13 @@ def parseBlockStates(path : str) -> tuple[set[BlockState], set[BlockState]]:
                                 pass
                         else:
                             stateValues.append(BlockStateOption(value.strip(), tokens[i+1]))
+                            if isBedrock:
+                                # In bedrock, booleans are often stored as a TAG_Byte whose
+                                # value is either 0 or 1, so also add those in.
+                                if value.strip() == "false":
+                                    stateValues.append(BlockStateOption("0", tokens[i+1]))
+                                elif value.strip() == "true":
+                                    stateValues.append(BlockStateOption("1", tokens[i+1]))
                 i += itemCountPerValue
                 continue
         
@@ -1176,9 +1197,9 @@ def parseBlockStates(path : str) -> tuple[set[BlockState], set[BlockState]]:
     javaBlockStates = set()
     bedrockBlockStates = set()
     for string in javaBlockStateStrings:
-        parseString(string, javaBlockStates)
+        parseString(string, javaBlockStates, False)
     for string in bedrockBlockStateStrings:
-        parseString(string, bedrockBlockStates)
+        parseString(string, bedrockBlockStates, True)
     return (javaBlockStates, bedrockBlockStates)
 
 
@@ -1217,7 +1238,7 @@ def parseBlockArticle(articleName : str, article : str):
                 elif blockStatePath.startswith("/"):
                     blockStatePath = articleName.replace(" ", "%20") + blockStatePath
                 blockStatePath = blockStatePath.split("#")[0]
-                if blockStatePath.startswith("Main"):
+                if blockStatePath.lower().startswith("main"):
                     blockStatePath = blockStatePath.split("|")[1] + "/BS"
                 foundBlockStates = False
             continue
