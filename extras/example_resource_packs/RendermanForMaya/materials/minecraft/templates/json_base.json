@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "@texture@": {
+        "": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -24,7 +24,7 @@
                     },
                     "diffuseColor": {
                         "type": "float3",
-                        "connection": "RIFILE.resultRGB"
+                        "value": [1.0, 1.0, 1.0]
                     },
                     "diffuseDoubleSided": {
                         "type": "int",
@@ -45,6 +45,20 @@
                     "specularDoubleSided": {
                         "type": "int",
                         "value": 1
+                    },
+                    "specularRoughness": {
+                        "type": "float",
+                        "value": 0.5
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "RIMAT": {
+                "attributes": {
+                    "diffuseColor": {
+                        "type": "float3",
+                        "connection": "RIFILE.resultRGB"
                     },
                     "specularRoughness": {
                         "type": "float",
