@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "": {
+        "!@texture@": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -34,11 +34,27 @@
             }
         },
         "@texture@": {
-            "MAT": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
                 "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:RedshiftMaterial",
+                "attributes": {
+                    "outColor": {
+                        "type": "token"
+                    },
                     "diffuse_color": {
                         "type": "float3",
                         "connection": "FILE.outColor"
+                    },
+                    "refl_weight": {
+                        "type": "float",
+                        "value": 0.0
                     }
                 }
             },
