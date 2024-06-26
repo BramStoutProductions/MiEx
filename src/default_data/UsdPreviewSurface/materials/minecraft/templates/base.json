@@ -5,7 +5,7 @@
         "surface": "MAT.outputs:surface"
     },
     "network": {
-        "": {
+        "!@texture@": {
             "MAT": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -21,7 +21,11 @@
         },
         "@texture@": {
             "MAT": {
+                "type": "UsdPreviewSurface",
                 "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    },
                     "inputs:diffuseColor": {
                         "type": "color3f",
                         "connection": "FILE.outputs:rgb"
