@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "": {
+        "!@texture@": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -34,12 +34,27 @@
             }
         },
         "@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
             "AIMAT": {
                 "type": "JSON:aiStandardSurface",
                 "attributes": {
+                    "outColor": {
+                        "type": "token"
+                    },
                     "baseColor": {
                         "type": "float3",
                         "connection": "AIFILE.outColor"
+                    },
+                    "specular": {
+                        "type": "float",
+                        "value": 0.0
                     }
                 }
             },
