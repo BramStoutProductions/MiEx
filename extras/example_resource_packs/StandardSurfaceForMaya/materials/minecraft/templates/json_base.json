@@ -7,7 +7,7 @@
     },
     "include": [ "json_base" ],
     "network": {
-        "": {
+        "!@texture@": {
             "PLACEHOLDER": {
                 "type": "UsdPreviewSurface",
                 "attributes": {
@@ -43,10 +43,18 @@
                 }
             },
             "MAT": {
+                "type": "JSON:standardSurface",
                 "attributes": {
+                    "outColor": {
+                        "type": "token"
+                    },
                     "baseColor": {
                         "type": "float3",
                         "connection": "FILE.outColor"
+                    },
+                    "specular": {
+                        "type": "float",
+                        "value": 0.0
                     }
                 }
             },
