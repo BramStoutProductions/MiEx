@@ -58,7 +58,7 @@
                 "type": "JSON:ShaderNodeTexImage",
                 "attributes": {
                     "image": {
-                        "type": "Image",
+                        "type": "asset",
                         "value": "@texture@"
                     },
                     "interpolation": {
@@ -147,7 +147,7 @@
                 "type": "JSON:ShaderNodeTexImage",
                 "attributes": {
                     "image": {
-                        "type": "Image",
+                        "type": "asset",
                         "value": "@texture@"
                     },
                     "interpolation": {
