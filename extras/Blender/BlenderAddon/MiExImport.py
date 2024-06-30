@@ -34,26 +34,28 @@ def read_data(context, filepath, options: dict):
 
     # Make a filtered list of meshes that were imported
     meshes = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH' and o.data not in meshes_)
-
+    print(options)
     # Filter meshes based on import type
     for mesh in meshes:
         if options['import_type'] != 'both':
             # Delete mesh if it is not the type we want
-            if not mesh.name.endswith('_proxyShape') and options['import_type'] == 'render':
-                bpy.data.objects.remove(mesh, do_unlink=True)
-            elif mesh.name.endswith('_proxyShape') and options['import_type'] == 'proxy':
-                bpy.data.objects.remove(mesh, do_unlink=True)
+            if  str(mesh.name).endswith('_proxy') and options['import_type'] == 'render':
+                obj = bpy.data.objects[str(mesh.name)]
+                bpy.data.objects.remove(obj, do_unlink=True)
+            elif not str(mesh.name).endswith('_proxy') and options['import_type'] == 'proxy':
+                obj = bpy.data.objects[str(mesh.name)]
+                bpy.data.objects.remove(obj, do_unlink=True)
         else:
             # Show proxy in viewport but not render
-            if mesh.name.endswith('_proxyShape'):
+            if str(mesh.name).endswith('_proxy'):
                 mesh.hide_render = True
             # Show render in render but not viewport
-            elif not mesh.name.endswith('_proxyShape'):
+            elif not str(mesh.name).endswith('_proxy'):
                 mesh.hide_viewport = True
         
         if options['namespace'] != '':
             # Add namespace to mesh name
-            mesh.name = options['namespace'] + '_' + mesh.name
+            mesh.name = options['namespace'] + '_' + str(mesh.name)
 
     # Finally we can set up mats
     for key,val in materials.items():
