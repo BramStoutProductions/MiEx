@@ -7,11 +7,9 @@ import os, json, warnings
 
 class setup_materials:
 
-    def __init__(self,mat:bpy.types.Material, data, namespace:str):
+    def __init__(self,mat:bpy.types.Material, data):
         self.conn_to_make = []
-        self.mat = mat
-        self.namespace = namespace
-        # delete all nodes in material
+        self.mat = mat        # delete all nodes in material
         self.mat.use_nodes = True
 
         for node in self.mat.node_tree.nodes:
@@ -67,10 +65,7 @@ class setup_materials:
                         inputAttr = attrData["connection"]
                         inputAttr = inputAttr.split("/")
                         inputAttr = inputAttr[len(inputAttr)-1]
-                        if self.namespace != '':
-                            self.conn_to_make.append((self.namespace + ":" + inputAttr, node.name + "." + attrName))
-                        else:
-                            self.conn_to_make.append((inputAttr, node.name + "." + attrName))
+                        self.conn_to_make.append((inputAttr, node.name + "." + attrName))
                     # Copilot translation from Maya to Blender, not sure how correct.
                     if "keyframes" in attrData:
                         keyframes = attrData["keyframes"]
@@ -158,10 +153,6 @@ def read_data(context, filepath, options: dict):
             # Show render in render but not viewport
             elif not str(mesh.name).endswith('_proxy'):
                 mesh.hide_viewport = True
-        
-        if options['namespace'] != '':
-            # Add namespace to mesh name
-            mesh.name = options['namespace'] + '_' + str(mesh.name)
 
     # Finally we can set up mats
     for key,val in materials.items():
@@ -175,8 +166,6 @@ def read_data(context, filepath, options: dict):
             setup_materials(mat, val, options['namespace'])
             print('Material set up: ' + key)
 
-            if options['namespace'] != '':
-                mat.name = options['namespace'] + '_' + key
         except Exception as e:
             warnings.warn('Material failed: ' + key, UserWarning)
             raise e
@@ -188,12 +177,6 @@ class MiexImport(Operator, ImportHelper):
     bl_label = "Import MiEx (.usd)"
     filename_ext = ".usd"  # Specify the file extension
 
-    filter_glob: StringProperty(
-        default="*.usd",
-        options={'HIDDEN'},
-        maxlen=255
-    )
-    
     obj_namespace: StringProperty(name="Namespace")
     import_type: EnumProperty(
         name="Import type",
@@ -208,7 +191,6 @@ class MiexImport(Operator, ImportHelper):
     def execute(self, context):
 
         options = {
-            'namespace': self.obj_namespace,
             'import_type': self.import_type,
         }
 
