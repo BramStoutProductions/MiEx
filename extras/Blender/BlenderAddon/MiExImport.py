@@ -23,7 +23,6 @@ class setup_materials:
                 raise e
 
         for conn in self.conn_to_make:
-            print('Making connection: ' + str(conn))
             try:
                 node0, attr0 = conn[0].split(".")
                 node1, attr1 = conn[1].split(".")
@@ -46,19 +45,18 @@ class setup_materials:
             except Exception as e:
                 warnings.warn('Failed to connect terminal: ' + name, UserWarning)
                 raise e
-        self.conn_to_make = []
 
     def import_node(self,name,data):
         node = self.mat.node_tree.nodes.new(data['type'])
         node.name = name
         node.label = name
-        print('Importing node: ' + name)
         if 'attributes' in data:
             for attrName, attrData in data['attributes'].items():
-                print('Importing attribute: ' + attrName)
                 try:
                     if 'image' in attrData:
-                        node.image = bpy.data.images.load(attrData['image']['value'])                  
+                        node.image = bpy.data.images.load(attrData['image']['value'])        
+                    if 'layer_name' in attrData:
+                        node.attribute_name = attrData['layer_name']['value']
                     if 'value' in attrData:
                         node[attrName] = attrData['value']
                     if 'connection' in attrData:
@@ -91,7 +89,6 @@ class setup_materials:
                 except Exception as e:
                     warnings.warn('Failed to set attribute: ' + attrName, UserWarning)
                     raise e
-        print('Node imported: ' + name)
 
     def get_output_node(self):
         material_output = None
@@ -135,24 +132,23 @@ def read_data(context, filepath, options: dict):
 
     # Make a filtered list of meshes that were imported
     meshes = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH' and o.data not in meshes_)
-    print(options)
     # Filter meshes based on import type
-    for mesh in meshes:
-        if options['import_type'] != 'both':
-            # Delete mesh if it is not the type we want
-            if  str(mesh.name).endswith('_proxy') and options['import_type'] == 'render':
-                obj = bpy.data.objects[str(mesh.name)]
-                bpy.data.objects.remove(obj, do_unlink=True)
-            elif not str(mesh.name).endswith('_proxy') and options['import_type'] == 'proxy':
-                obj = bpy.data.objects[str(mesh.name)]
-                bpy.data.objects.remove(obj, do_unlink=True)
-        else:
-            # Show proxy in viewport but not render
-            if str(mesh.name).endswith('_proxy'):
-                mesh.hide_render = True
-            # Show render in render but not viewport
-            elif not str(mesh.name).endswith('_proxy'):
-                mesh.hide_viewport = True
+    # for mesh in meshes:
+    #     if options['import_type'] != 'both':
+    #         # Delete mesh if it is not the type we want
+    #         if  mesh.name.endswith('_proxy') and options['import_type'] == 'render':
+    #             obj = bpy.data.objects[mesh.name]
+    #             bpy.data.objects.remove(obj, do_unlink=True)
+    #         elif not mesh.name.endswith('_proxy') and options['import_type'] == 'proxy':
+    #             obj = bpy.data.objects[mesh.name]
+    #             bpy.data.objects.remove(obj, do_unlink=True)
+    #     else:
+    #         # Show proxy in viewport but not render
+    #         if mesh.name.endswith('_proxy'):
+    #             mesh.hide_render = True
+    #         # Show render in render but not viewport
+    #         elif not mesh.name.endswith('_proxy'):
+    #             mesh.hide_viewport = True
 
     # Finally we can set up mats
     for key,val in materials.items():
@@ -162,10 +158,8 @@ def read_data(context, filepath, options: dict):
             if mat is None:
                 warnings.warn('Material not found: ' + key, UserWarning)
                 continue
-            print('Setting up material: ' + key)
-            setup_materials(mat, val, options['namespace'])
-            print('Material set up: ' + key)
 
+            setup_materials(mat, val)
         except Exception as e:
             warnings.warn('Material failed: ' + key, UserWarning)
             raise e
@@ -176,8 +170,13 @@ class MiexImport(Operator, ImportHelper):
     bl_idname = "mieximport.world"
     bl_label = "Import MiEx (.usd)"
     filename_ext = ".usd"  # Specify the file extension
-
-    obj_namespace: StringProperty(name="Namespace")
+    
+    filter_glob: StringProperty(
+        default="*.usd",
+        options={'HIDDEN'},
+        maxlen=255
+    )
+    
     import_type: EnumProperty(
         name="Import type",
         description="Import either proxy or render variant",
