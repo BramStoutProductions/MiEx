@@ -1,11 +1,15 @@
 import bpy
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty
 from bpy.types import Operator
 
 import os, json, warnings
 
-def read_some_data(context, filepath, use_some_setting):
+def setup_materials(object, data):
+    pass
+
+def read_data(context, filepath, options: dict):
+
     directory = os.path.dirname(filepath)
     filename = os.path.basename(filepath).split('.')[0]
     # Look for material json file
@@ -22,31 +26,76 @@ def read_some_data(context, filepath, use_some_setting):
     # Read material json file
     with open(materialJson) as f:
         materials = json.load(f)
+
+    # Get mesh list before import
+    meshes_ = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH')
+
+    bpy.ops.wm.usd_import(filepath=filepath)
+
+    # Make a filtered list of meshes that were imported
+    meshes = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH' and o.data not in meshes_)
+
+    # Filter meshes based on import type
+    for mesh in meshes:
+        if options['import_type'] != 'both':
+            # Delete mesh if it is not the type we want
+            if not mesh.name.endswith('_proxyShape') and options['import_type'] == 'render':
+                bpy.data.objects.remove(mesh, do_unlink=True)
+            elif mesh.name.endswith('_proxyShape') and options['import_type'] == 'proxy':
+                bpy.data.objects.remove(mesh, do_unlink=True)
+        else:
+            # Show proxy in viewport but not render
+            if mesh.name.endswith('_proxyShape'):
+                mesh.hide_render = True
+            # Show render in render but not viewport
+            elif not mesh.name.endswith('_proxyShape'):
+                mesh.hide_viewport = True
         
-    print(materials)
+        if options['namespace'] != '':
+            # Add namespace to mesh name
+            mesh.name = options['namespace'] + '_' + mesh.name
+
+    # Finally we can set up mats
+    for key,val in materials.items():
+        try:
+            mat = bpy.data.materials[key]
+            setup_materials(mat, val)
+        except:
+            warnings.warn('Material failed: ' + key, UserWarning)
+            raise
+
     return {'FINISHED'}
 
 class MiexImport(Operator, ImportHelper):
     bl_idname = "mieximport.world"
-    bl_label = "Import MiExImport (.usd)"
+    bl_label = "Import MiEx (.usd)"
     filename_ext = ".usd"  # Specify the file extension
 
-    filter_glob: StringProperty = StringProperty(
+    filter_glob: StringProperty(
         default="*.usd",
         options={'HIDDEN'},
         maxlen=255
     )
     
-    # Define the use_setting attribute
-    use_setting: BoolProperty = BoolProperty(
-        name="Use Setting",
-        description="Some setting description",
-        default=True
+    obj_namespace: StringProperty(name="Namespace")
+    import_type: EnumProperty(
+        name="Import type",
+        description="Import either proxy or render variant",
+        items=(
+            ('proxy', "Proxy", "Import proxy models only"),
+            ('render', "Render", "Import render models only"),
+            ('both', "Both", "Import both proxy and render models")
+        ),
     )
 
     def execute(self, context):
 
-        return read_some_data(context, self.filepath, self.use_setting)
+        options = {
+            'namespace': self.obj_namespace,
+            'import_type': self.import_type,
+        }
+
+        return read_data(context, self.filepath, options)
 
 def menu_func_import(self, context):
     self.layout.operator(MiexImport.bl_idname, text="MiEx (.usd)")
