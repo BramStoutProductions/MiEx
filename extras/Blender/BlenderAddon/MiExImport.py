@@ -5,8 +5,113 @@ from bpy.types import Operator
 
 import os, json, warnings
 
-def setup_materials(object, data):
-    pass
+class setup_materials:
+    conn_to_make = []
+
+    def __init__(self,mat:bpy.types.Material, data, namespace:str):
+        print('Setting up material: ' + mat.name)
+        self.mat = mat
+        self.namespace = namespace
+        # delete all nodes in material
+        self.mat.use_nodes = True
+
+        for node in self.mat.node_tree.nodes:
+            self.mat.node_tree.nodes.remove(node)
+
+        for name, node_data in data['network'].items():
+            try:
+                self.import_node(name,node_data)
+            except Exception as e:
+                warnings.warn('Failed to create node: ' + name, UserWarning)
+                raise e
+
+        for conn in self.conn_to_make:
+            print('Making connection: ' + str(conn))
+            try:
+                node0, attr0 = conn[0].split(".")
+                node1, attr1 = conn[1].split(".")
+                self.mat.node_tree.links.new(self.get_Node_By_Name(node0).outputs[attr0], self.get_Node_By_Name(node1).inputs[attr1])
+            except Exception as e:
+                warnings.warn('Failed to make connection: ' + str(conn), UserWarning)
+                raise e
+
+        for name, attr in data['terminals'].items():
+            try:
+                inputAttr = attr
+                inputAttr = inputAttr.split("/")
+                inputAttr = inputAttr[len(inputAttr)-1]
+                output = self.get_output_node()
+                self.mat.node_tree.links.new(self.get_Node_By_Name(inputAttr.split('.')[0]).outputs[inputAttr.split('.')[-1]], output.inputs[0])
+            except Exception as e:
+                warnings.warn('Failed to connect terminal: ' + name, UserWarning)
+                raise e
+
+    def import_node(self,name,data):
+        node = self.mat.node_tree.nodes.new(data['type'])
+        node.name = name
+        node.label = name
+        print('Importing node: ' + name)
+        if 'attributes' in data:
+            for attrName, attrData in data['attributes'].items():
+                print('Importing attribute: ' + attrName)
+                try:
+
+                    if 'image' in attrData:
+                        image = bpy.data.images.load(attrData['image'])
+                        node.image = image                  
+
+                    if 'value' in attrData:
+                        node[attrName] = attrData['value']
+                    if 'connection' in attrData:
+                        inputAttr = attrData["connection"]
+                        inputAttr = inputAttr.split("/")
+                        inputAttr = inputAttr[len(inputAttr)-1]
+                        if self.namespace != '':
+                            self.conn_to_make.append((self.namespace + ":" + inputAttr, node.name + "." + attrName))
+                        else:
+                            self.conn_to_make.append((inputAttr, node.name + "." + attrName))
+                    # Copilot translation from Maya to Blender, not sure how correct.
+                    if "keyframes" in attrData:
+                        keyframes = attrData["keyframes"]
+                        numFrames = len(keyframes) // 2
+                        i = 0
+                        if attrData["type"] == "float":
+                            while i < numFrames:
+                                node.keyframe_insert(data_path=name, frame=keyframes[i*2], value=keyframes[i*2+1])
+                                node.animation_data.action.fcurves[-1].keyframe_points[-1].interpolation = 'CONSTANT'
+                                i += 1
+                        elif attrData["type"] == "float2":
+                            childAttrs = [prop.identifier for prop in node.bl_rna.properties if not prop.is_readonly]
+                            numCompounds = len(childAttrs)
+                            j = 0
+                            while j < numCompounds:
+                                i = 0
+                                while i < numFrames:
+                                    node.keyframe_insert(data_path=childAttrs[j], frame=keyframes[i*2], value=keyframes[i*2+1][j])
+                                    node.animation_data.action.fcurves[-1].keyframe_points[-1].interpolation = 'CONSTANT'
+                                    i += 1
+                                j += 1
+                        
+                except Exception as e:
+                    warnings.warn('Failed to set attribute: ' + attrName, UserWarning)
+                    raise e
+        print('Node imported: ' + name)
+
+    def get_output_node(self):
+        material_output = None
+        for node in self.mat.node_tree.nodes:
+            if node.type == "OUTPUT_MATERIAL":
+                material_output = node
+                break
+        if material_output is None:
+            material_output = self.mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
+        return material_output
+
+    def get_Node_By_Name(self, name:str):
+        for node in self.mat.node_tree.nodes:
+            if node.name == name:
+                return node
+        raise Exception("Node not found: " + name)
 
 def read_data(context, filepath, options: dict):
 
@@ -61,10 +166,18 @@ def read_data(context, filepath, options: dict):
     for key,val in materials.items():
         try:
             mat = bpy.data.materials[key]
-            setup_materials(mat, val)
-        except:
+
+            if mat is None:
+                warnings.warn('Material not found: ' + key, UserWarning)
+                continue
+
+            setup_materials(mat, val, options['namespace'])
+
+            if options['namespace'] != '':
+                mat.name = options['namespace'] + '_' + key
+        except Exception as e:
             warnings.warn('Material failed: ' + key, UserWarning)
-            raise
+            raise e
 
     return {'FINISHED'}
 
