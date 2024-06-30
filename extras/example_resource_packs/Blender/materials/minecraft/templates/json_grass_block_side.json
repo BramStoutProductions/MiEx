@@ -8,7 +8,7 @@
                 "type": "JSON:ShaderNodeTexImage",
                 "attributes": {
                     "image": {
-                        "type": "Image",
+                        "type": "asset",
                         "value": "@texture@_overlay"
                     },
                     "interpolation": {
