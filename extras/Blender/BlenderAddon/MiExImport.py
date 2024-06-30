@@ -6,10 +6,9 @@ from bpy.types import Operator
 import os, json, warnings
 
 class setup_materials:
-    conn_to_make = []
 
     def __init__(self,mat:bpy.types.Material, data, namespace:str):
-        print('Setting up material: ' + mat.name)
+        self.conn_to_make = []
         self.mat = mat
         self.namespace = namespace
         # delete all nodes in material
@@ -30,7 +29,11 @@ class setup_materials:
             try:
                 node0, attr0 = conn[0].split(".")
                 node1, attr1 = conn[1].split(".")
-                self.mat.node_tree.links.new(self.get_Node_By_Name(node0).outputs[attr0], self.get_Node_By_Name(node1).inputs[attr1])
+                
+                node0 = self.get_Node_By_Name(node0)
+                node1 = self.get_Node_By_Name(node1)
+
+                self.mat.node_tree.links.new(node0.outputs[attr0], node1.inputs[attr1])
             except Exception as e:
                 warnings.warn('Failed to make connection: ' + str(conn), UserWarning)
                 raise e
@@ -45,6 +48,7 @@ class setup_materials:
             except Exception as e:
                 warnings.warn('Failed to connect terminal: ' + name, UserWarning)
                 raise e
+        self.conn_to_make = []
 
     def import_node(self,name,data):
         node = self.mat.node_tree.nodes.new(data['type'])
@@ -55,11 +59,8 @@ class setup_materials:
             for attrName, attrData in data['attributes'].items():
                 print('Importing attribute: ' + attrName)
                 try:
-
                     if 'image' in attrData:
-                        image = bpy.data.images.load(attrData['image'])
-                        node.image = image                  
-
+                        node.image = bpy.data.images.load(attrData['image']['value'])                  
                     if 'value' in attrData:
                         node[attrName] = attrData['value']
                     if 'connection' in attrData:
@@ -170,8 +171,9 @@ def read_data(context, filepath, options: dict):
             if mat is None:
                 warnings.warn('Material not found: ' + key, UserWarning)
                 continue
-
+            print('Setting up material: ' + key)
             setup_materials(mat, val, options['namespace'])
+            print('Material set up: ' + key)
 
             if options['namespace'] != '':
                 mat.name = options['namespace'] + '_' + key
