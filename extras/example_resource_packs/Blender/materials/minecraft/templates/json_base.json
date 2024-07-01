@@ -109,7 +109,7 @@
                     }
                 }
             },
-            "UVOFFSET": {
+            "UVOFFSETANIM": {
                 "type": "JSON:ShaderNodeCombineXYZ",
                 "attributes": {
                     "Vector": {
@@ -117,7 +117,24 @@
                     },
                     "Y": {
                         "type": "Float",
-                        "expression": "${frameId(reverse=true)}"
+                        "expression": "${frameId}"
+                    }
+                }
+            },
+            "UVOFFSET": {
+                "type": "JSON:ShaderNodeVectorMath",
+                "attributes": {
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
                     }
                 }
             },
@@ -221,7 +238,7 @@
                     }
                 }
             },
-            "UVOFFSET": {
+            "UVOFFSETANIM": {
                 "type": "JSON:ShaderNodeCombineXYZ",
                 "attributes": {
                     "Vector": {
@@ -229,19 +246,53 @@
                     },
                     "Y": {
                         "type": "Float",
-                        "expression": "${frameId(reverse=true)}"
+                        "expression": "${frameId}"
+                    }
+                }
+            },
+            "UVOFFSET": {
+                "type": "JSON:ShaderNodeVectorMath",
+                "attributes": {
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UVOFFSETANIM2": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameId(offset=1)}"
                     }
                 }
             },
             "UVOFFSET2": {
-                "type": "JSON:ShaderNodeCombineXYZ",
+                "type": "JSON:ShaderNodeVectorMath",
                 "attributes": {
-                    "Vector": {
-                        "type": "Vector"
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
                     },
-                    "Y": {
-                        "type": "Float",
-                        "expression": "${frameId(reverse=true,offset=1)}"
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM2.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
                     }
                 }
             },
