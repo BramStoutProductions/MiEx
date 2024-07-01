@@ -1,9 +1,10 @@
 import bpy
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty, IntProperty
 from bpy.types import Operator
+import pxr.Usd as Usd
 
-import os, json, warnings
+import os, json, warnings, math
 
 bl_info = {
     "name" : "MiEx Import",
@@ -16,12 +17,13 @@ bl_info = {
 
 class setup_materials:
 
-    def __init__(self, mat : bpy.types.Material, data, rootDir):
+    def __init__(self, mat : bpy.types.Material, data, rootDir, options):
         self.conn_to_make = []
         self.mat = mat        # delete all nodes in material
         self.mat.use_nodes = True
         self.rootDir = rootDir
         self.hasTransparency = False
+        self.options = options
 
         for node in self.mat.node_tree.nodes:
             self.mat.node_tree.nodes.remove(node)
@@ -94,27 +96,23 @@ class setup_materials:
                         inputAttr = inputAttr.split("/")
                         inputAttr = inputAttr[len(inputAttr)-1]
                         self.conn_to_make.append((inputAttr, node.name + "." + attrName))
-                    # Copilot translation from Maya to Blender, not sure how correct.
+
                     elif "keyframes" in attrData:
                         keyframes = attrData["keyframes"]
                         numFrames = len(keyframes) // 2
                         i = 0
-                        if attrData["type"] == "float":
+                        inputobject = node.inputs[attrName]
+                        if attrData["type"] == "Float":
                             while i < numFrames:
-                                node.keyframe_insert(data_path=name, frame=keyframes[i*2], value=keyframes[i*2+1])
-                                node.animation_data.action.fcurves[-1].keyframe_points[-1].interpolation = 'CONSTANT'
+                                
+                                if i >= self.options['max_animation_frames']:
+                                    break
+                                
+                                inputobject.default_value = keyframes[i * 2 + 1]
+                                inputobject.keyframe_insert(data_path="default_value", frame=math.floor(keyframes[i * 2]*10.0)/10.0)
+                                
                                 i += 1
-                        elif attrData["type"] == "float2":
-                            childAttrs = [prop.identifier for prop in node.bl_rna.properties if not prop.is_readonly]
-                            numCompounds = len(childAttrs)
-                            j = 0
-                            while j < numCompounds:
-                                i = 0
-                                while i < numFrames:
-                                    node.keyframe_insert(data_path=childAttrs[j], frame=keyframes[i*2], value=keyframes[i*2+1][j])
-                                    node.animation_data.action.fcurves[-1].keyframe_points[-1].interpolation = 'CONSTANT'
-                                    i += 1
-                                j += 1
+                        
                         
                 except Exception as e:
                     warnings.warn('Failed to set attribute: ' + attrName, UserWarning)
@@ -136,6 +134,26 @@ class setup_materials:
                 return node
         raise Exception("Node not found: " + name)
 
+def is_render_mesh(mesh: bpy.types.Object):
+    parent = mesh.parent
+    
+    if parent is None:
+        return False
+    
+    chunkGroup = parent.parent
+    
+    if chunkGroup is None:
+        return False
+    
+    parentName = parent.name.split('.')[0]
+    proxyName = parentName + '_proxy'
+    for child in chunkGroup.children:
+        if child.name.startswith(proxyName):
+            return True
+    
+    return False
+    
+
 def read_data(context, filepath, options: dict):
 
     directory = os.path.dirname(filepath)
@@ -156,19 +174,24 @@ def read_data(context, filepath, options: dict):
         materials = json.load(f)
 
     # Get mesh list before import
-    meshes_ = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH')
-    mats_ = set(bpy.data.materials.keys())
+    meshes = set(o for o in bpy.context.scene.objects if o.type == 'MESH')
+    mats = set(bpy.data.materials.keys())
 
-    bpy.ops.wm.usd_import(filepath=filepath, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING')
+    if options['import_type'] == 'proxy':
+        Usd.Stage.SetGlobalVariantFallbacks({"MiEx_LOD": ["proxy"]})
+    else:
+        Usd.Stage.SetGlobalVariantFallbacks({"MiEx_LOD": ["render"]}) 
+    
+    bpy.ops.wm.usd_import(filepath=filepath, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING',import_proxy=bool(options['import_type'] != 'render'))
 
     # Make a filtered list of meshes that were imported
-    meshes = set(o.data for o in bpy.context.scene.objects if o.type == 'MESH' and o.data not in meshes_)
-    mats_ = set(o for o in bpy.data.materials.keys() if o not in mats_)
+    meshes = set(o for o in bpy.context.scene.objects if o.type == 'MESH' and o not in meshes)
+    mats = set(o for o in bpy.data.materials.keys() if o not in mats)
     # Filter meshes based on import type
     for mesh in meshes:
-        if len(mesh.materials) > 0:
-            mat = mesh.materials[0]
-            meshAttributes = mesh.attributes
+        if len(mesh.data.materials) > 0:
+            mat = mesh.data.materials[0]
+            meshAttributes = mesh.data.attributes
             if 'displayColor' in meshAttributes:
                 displayColor = meshAttributes['displayColor'].data[0].color
                 # Quickly do a gamma correction
@@ -176,26 +199,18 @@ def read_data(context, filepath, options: dict):
                                         pow(displayColor[1], 1.0/2.2), 
                                         pow(displayColor[2], 1.0/2.2), 1.0 ]
                 mat.diffuse_color = displayColorSRGB
-    #     if options['import_type'] != 'both':
-    #         # Delete mesh if it is not the type we want
-    #         if  mesh.name.endswith('_proxy') and options['import_type'] == 'render':
-    #             obj = bpy.data.objects[mesh.name]
-    #             bpy.data.objects.remove(obj, do_unlink=True)
-    #         elif not mesh.name.endswith('_proxy') and options['import_type'] == 'proxy':
-    #             obj = bpy.data.objects[mesh.name]
-    #             bpy.data.objects.remove(obj, do_unlink=True)
-    #     else:
-    #         # Show proxy in viewport but not render
-    #         if mesh.name.endswith('_proxy'):
-    #             mesh.hide_render = True
-    #         # Show render in render but not viewport
-    #         elif not mesh.name.endswith('_proxy'):
-    #             mesh.hide_viewport = True
+        if options['import_type'] == 'both':
+            # Show proxy in viewport but not render
+            if mesh.name.split('.')[0].endswith('_proxy'):
+                mesh.hide_render = True
+            # Show render in render but not viewport
+            elif is_render_mesh(mesh):
+                mesh.hide_viewport = True
 
     # Finally we can set up mats
     for key,val in materials.items():
         try:
-            if key not in mats_:
+            if key not in mats:
                 continue # Skip already existing materials
 
             mat = bpy.data.materials[key]
@@ -204,7 +219,7 @@ def read_data(context, filepath, options: dict):
                 warnings.warn('Material not found: ' + key, UserWarning)
                 continue
 
-            setup_materials(mat, val, directory)
+            setup_materials(mat, val, directory, options)
         except Exception as e:
             warnings.warn('Material failed: ' + key, UserWarning)
             raise e
@@ -232,10 +247,17 @@ class MiexImport(Operator, ImportHelper):
         ),
     )
 
+    max_animation_frames: IntProperty(
+        name="Max Animation Frames",
+        description="The maximum number of frames to import",
+        default=1000,
+    )
+
     def execute(self, context):
 
         options = {
             'import_type': self.import_type,
+            'max_animation_frames': self.max_animation_frames
         }
 
         return read_data(context, self.filepath, options)
