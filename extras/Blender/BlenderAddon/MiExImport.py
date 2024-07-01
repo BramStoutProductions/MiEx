@@ -1,6 +1,6 @@
 import bpy
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, EnumProperty, IntProperty
+from bpy.props import StringProperty, EnumProperty, IntProperty, BoolProperty
 from bpy.types import Operator
 import pxr.Usd as Usd
 
@@ -189,6 +189,10 @@ def read_data(context, filepath, options: dict):
     mats = set(o for o in bpy.data.materials.keys() if o not in mats)
     # Filter meshes based on import type
     for mesh in meshes:
+        
+        if options['flatten']:
+            mesh.data.polygons.foreach_set("use_smooth", [False] * len(mesh.data.polygons))
+        
         if len(mesh.data.materials) > 0:
             mat = mesh.data.materials[0]
             meshAttributes = mesh.data.attributes
@@ -252,12 +256,19 @@ class MiexImport(Operator, ImportHelper):
         description="The maximum number of frames to import",
         default=1000,
     )
+    
+    flatten: BoolProperty(
+        name="Flatten",
+        description="Flatten the meshes normals",
+        default=True
+    )
 
     def execute(self, context):
 
         options = {
             'import_type': self.import_type,
-            'max_animation_frames': self.max_animation_frames
+            'max_animation_frames': self.max_animation_frames,
+            'flatten': self.flatten
         }
 
         return read_data(context, self.filepath, options)
