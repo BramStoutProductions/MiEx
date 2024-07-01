@@ -133,7 +133,7 @@
                     },
                     "Y": {
                         "type": "Float",
-                        "expression": "${frameScale(inverse=true)}"
+                        "expression": "${frameScale}"
                     },
                     "Z": {
                         "type": "Float",
