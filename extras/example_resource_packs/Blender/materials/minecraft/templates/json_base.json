@@ -22,9 +22,9 @@
                     "BSDF": {
                         "type": "Shader"
                     },
-                    "Specular Tint":{
-                        "type": "Color",
-                        "value": [0.0, 0.0, 0.0]
+                    "Specular IOR Level":{
+                        "type": "Float",
+                        "value": 0.0
                     }
                 }
             }
@@ -44,9 +44,9 @@
                     "BSDF": {
                         "type": "Shader"
                     },
-                    "Specular Tint":{
-                        "type": "Color",
-                        "value": [0.0, 0.0, 0.0]
+                    "Specular IOR Level":{
+                        "type": "Float",
+                        "value": 0.0
                     },
                     "Base Color": {
                         "type": "Color",
@@ -127,9 +127,17 @@
                     "Vector": {
                         "type": "Vector"
                     },
+                    "X": {
+                        "type": "Float",
+                        "value": 1.0
+                    },
                     "Y": {
                         "type": "Float",
                         "expression": "${frameScale(inverse=true)}"
+                    },
+                    "Z": {
+                        "type": "Float",
+                        "value": 1.0
                     }
                 }
             }
@@ -243,9 +251,17 @@
                     "Vector": {
                         "type": "Vector"
                     },
+                    "X": {
+                        "type": "Float",
+                        "value": 1.0
+                    },
                     "Y": {
                         "type": "Float",
                         "expression": "${frameScale(inverse=true)}"
+                    },
+                    "Z": {
+                        "type": "Float",
+                        "value": 1.0
                     }
                 }
             },
@@ -255,13 +271,17 @@
                     "Result": {
                         "type": "Color"
                     },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
                     "A": {
                         "type": "Color",
-                        "connection": "File.Color"
+                        "connection": "FILE.Color"
                     },
                     "B": {
                         "type": "Color",
-                        "connection": "File2.Color"
+                        "connection": "FILE2.Color"
                     },
                     "Factor": {
                         "type": "Float",
@@ -314,15 +334,19 @@
                 "type": "JSON:ShaderNodeMix",
                 "attributes": {
                     "Result": {
-                        "type": "Color"
+                        "type": "Float"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "FLOAT"
                     },
                     "A": {
-                        "type": "Color",
-                        "connection": "File.Alpha"
+                        "type": "Float",
+                        "connection": "FILE.Alpha"
                     },
                     "B": {
-                        "type": "Color",
-                        "connection": "File2.Alpha"
+                        "type": "Float",
+                        "connection": "FILE2.Alpha"
                     },
                     "Factor": {
                         "type": "Float",
@@ -357,6 +381,10 @@
                 "attributes": {
                     "Result": {
                         "type": "Color"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
                     },
                     "blend_type": {
                         "type": "str",

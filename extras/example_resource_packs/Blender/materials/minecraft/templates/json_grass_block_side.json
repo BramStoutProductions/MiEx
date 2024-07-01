@@ -34,9 +34,13 @@
                     "Result": {
                         "type": "Color"
                     },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
                     "A": {
                         "type": "Color",
-                        "connection": "File.Color"
+                        "connection": "FILE.Color"
                     },
                     "B": {
                         "type": "Color",
