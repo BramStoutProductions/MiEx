@@ -184,13 +184,17 @@ def read_data(context, filepath, options: dict):
     
     bpy.ops.wm.usd_import(filepath=filepath, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING',import_proxy=bool(options['import_type'] != 'render'))
 
-    if options['hide_background']:
+    if options['hide_background'] == 'hide':
         # find an 'empty' called background
         background = bpy.data.objects.get('background')
         if background is not None:
             children = background.children_recursive[:]
             for child in children:
                 child.hide_viewport = True
+    elif options['hide_background'] == 'delete':
+        background = bpy.data.objects.get('background')
+        if background is not None:
+            bpy.data.objects.remove(background, do_unlink=True)
 
     # Make a filtered list of meshes that were imported
     meshes = set(o for o in bpy.context.scene.objects if o.type == 'MESH' and o not in meshes)
@@ -263,7 +267,7 @@ class MiexImport(Operator, ImportHelper):
             ('proxy', "Proxy", "Import proxy models only"),
             ('render', "Render", "Import render models only"),
             ('both', "Both", "Import both proxy and render models")
-        ),
+        )
     )
 
     max_animation_frames: IntProperty(
@@ -278,10 +282,14 @@ class MiexImport(Operator, ImportHelper):
         default=True
     )
     
-    hide_background: BoolProperty(
-        name="Hide Background",
-        description="Hide the background",
-        default=False
+    hide_background: EnumProperty(
+        name="Background Export Chunks",
+        description="Hide the background object",
+        items=(
+            ('show', "Show", "Don't hide anything"),
+            ('hide', "Render Only", "Hide in viewport but not render"),
+            ('delete', "Delete", "Delete the background objects"),
+        )
     )
 
     def execute(self, context):
