@@ -184,12 +184,19 @@ def read_data(context, filepath, options: dict):
     
     bpy.ops.wm.usd_import(filepath=filepath, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING',import_proxy=bool(options['import_type'] != 'render'))
 
+    if options['hide_background']:
+        # find an 'empty' called background
+        background = bpy.data.objects.get('background')
+        if background is not None:
+            children = background.children_recursive[:]
+            for child in children:
+                child.hide_viewport = True
+
     # Make a filtered list of meshes that were imported
     meshes = set(o for o in bpy.context.scene.objects if o.type == 'MESH' and o not in meshes)
     mats = set(o for o in bpy.data.materials.keys() if o not in mats)
     # Filter meshes based on import type
-    for mesh in meshes:
-        
+    for mesh in meshes:        
         if options['flatten']:
             mesh.data.polygons.foreach_set("use_smooth", [False] * len(mesh.data.polygons))
         
@@ -230,6 +237,14 @@ def read_data(context, filepath, options: dict):
 
     return {'FINISHED'}
 
+def remap(value, from_min, from_max, to_min, to_max):
+    # Ensure the input range is not zero to avoid division by zero
+    if from_max == from_min:
+        raise ValueError("from_max and from_min cannot be the same")
+    
+    ratio = (value - from_min) / (from_max - from_min)
+    return to_min + (ratio * (to_max - to_min))
+
 class MiexImport(Operator, ImportHelper):
     bl_idname = "mieximport.world"
     bl_label = "Import MiEx (.usd)"
@@ -262,13 +277,20 @@ class MiexImport(Operator, ImportHelper):
         description="Flatten the meshes normals",
         default=True
     )
+    
+    hide_background: BoolProperty(
+        name="Hide Background",
+        description="Hide the background",
+        default=False
+    )
 
     def execute(self, context):
 
         options = {
             'import_type': self.import_type,
             'max_animation_frames': self.max_animation_frames,
-            'flatten': self.flatten
+            'flatten': self.flatten,
+            'hide_background': self.hide_background
         }
 
         return read_data(context, self.filepath, options)
