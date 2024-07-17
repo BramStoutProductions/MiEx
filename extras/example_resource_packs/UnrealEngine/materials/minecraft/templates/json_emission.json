@@ -8,23 +8,15 @@
     "include": [ "json_base", "json_emission" ],
     "network": {
         "@texture@": {
-            "RSMAT": {
+            "MAT": {
                 "attributes": {
-                    "emission_color":{
-                        "type": "float3",
-                        "connection": "${RSMAT.diffuse_color}"
+                    "MP_EMISSIVE_COLOR":{
+                        "type": "Color",
+                        "connection": "${MAT.MP_BASE_COLOR}"
                     },
-                    "emission_weight": {
-                        "type": "float",
-                        "value": 1.0
-                    },
-                    "diffuse_color": {
-                        "type": "float3",
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
                         "value": [0.0, 0.0, 0.0]
-                    },
-                    "diffuse_weight": {
-                        "type": "float",
-                        "value": 0.0
                     }
                 }
             }

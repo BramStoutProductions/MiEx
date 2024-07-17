@@ -4,7 +4,7 @@
     "include": [ "json_base", "json_water" ],
     "network": {
         "@texture@": {
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "refl_weight": {
                         "type": "float3",

@@ -3,7 +3,7 @@
     "selection": [ "*" ],
     "shadingGroup": {
         "surface": "PLACEHOLDER.outputs:surface",
-        "json:surfaceShader": "MAT.outColor"
+        "json:rsSurfaceShader": "RSMAT.outColor"
     },
     "include": [ "json_base" ],
     "network": {
@@ -16,7 +16,7 @@
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "type": "JSON:RedshiftMaterial",
                 "attributes": {
                     "outColor": {
@@ -42,7 +42,7 @@
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "type": "JSON:RedshiftMaterial",
                 "attributes": {
                     "outColor": {
@@ -50,7 +50,7 @@
                     },
                     "diffuse_color": {
                         "type": "float3",
-                        "connection": "FILE.outColor"
+                        "connection": "RSFILE.outColor"
                     },
                     "refl_weight": {
                         "type": "float",
@@ -58,7 +58,7 @@
                     }
                 }
             },
-            "FILE": {
+            "RSFILE": {
                 "type": "JSON:file",
                 "attributes": {
                     "outColor": {
@@ -78,79 +78,79 @@
                     },
                     "coverage": {
                         "type": "float2",
-                        "connection": "UV.coverage"
+                        "connection": "RSUV.coverage"
                     },
                     "mirrorU": {
                         "type": "int",
-                        "connection": "UV.mirrorU"
+                        "connection": "RSUV.mirrorU"
                     },
                     "mirrorV": {
                         "type": "int",
-                        "connection": "UV.mirrorV"
+                        "connection": "RSUV.mirrorV"
                     },
                     "noiseUV": {
                         "type": "float2",
-                        "connection": "UV.noiseUV"
+                        "connection": "RSUV.noiseUV"
                     },
                     "offset": {
                         "type": "float2",
-                        "connection": "UV.offset"
+                        "connection": "RSUV.offset"
                     },
                     "repeatUV": {
                         "type": "float2",
-                        "connection": "UV.repeatUV"
+                        "connection": "RSUV.repeatUV"
                     },
                     "rotateFrame": {
                         "type": "float",
-                        "connection": "UV.rotateFrame"
+                        "connection": "RSUV.rotateFrame"
                     },
                     "rotateUV": {
                         "type": "float",
-                        "connection": "UV.rotateUV"
+                        "connection": "RSUV.rotateUV"
                     },
                     "stagger": {
                         "type": "int",
-                        "connection": "UV.stagger"
+                        "connection": "RSUV.stagger"
                     },
                     "translateFrame": {
                         "type": "float2",
-                        "connection": "UV.translateFrame"
+                        "connection": "RSUV.translateFrame"
                     },
                     "uvCoord": {
                         "type": "float2",
-                        "connection": "UV.outUV"
+                        "connection": "RSUV.outUV"
                     },
                     "uvFilterSize": {
                         "type": "float2",
-                        "connection": "UV.outUvFilterSize"
+                        "connection": "RSUV.outUvFilterSize"
                     },
                     "vertexCameraOne": {
                         "type": "float3",
-                        "connection": "UV.vertexCameraOne"
+                        "connection": "RSUV.vertexCameraOne"
                     },
                     "vertexUvOne": {
                         "type": "float2",
-                        "connection": "UV.vertexUvOne"
+                        "connection": "RSUV.vertexUvOne"
                     },
                     "vertexUvTwo": {
                         "type": "float2",
-                        "connection": "UV.vertexUvTwo"
+                        "connection": "RSUV.vertexUvTwo"
                     },
                     "vertexUvThree": {
                         "type": "float2",
-                        "connection": "UV.vertexUvThree"
+                        "connection": "RSUV.vertexUvThree"
                     },
                     "wrapU": {
                         "type": "int",
-                        "connection": "UV.wrapU"
+                        "connection": "RSUV.wrapU"
                     },
                     "wrapV": {
                         "type": "int",
-                        "connection": "UV.wrapV"
+                        "connection": "RSUV.wrapV"
                     }
                 }
             },
-            "UV": {
+            "RSUV": {
                 "type": "JSON:place2dTexture",
                 "attributes": {
                     "coverage": {
@@ -211,7 +211,7 @@
             }
         },
         "@texture@.animated": {
-            "UV": {
+            "RSUV": {
                 "attributes": {
                     "coverage": {
                         "type": "float2",
@@ -225,7 +225,7 @@
             }
         },
         "@texture@.interpolated": {
-            "UV": {
+            "RSUV": {
                 "attributes": {
                     "coverage": {
                         "type": "float2",
@@ -237,12 +237,9 @@
                     }
                 }
             },
-            "UV2": {
+            "RSUV2": {
                 "type": "JSON:place2dTexture",
                 "attributes": {
-                    "coverage": {
-                        "type": "float2"
-                    },
                     "mirrorU": {
                         "type": "int"
                     },
@@ -250,9 +247,6 @@
                         "type": "int"
                     },
                     "noiseUV": {
-                        "type": "float2"
-                    },
-                    "offset": {
                         "type": "float2"
                     },
                     "repeatUV": {
@@ -304,7 +298,7 @@
                     }
                 }
             },
-            "FILE2": {
+            "RSFILE2": {
                 "type": "JSON:file",
                 "attributes": {
                     "outColor": {
@@ -324,91 +318,91 @@
                     },
                     "coverage": {
                         "type": "float2",
-                        "connection": "UV2.coverage"
+                        "connection": "RSUV2.coverage"
                     },
                     "mirrorU": {
                         "type": "int",
-                        "connection": "UV2.mirrorU"
+                        "connection": "RSUV2.mirrorU"
                     },
                     "mirrorV": {
                         "type": "int",
-                        "connection": "UV2.mirrorV"
+                        "connection": "RSUV2.mirrorV"
                     },
                     "noiseUV": {
                         "type": "float2",
-                        "connection": "UV2.noiseUV"
+                        "connection": "RSUV2.noiseUV"
                     },
                     "offset": {
                         "type": "float2",
-                        "connection": "UV2.offset"
+                        "connection": "RSUV2.offset"
                     },
                     "repeatUV": {
                         "type": "float2",
-                        "connection": "UV2.repeatUV"
+                        "connection": "RSUV2.repeatUV"
                     },
                     "rotateFrame": {
                         "type": "float",
-                        "connection": "UV2.rotateFrame"
+                        "connection": "RSUV2.rotateFrame"
                     },
                     "rotateUV": {
                         "type": "float",
-                        "connection": "UV2.rotateUV"
+                        "connection": "RSUV2.rotateUV"
                     },
                     "stagger": {
                         "type": "int",
-                        "connection": "UV2.stagger"
+                        "connection": "RSUV2.stagger"
                     },
                     "translateFrame": {
                         "type": "float2",
-                        "connection": "UV2.translateFrame"
+                        "connection": "RSUV2.translateFrame"
                     },
                     "uvCoord": {
                         "type": "float2",
-                        "connection": "UV2.outUV"
+                        "connection": "RSUV2.outUV"
                     },
                     "uvFilterSize": {
                         "type": "float2",
-                        "connection": "UV2.outUvFilterSize"
+                        "connection": "RSUV2.outUvFilterSize"
                     },
                     "vertexCameraOne": {
                         "type": "float3",
-                        "connection": "UV2.vertexCameraOne"
+                        "connection": "RSUV2.vertexCameraOne"
                     },
                     "vertexUvOne": {
                         "type": "float2",
-                        "connection": "UV2.vertexUvOne"
+                        "connection": "RSUV2.vertexUvOne"
                     },
                     "vertexUvTwo": {
                         "type": "float2",
-                        "connection": "UV2.vertexUvTwo"
+                        "connection": "RSUV2.vertexUvTwo"
                     },
                     "vertexUvThree": {
                         "type": "float2",
-                        "connection": "UV2.vertexUvThree"
+                        "connection": "RSUV2.vertexUvThree"
                     },
                     "wrapU": {
                         "type": "int",
-                        "connection": "UV2.wrapU"
+                        "connection": "RSUV2.wrapU"
                     },
                     "wrapV": {
                         "type": "int",
-                        "connection": "UV2.wrapV"
+                        "connection": "RSUV2.wrapV"
                     }
                 }
             },
-            "INTERPOLATE": {
+            "RSINTERPOLATE": {
                 "type": "JSON:RedshiftColorLayer",
                 "attributes": {
-                    "output": {
+                    "outColor": {
                         "type": "float3"
                     },
                     "layer1_color": {
                         "type": "float3",
-                        "connection": "FILE.outColor"
+                        "connection": "RSFILE.outColor"
                     },
                     "base_color": {
                         "type": "float3",
-                        "connection": "FILE2.outColor"
+                        "connection": "RSFILE2.outColor"
                     },
                     "layer1_alpha": {
                         "type": "float",
@@ -416,83 +410,83 @@
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "diffuse_color": {
-                        "connection": "INTERPOLATE.output"
+                        "connection": "RSINTERPOLATE.outColor"
                     }
                 }
             }
         },
         "@texture@.a": {
-            "FILE": {
+            "RSFILE": {
                 "attributes": {
                     "outAlpha": {
                         "type": "float"
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "opacity_colorR": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     },
                     "opacity_colorG": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     },
                     "opacity_colorB": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     }
                 }
             }
         },
         "@texture@.a&&@texture@.interpolated": {
-            "FILE": {
+            "RSFILE": {
                 "attributes": {
                     "outAlpha": {
                         "type": "float"
                     }
                 }
             },
-            "FILE2": {
+            "RSFILE2": {
                 "attributes": {
                     "outAlpha": {
                         "type": "float"
                     }
                 }
             },
-            "INTERPOLATEALPHA": {
+            "RSINTERPOLATEALPHA": {
                 "type": "JSON:RedshiftColorLayer",
                 "attributes": {
-                    "output": {
+                    "outColor": {
                         "type": "float3"
                     },
                     "color2R": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     },
                     "color2G": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     },
                     "color2B": {
                         "type": "float",
-                        "connection": "FILE.outAlpha"
+                        "connection": "RSFILE.outAlpha"
                     },
                     "color1R": {
                         "type": "float",
-                        "connection": "FILE2.outAlpha"
+                        "connection": "RSFILE2.outAlpha"
                     },
                     "color1G": {
                         "type": "float",
-                        "connection": "FILE2.outAlpha"
+                        "connection": "RSFILE2.outAlpha"
                     },
                     "color1B": {
                         "type": "float",
-                        "connection": "FILE2.outAlpha"
+                        "connection": "RSFILE2.outAlpha"
                     },
                     "blender": {
                         "type": "float",
@@ -500,20 +494,20 @@
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "opacity_color": {
                         "type": "float3",
-                        "connection": "INTERPOLATEALPHA.output"
+                        "connection": "RSINTERPOLATEALPHA.outColor"
                     }
                 }
             }
         },
         "@biomeColor@":{
-            "BIOME_MULT": {
+            "RSBIOME_MULT": {
                 "type": "JSON:RedshiftVertexColor",
                 "attributes": {
-                    "output": {
+                    "outColor": {
                         "type": "float3"
                     },
                     "vertexSet":{
@@ -522,15 +516,15 @@
                     },
                     "colorGain": {
                         "type": "float3",
-                        "connection": "FILE.outColor"
+                        "connection": "RSFILE.outColor"
                     }
                 }
             },
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "diffuse_color": {
                         "type": "float3",
-                        "connection": "BIOME_MULT.outColor"
+                        "connection": "RSBIOME_MULT.outColor"
                     }
                 }
             }

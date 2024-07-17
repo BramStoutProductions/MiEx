@@ -1,0 +1,258 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "PLACEHOLDER.outputs:surface",
+        "json:Surface": "MAT.out"
+    },
+    "include": [ "json_base" ],
+    "network": {
+        "!@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:Material",
+                "attributes": {
+                    "out": {
+                        "type": "shader"
+                    },
+                    "MP_SPECULAR":{
+                        "type": "float",
+                        "value": 0.0
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    },
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "connection": "PLACEHOLDER_FILE.outputs:rgb"
+                    }
+                }
+            },
+            "PLACEHOLDER_FILE": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:rgb": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:Material",
+                "attributes": {
+                    "out": {
+                        "type": "shader"
+                    },
+                    "MP_SPECULAR":{
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    }
+                }
+            },
+            "FILE": {
+                "type": "JSON:MaterialExpressionTextureSample",
+                "attributes": {
+                    "texture": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "lod_group": {
+                        "type": "str",
+                        "value": "TEXTUREGROUP_PIXELS2D"
+                    },
+                    "out": {
+                        "type": "Color"
+                    }
+                }
+            }
+        },
+        "@texture@.animated":{
+            "FILE": {
+                "type": "JSON:MC_Animate",
+                "attributes": {
+                    "anim_data": {
+                        "type": "str",
+                        "expression": "${animData}"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated":{
+            "FILE": {
+                "type": "JSON:MC_Interpolate",
+                "attributes": {
+                    "anim_data": {
+                        "type": "str",
+                        "expression": "${animData}"
+                    }
+                }
+            }
+        },
+        "@texture@.a":{
+            "FILE": {
+                "attributes": {
+                    "A": {
+                        "type": "Float"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "MP_OPACITY": {
+                        "type": "Float",
+                        "connection": "FILE.A"
+                    },
+                    "blend_mode": {
+                        "type": "str",
+                        "value": "BLEND_TRANSLUCENT"
+                    }
+                }
+            }
+        },
+        "@texture@.a&&@texture@.animated":{
+            "ALPHA": {
+                "type": "JSON:MaterialExpressionComponentMask",
+                "attributes": {
+                    "in": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    },
+                    "out": {
+                        "type": "float"
+                    },
+                    "a": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "r": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "g": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "b": {
+                        "type": "bool",
+                        "value": false
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "MP_OPACITY": {
+                        "type": "Float",
+                        "connection": "ALPHA.out"
+                    }
+                }
+            }
+        },
+        "@texture@.a&&@texture@.interpolated":{
+            "ALPHA": {
+                "type": "JSON:MaterialExpressionComponentMask",
+                "attributes": {
+                    "in": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    },
+                    "out": {
+                        "type": "float"
+                    },
+                    "a": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "r": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "g": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "b": {
+                        "type": "bool",
+                        "value": false
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "MP_OPACITY": {
+                        "type": "Float",
+                        "connection": "ALPHA.out"
+                    }
+                }
+            }
+        },
+        "@texture@.cutout": {
+            "MAT": {
+                "attributes": {
+                    "MP_OPACITY_MASK": {
+                        "type": "Float",
+                        "connection": "${MAT.MP_OPACITY}"
+                    },
+                    "blend_mode": {
+                        "type": "str",
+                        "value": "BLEND_MASKED"
+                    }
+                }
+            }
+        },
+        "@biomeColor@": {
+            "BIOME": {
+                "type": "JSON:MaterialExpressionVertexColor",
+                "attributes": {
+                    "out": {
+                        "type": "Color"
+                    }
+                }
+            },
+            "BIOMEMULT": {
+                "type": "JSON:MaterialExpressionMultiply",
+                "attributes": {
+                    "out": {
+                        "type": "Color"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "${MAT.MP_BASE_COLOR}"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "BIOME.out"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "BIOMEMULT.out"
+                    }
+                }
+            }
+        }
+    }
+}

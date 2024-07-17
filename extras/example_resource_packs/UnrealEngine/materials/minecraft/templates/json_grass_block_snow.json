@@ -4,11 +4,11 @@
     "include": [ "json_base", "json_grass_block_snow" ],
     "network": {
         "@texture@": {
-            "RSMAT": {
+            "MAT": {
                 "attributes": {
-                    "diffuse_color": {
-                        "type": "float3",
-                        "connection": "RSFILE.outColor"
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "FILE.out"
                     }
                 }
             }

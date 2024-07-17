@@ -4,7 +4,7 @@
     "include": [ "json_base", "json_leaves" ],
     "network": {
         "@texture@": {
-            "MAT": {
+            "RSMAT": {
                 "attributes": {
                     "ms_amount":{
                         "type": "float",
