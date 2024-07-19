@@ -8,22 +8,38 @@ editor_asset_lib = unreal.EditorAssetLibrary()
 material_lib = unreal.MaterialEditingLibrary()
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 
-HLSLCODE= """
-const float animationLength = 11.0;
-const float fps = {FPS};
-const int keyframes[16] = {
-    0, 1,
-    1, 1,
-    2, 1,
-    3, 4,
-    4, 1,
-    5, 1,
-    6, 1,
-    7, 1
-};
-const int numKeyframes = 8;
-const int numTexFrames = 8;
+HLSL_NORMAL_CODE_FORMAT = """
+const float animationLength = {animationLength};
+const float fps = {fps};
+const int keyframes[{frameCount}] = {keyframes};
+const int numKeyframes = {numKeyframes};
+const int numTexFrames = {numTexFrames};"""
 
+HLSL_NORMAL_CODE="""
+float localTime = (Time * fps) / animationLength;
+localTime = localTime - floor(localTime);
+localTime = localTime * animationLength;
+int i = 0;
+float t = localTime;
+for(; i < numKeyframes; ++i){
+    if(t < keyframes[i * 2 + 1])
+        break;
+    t -= keyframes[i * 2 + 1];
+}
+int texFrame = keyframes[i * 2];
+float2 uv = UVs + float2(0.0, (float) texFrame);
+uv /= float2(1.0, (float) numTexFrames);
+float4 color1 = Texture2DSample(texture, textureSampler, uv);
+return color1;"""
+
+HLSL_INTERPOLATION_CODE_FORMAT= """
+const float animationLength = {animationLength};
+const float fps = {fps};
+const int keyframes[{frameCount}] = {keyframes};
+const int numKeyframes = {numKeyframes};
+const int numTexFrames = {numTexFrames};"""
+
+HLSL_INTERPOLATION_CODE="""
 float localTime = (Time * fps) / animationLength;
 localTime = localTime - floor(localTime);
 localTime = localTime * animationLength;
@@ -142,6 +158,24 @@ class Setup_Material:
         unreal.MaterialEditingLibrary.layout_material_expressions(self.material)
         unreal.MaterialEditingLibrary.recompile_material(self.material)
 
+    def generate_hlsl(self, data):
+        animationLength = 0
+        keyframes = []
+        
+        for frame in data['keyframes']:
+                keyframes.append(str(frame['frame']))
+                keyframes.append(str(frame['duration']))
+                animationLength += int(frame['duration'])
+ 
+        keyframesStr = '{' + ','.join(keyframes) + '}'
+ 
+        if data['interpolate'] == False:
+            return HLSL_NORMAL_CODE_FORMAT.format(animationLength=animationLength, fps=data['fps'], frameCount=len(keyframes), keyframes=keyframesStr,
+                                                  numKeyframes=len(keyframes)/2, numTexFrames=int(data['frameCount'])) + HLSL_NORMAL_CODE
+        else:
+            return HLSL_INTERPOLATION_CODE_FORMAT.format(animationLength=animationLength, fps=data['fps'], frameCount=len(keyframes), keyframes=keyframesStr,
+                                                         numKeyframes=len(keyframes)/2, numTexFrames=int(data['frameCount'])) + HLSL_INTERPOLATION_CODE
+
     def import_node(self, name:str, node_data:dict):
         isMaterial = True if 'Material' == node_data['type'] else False
         unreal.log_warning(f'Importing {name} isMaterial: {str(isMaterial)}')
@@ -227,7 +261,11 @@ class Setup_Material:
                     else:
                         expression.set_editor_property(attrName, texture)
                     
-
+                elif "anim_data" in attrName:
+                    hlsl_code = str(self.generate_hlsl(json.loads(node_data['attributes']['anim_data']['value'])))
+                    unreal.log(hlsl_code)
+                    expression.set_editor_property('code', hlsl_code)
+                    
                 elif 'value' in attrData:
                     unreal.log(F'{name} isMaterial:  {str(isMaterial)}')
                     if 'type' in attrData and isMaterial:
@@ -240,6 +278,8 @@ class Setup_Material:
                             exp.set_editor_property('r', attrData['value'])
                             unreal.MaterialEditingLibrary.connect_material_property(exp, '', getattr(unreal.MaterialProperty, attrName))
                     else:
+                        if attrName == 'lod_group':
+                            continue # Skip this attribute, it was already set on the texture
                         try:
                             expression.set_editor_property(attrName, attrData['value'])
                         except:
@@ -252,18 +292,11 @@ class Setup_Material:
                     inputAttr = inputAttr[len(inputAttr)-1]
                     self.conn_to_make.append((inputAttr, name + "." + attrName))
                 
-                elif "anim_data" in attrData:
-                    expression.set_editor_property('code', attrData['value'])
+
 
 def main():
 
     usd_file_path = select_usd_file()
-    in_engine_destination = in_engine_destination_path() # Remove the Content/ part of the path
-
-    if not in_engine_destination == None:
-        in_engine_destination = in_engine_destination.replace('Content','Game')
-    else:
-        in_engine_destination = '/Game/USDImport'
 
     if not usd_file_path:
         unreal.log_error("No file selected")
@@ -272,6 +305,13 @@ def main():
     if not os.path.exists(usd_file_path):
         unreal.log_error("File does not exist")
         return
+    
+    in_engine_destination = in_engine_destination_path() # Remove the Content/ part of the path
+
+    if not in_engine_destination == None:
+        in_engine_destination = in_engine_destination.replace('Content','Game')
+    else:
+        in_engine_destination = '/Game/USDImport'
     
     directory = os.path.dirname(usd_file_path)
     filename = os.path.basename(usd_file_path).split('.')[0]
@@ -321,6 +361,8 @@ def main():
             
     for key, value in materials.items():
         Setup_Material(value, key, usd_file_path, in_engine_destination)
+ 
+
  
 if __name__ == "__main__":
     main()
