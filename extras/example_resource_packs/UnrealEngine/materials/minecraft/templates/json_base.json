@@ -96,6 +96,46 @@
                         "expression": "${animData}"
                     }
                 }
+            },
+            "COLOR": {
+                "type": "JSON:MaterialExpressionComponentMask",
+                "attributes": {
+                    "in": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    },
+                    "out": {
+                        "type": "float"
+                    },
+                    "a": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "r": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "g": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "b": {
+                        "type": "bool",
+                        "value": true
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:Material",
+                "attributes": {
+                    "out": {
+                        "type": "shader"
+                    },
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "COLOR.out"
+                    }
+                }
             }
         },
         "@texture@.interpolated":{
@@ -105,6 +145,46 @@
                     "anim_data": {
                         "type": "str",
                         "expression": "${animData}"
+                    }
+                }
+            },
+            "COLOR": {
+                "type": "JSON:MaterialExpressionComponentMask",
+                "attributes": {
+                    "in": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    },
+                    "out": {
+                        "type": "float"
+                    },
+                    "a": {
+                        "type": "bool",
+                        "value": false
+                    },
+                    "r": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "g": {
+                        "type": "bool",
+                        "value": true
+                    },
+                    "b": {
+                        "type": "bool",
+                        "value": true
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:Material",
+                "attributes": {
+                    "out": {
+                        "type": "shader"
+                    },
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "COLOR.out"
                     }
                 }
             }
