@@ -8,7 +8,7 @@ editor_asset_lib = unreal.EditorAssetLibrary()
 material_lib = unreal.MaterialEditingLibrary()
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 
-HLSL_NORMAL_CODE_FORMAT = """
+HLSL_FORMAT = """
 const float animationLength = {animationLength};
 const float fps = {fps};
 const int keyframes[{frameCount}] = {keyframes};
@@ -31,13 +31,6 @@ float2 uv = UVs + float2(0.0, (float) texFrame);
 uv /= float2(1.0, (float) numTexFrames);
 float4 color1 = Texture2DSample(texture, textureSampler, uv);
 return color1;"""
-
-HLSL_INTERPOLATION_CODE_FORMAT= """
-const float animationLength = {animationLength};
-const float fps = {fps};
-const int keyframes[{frameCount}] = {keyframes};
-const int numKeyframes = {numKeyframes};
-const int numTexFrames = {numTexFrames};"""
 
 HLSL_INTERPOLATION_CODE="""
 float localTime = (Time * fps) / animationLength;
@@ -85,12 +78,13 @@ def change_material_instance_parent(material_instance_path, new_parent_material_
     material_lib.set_material_instance_parent(material_instance, new_parent_material)
 
 class Setup_Material:
-    def __init__(self, data, mat_name, Dir, inEngineDir):
+    def __init__(self, data, mat_name, Dir, inEngineDir, rootDir):
         self.mat_path = os.path.join(inEngineDir, os.path.basename(Dir).split('.')[0],'Materials').replace('\\','/')
         self.data = data
         self.Dir = Dir
         self.inEngineDir = inEngineDir
         self.mat_name = mat_name
+        self.rootDir = rootDir
     
         self.hasTransparency = False
         self.importTask = []
@@ -167,14 +161,13 @@ class Setup_Material:
                 keyframes.append(str(frame['duration']))
                 animationLength += int(frame['duration'])
  
-        keyframesStr = '{' + ','.join(keyframes) + '}'
+        Hlsl_formated = HLSL_FORMAT.format(animationLength=animationLength, fps=data['fps'], frameCount=len(keyframes), keyframes='{' + ','.join(keyframes) + '}',
+                                                  numKeyframes=len(keyframes)/2, numTexFrames=int(data['frameCount']))
  
         if data['interpolate'] == False:
-            return HLSL_NORMAL_CODE_FORMAT.format(animationLength=animationLength, fps=data['fps'], frameCount=len(keyframes), keyframes=keyframesStr,
-                                                  numKeyframes=len(keyframes)/2, numTexFrames=int(data['frameCount'])) + HLSL_NORMAL_CODE
+            return Hlsl_formated + HLSL_NORMAL_CODE
         else:
-            return HLSL_INTERPOLATION_CODE_FORMAT.format(animationLength=animationLength, fps=data['fps'], frameCount=len(keyframes), keyframes=keyframesStr,
-                                                         numKeyframes=len(keyframes)/2, numTexFrames=int(data['frameCount'])) + HLSL_INTERPOLATION_CODE
+            return Hlsl_formated + HLSL_INTERPOLATION_CODE
 
     def import_node(self, name:str, node_data:dict):
         isMaterial = True if 'Material' == node_data['type'] else False
@@ -183,28 +176,8 @@ class Setup_Material:
         expression = None
         if isMaterial == False:
             texObj = None
-            if node_data['type'] == 'MC_Animate' :
+            if node_data['type'] == 'MC_Animate' or node_data['type'] == 'MC_Interpolate':
                 
-                time = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionTime, 0,0)
-                texCoord = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionTextureCoordinate, 0,0)
-                custom = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionCustom, 0,0)
-                custom.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT4)
-                texObj = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionTextureObject, 0,0)
-                customInput1 = unreal.CustomInput()
-                customInput1.set_editor_property('input_name','texture')
-                customInput2 = unreal.CustomInput()
-                customInput2.set_editor_property('input_name','UVs')
-                customInputs3 = unreal.CustomInput()
-                customInputs3.set_editor_property('input_name','Time')
-                
-                custom.set_editor_property('inputs', [customInput1, customInput2, customInputs3])
-                
-                unreal.MaterialEditingLibrary.connect_material_expressions(texCoord, '', custom, 'UVs')
-                unreal.MaterialEditingLibrary.connect_material_expressions(time, '', custom, 'Time')
-                expression = custom
-                self.createdNodes[name] = custom
-
-            elif node_data['type'] == 'MC_Interpolate':
                 time = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionTime, 0,0)
                 texCoord = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionTextureCoordinate, 0,0)
                 custom = unreal.MaterialEditingLibrary.create_material_expression(self.material, unreal.MaterialExpressionCustom, 0,0)
@@ -299,14 +272,20 @@ def main():
     usd_file_path = select_usd_file()
 
     if not usd_file_path:
+        unreal.EditorDialog.show_message("No file selected", "No file selected", unreal.AppMsgType.OK)
         unreal.log_error("No file selected")
         return
         
     if not os.path.exists(usd_file_path):
+        unreal.EditorDialog.show_message("File does not exist", "The file does not exist", unreal.AppMsgType.OK)
         unreal.log_error("File does not exist")
         return
     
-    in_engine_destination = in_engine_destination_path() # Remove the Content/ part of the path
+    in_engine_destination = None
+    
+    custom_destination = unreal.EditorDialog.show_message("Select destination", "Would you like to select a destination for the import?", unreal.AppMsgType.YES_NO)
+    if str(custom_destination) == "YES":
+        in_engine_destination = in_engine_destination_path() # Remove the Content/ part of the path
 
     if not in_engine_destination == None:
         in_engine_destination = in_engine_destination.replace('Content','Game')
@@ -319,13 +298,13 @@ def main():
     materialJson = os.path.join(directory, filename + '_materials.json')
     
     if not os.path.exists(materialJson):
+        unreal.EditorDialog.show_message("Material json does not exist", "The material json file does not exist, please make sure it is in the same directory as the USD file and or you exported using Unreal Engine resource pack", unreal.AppMsgType.OK)
         unreal.log_error("Material json does not exist")
         return
     
-    project_dir = unreal.Paths.project_dir()
     # Check if assets exist in /Game/USDImport
-    if not in_engine_destination:
-        usd_import_dir = os.path.join(project_dir, "Content", "USDImport")
+    if in_engine_destination == None:
+        usd_import_dir = os.path.join(unreal.Paths.project_dir(), "Content", "USDImport")
         if not os.path.exists(usd_import_dir):
             os.makedirs(usd_import_dir)
 
@@ -339,9 +318,9 @@ def main():
     options.import_only_used_materials = False
     options.render_context_to_import = unreal.Name('universal')
     options.material_purpose = 'allPurpose'
-    options.override_stage_options = True
-    options.merge_identical_material_slots = True
-    options.reuse_identical_assets = True
+    options.override_stage_options = True # Kinda have to change the scale and make sure the correct axis is Y
+    options.merge_identical_material_slots = True 
+    options.reuse_identical_assets = True # Disabling this breaks instancing
     
     stage_options = unreal.UsdStageOptions()
     stage_options.meters_per_unit = 0.0625
@@ -349,7 +328,11 @@ def main():
     
     options.stage_options = stage_options
     
-    options.nanite_triangle_threshold = 2147483647 # Max int to disable nanite, user can enable manually
+    unreal.EditorDialog.show_message("Enable nanite", "Would you like to enable nanite?", unreal.AppMsgType.YES_NO)
+    if str(custom_destination) == "YES":
+        options.nanite_triangle_threshold = 100    
+    else:
+        options.nanite_triangle_threshold = 2147483647 # Max int to disable nanite, user can enable manually, TBH if you mesh has that many vert, you shouldnt be using it 
     
     task.options = options
     task.save = True
@@ -358,10 +341,15 @@ def main():
     
     with open(materialJson, 'r') as f:
         materials = json.load(f)
-            
-    for key, value in materials.items():
-        Setup_Material(value, key, usd_file_path, in_engine_destination)
- 
+
+    with unreal.ScopedSlowTask(len(materials), "Importing Materials") as slow_task:
+        slow_task.make_dialog(True)
+        for key, value in materials.items():
+            if slow_task.should_cancel():
+                unreal.EditorDialog.show_message("Import cancelled", "The import was cancelled", unreal.AppMsgType.OK)
+                break
+            Setup_Material(value, key, usd_file_path, in_engine_destination, directory)
+            slow_task.enter_progress_frame(1)
 
  
 if __name__ == "__main__":
