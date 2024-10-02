@@ -145,6 +145,8 @@ class setup_materials:
             return False
     
     def get_Node_By_Name(self, name:str):
+        if(len(name) > 63):
+            name = name[:63]
         for node in self.mat.node_tree.nodes:
             if node.name == name:
                 return node
@@ -250,6 +252,8 @@ def read_data(context, filepath, options: dict):
     # Finally we can set up mats
     for key,val in materials.items():
         try:
+            if(len(key) > 63):
+                key = key[:63]
             if key not in mats:
                 continue # Skip already existing materials
 
