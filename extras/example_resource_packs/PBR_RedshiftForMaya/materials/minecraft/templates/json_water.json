@@ -1,0 +1,5 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/water_still", "minecraft:block/water_flow" ],
+    "include": [ "json_water" ]
+}
