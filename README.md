@@ -26,10 +26,10 @@ MiEx is a modern Minecraft World Exporter written in Java, originally created fo
 MiEx currently supports worlds from Minecraft 21w43a and later.
 
 # Installing
-MiEx is released as a stand-alone Jar file which contains all that it needs. The base resource pack files are automatically gathered from the latest version of Minecraft that is installed on your computer. All that you have to do, is download the Jar file, place it wherever you want, and run it. You can get the latest release [here.](https://github.com/BramStoutProductions/MiEx/releases)
+MiEx is released as a stand-alone Jar file which contains all that it needs. The base resource pack files are automatically gathered from the latest version of Minecraft that is installed on your computer. All that you have to do, is download the Jar file, place it wherever you want (preferably in its own folder), and run it. You can get the latest release [here.](https://github.com/BramStoutProductions/MiEx/releases)
 
 # Usage
-For more information on how to use MiEx, please visit [our wiki!](https://github.com/BramStoutProductions/MiEx/wiki/1.-Home)
+For more information on how to use MiEx, please visit [our wiki!](https://github.com/BramStoutProductions/MiEx/wiki/08.-Usage)
 
 # Forum
 Talk about MiEx, ask for help, help others, and share your creations on our [GitHub Discussions page!](https://github.com/BramStoutProductions/MiEx/discussions)
