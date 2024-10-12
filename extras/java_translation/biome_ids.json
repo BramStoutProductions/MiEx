@@ -1,0 +1,518 @@
+[
+    {
+        "minDataVersion": 169,
+        "maxDataVersion": 1443,
+        "mapping": [
+            {
+                "id": 0,
+                "name": "minecraft:ocean"
+            },
+            {
+                "id": 1,
+                "name": "minecraft:plains"
+            },
+            {
+                "id": 2,
+                "name": "minecraft:desert"
+            },
+            {
+                "id": 3,
+                "name": "minecraft:extreme_hills"
+            },
+            {
+                "id": 4,
+                "name": "minecraft:forest"
+            },
+            {
+                "id": 5,
+                "name": "minecraft:taiga"
+            },
+            {
+                "id": 6,
+                "name": "minecraft:swampland"
+            },
+            {
+                "id": 7,
+                "name": "minecraft:river"
+            },
+            {
+                "id": 8,
+                "name": "minecraft:hell"
+            },
+            {
+                "id": 9,
+                "name": "minecraft:sky"
+            },
+            {
+                "id": 10,
+                "name": "minecraft:frozen_ocean"
+            },
+            {
+                "id": 11,
+                "name": "minecraft:frozen_river"
+            },
+            {
+                "id": 12,
+                "name": "minecraft:ice_flats"
+            },
+            {
+                "id": 13,
+                "name": "minecraft:ice_mountains"
+            },
+            {
+                "id": 14,
+                "name": "minecraft:mushroom_island"
+            },
+            {
+                "id": 15,
+                "name": "minecraft:mushroom_island_shore"
+            },
+            {
+                "id": 16,
+                "name": "minecraft:beaches"
+            },
+            {
+                "id": 17,
+                "name": "minecraft:desert_hills"
+            },
+            {
+                "id": 18,
+                "name": "minecraft:forest_hills"
+            },
+            {
+                "id": 19,
+                "name": "minecraft:taiga_hills"
+            },
+            {
+                "id": 20,
+                "name": "minecraft:smaller_extreme_hills"
+            },
+            {
+                "id": 21,
+                "name": "minecraft:jungle"
+            },
+            {
+                "id": 22,
+                "name": "minecraft:jungle_hills"
+            },
+            {
+                "id": 23,
+                "name": "minecraft:jungle_edge"
+            },
+            {
+                "id": 24,
+                "name": "minecraft:deep_ocean"
+            },
+            {
+                "id": 25,
+                "name": "minecraft:stone_beach"
+            },
+            {
+                "id": 26,
+                "name": "minecraft:cold_beach"
+            },
+            {
+                "id": 27,
+                "name": "minecraft:birch_forest"
+            },
+            {
+                "id": 28,
+                "name": "minecraft:birch_forest_hills"
+            },
+            {
+                "id": 29,
+                "name": "minecraft:roofed_forest"
+            },
+            {
+                "id": 30,
+                "name": "minecraft:taiga_cold"
+            },
+            {
+                "id": 31,
+                "name": "minecraft:taiga_cold_hills"
+            },
+            {
+                "id": 32,
+                "name": "minecraft:redwood_taiga"
+            },
+            {
+                "id": 33,
+                "name": "minecraft:redwood_taiga_hills"
+            },
+            {
+                "id": 34,
+                "name": "minecraft:extreme_hills_with_trees"
+            },
+            {
+                "id": 35,
+                "name": "minecraft:savanna"
+            },
+            {
+                "id": 36,
+                "name": "minecraft:savanna_rock"
+            },
+            {
+                "id": 37,
+                "name": "minecraft:mesa"
+            },
+            {
+                "id": 38,
+                "name": "minecraft:mesa_rock"
+            },
+            {
+                "id": 39,
+                "name": "minecraft:mesa_clear_rock"
+            },
+            {
+                "id": 127,
+                "name": "minecraft:void"
+            },
+            {
+                "id": 129,
+                "name": "minecraft:mutated_plains"
+            },
+            {
+                "id": 130,
+                "name": "minecraft:mutated_desert"
+            },
+            {
+                "id": 131,
+                "name": "minecraft:mutated_extreme_hills"
+            },
+            {
+                "id": 132,
+                "name": "minecraft:mutated_forest"
+            },
+            {
+                "id": 133,
+                "name": "minecraft:mutated_taiga"
+            },
+            {
+                "id": 134,
+                "name": "minecraft:mutated_swampland"
+            },
+            {
+                "id": 140,
+                "name": "minecraft:mutated_ice_flats"
+            },
+            {
+                "id": 149,
+                "name": "minecraft:mutated_jungle"
+            },
+            {
+                "id": 151,
+                "name": "minecraft:mutated_jungle_edge"
+            },
+            {
+                "id": 155,
+                "name": "minecraft:mutated_birch_forest"
+            },
+            {
+                "id": 156,
+                "name": "minecraft:mutated_birch_forest_hills"
+            },
+            {
+                "id": 157,
+                "name": "minecraft:mutated_roofed_forest"
+            },
+            {
+                "id": 158,
+                "name": "minecraft:mutated_taiga_cold"
+            },
+            {
+                "id": 160,
+                "name": "minecraft:mutated_redwood_taiga"
+            },
+            {
+                "id": 161,
+                "name": "minecraft:mutated_redwood_taiga_hills"
+            },
+            {
+                "id": 162,
+                "name": "minecraft:mutated_extreme_hills_with_trees"
+            },
+            {
+                "id": 163,
+                "name": "minecraft:mutated_savanna"
+            },
+            {
+                "id": 164,
+                "name": "minecraft:mutated_savanna_rock"
+            },
+            {
+                "id": 165,
+                "name": "minecraft:mutated_mesa"
+            },
+            {
+                "id": 166,
+                "name": "minecraft:mutated_mesa_rock"
+            },
+            {
+                "id": 167,
+                "name": "minecraft:mutated_mesa_clear_rock"
+            }
+        ]
+    },
+    {
+        "minDataVersion": 1444,
+        "maxDataVersion": 2835,
+        "mapping": [
+            {
+                "id": 0,
+                "name": "minecraft:the_void"
+            },
+            {
+                "id": 1,
+                "name": "minecraft:plains"
+            },
+            {
+                "id": 2,
+                "name": "minecraft:sunflower_plains"
+            },
+            {
+                "id": 3,
+                "name": "minecraft:snowy_plains"
+            },
+            {
+                "id": 4,
+                "name": "minecraft:ice_spikes"
+            },
+            {
+                "id": 5,
+                "name": "minecraft:desert"
+            },
+            {
+                "id": 6,
+                "name": "minecraft:swamp"
+            },
+            {
+                "id": 7,
+                "name": "minecraft:mangrove_swamp"
+            },
+            {
+                "id": 8,
+                "name": "minecraft:forest"
+            },
+            {
+                "id": 9,
+                "name": "minecraft:flower_forest"
+            },
+            {
+                "id": 10,
+                "name": "minecraft:birch_forest"
+            },
+            {
+                "id": 11,
+                "name": "minecraft:dark_forest"
+            },
+            {
+                "id": 12,
+                "name": "minecraft:old_growth_birch_forest"
+            },
+            {
+                "id": 13,
+                "name": "minecraft:old_growth_pine_taiga"
+            },
+            {
+                "id": 14,
+                "name": "minecraft:old_growth_spruce_taiga"
+            },
+            {
+                "id": 15,
+                "name": "minecraft:taiga"
+            },
+            {
+                "id": 16,
+                "name": "minecraft:snowy_taiga"
+            },
+            {
+                "id": 17,
+                "name": "minecraft:savanna"
+            },
+            {
+                "id": 18,
+                "name": "minecraft:savanna_plateau"
+            },
+            {
+                "id": 19,
+                "name": "minecraft:windswept_hills"
+            },
+            {
+                "id": 20,
+                "name": "minecraft:windswept_gravelly_hills"
+            },
+            {
+                "id": 21,
+                "name": "minecraft:windswept_forest"
+            },
+            {
+                "id": 22,
+                "name": "minecraft:windswept_savanna"
+            },
+            {
+                "id": 23,
+                "name": "minecraft:jungle"
+            },
+            {
+                "id": 24,
+                "name": "minecraft:sparse_jungle"
+            },
+            {
+                "id": 25,
+                "name": "minecraft:bamboo_jungle"
+            },
+            {
+                "id": 26,
+                "name": "minecraft:badlands"
+            },
+            {
+                "id": 27,
+                "name": "minecraft:eroded_badlands"
+            },
+            {
+                "id": 28,
+                "name": "minecraft:wooded_badlands"
+            },
+            {
+                "id": 29,
+                "name": "minecraft:meadow"
+            },
+            {
+                "id": 30,
+                "name": "minecraft:cherry_grove"
+            },
+            {
+                "id": 31,
+                "name": "minecraft:grove"
+            },
+            {
+                "id": 32,
+                "name": "minecraft:snowy_slopes"
+            },
+            {
+                "id": 33,
+                "name": "minecraft:frozen_peaks"
+            },
+            {
+                "id": 34,
+                "name": "minecraft:jagged_peaks"
+            },
+            {
+                "id": 35,
+                "name": "minecraft:stony_peaks"
+            },
+            {
+                "id": 36,
+                "name": "minecraft:river"
+            },
+            {
+                "id": 37,
+                "name": "minecraft:frozen_river"
+            },
+            {
+                "id": 38,
+                "name": "minecraft:beach"
+            },
+            {
+                "id": 39,
+                "name": "minecraft:snowy_beach"
+            },
+            {
+                "id": 40,
+                "name": "minecraft:stony_shore"
+            },
+            {
+                "id": 41,
+                "name": "minecraft:warm_ocean"
+            },
+            {
+                "id": 42,
+                "name": "minecraft:lukewarm_ocean"
+            },
+            {
+                "id": 43,
+                "name": "minecraft:deep_lukewarm_ocean"
+            },
+            {
+                "id": 44,
+                "name": "minecraft:ocean"
+            },
+            {
+                "id": 45,
+                "name": "minecraft:deep_ocean"
+            },
+            {
+                "id": 46,
+                "name": "minecraft:cold_ocean"
+            },
+            {
+                "id": 47,
+                "name": "minecraft:deep_cold_ocean"
+            },
+            {
+                "id": 48,
+                "name": "minecraft:frozen_ocean"
+            },
+            {
+                "id": 49,
+                "name": "minecraft:deep_frozen_ocean"
+            },
+            {
+                "id": 50,
+                "name": "minecraft:mushroom_fields"
+            },
+            {
+                "id": 51,
+                "name": "minecraft:dripstone_caves"
+            },
+            {
+                "id": 52,
+                "name": "minecraft:lush_caves"
+            },
+            {
+                "id": 53,
+                "name": "minecraft:deep_dark"
+            },
+            {
+                "id": 54,
+                "name": "minecraft:nether_wastes"
+            },
+            {
+                "id": 55,
+                "name": "minecraft:warped_forest"
+            },
+            {
+                "id": 56,
+                "name": "minecraft:crimson_forest"
+            },
+            {
+                "id": 57,
+                "name": "minecraft:soul_sand_valley"
+            },
+            {
+                "id": 58,
+                "name": "minecraft:basalt_deltas"
+            },
+            {
+                "id": 59,
+                "name": "minecraft:the_end"
+            },
+            {
+                "id": 60,
+                "name": "minecraft:end_highlands"
+            },
+            {
+                "id": 61,
+                "name": "minecraft:end_midlands"
+            },
+            {
+                "id": 62,
+                "name": "minecraft:small_end_islands"
+            },
+            {
+                "id": 63,
+                "name": "minecraft:end_barrens"
+            }
+        ]
+    }
+]
