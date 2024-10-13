@@ -27,7 +27,44 @@
                     }
                 }
             ],
-            "oak_door, iron_door, spruce_door, birch_door, jungle_door, acacia_door, dark_oak_door": [
+            "nether_portal": [
+                {
+                    "condition": "axis=auto",
+                    "connections": {
+                        "1_0_0=this_block": {
+                            "blockState": {
+                                "axis": "x"
+                            }
+                        },
+                        "-1_0_0=this_block": {
+                            "blockState": {
+                                "axis": "x"
+                            }
+                        },
+                        "0_0_1=this_block": {
+                            "blockState": {
+                                "axis": "z"
+                            }
+                        },
+                        "0_0_-1=this_block": {
+                            "blockState": {
+                                "axis": "z"
+                            }
+                        }
+                    }
+                },
+                {
+                    "condition": "axis=auto",
+                    "connections": {
+                        "": {
+                            "blockState": {
+                                "axis": "x"
+                            }
+                        }
+                    }
+                }
+            ],
+            "oak_door,iron_door,spruce_door,birch_door,jungle_door,acacia_door,dark_oak_door": [
                 {
                     "condition": "half=lower",
                     "connections": {
@@ -74,7 +111,7 @@
                     }
                 }
             ],
-            "chest, trapped_chest": [
+            "chest,trapped_chest": [
                 {
                     "condition": "facing=north",
                     "connections": {
@@ -85,6 +122,18 @@
                         },
                         "1_0_0=this_block": {
                             "blockState": {
+                                "type": "left"
+                            }
+                        },
+                        "0_0_-1=this_block": {
+                            "blockState": {
+                                "facing": "east",
+                                "type": "right"
+                            }
+                        },
+                        "0_0_1=this_block": {
+                            "blockState": {
+                                "facing": "east",
                                 "type": "left"
                             }
                         }
@@ -102,6 +151,18 @@
                             "blockState": {
                                 "type": "right"
                             }
+                        },
+                        "0_0_-1=this_block": {
+                            "blockState": {
+                                "facing": "west",
+                                "type": "left"
+                            }
+                        },
+                        "0_0_1=this_block": {
+                            "blockState": {
+                                "facing": "west",
+                                "type": "right"
+                            }
                         }
                     }
                 },
@@ -117,11 +178,23 @@
                             "blockState": {
                                 "type": "left"
                             }
+                        },
+                        "-1_0_0=this_block": {
+                            "blockState": {
+                                "facing": "north",
+                                "type": "right"
+                            }
+                        },
+                        "1_0_0=this_block": {
+                            "blockState": {
+                                "facing": "north",
+                                "type": "left"
+                            }
                         }
                     }
                 },
                 {
-                    "condition": "facing=east",
+                    "condition": "facing=west",
                     "connections": {
                         "0_0_-1=this_block": {
                             "blockState": {
@@ -130,6 +203,18 @@
                         },
                         "0_0_1=this_block": {
                             "blockState": {
+                                "type": "right"
+                            }
+                        },
+                        "-1_0_0=this_block": {
+                            "blockState": {
+                                "facing": "south",
+                                "type": "left"
+                            }
+                        },
+                        "1_0_0=this_block": {
+                            "blockState": {
+                                "facing": "south",
                                 "type": "right"
                             }
                         }
@@ -426,7 +511,7 @@
                     }
                 }
             ],
-            "glass_pane,white_stained_glass_pane,orange_stained_glass_pane,magenta_stained_glass_pane,light_blue_stained_glass_pane,yellow_stained_glass_pane,lime_stained_glass_pane,pink_stained_glass_pane,gray_stained_glass_pane,light_gray_stained_glass_pane,cyan_stained_glass_pane,purple_stained_glass_pane,blue_stained_glass_pane,brown_stained_glass_pane,green_stained_glass_pane,red_stained_glass_pane,black_stained_glass_pane,iron_bars,#blocks/fences": [
+            "glass_pane,white_stained_glass_pane,orange_stained_glass_pane,magenta_stained_glass_pane,light_blue_stained_glass_pane,yellow_stained_glass_pane,lime_stained_glass_pane,pink_stained_glass_pane,gray_stained_glass_pane,light_gray_stained_glass_pane,cyan_stained_glass_pane,purple_stained_glass_pane,blue_stained_glass_pane,brown_stained_glass_pane,green_stained_glass_pane,red_stained_glass_pane,black_stained_glass_pane,iron_bars,#block/fences,#blocks/fences": [
                 {
                     "connections": {
                         "1_0_0=!air":{
@@ -519,7 +604,7 @@
                     }
                 }
             ],
-            "#blocks/fire": [
+            "#blocks/fire,#block/fire": [
                 {
                     "connections": {
                         "1_0_0=!air|this_group":{
@@ -577,73 +662,73 @@
             "redstone_wire": [
                 {
                     "connections":{
-                        "1_0_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "1_0_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "-1_0_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "-1_0_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "0_0_1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_0_1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
                             }
                         },
-                        "0_0_-1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_0_-1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
                             }
                         },
-                        "1_-1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "1_-1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "-1_-1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "-1_-1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "0_-1_1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_-1_1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
                             }
                         },
-                        "0_-1_-1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_-1_-1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
                             }
                         },
-                        "1_1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "1_1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "-1_1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "-1_1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "side",
                                 "west": "side"
                             }
                         },
-                        "0_1_1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_1_1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
                             }
                         },
-                        "0_1_-1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_1_-1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "side",
                                 "south": "side"
@@ -653,22 +738,22 @@
                 },
                 {
                     "connections":{
-                        "1_1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "1_1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "east": "up"
                             }
                         },
-                        "-1_1_0=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "-1_1_0=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "west": "up"
                             }
                         },
-                        "0_1_1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_1_1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "south": "up"
                             }
                         },
-                        "0_1_-1=redstone_block|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
+                        "0_1_-1=redstone_block|#block/buttons|#blocks/buttons|calibrated_sculk_sensor|daylight_detector|detector_rail|jukebox|lectern|lever|lightning_rod|observer|#block/pressure_plates|#blocks/pressure_plates|redstone_torch|redstone_wall_torch|target|trapped_chest|tripwire_hook|redstone_wire|repeater|comparator":{
                             "blockState": {
                                 "north": "up"
                             }
@@ -726,16 +811,16 @@
                     }
                 }
             ],
-            "#blocks/stairs":[
+            "#blocks/stairs,#block/stairs":[
                 {
                     "condition": "facing=north,half=bottom",
                     "connections":{
-                        "0_0_-1=#blocks/stairs[facing=east,half=bottom]":{
+                        "0_0_-1=#block/stairs[facing=east,half=bottom]|#blocks/stairs[facing=east,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
                         },
-                        "0_0_-1=#blocks/stairs[facing=west,half=bottom]":{
+                        "0_0_-1=#block/stairs[facing=west,half=bottom]|#blocks/stairs[facing=west,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
@@ -745,12 +830,12 @@
                 {
                     "condition": "facing=north,half=bottom",
                     "connections":{
-                        "0_0_1=#blocks/stairs[facing=east,half=bottom]":{
+                        "0_0_1=#block/stairs[facing=east,half=bottom]|#blocks/stairs[facing=east,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
                         },
-                        "0_0_1=#blocks/stairs[facing=west,half=bottom]":{
+                        "0_0_1=#block/stairs[facing=west,half=bottom]|#blocks/stairs[facing=west,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
@@ -760,12 +845,12 @@
                 {
                     "condition": "facing=south,half=bottom",
                     "connections":{
-                        "0_0_1=#blocks/stairs[facing=east,half=bottom]":{
+                        "0_0_1=#block/stairs[facing=east,half=bottom]|#blocks/stairs[facing=east,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
                         },
-                        "0_0_1=#blocks/stairs[facing=west,half=bottom]":{
+                        "0_0_1=#block/stairs[facing=west,half=bottom]|#blocks/stairs[facing=west,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
@@ -775,12 +860,12 @@
                 {
                     "condition": "facing=south,half=bottom",
                     "connections":{
-                        "0_0_-1=#blocks/stairs[facing=east,half=bottom]":{
+                        "0_0_-1=#block/stairs[facing=east,half=bottom]|#blocks/stairs[facing=east,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
                         },
-                        "0_0_-1=#blocks/stairs[facing=west,half=bottom]":{
+                        "0_0_-1=#block/stairs[facing=west,half=bottom]|#blocks/stairs[facing=west,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
@@ -790,12 +875,12 @@
                 {
                     "condition": "facing=west,half=bottom",
                     "connections":{
-                        "-1_0_0=#blocks/stairs[facing=north,half=bottom]":{
+                        "-1_0_0=#block/stairs[facing=north,half=bottom]|#blocks/stairs[facing=north,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
                         },
-                        "-1_0_0=#blocks/stairs[facing=south,half=bottom]":{
+                        "-1_0_0=#block/stairs[facing=south,half=bottom]|#blocks/stairs[facing=south,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
@@ -805,12 +890,12 @@
                 {
                     "condition": "facing=west,half=bottom",
                     "connections":{
-                        "1_0_0=#blocks/stairs[facing=north,half=bottom]":{
+                        "1_0_0=#block/stairs[facing=north,half=bottom]|#blocks/stairs[facing=north,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
                         },
-                        "1_0_0=#blocks/stairs[facing=south,half=bottom]":{
+                        "1_0_0=#block/stairs[facing=south,half=bottom]|#blocks/stairs[facing=south,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
@@ -820,12 +905,12 @@
                 {
                     "condition": "facing=east,half=bottom",
                     "connections":{
-                        "1_0_0=#blocks/stairs[facing=north,half=bottom]":{
+                        "1_0_0=#block/stairs[facing=north,half=bottom]|#blocks/stairs[facing=north,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
                         },
-                        "1_0_0=#blocks/stairs[facing=south,half=bottom]":{
+                        "1_0_0=#block/stairs[facing=south,half=bottom]|#blocks/stairs[facing=south,half=bottom]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
@@ -835,12 +920,12 @@
                 {
                     "condition": "facing=east,half=bottom",
                     "connections":{
-                        "-1_0_0=#blocks/stairs[facing=north,half=bottom]":{
+                        "-1_0_0=#block/stairs[facing=north,half=bottom]|#blocks/stairs[facing=north,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
                         },
-                        "-1_0_0=#blocks/stairs[facing=south,half=bottom]":{
+                        "-1_0_0=#block/stairs[facing=south,half=bottom]|#blocks/stairs[facing=south,half=bottom]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
@@ -851,12 +936,12 @@
                 {
                     "condition": "facing=north,half=top",
                     "connections":{
-                        "0_0_-1=#blocks/stairs[facing=east,half=top]":{
+                        "0_0_-1=#block/stairs[facing=east,half=top]|#blocks/stairs[facing=east,half=top]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
                         },
-                        "0_0_-1=#blocks/stairs[facing=west,half=top]":{
+                        "0_0_-1=#block/stairs[facing=west,half=top]|#blocks/stairs[facing=west,half=top]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
@@ -866,12 +951,12 @@
                 {
                     "condition": "facing=north,half=top",
                     "connections":{
-                        "0_0_1=#blocks/stairs[facing=east,half=top]":{
+                        "0_0_1=#block/stairs[facing=east,half=top]|#blocks/stairs[facing=east,half=top]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
                         },
-                        "0_0_1=#blocks/stairs[facing=west,half=top]":{
+                        "0_0_1=#block/stairs[facing=west,half=top]|#blocks/stairs[facing=west,half=top]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
@@ -881,12 +966,12 @@
                 {
                     "condition": "facing=south,half=top",
                     "connections":{
-                        "0_0_1=#blocks/stairs[facing=east,half=top]":{
+                        "0_0_1=#block/stairs[facing=east,half=top]|#blocks/stairs[facing=east,half=top]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
                         },
-                        "0_0_1=#blocks/stairs[facing=west,half=top]":{
+                        "0_0_1=#block/stairs[facing=west,half=top]|#blocks/stairs[facing=west,half=top]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
@@ -896,12 +981,12 @@
                 {
                     "condition": "facing=south,half=top",
                     "connections":{
-                        "0_0_-1=#blocks/stairs[facing=east,half=top]":{
+                        "0_0_-1=#block/stairs[facing=east,half=top]|#blocks/stairs[facing=east,half=top]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
                         },
-                        "0_0_-1=#blocks/stairs[facing=west,half=top]":{
+                        "0_0_-1=#block/stairs[facing=west,half=top]|#blocks/stairs[facing=west,half=top]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
@@ -911,12 +996,12 @@
                 {
                     "condition": "facing=west,half=top",
                     "connections":{
-                        "-1_0_0=#blocks/stairs[facing=north,half=top]":{
+                        "-1_0_0=#block/stairs[facing=north,half=top]|#blocks/stairs[facing=north,half=top]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
                         },
-                        "-1_0_0=#blocks/stairs[facing=south,half=top]":{
+                        "-1_0_0=#block/stairs[facing=south,half=top]|#blocks/stairs[facing=south,half=top]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
@@ -926,12 +1011,12 @@
                 {
                     "condition": "facing=west,half=top",
                     "connections":{
-                        "1_0_0=#blocks/stairs[facing=north,half=top]":{
+                        "1_0_0=#block/stairs[facing=north,half=top]|#blocks/stairs[facing=north,half=top]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }
                         },
-                        "1_0_0=#blocks/stairs[facing=south,half=top]":{
+                        "1_0_0=#block/stairs[facing=south,half=top]|#blocks/stairs[facing=south,half=top]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
@@ -941,12 +1026,12 @@
                 {
                     "condition": "facing=east,half=top",
                     "connections":{
-                        "1_0_0=#blocks/stairs[facing=north,half=top]":{
+                        "1_0_0=#block/stairs[facing=north,half=top]|#blocks/stairs[facing=north,half=top]":{
                             "blockState": {
                                 "shape": "outer_left"
                             }
                         },
-                        "1_0_0=#blocks/stairs[facing=south,half=top]":{
+                        "1_0_0=#block/stairs[facing=south,half=top]|#blocks/stairs[facing=south,half=top]":{
                             "blockState": {
                                 "shape": "outer_right"
                             }
@@ -956,12 +1041,12 @@
                 {
                     "condition": "facing=east,half=top",
                     "connections":{
-                        "-1_0_0=#blocks/stairs[facing=north,half=top]":{
+                        "-1_0_0=#block/stairs[facing=north,half=top]|#blocks/stairs[facing=north,half=top]":{
                             "blockState": {
                                 "shape": "inner_left"
                             }
                         },
-                        "-1_0_0=#blocks/stairs[facing=south,half=top]":{
+                        "-1_0_0=#block/stairs[facing=south,half=top]|#blocks/stairs[facing=south,half=top]":{
                             "blockState": {
                                 "shape": "inner_right"
                             }

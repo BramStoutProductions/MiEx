@@ -43,7 +43,10 @@
             },
             {
                 "id": 2,
-                "name": "minecraft:grass_block"
+                "name": "minecraft:grass_block",
+                "blockState": {
+                    "snowy": "false"
+                }
             },
             {
                 "id": 3,
@@ -2025,21 +2028,21 @@
                         }
                     },
                     {
-                        "dataValue": 1,
+                        "dataValue": 2,
                         "name": "minecraft:wall_torch",
                         "blockState": {
                             "facing": "west"
                         }
                     },
                     {
-                        "dataValue": 1,
+                        "dataValue": 3,
                         "name": "minecraft:wall_torch",
                         "blockState": {
                             "facing": "south"
                         }
                     },
                     {
-                        "dataValue": 1,
+                        "dataValue": 4,
                         "name": "minecraft:wall_torch",
                         "blockState": {
                             "facing": "north"
@@ -2049,7 +2052,14 @@
             },
             {
                 "id": 51,
-                "name": "minecraft:fire"
+                "name": "minecraft:fire",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false",
+                    "up": "false"
+                }
             },
             {
                 "id": 52,
@@ -3800,7 +3810,13 @@
             },
             {
                 "id": 85,
-                "name": "minecraft:oak_fence"
+                "name": "minecraft:oak_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 86,
@@ -3847,11 +3863,14 @@
             {
                 "id": 90,
                 "name": "minecraft:nether_portal",
+                "blockState": {
+                    "axis": "auto"
+                },
                 "variants": [
                     {
                         "dataValue": 0,
                         "blockState": {
-                            "axis": "x"
+                            "axis": "auto"
                         }
                     },
                     {
@@ -4822,11 +4841,23 @@
             },
             {
                 "id": 101,
-                "name": "minecraft:iron_bars"
+                "name": "minecraft:iron_bars",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 102,
-                "name": "minecraft:glass_pane"
+                "name": "minecraft:glass_pane",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 103,
@@ -5338,7 +5369,13 @@
             },
             {
                 "id": 113,
-                "name": "minecraft:nether_brick_fence"
+                "name": "minecraft:nether_brick_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 114,
@@ -7913,6 +7950,12 @@
             {
                 "id": 160,
                 "name": "minecraft:stained_glass_pane",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                },
                 "variants": [
                     {
                         "dataValue": 0,
@@ -9393,23 +9436,53 @@
             },
             {
                 "id": 188,
-                "name": "minecraft:spruce_fence"
+                "name": "minecraft:spruce_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 189,
-                "name": "minecraft:birch_fence"
+                "name": "minecraft:birch_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 190,
-                "name": "minecraft:jungle_fence"
+                "name": "minecraft:jungle_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 191,
-                "name": "minecraft:dark_oak_fence"
+                "name": "minecraft:dark_oak_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 192,
-                "name": "minecraft:acacia_fence"
+                "name": "minecraft:acacia_fence",
+                "blockState": {
+                    "east": "false",
+                    "west": "false",
+                    "north": "false",
+                    "south": "false"
+                }
             },
             {
                 "id": 193,
