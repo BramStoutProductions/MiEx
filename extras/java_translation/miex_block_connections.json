@@ -514,22 +514,22 @@
             "glass_pane,white_stained_glass_pane,orange_stained_glass_pane,magenta_stained_glass_pane,light_blue_stained_glass_pane,yellow_stained_glass_pane,lime_stained_glass_pane,pink_stained_glass_pane,gray_stained_glass_pane,light_gray_stained_glass_pane,cyan_stained_glass_pane,purple_stained_glass_pane,blue_stained_glass_pane,brown_stained_glass_pane,green_stained_glass_pane,red_stained_glass_pane,black_stained_glass_pane,iron_bars,#block/fences,#blocks/fences": [
                 {
                     "connections": {
-                        "1_0_0=!air":{
+                        "1_0_0=$solid_block|this_group|oak_fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate":{
                             "blockState": {
                                 "east": "true"
                             }
                         },
-                        "-1_0_0=!air":{
+                        "-1_0_0=$solid_block|this_group|oak_fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate":{
                             "blockState": {
                                 "west": "true"
                             }
                         },
-                        "0_0_-1=!air":{
+                        "0_0_-1=$solid_block|this_group|oak_fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate":{
                             "blockState": {
                                 "north": "true"
                             }
                         },
-                        "0_0_1=!air":{
+                        "0_0_1=$solid_block|this_group|oak_fence_gate|spruce_fence_gate|birch_fence_gate|jungle_fence_gate|dark_oak_fence_gate|acacia_fence_gate":{
                             "blockState": {
                                 "south": "true"
                             }
@@ -540,27 +540,27 @@
             "cobblestone_wall,mossy_cobblestone_wall": [
                 {
                     "connections": {
-                        "1_0_0=!air":{
+                        "1_0_0=$solid_block|this_group":{
                             "blockState": {
                                 "east": "true"
                             }
                         },
-                        "-1_0_0=!air":{
+                        "-1_0_0=$solid_block|this_group":{
                             "blockState": {
                                 "west": "true"
                             }
                         },
-                        "0_0_-1=!air":{
+                        "0_0_-1=$solid_block|this_group":{
                             "blockState": {
                                 "north": "true"
                             }
                         },
-                        "0_0_1=!air":{
+                        "0_0_1=$solid_block|this_group":{
                             "blockState": {
                                 "south": "true"
                             }
                         },
-                        "0_1_0=!air":{
+                        "0_1_0=$solid_block|this_group":{
                             "blockState": {
                                 "up": "true"
                             }
