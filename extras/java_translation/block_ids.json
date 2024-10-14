@@ -62,7 +62,10 @@
                     },
                     {
                         "dataValue": 2,
-                        "name": "minecraft:podzol"
+                        "name": "minecraft:podzol",
+                        "blockState": {
+                            "snowy": "false"
+                        }
                     }
                 ]
             },
@@ -8619,7 +8622,7 @@
             },
             {
                 "id": 175,
-                "name": "minecraft:double_plant",
+                "name": "minecraft:tall_grass",
                 "blockState": {
                     "half": "lower"
                 },

@@ -512,6 +512,90 @@
             {
                 "id": 63,
                 "name": "minecraft:end_barrens"
+            },
+            {
+                "id": 129,
+                "name": "minecraft:mutated_plains"
+            },
+            {
+                "id": 130,
+                "name": "minecraft:mutated_desert"
+            },
+            {
+                "id": 131,
+                "name": "minecraft:mutated_extreme_hills"
+            },
+            {
+                "id": 132,
+                "name": "minecraft:mutated_forest"
+            },
+            {
+                "id": 133,
+                "name": "minecraft:mutated_taiga"
+            },
+            {
+                "id": 134,
+                "name": "minecraft:mutated_swampland"
+            },
+            {
+                "id": 140,
+                "name": "minecraft:mutated_ice_flats"
+            },
+            {
+                "id": 149,
+                "name": "minecraft:mutated_jungle"
+            },
+            {
+                "id": 151,
+                "name": "minecraft:mutated_jungle_edge"
+            },
+            {
+                "id": 155,
+                "name": "minecraft:mutated_birch_forest"
+            },
+            {
+                "id": 156,
+                "name": "minecraft:mutated_birch_forest_hills"
+            },
+            {
+                "id": 157,
+                "name": "minecraft:mutated_roofed_forest"
+            },
+            {
+                "id": 158,
+                "name": "minecraft:mutated_taiga_cold"
+            },
+            {
+                "id": 160,
+                "name": "minecraft:mutated_redwood_taiga"
+            },
+            {
+                "id": 161,
+                "name": "minecraft:mutated_redwood_taiga_hills"
+            },
+            {
+                "id": 162,
+                "name": "minecraft:mutated_extreme_hills_with_trees"
+            },
+            {
+                "id": 163,
+                "name": "minecraft:mutated_savanna"
+            },
+            {
+                "id": 164,
+                "name": "minecraft:mutated_savanna_rock"
+            },
+            {
+                "id": 165,
+                "name": "minecraft:mutated_mesa"
+            },
+            {
+                "id": 166,
+                "name": "minecraft:mutated_mesa_rock"
+            },
+            {
+                "id": 167,
+                "name": "minecraft:mutated_mesa_clear_rock"
             }
         ]
     }

@@ -3,8 +3,9 @@
         "minDataVersion": 0,
         "maxDataVersion": 1443,
         "mappings": {
-            "double_plant": [
+            "tall_grass": [
                 {
+                    "condition": "half=upper",
                     "connections": {
                         "0_-1_0=sunflower": {
                             "name": "sunflower"
