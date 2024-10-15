@@ -253,7 +253,7 @@ class MiexImport(Operator, ImportHelper):
             return {'CANCELLED'}
         
         # Read material json file
-        with open(materialJson) as f:
+        with open(materialJson, encoding='utf-8') as f:
             materials = json.load(f)
 
         # Get mesh list before import
