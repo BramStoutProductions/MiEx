@@ -514,6 +514,10 @@
                 "name": "minecraft:end_barrens"
             },
             {
+                "id": 127,
+                "name": "minecraft:void"
+            },
+            {
                 "id": 129,
                 "name": "minecraft:mutated_plains"
             },

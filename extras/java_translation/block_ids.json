@@ -75,7 +75,7 @@
             },
             {
                 "id": 5,
-                "name": "minecraft:planks",
+                "name": "minecraft:oak_planks",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -601,7 +601,7 @@
             },
             {
                 "id": 17,
-                "name": "minecraft:log",
+                "name": "minecraft:oak_log",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -719,7 +719,7 @@
             },
             {
                 "id": 18,
-                "name": "minecraft:leaves",
+                "name": "minecraft:oak_leaves",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -1383,11 +1383,11 @@
             },
             {
                 "id": 31,
-                "name": "minecraft:tallgrass",
+                "name": "minecraft:grass",
                 "variants": [
                     {
                         "dataValue": 0,
-                        "name": "minecraft:deadbush"
+                        "name": "minecraft:dead_bush"
                     },
                     {
                         "dataValue": 1,
@@ -1597,7 +1597,7 @@
             },
             {
                 "id": 35,
-                "name": "minecraft:wool",
+                "name": "minecraft:white_wool",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -1831,7 +1831,7 @@
             },
             {
                 "id": 43,
-                "name": "minecraft:double_stone_slab",
+                "name": "minecraft:smooth_stone_slab",
                 "blockState": {
                     "type": "double"
                 },
@@ -1904,7 +1904,7 @@
             },
             {
                 "id": 44,
-                "name": "minecraft:stone_slab",
+                "name": "minecraft:smooth_stone_slab",
                 "blockState": {
                     "type": "bottom"
                 },
@@ -3823,7 +3823,7 @@
             },
             {
                 "id": 86,
-                "name": "minecraft:pumpkin",
+                "name": "minecraft:carved_pumpkin",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -4270,7 +4270,7 @@
             },
             {
                 "id": 95,
-                "name": "minecraft:stained_glass",
+                "name": "minecraft:white_stained_glass",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -4340,7 +4340,7 @@
             },
             {
                 "id": 96,
-                "name": "minecraft:trapdoor",
+                "name": "minecraft:oak_trapdoor",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -4490,7 +4490,7 @@
             },
             {
                 "id": 97,
-                "name": "minecraft:monster_egg",
+                "name": "minecraft:infested_stone",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -4520,11 +4520,11 @@
             },
             {
                 "id": 98,
-                "name": "minecraft:stonebrick",
+                "name": "minecraft:stone_bricks",
                 "variants": [
                     {
                         "dataValue": 0,
-                        "name": "minecraft:stone_brick"
+                        "name": "minecraft:stone_bricks"
                     },
                     {
                         "dataValue": 1,
@@ -5368,7 +5368,7 @@
             },
             {
                 "id": 112,
-                "name": "minecraft:nether_brick"
+                "name": "minecraft:nether_bricks"
             },
             {
                 "id": 113,
@@ -5677,7 +5677,7 @@
             },
             {
                 "id": 125,
-                "name": "minecraft:double_wooden_slab",
+                "name": "minecraft:oak_slab",
                 "blockState": {
                     "type": "double"
                 },
@@ -5734,7 +5734,7 @@
             },
             {
                 "id": 126,
-                "name": "minecraft:wooden_slab",
+                "name": "minecraft:oak_slab",
                 "blockState": {
                     "type": "bottom"
                 },
@@ -6711,7 +6711,7 @@
             },
             {
                 "id": 144,
-                "name": "minecraft:skull",
+                "name": "minecraft:skeleton_skull",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -6729,7 +6729,7 @@
                     },
                     {
                         "dataValue": 2,
-                        "name": "minecraft:wall_skull",
+                        "name": "minecraft:skeleton_wall_skull",
                         "blockState": {
                             "rotation": 0,
                             "facing": "north"
@@ -6737,7 +6737,7 @@
                     },
                     {
                         "dataValue": 3,
-                        "name": "minecraft:wall_skull",
+                        "name": "minecraft:skeleton_wall_skull",
                         "blockState": {
                             "rotation": 0,
                             "facing": "south"
@@ -6745,7 +6745,7 @@
                     },
                     {
                         "dataValue": 4,
-                        "name": "minecraft:wall_skull",
+                        "name": "minecraft:skeleton_wall_skull",
                         "blockState": {
                             "rotation": 0,
                             "facing": "west"
@@ -6753,7 +6753,7 @@
                     },
                     {
                         "dataValue": 5,
-                        "name": "minecraft:wall_skull",
+                        "name": "minecraft:skeleton_wall_skull",
                         "blockState": {
                             "rotation": 0,
                             "facing": "east"
@@ -7479,7 +7479,7 @@
             },
             {
                 "id": 153,
-                "name": "minecraft:quartz_ore"
+                "name": "minecraft:nether_quartz_ore"
             },
             {
                 "id": 154,
@@ -7882,7 +7882,7 @@
             },
             {
                 "id": 159,
-                "name": "minecraft:stained_hardened_clay",
+                "name": "minecraft:white_terracotta",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -7952,7 +7952,7 @@
             },
             {
                 "id": 160,
-                "name": "minecraft:stained_glass_pane",
+                "name": "minecraft:white_stained_glass_pane",
                 "blockState": {
                     "east": "false",
                     "west": "false",
@@ -8028,7 +8028,7 @@
             },
             {
                 "id": 161,
-                "name": "minecraft:leaves2",
+                "name": "minecraft:acacia_leaves",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -8098,7 +8098,7 @@
             },
             {
                 "id": 162,
-                "name": "minecraft:log2",
+                "name": "minecraft:acacia_log",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -8540,7 +8540,7 @@
             },
             {
                 "id": 171,
-                "name": "minecraft:carpet",
+                "name": "minecraft:white_carpet",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -9012,7 +9012,7 @@
             },
             {
                 "id": 181,
-                "name": "minecraft:double_stone_slab2",
+                "name": "minecraft:red_sandstone_slab",
                 "blockState": {
                     "type": "double"
                 },
@@ -9029,7 +9029,7 @@
             },
             {
                 "id": 182,
-                "name": "minecraft:stone_slab2",
+                "name": "minecraft:red_sandstone_slab",
                 "blockState": {
                     "type": "bottom"
                 },
@@ -10535,7 +10535,7 @@
             },
             {
                 "id": 206,
-                "name": "minecraft:end_bricks"
+                "name": "minecraft:end_stone_bricks"
             },
             {
                 "id": 207,
@@ -10597,7 +10597,7 @@
             },
             {
                 "id": 213,
-                "name": "minecraft:magma"
+                "name": "minecraft:magma_block"
             },
             {
                 "id": 214,
@@ -10605,7 +10605,7 @@
             },
             {
                 "id": 215,
-                "name": "minecraft:red_nether_brick"
+                "name": "minecraft:red_nether_bricks"
             },
             {
                 "id": 216,
@@ -11063,7 +11063,7 @@
             },
             {
                 "id": 227,
-                "name": "minecraft:silver_shulker_box",
+                "name": "minecraft:light_gray_shulker_box",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -11639,7 +11639,7 @@
             },
             {
                 "id": 243,
-                "name": "minecraft:silver_glazed_terracotta",
+                "name": "minecraft:light_gray_glazed_terracotta",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -11879,7 +11879,7 @@
             },
             {
                 "id": 251,
-                "name": "minecraft:concrete",
+                "name": "minecraft:white_concrete",
                 "variants": [
                     {
                         "dataValue": 0,
@@ -11949,7 +11949,7 @@
             },
             {
                 "id": 252,
-                "name": "minecraft:concrete_powder",
+                "name": "minecraft:white_concrete_powder",
                 "variants": [
                     {
                         "dataValue": 0,

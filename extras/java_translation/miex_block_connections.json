@@ -284,7 +284,7 @@
                     }
                 }
             ],
-            "skull": [
+            "skeleton_skull": [
                 {
                     "condition": "SkullType=0",
                     "connections": {
@@ -462,7 +462,7 @@
                     }
                 }
             ],
-            "wall_skull": [
+            "skeleton_wall_skull": [
                 {
                     "condition": "SkullType=0",
                     "connections": {
