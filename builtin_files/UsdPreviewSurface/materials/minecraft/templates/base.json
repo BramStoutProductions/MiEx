@@ -1,0 +1,202 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "MAT.outputs:surface"
+    },
+    "network": {
+        "!@texture@": {
+            "MAT": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    },
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "value": [1.0, 1.0, 1.0]
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "MAT": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    },
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "connection": "FILE.outputs:rgb"
+                    }
+                }
+            },
+            "FILE": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:rgb": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "inputs:wrapS": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            },
+            "UV": {
+                "type": "UsdPrimvarReader_float2",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:varname": {
+                        "type": "string",
+                        "value": "st"
+                    }
+                }
+            }
+        },
+        "@texture@.animated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.a": {
+            "MAT": {
+                "attributes": {
+                    "inputs:opacity": {
+                        "type": "float",
+                        "connection": "FILE.outputs:a"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "outputs:a": {
+                        "type": "float"
+                    }
+                }
+            }
+        },
+        "@texture@.cutout": {
+            "MAT": {
+                "attributes": {
+                    "inputs:opacityThreshold": {
+                        "type": "float",
+                        "value": 0.5
+                    }
+                }
+            }
+        },
+        "@biomeColor@":{
+            "FILE": {
+                "attributes": {
+                    "inputs:scale": {
+                        "type": "float4",
+                        "expression": "${biomeColor(type=grass,biome=plains)}"
+                    }
+                }
+            }
+        },
+        "@texture@_emission": {
+            "MAT": {
+                "attributes": {
+                    "inputs:emissiveColor": {
+                        "type": "color3f",
+                        "connection": "FILE_EMISSION.outputs:rgb"
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:rgb": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "inputs:wrapS": {
+                        "type": "string",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "string",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            }
+        }
+    }
+}

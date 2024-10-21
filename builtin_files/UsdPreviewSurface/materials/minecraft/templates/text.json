@@ -1,0 +1,17 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:font/*"],
+    "include": [ "base" ],
+    "network": {
+        "@biomeColor@":{
+            "FILE": {
+                "attributes": {
+                    "inputs:scale": {
+                        "type": "float4",
+                        "value": [0,0,0,1]
+                    }
+                }
+            }
+        }
+    }
+}

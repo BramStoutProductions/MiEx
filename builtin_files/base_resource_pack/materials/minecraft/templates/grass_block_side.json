@@ -1,0 +1,106 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_side" ],
+    "include": [ "base" ],
+    "network": {
+        "@texture@_overlay": {
+            "FILE_OVERLAY": {
+                "type": "ND_image_color4",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color4f"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_overlay"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            },
+            "OVERLAY_SEP": {
+                "type": "ND_separate4_color4",
+                "attributes": {
+                    "outputs:outr": {
+                        "type": "float"
+                    },
+                    "outputs:outg": {
+                        "type": "float"
+                    },
+                    "outputs:outb": {
+                        "type": "float"
+                    },
+                    "outputs:outa": {
+                        "type": "float"
+                    },
+                    "inputs:in": {
+                        "type": "color4f",
+                        "connection": "FILE_OVERLAY.outputs:out"
+                    }
+                }
+            },
+            "OVERLAY_COMBINE": {
+                "type": "ND_combine3_color3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color3f"
+                    },
+                    "inputs:in1": {
+                        "type": "float",
+                        "connection": "OVERLAY_SEP.outputs:outr"
+                    },
+                    "inputs:in2": {
+                        "type": "float",
+                        "connection": "OVERLAY_SEP.outputs:outg"
+                    },
+                    "inputs:in3": {
+                        "type": "float",
+                        "connection": "OVERLAY_SEP.outputs:outb"
+                    }
+                }
+            },
+            "BIOME_MULT": {
+                "attributes": {
+                    "inputs:in1": {
+                        "type": "color3f",
+                        "connection": "OVERLAY_COMBINE.outputs:out"
+                    }
+                }
+            },
+            "OVERLAY_COMPOSITE": {
+                "type": "ND_mix_color3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color3f"
+                    },
+                    "inputs:bg": {
+                        "type": "color3f",
+                        "connection": "FILE.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "color3f",
+                        "connection": "BIOME_MULT.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "connection": "OVERLAY_SEP.outputs:outa"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:base_color": {
+                        "type": "color3f",
+                        "connection": "OVERLAY_COMPOSITE.outputs:out"
+                    }
+                }
+            }
+        }
+    }
+}

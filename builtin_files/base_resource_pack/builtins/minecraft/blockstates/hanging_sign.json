@@ -1,0 +1,178 @@
+{
+    "blocks": [
+        "minecraft:acacia_hanging_sign", "minecraft:bamboo_hanging_sign", "minecraft:birch_hanging_sign",
+        "minecraft:cherry_hanging_sign", "minecraft:crimson_hanging_sign", "minecraft:dark_oak_hanging_sign",
+        "minecraft:jungle_hanging_sign", "minecraft:mangrove_hanging_sign", "minecraft:oak_hanging_sign",
+        "minecraft:spruce_hanging_sign", "minecraft:warped_hanging_sign",
+
+        "minecraft:acacia_wall_hanging_sign", "minecraft:bamboo_wall_hanging_sign", "minecraft:birch_wall_hanging_sign",
+        "minecraft:cherry_wall_hanging_sign", "minecraft:crimson_wall_hanging_sign", "minecraft:dark_oak_wall_hanging_sign",
+        "minecraft:jungle_wall_hanging_sign", "minecraft:mangrove_wall_hanging_sign", "minecraft:oak_wall_hanging_sign",
+        "minecraft:spruce_wall_hanging_sign", "minecraft:warped_wall_hanging_sign"
+    ],
+    "defaultTexture": "minecraft:entity/signs/oak",
+    "handler": [
+        {
+            "variables": [
+                "type = thisBlock.name.substring(thisBlock.name.indexOf(':') + 1)",
+                "type = type.endsWith('_wall_hanging_sign') ? type.substring(0, type.length() - 18) : type.substring(0, type.length() - 13)",
+                "rotY = thisBlock.state.rotation != null ? (22.5 * thisBlock.state.rotation) : 0.0",
+                "isWall = false",
+                "attached = thisBlock.state.attached == true"
+            ],
+            "textures": {
+                "texture": "'minecraft:entity/signs/hanging/' + type"
+            }
+        },
+        {
+            "condition": "thisBlock.name.endsWith('_wall_hanging_sign')",
+            "variables": [
+                "rotY = 0",
+                "rotY = thisBlock.state.facing == 'north' ? 180.0 : rotY",
+                "rotY = thisBlock.state.facing == 'east' ? 270.0 : rotY",
+                "rotY = thisBlock.state.facing == 'south' ? 0.0 : rotY",
+                "rotY = thisBlock.state.facing == 'west' ? 90.0 : rotY",
+                "isWall = true"
+            ]
+        },
+        {
+            "transform": {
+                "rotate": [ 0.0, "rotY", 0.0 ]
+            },
+            "children": [
+                {
+                    "elements": [
+                        {
+                            "from": [ 1, 0, 7 ],
+                            "to": [ 15, 10, 9 ],
+                            "entityUVs": [ 0, 6, 8, 12 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "attached",
+                    "elements": [
+                        {
+                            "from": [ 2, 10, 8 ],
+                            "to": [ 14, 16, 8 ],
+                            "texture": "'#texture'",
+                            "faces": {
+                                "south": {
+                                    "uv": [ 3.5, 3, 6.5, 6 ]
+                                },
+                                "north": {
+                                    "uv": [ 3.5, 3, 6.5, 6 ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "condition": "!attached",
+                    "elements": [
+                        {
+                            "from": [ 2, 10, 8 ],
+                            "to": [ 5, 16, 8 ],
+                            "texture": "'#texture'",
+                            "rotation": {
+                                "origin": [ 3.5, 10, 8 ],
+                                "axis": "y",
+                                "angle": 45
+                            },
+                            "faces": {
+                                "south": {
+                                    "uv": [ 0, 3, 0.75, 6 ]
+                                },
+                                "north": {
+                                    "uv": [ 0, 3, 0.75, 6 ]
+                                }
+                            }
+                        },
+                        {
+                            "from": [ 2, 10, 8 ],
+                            "to": [ 5, 16, 8 ],
+                            "texture": "'#texture'",
+                            "rotation": {
+                                "origin": [ 3.5, 10, 8 ],
+                                "axis": "y",
+                                "angle": -45
+                            },
+                            "faces": {
+                                "south": {
+                                    "uv": [ 1.5, 3, 2.25, 6 ]
+                                },
+                                "north": {
+                                    "uv": [ 1.5, 3, 2.25, 6 ]
+                                }
+                            }
+                        },
+                        {
+                            "from": [ 11, 10, 8 ],
+                            "to": [ 14, 16, 8 ],
+                            "texture": "'#texture'",
+                            "rotation": {
+                                "origin": [ 12.5, 10, 8 ],
+                                "axis": "y",
+                                "angle": 45
+                            },
+                            "faces": {
+                                "south": {
+                                    "uv": [ 0, 3, 0.75, 6 ]
+                                },
+                                "north": {
+                                    "uv": [ 0, 3, 0.75, 6 ]
+                                }
+                            }
+                        },
+                        {
+                            "from": [ 11, 10, 8 ],
+                            "to": [ 14, 16, 8 ],
+                            "texture": "'#texture'",
+                            "rotation": {
+                                "origin": [ 12.5, 10, 8 ],
+                                "axis": "y",
+                                "angle": -45
+                            },
+                            "faces": {
+                                "south": {
+                                    "uv": [ 1.5, 3, 2.25, 6 ]
+                                },
+                                "north": {
+                                    "uv": [ 1.5, 3, 2.25, 6 ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "condition": "isWall",
+                    "elements": [
+                        {
+                            "from": [ 0, 14, 6 ],
+                            "to": [ 16, 16, 10 ],
+                            "entityUVs": [ 0, 0, 10, 3 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "generators": [
+                        {
+                            "type": "signText",
+                            "args": {
+                                "state": "thisBlock.state",
+                                "textOffsetX": 8,
+                                "textOffsetY": 5.1333,
+                                "textOffsetZ": 9.25,
+                                "textOffsetZBack": 6.75,
+                                "textScale": 1.75,
+                                "lineDistance": 2.0
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

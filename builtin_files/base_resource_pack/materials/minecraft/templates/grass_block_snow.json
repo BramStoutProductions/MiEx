@@ -1,0 +1,17 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_snow" ],
+    "include": [ "base" ],
+    "network": {
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "inputs:base_color": {
+                        "type": "color3f",
+                        "connection": "FILE.outputs:out"
+                    }
+                }
+            }
+        }
+    }
+}
