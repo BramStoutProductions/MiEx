@@ -339,7 +339,7 @@ def main():
 
     asset_tools.import_asset_tasks([task])
     
-    with open(materialJson, 'r') as f:
+    with open(materialJson, 'r', encoding='utf-8') as f:
         materials = json.load(f)
 
     with unreal.ScopedSlowTask(len(materials), "Importing Materials") as slow_task:

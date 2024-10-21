@@ -418,7 +418,7 @@ def MIEX_IMPORT(path, namespace, variant):
     if(os.path.exists(path.replace(".usd", "_materials.json"))):
         # We have a JSON material definition file, so let's go through it.
         contents = {}
-        with open(path.replace(".usd", "_materials.json")) as fp:
+        with open(path.replace(".usd", "_materials.json"), encoding='utf-8') as fp:
             contents = json.load(fp)
         
         with ProgressBar("Importing Materials") as prog:
