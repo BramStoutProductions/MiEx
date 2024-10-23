@@ -709,6 +709,164 @@
                     }
                 }
             }
+        },
+
+
+        "@texture@_specular": {
+            "MAT": {
+                "attributes": {
+                    "inputs:specular": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR.outputs:out"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_specular"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_specular&&@texture@.animated": {
+            "UV_SPECULAR_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameI}"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_SPECULAR_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_specular&&@texture@.interpolated": {
+            "UV_SPECULAR_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_SPECULAR_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_SPECULAR_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_SPECULAR2": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_specular"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_SPECULAR_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_SPECULAR": {
+                "type": "ND_mix_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:bg": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:specular": {
+                        "type": "float",
+                        "connection": "INTERPOLATE_SPECULAR.outputs:out"
+                    }
+                }
+            }
         }
     }
 }
