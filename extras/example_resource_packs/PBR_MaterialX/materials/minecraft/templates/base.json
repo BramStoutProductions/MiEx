@@ -1,5 +1,5 @@
 {
-    "priority": 1,
+    "priority": 0,
     "selection": [ "*" ],
     "include": [ "base" ],
     "network": {
