@@ -30,11 +30,11 @@
                         "value": "raw"
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
@@ -88,11 +88,11 @@
                         "value": "raw"
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
@@ -147,11 +147,11 @@
                         "value": "raw"
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
@@ -213,11 +213,11 @@
                         "value": [-1, -1, -1, 0]
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
