@@ -150,7 +150,7 @@ def run():
         else:
             print("Could not find java biome for ", biome.resource)
     
-    with open("miex_bedrock_biomes.json", "w", encoding='utf-8') as f:
+    with open("miex_biomes.json", "w", encoding='utf-8') as f:
         json.dump(bedrockBiomeMap, f, indent=4)
 
 
