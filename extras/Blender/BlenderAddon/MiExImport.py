@@ -21,6 +21,7 @@ class SetupMaterials:
         self.conn_to_make = []
         self.mat = mat        # delete all nodes in material
         self.mat.use_nodes = True
+        self.data = data
         self.rootDir = rootDir
         self.hasTransparency = False
         self.options = options
@@ -29,7 +30,7 @@ class SetupMaterials:
         for node in self.mat.node_tree.nodes:
             self.mat.node_tree.nodes.remove(node)
 
-        for name, node_data in data['network'].items():
+        for name, node_data in self.data['network'].items():
             try:
                 self.import_node(name,node_data)
             except Exception as e:
@@ -54,7 +55,7 @@ class SetupMaterials:
                 warnings.warn('Failed to make connection: ' + str(conn), UserWarning)
                 raise e
 
-        for name, attr in data['terminals'].items():
+        for name, attr in self.data['terminals'].items():
             try:
                 inputAttr = attr
                 inputAttr = inputAttr.split("/")
@@ -65,7 +66,7 @@ class SetupMaterials:
                 warnings.warn('Failed to connect terminal: ' + name, UserWarning)
                 raise e
         
-        mat.use_backface_culling = True
+        self.mat.use_backface_culling = True
         if self.hasTransparency:
             self.mat.blend_method = 'BLEND'
             self.mat.shadow_method = 'HASHED'
