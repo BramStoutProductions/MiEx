@@ -1,0 +1,273 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "outputs": [ "WRITE_ROUGHNESS", "WRITE_METALNESS", "WRITE_EMISSIVENESS", "WRITE_NORMAL", "WRITE_AO" ],
+    "nodes": {
+        "READ_S": {
+            "type": "Read",
+            "attributes": {
+                "imageName": "@texture@_s"
+            }
+        },
+        "S_MISSING": {
+            "type": "Condition",
+            "attributes": {
+                "a": { "conn": "READ_S" },
+                "b": [0,0,0,0],
+                "ifFalse": [0,0,0,0],
+                "ifTrue": [1,1,1,1],
+                "condition": "<"
+            }
+        },
+        "GET_SMOOTHNESS": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ_S" },
+                "outR": "a.r",
+                "outG": "a.r",
+                "outB": "a.r",
+                "outA": "1"
+            }
+        },
+        "CALC_ROUGHNESS": {
+            "type": "Math",
+            "attributes": {
+                "operator": "subtract",
+                "a": [1,1,1,2],
+                "b": { "conn": "GET_SMOOTHNESS" }
+            }
+        },
+        "WRITE_ROUGHNESS": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "CALC_ROUGHNESS" },
+                "imageName": "@texture@_roughness",
+                "isTemporary": { "conn": "S_MISSING" }
+            }
+        },
+
+
+        "GET_METALNESS": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ_S" },
+                "outR": "a.g",
+                "outG": "a.g",
+                "outB": "a.g",
+                "outA": "1"
+            }
+        },
+        "WRITE_METALNESS": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "GET_METALNESS" },
+                "imageName": "@texture@_metalness",
+                "isTemporary": { "conn": "S_MISSING" }
+            }
+        },
+
+
+        "GET_EMISSIVENESS": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ_S" },
+                "outR": "a.a",
+                "outG": "a.a",
+                "outB": "a.a",
+                "outA": "1"
+            }
+        },
+        "FIX_EMISSIVENESS": {
+            "type": "Condition",
+            "attributes": {
+                "a": { "conn": "GET_EMISSIVENESS" },
+                "b": [1,1,1,1],
+                "ifFalse": { "conn": "GET_EMISSIVENESS" },
+                "ifTrue": [0,0,0,1],
+                "condition": "=="
+            }
+        },
+        "MAX_EMISSIVENESS": {
+            "type": "Blur",
+            "attributes": {
+                "input": { "conn": "FIX_EMISSIVENESS" },
+                "radiusMode": "everything",
+                "kernel": "max"
+            }
+        },
+        "SHOULD_WRITE_EMISSIVENESS": {
+            "type": "Condition",
+            "attributes": {
+                "a": { "conn": "MAX_EMISSIVENESS" },
+                "b": [0,0,0,0],
+                "ifFalse": [1,1,1,1],
+                "ifTrue": [0,0,0,0],
+                "condition": ">"
+            }
+        },
+        "READ":{
+            "type": "Read",
+            "attributes": {
+                "imageName": "@texture@",
+                "colorIfMissing": [0,0,0,1]
+            }
+        },
+        "PREMULTIPLY": {
+            "type": "AlphaMode", 
+            "attributes": {
+                "input": { "conn": "READ" },
+                "conversion": "un-associated to associated"
+            }
+        },
+        "RGB_COLOR": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "PREMULTIPLY" },
+                "outA": "1"
+            }
+        },
+        "APPLY_INVERSE_LUT": {
+            "type": "LUT",
+            "attributes": {
+                "input": { "conn": "RGB_COLOR" },
+                "lutPath": "srgb_aces_to_acescg"
+            }
+        },
+        "CALC_EMISSIVENESS": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "FIX_EMISSIVENESS" },
+                "b": { "conn": "APPLY_INVERSE_LUT" },
+                "operator": "multiply"
+            }
+        },
+        "WRITE_EMISSIVENESS": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "CALC_EMISSIVENESS" },
+                "imageName": "@texture@_emission.exr",
+                "isTemporary": { "conn": "SHOULD_WRITE_EMISSIVENESS" }
+            }
+        },
+
+
+        "READ_N": {
+            "type": "Read",
+            "attributes": {
+                "imageName": "@texture@_n"
+            }
+        },
+        "N_MISSING": {
+            "type": "Condition",
+            "attributes": {
+                "a": { "conn": "READ_N" },
+                "b": [0,0,0,0],
+                "ifFalse": [0,0,0,0],
+                "ifTrue": [1,1,1,1],
+                "condition": "<"
+            }
+        },
+        "GET_NORMAL": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ_N" },
+                "outR": "a.r",
+                "outG": "a.g",
+                "outB": "0",
+                "outA": "1"
+            }
+        },
+        "REMAP_NORMAL": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "GET_NORMAL" },
+                "outMin": [-1,-1,0,0]
+            }
+        },
+        "DOT_NORMAL": {
+            "type": "Math",
+            "attributes":{
+                "a": { "conn": "REMAP_NORMAL" },
+                "b": { "conn": "REMAP_NORMAL" },
+                "operator": "dot"
+            }
+        },
+        "INVERSE_NORMAL": {
+            "type": "Math",
+            "attributes": {
+                "a": [1,1,1,1],
+                "b": { "conn": "DOT_NORMAL" },
+                "operator": "subtract"
+            }
+        },
+        "CLAMP_NORMAL": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "INVERSE_NORMAL" },
+                "clamp": true
+            }
+        },
+        "SQRT_NORMAL": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "CLAMP_NORMAL" },
+                "b": [0.5, 0.5, 0.5, 0.5],
+                "operator": "pow"
+            }
+        },
+        "COMBINE_NORMAL": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "REMAP_NORMAL" },
+                "b": { "conn": "SQRT_NORMAL" },
+                "outR": "a.r",
+                "outG": "a.g",
+                "outB": "b.r",
+                "outA": "1"
+            }
+        },
+        "NORMALISE_NORMAL": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "COMBINE_NORMAL" },
+                "operator": "normalise"
+            }
+        },
+        "FINAL_NORMAL": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "NORMALISE_NORMAL" },
+                "inMin": [-1,1,-1,0],
+                "inMax": [1,-1,1,1]
+            }
+        },
+        "WRITE_NORMAL": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "FINAL_NORMAL" },
+                "imageName": "@texture@_normal",
+                "isTemporary": { "conn": "N_MISSING" }
+            }
+        },
+
+
+        "GET_AO": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ_N" },
+                "outR": "a.b",
+                "outG": "a.b",
+                "outB": "a.b",
+                "outA": "1"
+            }
+        },
+        "WRITE_AO": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "GET_AO" },
+                "imageName": "@texture@_ao",
+                "isTemporary": { "conn": "N_MISSING" }
+            }
+        }
+    }
+}

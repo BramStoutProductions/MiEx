@@ -1,0 +1,249 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "MAT.outputs:surface"
+    },
+    "include": [ "base" ],
+    "network": {
+        "@texture@_roughness": {
+            "MAT": {
+                "attributes": {
+                    "inputs:roughness": {
+                        "type": "float",
+                        "connection": "FILE_ROUGHNESS.outputs:r"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:r": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_roughness"
+                    },
+                    "inputs:sourceColorSpace": {
+                        "type": "token",
+                        "value": "raw"
+                    },
+                    "inputs:wrapS": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.animated&&@texture@_roughness": {
+            "FILE_ROUGHNESS": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated&&@texture@_roughness": {
+            "FILE_ROUGHNESS": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_metalness": {
+            "MAT": {
+                "attributes": {
+                    "inputs:metallic": {
+                        "type": "float",
+                        "connection": "FILE_METALNESS.outputs:r"
+                    }
+                }
+            },
+            "FILE_METALNESS": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:r": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_metalness"
+                    },
+                    "inputs:sourceColorSpace": {
+                        "type": "token",
+                        "value": "raw"
+                    },
+                    "inputs:wrapS": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.animated&&@texture@_metalness": {
+            "FILE_METALNESS": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated&&@texture@_metalness": {
+            "FILE_METALNESS": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+
+
+
+        "@texture@_emission": {
+            "MAT": {
+                "attributes": {
+                    "inputs:emissiveColor": {
+                        "type": "color3f",
+                        "connection": "FILE_EMISSION.outputs:rgb"
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:rgb": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "inputs:sourceColorSpace": {
+                        "type": "token",
+                        "value": "raw"
+                    },
+                    "inputs:wrapS": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.animated&&@texture@_emission": {
+            "FILE_EMISSION": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated&&@texture@_emission": {
+            "FILE_EMISSION": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_normal": {
+            "MAT": {
+                "attributes": {
+                    "inputs:normal": {
+                        "type": "normal3f",
+                        "connection": "FILE_NORMAL.outputs:rgb"
+                    }
+                }
+            },
+            "FILE_NORMAL": {
+                "type": "UsdUVTexture",
+                "attributes": {
+                    "outputs:rgb": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_normal"
+                    },
+                    "inputs:sourceColorSpace": {
+                        "type": "token",
+                        "value": "raw"
+                    },
+                    "inputs:scale": {
+                        "type": "float4",
+                        "value": [2, 2, 2, 1]
+                    },
+                    "inputs:bias": {
+                        "type": "float4",
+                        "value": [-1, -1, -1, 0]
+                    },
+                    "inputs:wrapS": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:wrapT": {
+                        "type": "token",
+                        "value": "repeat"
+                    },
+                    "inputs:st": {
+                        "type": "float2",
+                        "connection": "UV.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.animated&&@texture@_normal": {
+            "FILE_NORMAL": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated&&@texture@_normal": {
+            "FILE_NORMAL": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        }
+    }
+}

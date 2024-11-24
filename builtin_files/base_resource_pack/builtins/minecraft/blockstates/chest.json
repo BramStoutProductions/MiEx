@@ -1,0 +1,97 @@
+{
+    "blocks": [ 
+        "minecraft:chest", "minecraft:trapped_chest", "minecraft:ender_chest"
+    ],
+    "defaultTexture": "minecraft:entity/chest/normal",
+    "handler": {
+        "variables": [
+            "type = thisBlock.state.type == null ? '' : ('_' + thisBlock.state.type)",
+            "type = type == '_single' ? '' : type",
+            "texBasename = thisBlock.name.contains('trapped') ? 'trapped' : (thisBlock.name.contains('ender_chest') ? 'ender' : 'normal')",
+            "rotY = 0",
+            "rotY = thisBlock.state.facing == 'north' ? 0.0 : rotY",
+            "rotY = thisBlock.state.facing == 'east' ? 90.0 : rotY",
+            "rotY = thisBlock.state.facing == 'south' ? 180.0 : rotY",
+            "rotY = thisBlock.state.facing == 'west' ? 270.0 : rotY"
+        ],
+        "children": {
+            "textures": {
+                "texture": "'minecraft:entity/chest/' + texBasename + type"
+            },
+            "transform": {
+                "rotate": [ 0.0, "rotY", 0.0 ]
+            },
+            "children": [
+                {
+                    "condition": "type == ''",
+                    "elements": [
+                        {
+                            "from": [ 15, 10, 1 ],
+                            "to": [ 1, 0, 15 ],
+                            "entityUVs": [ 0, 4.75, 14, 10.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 15, 14, 1 ],
+                            "to": [ 1, 9, 15 ],
+                            "entityUVs": [ 0, 0, 14, 4.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 9, 12, 0 ],
+                            "to": [ 7, 8, 1 ],
+                            "entityUVs": [ 0, 0, 1.5, 1.25 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "type == '_left'",
+                    "elements": [
+                        {
+                            "from": [ 16, 10, 1 ],
+                            "to": [ 1, 0, 15 ],
+                            "entityUVs": [ 0, 4.75, 14.5, 10.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 16, 14, 1 ],
+                            "to": [ 1, 9, 15 ],
+                            "entityUVs": [ 0, 0, 14.5, 4.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 16, 8, 0 ],
+                            "to": [ 15, 12, 1 ],
+                            "entityUVs": [ 0, 0, 1.0, 1.25 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "type == '_right'",
+                    "elements": [
+                        {
+                            "from": [ 15, 10, 1 ],
+                            "to": [ 0, 0, 15 ],
+                            "entityUVs": [ 0, 4.75, 14.5, 10.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 15, 14, 1 ],
+                            "to": [ 0, 9, 15 ],
+                            "entityUVs": [ 0, 0, 14.5, 4.75 ],
+                            "texture": "'#texture'"
+                        },
+                        {
+                            "from": [ 1, 8, 0 ],
+                            "to": [ 0, 12, 1 ],
+                            "entityUVs": [ 0, 0, 1, 1.25 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,138 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_side" ],
+    "include": [ "json_base", "json_grass_block_side" ],
+    "network": {
+        "@texture@_overlay": {
+            "RSFILE_OVERLAY": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "outAlpha": {
+                        "type": "float"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_overlay"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "rsFilterEnable": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "RSUV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "RSUV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "RSUV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "RSUV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "RSUV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "RSUV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "RSUV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "RSUV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "RSUV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "RSUV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "RSUV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "RSUV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "RSUV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "RSUV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "RSUV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "RSUV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "RSUV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "RSUV.wrapV"
+                    }
+                }
+            },
+            "RSBIOME_MULT": {
+                "attributes": {
+                    "colorGain": {
+                        "connection": "RSFILE_OVERLAY.outColor"
+                    }
+                }
+            },
+            "RSOVERLAY_COMPOSITE": {
+                "type": "JSON:RedshiftColorLayer",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "base_color": {
+                        "type": "float3",
+                        "connection": "RSFILE.outColor"
+                    },
+                    "layer1_color": {
+                        "type": "float3",
+                        "connection": "RSBIOME_MULT.outColor"
+                    },
+                    "layer1_alpha": {
+                        "type": "float",
+                        "connection": "RSFILE_OVERLAY.outAlpha"
+                    }
+                }
+            },
+            "RSMAT": {
+                "attributes": {
+                    "diffuse_color": {
+                        "connection": "RSOVERLAY_COMPOSITE.outColor"
+                    }
+                }
+            }
+        }
+    }
+}

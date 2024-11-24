@@ -1,0 +1,89 @@
+{
+    "blocks": [
+        "minecraft:acacia_sign", "minecraft:bamboo_sign", "minecraft:birch_sign",
+        "minecraft:cherry_sign", "minecraft:crimson_sign", "minecraft:dark_oak_sign",
+        "minecraft:jungle_sign", "minecraft:mangrove_sign", "minecraft:oak_sign",
+        "minecraft:spruce_sign", "minecraft:warped_sign",
+
+        "minecraft:acacia_wall_sign", "minecraft:bamboo_wall_sign", "minecraft:birch_wall_sign",
+        "minecraft:cherry_wall_sign", "minecraft:crimson_wall_sign", "minecraft:dark_oak_wall_sign",
+        "minecraft:jungle_wall_sign", "minecraft:mangrove_wall_sign", "minecraft:oak_wall_sign",
+        "minecraft:spruce_wall_sign", "minecraft:warped_wall_sign"
+    ],
+    "defaultTexture": "minecraft:entity/signs/oak",
+    "handler": [
+        {
+            "variables": [
+                "type = thisBlock.name.substring(thisBlock.name.indexOf(':') + 1)",
+                "type = type.endsWith('_wall_sign') ? type.substring(0, type.length() - 10) : type.substring(0, type.length() - 5)",
+                "rotY = thisBlock.state.rotation != null ? (22.5 * thisBlock.state.rotation) : 0.0",
+                "isWall = false",
+                "scale = 16.0 / 24.0",
+                "offsetX = 8.0",
+                "offsetY = 0.0",
+                "offsetZ = 8.0"
+            ],
+            "textures": {
+                "texture": "'minecraft:entity/signs/' + type"
+            }
+        },
+        {
+            "condition": "thisBlock.name.endsWith('_wall_sign')",
+            "variables": [
+                "rotY = 0",
+                "rotY = thisBlock.state.facing == 'north' ? 180.0 : rotY",
+                "rotY = thisBlock.state.facing == 'east' ? 270.0 : rotY",
+                "rotY = thisBlock.state.facing == 'south' ? 0.0 : rotY",
+                "rotY = thisBlock.state.facing == 'west' ? 90.0 : rotY",
+                "isWall = true",
+                "offsetX = 8.0",
+                "offsetY = 8.333333",
+                "offsetZ = 1.0"
+            ]
+        },
+        {
+            "transform": {
+                "rotate": [ 0.0, "rotY", 0.0 ]
+            },
+            "children": [
+                {
+                    "elements": [
+                        {
+                            "from": [ "-12.0 * scale + offsetX", "(isWall ? -6.0 : 14.0) * scale + offsetY", "-1.0 * scale + offsetZ" ],
+                            "to": [ "12.0 * scale + offsetX", "(isWall ? 6.0 : 26.0) * scale + offsetY", "1.0 * scale + offsetZ" ],
+                            "entityUVs": [ 0, 0, 13, 7 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "!isWall",
+                    "elements": [
+                        {
+                            "from": [ "-1.0 * scale + offsetX", "0 * scale + offsetY", "-1.0 * scale + offsetZ" ],
+                            "to": [ "1.0 * scale + offsetX", "14.0 * scale + offsetY", "1.0 * scale + offsetZ" ],
+                            "entityUVs": [ 0, 7, 2, 15 ],
+                            "texture": "'#texture'"
+                        }
+                    ]
+                },
+                {
+                    "generators": [
+                        {
+                            "type": "signText",
+                            "args": {
+                                "state": "thisBlock.state",
+                                "textOffsetX": "offsetX",
+                                "textOffsetY": "(isWall ? 0.0 : 20.0) * scale + offsetY + 0.133",
+                                "textOffsetZ": "1.0 * scale + offsetZ + 0.25",
+                                "textOffsetZBack": "-1.0 * scale + offsetZ - 0.25",
+                                "textScale": "6.666 / 5.0",
+                                "lineDistance": "2.5 * scale"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

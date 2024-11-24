@@ -5,6 +5,20 @@
         "surface": "MAT.outputs:surface"
     },
     "network": {
+        "!@texture@": {
+            "MAT": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    },
+                    "inputs:diffuseColor": {
+                        "type": "color3f",
+                        "value": [1.0, 1.0, 1.0]
+                    }
+                }
+            }
+        },
         "@texture@": {
             "MAT": {
                 "type": "UsdPreviewSurface",
@@ -29,11 +43,11 @@
                         "value": "@texture@"
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
@@ -55,6 +69,64 @@
                 }
             }
         },
+        "@texture@.animated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
         "@texture@.a": {
             "MAT": {
                 "attributes": {
@@ -72,24 +144,22 @@
                 }
             }
         },
-        "@biomeColor@":{
-            "BIOME": {
-                "type": "UsdPrimvarReader_float3",
+        "@texture@.cutout": {
+            "MAT": {
                 "attributes": {
-                    "outputs:result": {
-                        "type": "float3"
-                    },
-                    "inputs:varname": {
-                        "type": "string",
-                        "value": "Cd"
+                    "inputs:opacityThreshold": {
+                        "type": "float",
+                        "value": 0.5
                     }
                 }
-            },
+            }
+        },
+        "@biomeColor@":{
             "FILE": {
                 "attributes": {
                     "inputs:scale": {
                         "type": "float4",
-                        "connection": "BIOME.outputs:result"
+                        "expression": "${biomeColor(type=grass,biome=plains)}"
                     }
                 }
             }

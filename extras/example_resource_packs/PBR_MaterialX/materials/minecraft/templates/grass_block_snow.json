@@ -1,0 +1,5 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_snow" ],
+    "include": [ "grass_block_snow" ]
+}

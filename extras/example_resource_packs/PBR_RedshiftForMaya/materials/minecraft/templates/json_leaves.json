@@ -1,0 +1,5 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/*_leaves"],
+    "include": [ "json_leaves" ]
+}

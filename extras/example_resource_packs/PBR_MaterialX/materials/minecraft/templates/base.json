@@ -1,0 +1,872 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "include": [ "base" ],
+    "network": {
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "inputs:specular": {
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "inputs:specular_roughness": {
+                        "type": "float",
+                        "value": 0.5
+                    }
+                }
+            }
+        },
+
+        "@texture@_normal": {
+            "MAT": {
+                "attributes": {
+                    "inputs:normal": {
+                        "type": "float3",
+                        "connection": "NORMAL_MAP_NORMAL.outputs:out"
+                    }
+                }
+            },
+            "FILE_NORMAL": {
+                "type": "ND_image_vector3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_normal"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            },
+            "NORMAL_NORMAL": {
+                "type": "ND_normal_vector3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    }
+                }
+            },
+            "POSITION_NORMAL":{
+                "type": "ND_position_vector3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    }
+                }
+            },
+            "TANGENT_NORMAL": {
+                "type": "MayaND_texcoordtangents_vector3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    },
+                    "inputs:position": {
+                        "type": "float3",
+                        "connection": "POSITION_NORMAL.outputs:out"
+                    },
+                    "inputs:normal": {
+                        "type": "float3",
+                        "connection": "NORMAL_NORMAL.outputs:out"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            },
+            "NORMAL_MAP_NORMAL": {
+                "type": "ND_normalmap",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    },
+                    "inputs:in": {
+                        "type": "float3",
+                        "connection": "FILE_NORMAL.outputs:out"
+                    },
+                    "inputs:normal": {
+                        "type": "float3",
+                        "connection": "NORMAL_NORMAL.outputs:out"
+                    },
+                    "inputs:tangent": {
+                        "type": "float3",
+                        "connection": "TANGENT_NORMAL.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_normal&&@texture@.animated": {
+            "UV_NORMAL_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_NORMAL.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "FILE_NORMAL": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_NORMAL_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_normal&&@texture@.interpolated": {
+            "UV_NORMAL_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_NORMAL.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_NORMAL_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_NORMAL.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_NORMAL": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_NORMAL_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_NORMAL2": {
+                "type": "ND_image_vector3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_normal"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_NORMAL_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_NORMAL": {
+                "type": "ND_mix_float3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float3"
+                    },
+                    "inputs:bg": {
+                        "type": "float3",
+                        "connection": "FILE_NORMAL.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "float3",
+                        "connection": "FILE_NORMAL2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "NORMAL_MAP_NORMAL": {
+                "attributes": {
+                    "inputs:in": {
+                        "type": "float3",
+                        "connection": "INTERPOLATE_NORMAL.outputs:out"
+                    }
+                }
+            }
+        },
+
+
+
+        "@texture@_emission": {
+            "MAT": {
+                "attributes": {
+                    "inputs:emission_color": {
+                        "type": "color3f",
+                        "connection": "FILE_EMISSION.outputs:out"
+                    },
+                    "inputs:emission": {
+                        "type": "float",
+                        "value": 1.0
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "type": "ND_image_color3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color3f"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_emission&&@texture@.animated": {
+            "UV_EMISSION_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_EMISSION.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_EMISSION_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_emission&&@texture@.interpolated": {
+            "UV_EMISSION_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_EMISSION.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_EMISSION_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_EMISSION.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_EMISSION_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_EMISSION2": {
+                "type": "ND_image_color3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color3f"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_EMISSION_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_EMISSION": {
+                "type": "ND_mix_color3",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "color3f"
+                    },
+                    "inputs:bg": {
+                        "type": "color3f",
+                        "connection": "FILE_EMISSION.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "color3f",
+                        "connection": "FILE_EMISSION2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:emission_color": {
+                        "type": "color3f",
+                        "connection": "INTERPOLATE_EMISSION.outputs:out"
+                    }
+                }
+            }
+        },
+
+
+
+        "@texture@_metalness": {
+            "MAT": {
+                "attributes": {
+                    "inputs:metalness": {
+                        "type": "float",
+                        "connection": "FILE_METALNESS.outputs:out"
+                    }
+                }
+            },
+            "FILE_METALNESS": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_metalness"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_metalness&&@texture@.animated": {
+            "UV_METALNESS_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_METALNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameI}"
+                    }
+                }
+            },
+            "FILE_METALNESS": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_METALNESS_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_metalness&&@texture@.interpolated": {
+            "UV_METALNESS_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_METALNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_METALNESS_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_METALNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_METALNESS": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_METALNESS_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_METALNESS2": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_metalness"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_METALNESS_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_METALNESS": {
+                "type": "ND_mix_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:bg": {
+                        "type": "float",
+                        "connection": "FILE_METALNESS.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "float",
+                        "connection": "FILE_METALNESS2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:metalness": {
+                        "type": "float",
+                        "connection": "INTERPOLATE_METALNESS.outputs:out"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_roughness": {
+            "MAT": {
+                "attributes": {
+                    "inputs:specular_roughness": {
+                        "type": "float",
+                        "connection": "FILE_ROUGHNESS.outputs:out"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_roughness"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_roughness&&@texture@.animated": {
+            "UV_ROUGHNESS_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_ROUGHNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameI}"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_ROUGHNESS_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_roughness&&@texture@.interpolated": {
+            "UV_ROUGHNESS_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_ROUGHNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_ROUGHNESS_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_ROUGHNESS.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_ROUGHNESS_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS2": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_roughness"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_ROUGHNESS_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_ROUGHNESS": {
+                "type": "ND_mix_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:bg": {
+                        "type": "float",
+                        "connection": "FILE_ROUGHNESS.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "float",
+                        "connection": "FILE_ROUGHNESS2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:specular_roughness": {
+                        "type": "float",
+                        "connection": "INTERPOLATE_ROUGHNESS.outputs:out"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_specular": {
+            "MAT": {
+                "attributes": {
+                    "inputs:specular": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR.outputs:out"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_specular"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_specular&&@texture@.animated": {
+            "UV_SPECULAR_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameI}"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_SPECULAR_ANIMATED.outputs:out"
+                    }
+                }
+            }
+        },
+        "@texture@_specular&&@texture@.interpolated": {
+            "UV_SPECULAR_ANIMATED": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId}"
+                    }
+                }
+            },
+            "UV_SPECULAR_ANIMATED2": {
+                "type": "ND_UsdTransform2d",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE_SPECULAR.inputs:texcoord}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameScale}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${@texture@.frameId(offset=1)}"
+                    }
+                }
+            },
+            "FILE_SPECULAR": {
+                "attributes": {
+                    "inputs:texcoord": {
+                        "connection": "UV_SPECULAR_ANIMATED.outputs:out"
+                    }
+                }
+            },
+            "FILE_SPECULAR2": {
+                "type": "ND_image_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:file": {
+                        "type": "asset",
+                        "value": "@texture@_specular"
+                    },
+                    "inputs:filtertype": {
+                        "type": "string",
+                        "value": "closest"
+                    },
+                    "inputs:texcoord": {
+                        "type": "float2",
+                        "connection": "UV_SPECULAR_ANIMATED2.outputs:out"
+                    }
+                }
+            },
+            "INTERPOLATE_SPECULAR": {
+                "type": "ND_mix_float",
+                "attributes": {
+                    "outputs:out": {
+                        "type": "float"
+                    },
+                    "inputs:bg": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR.outputs:out"
+                    },
+                    "inputs:fg": {
+                        "type": "float",
+                        "connection": "FILE_SPECULAR2.outputs:out"
+                    },
+                    "inputs:mix": {
+                        "type": "float",
+                        "expression": "${@texture@.interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "inputs:specular": {
+                        "type": "float",
+                        "connection": "INTERPOLATE_SPECULAR.outputs:out"
+                    }
+                }
+            }
+        }
+    }
+}

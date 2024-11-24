@@ -1,0 +1,17 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/water_still", "minecraft:block/water_flow"],
+    "include": [ "base" ],
+    "network": {
+        "@biomeColor@":{
+            "FILE": {
+                "attributes": {
+                    "inputs:scale": {
+                        "type": "float4",
+                        "expression": "${biomeColor(type=water,biome=plains)}"
+                    }
+                }
+            }
+        }
+    }
+}

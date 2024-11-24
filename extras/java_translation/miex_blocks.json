@@ -1,0 +1,45 @@
+[
+    {
+        "minDataVersion": 0,
+        "maxDataVersion": 2844,
+        "translations": {
+            "minecraft:sign": [
+                {
+                    "name": "minecraft:oak_sign"
+                }
+            ],
+            "minecraft:wall_sign": [
+                {
+                    "name": "minecraft:oak_wall_sign"
+                }
+            ],
+            "minecraft:grass_path": [
+                {
+                    "name": "minecraft:dirt_path"
+                }
+            ]
+        }
+    },
+    {
+        "minDataVersion": 0,
+        "maxDataVersion": 2680,
+        "translations": {
+            "minecraft:cauldron": [
+                {
+                    "name": "minecraft:water_cauldron"
+                }
+            ]
+        }
+    },
+    {
+        "minDataVersion": 0,
+        "maxDataVersion": 3692,
+        "translations": {
+            "minecraft:grass": [
+                {
+                    "name": "minecraft:short_grass"
+                }
+            ]
+        }
+    }
+]

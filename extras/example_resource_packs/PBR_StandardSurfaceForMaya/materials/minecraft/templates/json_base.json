@@ -1,0 +1,986 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "PLACEHOLDER.outputs:surface",
+        "json:surfaceShader": "MAT.outColor"
+    },
+    "include": [ "json_base" ],
+    "network": {
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "specular": {
+                        "type": "float",
+                        "value": 0.5
+                    },
+                    "specularRoughness": {
+                        "type": "float",
+                        "value": 0.5
+                    }
+                }
+            }
+        },
+        "@texture@_roughness": {
+            "MAT": {
+                "attributes": {
+                    "specularRoughness": {
+                        "type": "float",
+                        "connection": "FILE_ROUGHNESS.outColorR"
+                    }
+                }
+            },
+            "FILE_ROUGHNESS": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float"
+                    },
+                    "outColorR": {
+                        "type": "float"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_roughness"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV.wrapV"
+                    }
+                }
+            }
+        },
+        "@texture@_roughness&&@texture@.interpolated": {
+            "FILE_ROUGHNESS2": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_roughness"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV2.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV2.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV2.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV2.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV2.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV2.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV2.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV2.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV2.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV2.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV2.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV2.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV2.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV2.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV2.wrapV"
+                    }
+                }
+            },
+            "INTERPOLATE_ROUGHNESS": {
+                "type": "JSON:blendColors",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "FILE_ROUGHNESS.outColor"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "FILE_ROUGHNESS2.outColor"
+                    },
+                    "blender": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "specularRoughness": {
+                        "connection": "INTERPOLATE_ROUGHNESS.outputR"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_metalness": {
+            "MAT": {
+                "attributes": {
+                    "metalness": {
+                        "type": "float",
+                        "connection": "FILE_METALNESS.outColorR"
+                    }
+                }
+            },
+            "FILE_METALNESS": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float"
+                    },
+                    "outColorR": {
+                        "type": "float"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_metalness"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV.wrapV"
+                    }
+                }
+            }
+        },
+        "@texture@_metalness&&@texture@.interpolated": {
+            "FILE_METALNESS2": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_metalness"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV2.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV2.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV2.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV2.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV2.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV2.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV2.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV2.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV2.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV2.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV2.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV2.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV2.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV2.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV2.wrapV"
+                    }
+                }
+            },
+            "INTERPOLATE_METALNESS": {
+                "type": "JSON:blendColors",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "FILE_METALNESS.outColor"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "FILE_METALNESS2.outColor"
+                    },
+                    "blender": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "metalness": {
+                        "connection": "INTERPOLATE_METALNESS.outputR"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_emission": {
+            "MAT": {
+                "attributes": {
+                    "emission": {
+                        "type": "float",
+                        "value": 1.0
+                    },
+                    "emissionColor": {
+                        "type": "float3",
+                        "connection": "FILE_EMISSION.outColor"
+                    }
+                }
+            },
+            "FILE_EMISSION": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float"
+                    },
+                    "outColorR": {
+                        "type": "float"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV.wrapV"
+                    }
+                }
+            }
+        },
+        "@texture@_emission&&@texture@.interpolated": {
+            "FILE_EMISSION2": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_emission"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV2.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV2.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV2.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV2.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV2.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV2.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV2.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV2.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV2.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV2.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV2.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV2.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV2.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV2.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV2.wrapV"
+                    }
+                }
+            },
+            "INTERPOLATE_EMISSION": {
+                "type": "JSON:blendColors",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "FILE_EMISSION.outColor"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "FILE_EMISSION2.outColor"
+                    },
+                    "blender": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "emissionColor": {
+                        "connection": "INTERPOLATE_EMISSION.output"
+                    }
+                }
+            }
+        },
+
+
+        "@texture@_normal": {
+            "MAT": {
+                "attributes": {
+                    "normalCamera": {
+                        "type": "float3",
+                        "connection": "BUMP_NORMAL.outNormal"
+                    }
+                }
+            },
+            "BUMP_NORMAL": {
+                "type": "JSON:bump2d",
+                "attributes": {
+                    "bumpInterp": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "bumpValue": {
+                        "type": "float",
+                        "connection": "FILE_NORMAL.outAlpha"
+                    }
+                }
+            },
+            "FILE_NORMAL": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outAlpha": {
+                        "type": "float"
+                    },
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_normal"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV.wrapV"
+                    }
+                }
+            }
+        },
+        "@texture@_normal&&@texture@.interpolated": {
+            "FILE_NORMAL2": {
+                "type": "JSON:file",
+                "attributes": {
+                    "outColor": {
+                        "type": "float3"
+                    },
+                    "fileTextureName": {
+                        "type": "asset",
+                        "value": "@texture@_normal"
+                    },
+                    "filterType": {
+                        "type": "int",
+                        "value": 0
+                    },
+                    "ignoreColorSpaceFileRules": {
+                        "type": "int",
+                        "value": 1
+                    },
+                    "colorSpace": {
+                        "type": "string",
+                        "value": "raw"
+                    },
+                    "coverage": {
+                        "type": "float2",
+                        "connection": "UV2.coverage"
+                    },
+                    "mirrorU": {
+                        "type": "int",
+                        "connection": "UV2.mirrorU"
+                    },
+                    "mirrorV": {
+                        "type": "int",
+                        "connection": "UV2.mirrorV"
+                    },
+                    "noiseUV": {
+                        "type": "float2",
+                        "connection": "UV2.noiseUV"
+                    },
+                    "offset": {
+                        "type": "float2",
+                        "connection": "UV2.offset"
+                    },
+                    "repeatUV": {
+                        "type": "float2",
+                        "connection": "UV2.repeatUV"
+                    },
+                    "rotateFrame": {
+                        "type": "float",
+                        "connection": "UV2.rotateFrame"
+                    },
+                    "rotateUV": {
+                        "type": "float",
+                        "connection": "UV2.rotateUV"
+                    },
+                    "stagger": {
+                        "type": "int",
+                        "connection": "UV2.stagger"
+                    },
+                    "translateFrame": {
+                        "type": "float2",
+                        "connection": "UV2.translateFrame"
+                    },
+                    "uvCoord": {
+                        "type": "float2",
+                        "connection": "UV2.outUV"
+                    },
+                    "uvFilterSize": {
+                        "type": "float2",
+                        "connection": "UV2.outUvFilterSize"
+                    },
+                    "vertexCameraOne": {
+                        "type": "float3",
+                        "connection": "UV2.vertexCameraOne"
+                    },
+                    "vertexUvOne": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvOne"
+                    },
+                    "vertexUvTwo": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvTwo"
+                    },
+                    "vertexUvThree": {
+                        "type": "float2",
+                        "connection": "UV2.vertexUvThree"
+                    },
+                    "wrapU": {
+                        "type": "int",
+                        "connection": "UV2.wrapU"
+                    },
+                    "wrapV": {
+                        "type": "int",
+                        "connection": "UV2.wrapV"
+                    }
+                }
+            },
+            "INTERPOLATE_NORMAL": {
+                "type": "JSON:blendColors",
+                "attributes": {
+                    "output": {
+                        "type": "float3"
+                    },
+                    "color2": {
+                        "type": "float3",
+                        "connection": "FILE_NORMAL.outColor"
+                    },
+                    "color1": {
+                        "type": "float3",
+                        "connection": "FILE_NORMAL2.outColor"
+                    },
+                    "blender": {
+                        "type": "float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "BUMP_NORMAL": {
+                "type": "JSON:bump2d",
+                "attributes": {
+                    "bumpValue": {
+                        "type": "float",
+                        "connection": "INTERPOLATE_NORMAL.outputR"
+                    }
+                }
+            }
+        }
+    }
+}

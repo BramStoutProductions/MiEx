@@ -1,0 +1,64 @@
+{
+    "priority": 1,
+    "selection": [ "minecraft:block/grass_block_side" ],
+    "include": [ "json_base", "json_grass_block_side" ],
+    "network": {
+        "@texture@_overlay": {
+            "FILE_OVERLAY": {
+                "type": "JSON:MaterialExpressionTextureSample",
+                "attributes": {
+                    "texture": {
+                        "type": "asset",
+                        "value": "@texture@_overlay"
+                    },
+                    "lod_group": {
+                        "type": "str",
+                        "value": "TEXTUREGROUP_PIXELS2D"
+                    },
+                    "out": {
+                        "type": "Color"
+                    },
+                    "A": {
+                        "type": "Float"
+                    }
+                }
+            },
+            "BIOMEMULT": {
+                "attributes": {
+                    "A": {
+                        "type": "Color",
+                        "connection": "FILE_OVERLAY.out"
+                    }
+                }
+            },
+            "OVERLAY_COMPOSITE": {
+                "type": "JSON:MaterialExpressionLinearInterpolate",
+                "attributes": {
+                    "out": {
+                        "type": "Color"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "FILE.out"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "BIOMEMULT.out"
+                    },
+                    "Alpha": {
+                        "type": "Float",
+                        "connection": "FILE_OVERLAY.A"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "MP_BASE_COLOR": {
+                        "type": "Color",
+                        "connection": "OVERLAY_COMPOSITE.out"
+                    }
+                }
+            }
+        }
+    }
+}

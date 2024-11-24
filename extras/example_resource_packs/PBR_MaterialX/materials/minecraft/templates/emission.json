@@ -1,0 +1,25 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/amethyst*", "minecraft:block/campfire_fire", "minecraft:block/fire_0",
+                    "minecraft:block/fire_1", "minecraft:block/glowstone", "minecraft:block/lava_flow",
+                    "minecraft:block/lava_still", "minecraft:block/magma", "minecraft:block/nether_portal",
+                    "minecraft:block/sea_lantern", "minecraft:block/shroomlight", "minecraft:block/soul_campfire_fire",
+                    "minecraft:block/soul_fire_0", "minecraft:block/soul_fire_1"],
+    "include": [ "base" ],
+    "network": {
+        "@texture@": {
+            "MAT": {
+                "attributes": {
+                    "inputs:base": {
+                        "type": "float",
+                        "value": 0.0
+                    },
+                    "inputs:base_color": {
+                        "type": "color3f",
+                        "value": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        }
+    }
+}

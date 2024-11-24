@@ -1,0 +1,25 @@
+{
+    "priority": 2,
+    "selection": [ "minecraft:block/water_still", "minecraft:block/water_flow" ],
+    "include": [ "json_base", "json_water" ],
+    "network": {
+        "@texture@": {
+            "RSMAT": {
+                "attributes": {
+                    "refl_weight": {
+                        "type": "float3",
+                        "value": 1.0
+                    },
+                    "refl_roughness": {
+                        "type": "float3",
+                        "value": 0.1
+                    },
+                    "refl_ior": {
+                        "type": "float3",
+                        "value": 1.33
+                    }
+                }
+            }
+        }
+    }
+}
