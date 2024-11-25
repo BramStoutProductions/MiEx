@@ -69,7 +69,6 @@ class SetupMaterials:
         self.mat.use_backface_culling = True
         if self.hasTransparency:
             self.mat.blend_method = 'BLEND'
-            self.mat.shadow_method = 'HASHED'
 
     def import_node(self,name,data):
         node = self.mat.node_tree.nodes.new(data['type'])
