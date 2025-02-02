@@ -1,0 +1,112 @@
+{
+    "blocks": [
+        "skeleton_skull", "wither_skeleton_skull", "zombie_head", 
+        "player_head", "creeper_head",
+        "skeleton_wall_skull", "wither_skeleton_wall_skull", "zombie_wall_head", 
+        "player_wall_head", "creeper_wall_head"
+    ],
+    "defaultTexture": "minecraft:entity/player/player",
+    "handler": {
+        "variables": [
+            "isWall = thisBlock.name.contains('_wall_')",
+            "rotY = 0",
+            "rotY = thisBlock.state.facing == 'north' ? 180.0 : rotY",
+            "rotY = thisBlock.state.facing == 'east' ? 270.0 : rotY",
+            "rotY = thisBlock.state.facing == 'south' ? 0.0 : rotY",
+            "rotY = thisBlock.state.facing == 'west' ? 90.0 : rotY",
+            "rotY = thisBlock.state.rotation != null ? (22.5 * thisBlock.state.rotation + 180.0) : rotY",
+            "rotY = rotY >= 360.0 ? (rotY - 360.0) : rotY",
+            "texture = 'minecraft:entity/player/player'",
+            "texture = thisBlock.name.contains('wither_skeleton') ? 'minecraft:entity/skeleton/wither_skeleton' : texture",
+            "texture = thisBlock.name.contains('skeleton') ? 'minecraft:entity/skeleton/skeleton' : texture",
+            "texture = thisBlock.name.contains('zombie') ? 'minecraft:entity/zombie/zombie' : texture",
+            "texture = thisBlock.name.contains('creeper') ? 'minecraft:entity/creeper/creeper' : texture",
+            "texture = thisBlock.name.contains('player') ? (thisBlock.state.ExtraType == null ? ( thisBlock.state.SkullOwner != null ? ( thisBlock.state.SkullOwner.Name != null ? ( 'minecraft:entity/player/' + thisBlock.state.SkullOwner.Name) : texture ) : texture ) : ( 'minecraft:entity/player/' + thisBlock.state.ExtraType)) : texture",
+            "isSquareTexture = thisBlock.name.contains('player') || thisBlock.name.contains('zombie')"
+        ],
+        "textures": {
+            "texture": "'minecraft:entity/bed/' + color"
+        },
+        "transform": {
+            "rotate": [ 0.0, "rotY", 0.0 ]
+        },
+        "children": [
+            {
+                "condition": "!isSquareTexture",
+                "children": [
+                    {
+                        "condition": "isWall",
+                        "elements": [
+                            {
+                                "from": [ 4, 4, 0 ],
+                                "to": [ 12, 12, 8 ],
+                                "entityUVs": [ 0, 0, 8, 8 ],
+                                "texture": "'#texture'"
+                            }
+                        ]
+                    },
+                    {
+                        "condition": "!isWall",
+                        "elements": [
+                            {
+                                "from": [ 4, 0, 4 ],
+                                "to": [ 12, 8, 12 ],
+                                "entityUVs": [ 0, 0, 8, 8 ],
+                                "texture": "'#texture'"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "condition": "isSquareTexture",
+                "children": [
+                    {
+                        "condition": "isWall",
+                        "elements": [
+                            {
+                                "from": [ 4, 4, 0 ],
+                                "to": [ 12, 12, 8 ],
+                                "entityUVs": [ 0, 0, 8, 4 ],
+                                "texture": "'#texture'"
+                            }
+                        ],
+                        "children": {
+                            "condition": "thisBlock.name.contains('player')",
+                            "elements": [
+                                {
+                                    "from": [ 3.75, 3.75, -0.25 ],
+                                    "to": [ 12.25, 12.25, 8.25 ],
+                                    "entityUVs": [ 8, 0, 16, 4 ],
+                                    "texture": "'#texture'"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "condition": "!isWall",
+                        "elements": [
+                            {
+                                "from": [ 4, 0, 4 ],
+                                "to": [ 12, 8, 12 ],
+                                "entityUVs": [ 0, 0, 8, 4 ],
+                                "texture": "'#texture'"
+                            }
+                        ],
+                        "children": {
+                            "condition": "thisBlock.name.contains('player')",
+                            "elements": [
+                                {
+                                    "from": [ 3.75, -0.25, 3.75 ],
+                                    "to": [ 12.25, 8.25, 12.25 ],
+                                    "entityUVs": [ 8, 0, 16, 4 ],
+                                    "texture": "'#texture'"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

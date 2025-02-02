@@ -33,35 +33,53 @@ package nl.bramstout.mcworldexporter.export;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
-import nl.bramstout.mcworldexporter.world.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
 
 public class BlendedBiome {
 	
 	private Color grassColor;
 	private Color foliageColor;
 	private Color waterColor;
-	private float weight;
+	private float grassWeight;
+	private float foliageWeight;
+	private float waterWeight;
 	
 	public BlendedBiome() {
 		this.grassColor = new Color(0);
 		this.foliageColor = new Color(0);
 		this.waterColor = new Color(0);
-		this.weight = 0.0f;
+		this.grassWeight = 0.0f;
+		this.foliageWeight = 0.0f;
+		this.waterWeight = 0.0f;
 	}
 	
 	public void clear() {
 		grassColor.set(0f, 0f, 0f);
 		foliageColor.set(0f, 0f, 0f);
 		waterColor.set(0f, 0f, 0f);
-		weight = 0.0f;
+		grassWeight = 0.0f;
+		foliageWeight = 0.0f;
+		waterWeight = 0.0f;
 	}
 	
 	public void normalise() {
-		if(weight > 0.0f) {
-			float invWeight = 1.0f / weight;
+		if(grassWeight > 0.0f) {
+			float invWeight = 1.0f / grassWeight;
 			grassColor.mult(invWeight);
+		}else {
+			grassColor.set(1f, 1f, 1f);
+		}
+		if(foliageWeight > 0.0f) {
+			float invWeight = 1.0f / foliageWeight;
 			foliageColor.mult(invWeight);
+		}else {
+			foliageColor.set(1f, 1f, 1f);
+		}
+		if(waterWeight > 0.0f) {
+			float invWeight = 1.0f / waterWeight;
 			waterColor.mult(invWeight);
+		}else {
+			waterColor.set(1f, 1f, 1f);
 		}
 	}
 	
@@ -78,10 +96,18 @@ public class BlendedBiome {
 	}
 	
 	public void addBiome(Biome biome, float weight) {
-		grassColor.addWeighted(biome.getGrassColour(), weight);
-		foliageColor.addWeighted(biome.getFoliageColour(), weight);
-		waterColor.addWeighted(biome.getWaterColour(), weight);
-		this.weight += weight;
+		if(biome.getGrassColour() != null) {
+			grassColor.addWeighted(biome.getGrassColour(), weight);
+			grassWeight += weight;
+		}
+		if(biome.getFoliageColour() != null) {
+			foliageColor.addWeighted(biome.getFoliageColour(), weight);
+			foliageWeight += weight;
+		}
+		if(biome.getWaterColour() != null) {
+			waterColor.addWeighted(biome.getWaterColour(), weight);
+			waterWeight += weight;
+		}
 	}
 	
 	public Color getBiomeColor(BakedBlockState block) {

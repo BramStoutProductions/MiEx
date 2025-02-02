@@ -21,6 +21,9 @@ import nl.bramstout.mcworldexporter.materials.Materials.MaterialTemplate;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingAttribute;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingNode;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.MCMetaJavaEdition;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class MaterialXMaterialWriter extends MaterialWriter {
 
@@ -337,7 +340,9 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 			}
 		}
 				
-		MCMeta animData = new MCMeta(texture);
+		MCMeta animData = ResourcePacks.getMCMeta(texture);
+		if(animData == null)
+			animData = new MCMetaJavaEdition(null, null);
 		
 		// Because time samples aren't being looped,
 		// we need to specify time frames for a very large range,
@@ -400,8 +405,10 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 	private String getAssetPathForTexture(String texture) {
 		try {
 			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
-			if(!file.exists())
+			if(file == null || !file.exists()) {
+				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
+			}
 			String fullPath = file.getCanonicalPath().replace('\\', '/');
 			String resourcePathDir = new File(FileUtil.getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 			if(!resourcePathDir.endsWith("/"))

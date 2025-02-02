@@ -32,31 +32,36 @@
 package nl.bramstout.mcworldexporter.world;
 
 import nl.bramstout.mcworldexporter.Config;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 
 public class Block {
 	
 	private String name;
-	private TAG_Compound properties;
+	private NbtTagCompound properties;
 	private int id;
+	private int dataVersion;
 	private boolean waterlogged;
 	private boolean liquid;
+	private boolean isLiquid;
 	
-	public Block(String name, TAG_Compound properties, int id) {
+	public Block(String name, NbtTagCompound properties, int id, int dataVersion) {
 		this.name = name;
 		this.properties = properties;
+		this.properties.acquireOwnership();
 		this.id = id;
+		this.dataVersion = dataVersion;
+		this.isLiquid = Config.liquid.contains(name);
 		waterlogged = false;
-		TAG_String waterloggedTag = (TAG_String) properties.getElement("waterlogged");
+		NbtTagString waterloggedTag = (NbtTagString) properties.get("waterlogged");
 		if(waterloggedTag != null)
-			waterlogged = waterloggedTag.value.equalsIgnoreCase("true");
+			waterlogged = waterloggedTag.getData().equalsIgnoreCase("true");
 		else if(Config.waterlogged.contains(name))
 			waterlogged = true;
 		if(waterlogged) {
 			liquid = true;
 		}else {
-			liquid = Config.liquid.contains(name);
+			liquid = isLiquid;
 		}
 	}
 	
@@ -64,7 +69,7 @@ public class Block {
 		return name;
 	}
 	
-	public TAG_Compound getProperties() {
+	public NbtTagCompound getProperties() {
 		return properties;
 	}
 	
@@ -76,7 +81,15 @@ public class Block {
 		return waterlogged;
 	}
 	
+	public boolean isLiquid() {
+		return isLiquid;
+	}
+	
 	public boolean hasLiquid() {
 		return liquid;
+	}
+	
+	public int getDataVersion() {
+		return dataVersion;
 	}
 }

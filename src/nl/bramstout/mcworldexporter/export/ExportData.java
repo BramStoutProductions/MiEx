@@ -7,7 +7,10 @@ import java.util.List;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.Pair;
+import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class ExportData {
 	
@@ -27,17 +30,32 @@ public class ExportData {
 	public int lodDepth;
 	public int lodYDetail;
 	public List<String> fgChunks;
-	public List<String> resourcePacks;
+	public List<Pair<Integer, Integer>> disabledChunks;
+	public List<ResourcePack> resourcePacks;
 	public boolean runOptimiser;
 	public boolean removeCaves;
 	public boolean fillInCaves;
 	public boolean onlyIndividualBlocks;
 	
+	public int entityStartFrame;
+	public int entityEndFrame;
+	public int entityFPS;
+	public int entityRandomSeed;
+	public int entitySpawnDensity;
+	public int entitySunLightLevel;
+	public List<String> entitySpawnRules;
+	public List<String> entityExport;
+	public List<String> entitySimulate;
+	
 	public ExportData() {
 		world = "";
 		dimension = "";
 		fgChunks = new ArrayList<String>();
-		resourcePacks = new ArrayList<String>();
+		disabledChunks = new ArrayList<Pair<Integer, Integer>>();
+		resourcePacks = new ArrayList<ResourcePack>();
+		entitySpawnRules = new ArrayList<String>();
+		entityExport = new ArrayList<String>();
+		entitySimulate = new ArrayList<String>();
 	}
 	
 	public static ExportData fromApp() {
@@ -59,11 +77,24 @@ public class ExportData {
 		data.lodDepth = MCWorldExporter.getApp().getExportBounds().getLodDepth();
 		data.lodYDetail = MCWorldExporter.getApp().getExportBounds().getLodYDetail();
 		data.fgChunks = new ArrayList<String>(MCWorldExporter.getApp().getFGChunks());
-		data.resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
+		data.disabledChunks.clear();
+		for(Pair<Integer, Integer> chunk : MCWorldExporter.getApp().getExportBounds().getDisabledChunks())
+			data.disabledChunks.add(new Pair<Integer, Integer>(chunk.getKey(), chunk.getValue()));
+		data.resourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 		data.runOptimiser = Config.runOptimiser;
 		data.removeCaves = Config.removeCaves;
 		data.fillInCaves = Config.fillInCaves;
 		data.onlyIndividualBlocks = Config.onlyIndividualBlocks;
+		
+		data.entityStartFrame = MCWorldExporter.getApp().getUI().getEntityDialog().getStartFrame();
+		data.entityEndFrame = MCWorldExporter.getApp().getUI().getEntityDialog().getEndFrame();
+		data.entityFPS = MCWorldExporter.getApp().getUI().getEntityDialog().getFPS();
+		data.entityRandomSeed = MCWorldExporter.getApp().getUI().getEntityDialog().getRandomSeed();
+		data.entitySpawnDensity = MCWorldExporter.getApp().getUI().getEntityDialog().getSpawnDensityInput();
+		data.entitySunLightLevel = MCWorldExporter.getApp().getUI().getEntityDialog().getSunLightLevel();
+		data.entitySpawnRules = MCWorldExporter.getApp().getUI().getEntityDialog().getSpawnRules().getSelection();
+		data.entityExport = MCWorldExporter.getApp().getUI().getEntityDialog().getExportEntities().getSelection();
+		data.entitySimulate = MCWorldExporter.getApp().getUI().getEntityDialog().getSimulateEntities().getSelection();
 		
 		return data;
 	}
@@ -94,14 +125,41 @@ public class ExportData {
 		data.fgChunks = new ArrayList<String>();
 		for(int i = 0; i < numFGChunks; ++i)
 			data.fgChunks.add(dis.readUTF());
+		int numDisabledChunks = dis.readInt();
+		data.disabledChunks = new ArrayList<Pair<Integer, Integer>>();
+		for(int i = 0; i < numDisabledChunks; ++i) {
+			int chunkX = dis.readInt();
+			int chunkZ = dis.readInt();
+			data.disabledChunks.add(new Pair<Integer, Integer>(chunkX, chunkZ));
+		}
 		int numResourcePacks = dis.readInt();
-		data.resourcePacks = new ArrayList<String>();
-		for(int i = 0; i < numResourcePacks; ++i)
-			data.resourcePacks.add(dis.readUTF());
+		data.resourcePacks = new ArrayList<ResourcePack>();
+		for(int i = 0; i < numResourcePacks; ++i) {
+			String uuid = dis.readUTF();
+			ResourcePack pack = ResourcePacks.getResourcePack(uuid);
+			if(pack != null)
+				data.resourcePacks.add(pack);
+		}
 		data.runOptimiser = dis.readBoolean();
 		data.removeCaves = dis.readBoolean();
 		data.fillInCaves = dis.readBoolean();
 		data.onlyIndividualBlocks = dis.readBoolean();
+		
+		data.entityStartFrame = dis.readInt();
+		data.entityEndFrame = dis.readInt();
+		data.entityFPS = dis.readInt();
+		data.entityRandomSeed = dis.readInt();
+		data.entitySpawnDensity = dis.readInt();
+		data.entitySunLightLevel = dis.readInt();
+		int numEntitySpawnRules = dis.readInt();
+		for(int i = 0; i < numEntitySpawnRules; ++i)
+			data.entitySpawnRules.add(dis.readUTF());
+		int numEntityExport = dis.readInt();
+		for(int i = 0; i < numEntityExport; ++i)
+			data.entityExport.add(dis.readUTF());
+		int numEntitySimulate = dis.readInt();
+		for(int i = 0; i < numEntitySimulate; ++i)
+			data.entitySimulate.add(dis.readUTF());
 		
 		return data;
 	}
@@ -126,26 +184,50 @@ public class ExportData {
 		dos.writeInt(fgChunks.size());
 		for(String val : fgChunks)
 			dos.writeUTF(val);
+		dos.writeInt(disabledChunks.size());
+		for(Pair<Integer, Integer> chunk : disabledChunks) {
+			dos.writeInt(chunk.getKey().intValue());
+			dos.writeInt(chunk.getValue().intValue());
+		}
 		dos.writeInt(resourcePacks.size());
-		for(String val : resourcePacks)
-			dos.writeUTF(val);
+		for(ResourcePack val : resourcePacks)
+			dos.writeUTF(val.getUUID());
 		dos.writeBoolean(runOptimiser);
 		dos.writeBoolean(removeCaves);
 		dos.writeBoolean(fillInCaves);
 		dos.writeBoolean(onlyIndividualBlocks);
+		
+		dos.writeInt(entityStartFrame);
+		dos.writeInt(entityEndFrame);
+		dos.writeInt(entityFPS);
+		dos.writeInt(entityRandomSeed);
+		dos.writeInt(entitySpawnDensity);
+		dos.writeInt(entitySunLightLevel);
+		dos.writeInt(entitySpawnRules.size());
+		for(String str : entitySpawnRules)
+			dos.writeUTF(str);
+		dos.writeInt(entityExport.size());
+		for(String str : entityExport)
+			dos.writeUTF(str);
+		dos.writeInt(entitySimulate.size());
+		for(String str : entitySimulate)
+			dos.writeUTF(str);
 	}
 	
 	public void apply() {
 		if(!(new File(world)).exists())
 			return;
+		//ResourcePack.setActiveResourcePacks(resourcePacks);
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+		List<String> resourcePackUUIDS = new ArrayList<String>();
+		for(ResourcePack pack : resourcePacks)
+			resourcePackUUIDS.add(pack.getUUID());
+		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(resourcePackUUIDS);
+		
+		BackgroundThread.waitUntilDoneWithBackgroundTasks();
+		
 		MCWorldExporter.getApp().setWorld(new File(world));
 		MCWorldExporter.getApp().getWorld().loadDimension(dimension);
-		//ResourcePack.setActiveResourcePacks(resourcePacks);
-		MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
-		for(String defaultPack : ResourcePack.getActiveResourcePacks())
-			MCWorldExporter.getApp().getUI().getResourcePackManager().disableResourcePack(defaultPack);;
-		for(int i = resourcePacks.size() - 1; i >= 0; --i)
-			MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(resourcePacks.get(i));
 		
 		Config.chunkSize = chunkSize;
 		Config.runOptimiser = runOptimiser;
@@ -165,8 +247,23 @@ public class ExportData {
 			MCWorldExporter.getApp().getExportBounds().setLodYDetail(lodYDetail);
 		}
 		MCWorldExporter.getApp().setFGChunks(fgChunks);
+		MCWorldExporter.getApp().getExportBounds().setDisabledChunks(disabledChunks);
 		
 		MCWorldExporter.getApp().getUI().getViewer().teleport((exportMinX + exportMaxX)/2, (exportMinZ + exportMaxZ) / 2);
+		
+		BackgroundThread.waitUntilDoneWithBackgroundTasks();
+		
+		MCWorldExporter.getApp().getUI().getEntityDialog().setStartFrame(entityStartFrame);
+		MCWorldExporter.getApp().getUI().getEntityDialog().setEndFrame(entityEndFrame);
+		MCWorldExporter.getApp().getUI().getEntityDialog().setFPS(entityFPS);
+		MCWorldExporter.getApp().getUI().getEntityDialog().setRandomSeed(entityRandomSeed);
+		MCWorldExporter.getApp().getUI().getEntityDialog().setSpawnDensity(entitySpawnDensity);
+		MCWorldExporter.getApp().getUI().getEntityDialog().setSunLightLevel(entitySunLightLevel);
+		MCWorldExporter.getApp().getUI().getEntityDialog().noDefaultSelection = true;
+		MCWorldExporter.getApp().getUI().getEntityDialog().load();
+		MCWorldExporter.getApp().getUI().getEntityDialog().getSpawnRules().setSelection(entitySpawnRules);
+		MCWorldExporter.getApp().getUI().getEntityDialog().getExportEntities().setSelection(entityExport);
+		MCWorldExporter.getApp().getUI().getEntityDialog().getSimulateEntities().setSelection(entitySimulate);
 	}
 	
 }

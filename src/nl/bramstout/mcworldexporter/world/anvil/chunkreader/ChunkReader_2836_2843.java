@@ -1,0 +1,220 @@
+package nl.bramstout.mcworldexporter.world.anvil.chunkreader;
+
+import java.util.Arrays;
+
+import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
+import nl.bramstout.mcworldexporter.nbt.NbtTagList;
+import nl.bramstout.mcworldexporter.nbt.NbtTagLongArray;
+import nl.bramstout.mcworldexporter.nbt.NbtTagString;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
+import nl.bramstout.mcworldexporter.translation.BlockTranslation.BlockTranslatorManager;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
+import nl.bramstout.mcworldexporter.world.Block;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.Chunk;
+
+/**
+ * Chunks from 21w39a (1.18) to 21w43a (1.18)
+ */
+public class ChunkReader_2836_2843 extends ChunkReader{
+	
+	@Override
+	public void readChunk(Chunk chunk, NbtTagCompound rootTag, int dataVersion) {
+		NbtTagCompound levelTag = (NbtTagCompound) rootTag.get("Level");
+		
+		String status = "full";
+		NbtTagString statusTag = (NbtTagString) levelTag.get("Status");
+		if(statusTag != null)
+			status = statusTag.getData();
+		if (!status.contains("full")) {
+			chunk._setBlocks(new int[1][]);
+			chunk._setBiomes(new int[1][]);
+			return;
+		}
+		
+		Reference<char[]> charBuffer = new Reference<char[]>();
+		BlockTranslatorManager blockTranslatorManager = TranslationRegistry.BLOCK_JAVA.getTranslator(dataVersion);
+
+		NbtTagList sections = (NbtTagList) levelTag.get("Sections");
+		int minSectionY = Integer.MAX_VALUE;
+		int maxSectionY = Integer.MIN_VALUE;
+		NbtTagCompound section = null;
+		for (NbtTag tag : sections.getData()) {
+			section = (NbtTagCompound) tag;
+			minSectionY = Math.min(minSectionY, ((NbtTagByte) section.get("Y")).getData());
+			maxSectionY = Math.max(maxSectionY, ((NbtTagByte) section.get("Y")).getData());
+		}
+		if(minSectionY == Integer.MAX_VALUE || maxSectionY == Integer.MIN_VALUE) {
+			return;
+		}
+		
+		chunk._setChunkSectionOffset(minSectionY);
+
+		chunk._setBlocks(new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]);
+		chunk._setBiomes(new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]);
+
+		int sectionY;
+		NbtTagCompound blockStates = null;
+		NbtTagCompound biomesTag = null;
+		NbtTagList palette = null;
+		int[] paletteMap = null;
+		String blockName = "";
+		NbtTagCompound blockProperties = null;
+		int i = 0;
+		NbtTagLongArray sectionData;
+		int[] sectionBlocks = null;
+		int[] sectionBiomes = null;
+		int bitsPerId = 0;
+		int idsPerLong = 0;
+		int longIndex = 0;
+		int idIndex = 0;
+		long paletteIndex = 0;
+
+		for (NbtTag tag : sections.getData()) {
+			section = (NbtTagCompound) tag;
+			sectionY = ((NbtTagByte) section.get("Y")).getData();
+			blockStates = (NbtTagCompound) section.get("block_states");
+			
+			biomesTag = (NbtTagCompound) section.get("biomes");
+			if(blockStates != null){
+				palette = (NbtTagList) blockStates.get("palette");
+				if(palette == null)
+					continue;
+				if (paletteMap == null || palette.getSize() > paletteMap.length)
+					paletteMap = new int[palette.getSize()];
+				i = 0;
+				for (NbtTag block : palette.getData()) {
+					blockName = ((NbtTagString) ((NbtTagCompound) block).get("Name")).getData();
+					if(blockName.equals("cave_air") || blockName.equals("minecraft:cave_air") || 
+							blockName.equals("void_air") || blockName.equals("minecraft:void_air"))
+						blockName = "minecraft:air";
+					blockProperties = (NbtTagCompound) ((NbtTagCompound) block).get("Properties");
+					boolean freeBlockProperties = false;
+					if(blockProperties == null) {
+						blockProperties = NbtTagCompound.newInstance("");
+						freeBlockProperties = true;
+					}
+					blockName = blockTranslatorManager.map(blockName, blockProperties);
+					paletteMap[i] = BlockRegistry.getIdForName(blockName, blockProperties, dataVersion, charBuffer);
+					if(freeBlockProperties)
+						blockProperties.free();
+					++i;
+				}
+				
+				// If this section is entirely air, let's keep the section array still null for efficiency
+				if(palette.getSize() == 1 && paletteMap[0] == 0)
+					continue;
+
+				sectionData = (NbtTagLongArray) blockStates.get("data");
+				sectionBlocks = new int[16*16*16];
+				chunk._getBlocks()[sectionY - chunk._getChunkSectionOffset()] = sectionBlocks;
+
+				if (sectionData == null) {
+					Arrays.fill(sectionBlocks, paletteMap[0]);
+				} else {
+					bitsPerId = Math.max(32 - Integer.numberOfLeadingZeros(palette.getSize() - 1), 4);
+					idsPerLong = 64 / bitsPerId;
+					longIndex = 0;
+					idIndex = 0;
+					paletteIndex = 0;
+					for (i = 0; i < 16 * 16 * 16; ++i) {
+						longIndex = i / idsPerLong;
+						idIndex = i % idsPerLong;
+						paletteIndex = (sectionData.getData()[longIndex] >>> (idIndex * bitsPerId)) & (-1l >>> (64 - bitsPerId));
+						sectionBlocks[i] = paletteMap[(int) paletteIndex];
+					}
+				}
+			}
+			
+			if(biomesTag != null){
+				palette = (NbtTagList) biomesTag.get("palette");
+				if (paletteMap == null || palette.getSize() > paletteMap.length)
+					paletteMap = new int[palette.getSize()];
+				i = 0;
+				for (NbtTag block : palette.getData()) {
+					blockName = ((NbtTagString) block).getData();
+					paletteMap[i] = BiomeRegistry.getIdForName(blockName);
+					++i;
+				}
+
+				sectionData = (NbtTagLongArray) biomesTag.get("data");
+				sectionBiomes = new int[4*4*4];
+				chunk._getBiomes()[sectionY - chunk._getChunkSectionOffset()] = sectionBiomes;
+
+				if (sectionData == null) {
+					Arrays.fill(sectionBiomes, paletteMap[0]);
+				} else {
+					bitsPerId = Math.max(32 - Integer.numberOfLeadingZeros(palette.getSize() - 1), 1);
+					idsPerLong = 64 / bitsPerId;
+					longIndex = 0;
+					idIndex = 0;
+					paletteIndex = 0;
+					for (i = 0; i < 4 * 4 * 4; ++i) {
+						longIndex = i / idsPerLong;
+						idIndex = i % idsPerLong;
+						paletteIndex = (sectionData.getData()[longIndex] >>> (idIndex * bitsPerId)) & (-1l >>> (64 - bitsPerId));
+						sectionBiomes[i] = paletteMap[(int) paletteIndex];
+					}
+				}
+			}
+		}
+		
+		NbtTagList blockEntities = (NbtTagList) levelTag.get("TileEntities");
+		if(blockEntities != null) {
+			NbtTagCompound blockEntity = null;
+			String blockEntityName = "";
+			int blockEntityX = 0;
+			int blockEntityY = 0;
+			int blockEntityZ = 0;
+			int blockId = 0;
+			int blockEntitySectionY = 0;
+			int currentBlockId = 0;
+			Block currentBlock = null;
+			for(NbtTag tag : blockEntities.getData()) {
+				blockEntity = (NbtTagCompound) tag;
+				NbtTagByte keepPackedTag = (NbtTagByte)blockEntity.get("keepPacked");
+				if(keepPackedTag == null || keepPackedTag.getData() > 0)
+					continue;
+				blockEntityName = ((NbtTagString) blockEntity.get("id")).getData();
+				blockEntityX = ((NbtTagInt) blockEntity.get("x")).getData();
+				blockEntityY = ((NbtTagInt) blockEntity.get("y")).getData();
+				blockEntityZ = ((NbtTagInt) blockEntity.get("z")).getData();
+				blockEntityX -= chunk.getChunkX() * 16;
+				blockEntityZ -= chunk.getChunkZ() * 16;
+				// Make sure that the block entity is actually in the chunk.
+				if(blockEntityX < 0 || blockEntityX > 15 || blockEntityZ < 0 || blockEntityZ > 15)
+					continue;
+				
+				currentBlockId = chunk.getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ);
+				currentBlock = BlockRegistry.getBlock(currentBlockId);
+				blockEntity.addAllElements(currentBlock.getProperties());
+				if(currentBlockId > 0)
+					blockEntityName = currentBlock.getName();
+				
+				blockEntityName = blockTranslatorManager.map(blockEntityName, blockEntity);
+				
+				blockId = BlockRegistry.getIdForName(blockEntityName, blockEntity, dataVersion, charBuffer);
+				blockEntitySectionY = (blockEntityY < 0 ? (blockEntityY - 15) : blockEntityY) / 16;
+				blockEntityY -= blockEntitySectionY * 16;
+				
+				blockEntitySectionY -= chunk._getChunkSectionOffset();
+				if(blockEntitySectionY >= chunk._getBlocks().length)
+					continue;
+				if(chunk._getBlocks()[blockEntitySectionY] == null)
+					chunk._getBlocks()[blockEntitySectionY] = new int[16*16*16];
+				
+				chunk._getBlocks()[blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
+			}
+		}
+	}
+
+	@Override
+	public boolean supportDataVersion(int dataVersion) {
+		return dataVersion >= 2836 && dataVersion <= 2843;
+	}
+	
+}

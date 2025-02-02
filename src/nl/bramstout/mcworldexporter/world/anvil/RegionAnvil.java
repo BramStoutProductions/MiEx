@@ -57,6 +57,12 @@ public class RegionAnvil extends Region{
 	}
 
 	@Override
+	public void pause() {
+		unloadEntities();
+		unload();
+	}
+	
+	@Override
 	public void load() throws Exception {
 		synchronized(mutex) {
 			if(chunks != null)
@@ -113,18 +119,40 @@ public class RegionAnvil extends Region{
 
 	@Override
 	public void unload() {
+		if(chunks != null) {
+			for(Chunk chunk : chunks) {
+				if(chunk == null)
+					continue;
+				chunk.unload();
+			}
+		}
 		chunks = null;
 		try {
-			if(regionFileChannel != null)
+			if(regionFileChannel != null && regionFileChannel.isOpen())
 				regionFileChannel.close();
-			if(entityFileChannel != null)
+			if(entityFileChannel != null && entityFileChannel.isOpen())
 				entityFileChannel.close();
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
+		regionFileChannel = null;
+		entityFileChannel = null;
+	}
+	
+	@Override
+	public void unloadEntities() {
+		if(chunks != null) {
+			for(Chunk chunk : chunks) {
+				if(chunk == null)
+					continue;
+				chunk.unloadEntities();
+			}
+		}
 	}
 	
 	public FileChannel getRegionChannel() throws IOException{
+		if(world.isPaused())
+			return null;
 		synchronized(mutex) {
 			if(regionFileChannel == null || !regionFileChannel.isOpen())
 				regionFileChannel = FileChannel.open(regionFile.toPath(), StandardOpenOption.READ);
@@ -133,15 +161,23 @@ public class RegionAnvil extends Region{
 	}
 	
 	public FileChannel getEntityChannel() throws IOException{
+		if(world.isPaused())
+			return null;
 		synchronized(mutex) {
-			if(entityFileChannel == null || !entityFileChannel.isOpen())
-				entityFileChannel = FileChannel.open(new File(regionFile.getAbsolutePath().replace("\\", "/").replace("/region/", "/entities/")).toPath(), StandardOpenOption.READ);
+			if(entityFileChannel == null || !entityFileChannel.isOpen()) {
+				File entitiesFile = new File(regionFile.getAbsolutePath().replace("\\", "/").replace("/region/", "/entities/"));
+				if(!entitiesFile.exists())
+					return null;
+				entityFileChannel = FileChannel.open(entitiesFile.toPath(), StandardOpenOption.READ);
+			}
 			return entityFileChannel;
 		}
 	}
 
 	@Override
 	public Chunk getChunk(int worldChunkX, int worldChunkZ) throws Exception {
+		if(world.isPaused())
+			return null;
 		if(chunks == null)
 			load();
 		worldChunkX -= this.x * 32;

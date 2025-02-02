@@ -31,9 +31,7 @@
 
 package nl.bramstout.mcworldexporter;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,13 +40,19 @@ import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
 
+import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.BedrockMaterials;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
+import nl.bramstout.mcworldexporter.world.anvil.chunkreader.BiomeIds;
+import nl.bramstout.mcworldexporter.world.anvil.chunkreader.BlockIds;
+import nl.bramstout.mcworldexporter.world.bedrock.BedrockBiomes;
 
 public class Config {
 	
@@ -67,6 +71,7 @@ public class Config {
 	public static List<String> foliageColormapBlocks = new ArrayList<String>();
 	public static List<String> waterColormapBlocks = new ArrayList<String>();
 	public static List<String> forceBiomeColor = new ArrayList<String>();
+	public static List<String> forceNoBiomeColor = new ArrayList<String>();
 	public static List<String> doubleSided = new ArrayList<String>();
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
@@ -76,20 +81,30 @@ public class Config {
 	public static boolean removeCaves = false;
 	public static boolean fillInCaves = false;
 	public static boolean onlyIndividualBlocks = false;
-	public static boolean runOptimiser = true;
-	public static boolean runRaytracingOptimiser = true;
-	public static boolean runFaceOptimiser = true;
-	public static float fgFullnessThreshold = 0.25f;
-	public static float bgFullnessThreshold = 0.05f;
-	public static int chunkSize = 4;
-	public static int defaultChunkSize = 4;
-	public static int biomeBlendRadius = 4;
-	public static int removeCavesSearchRadius = 4;
-	public static int removeCavesSearchEnergy = 5;
-	public static float animatedTexturesFrameTimeMultiplier = 1.0f;
-	public static float blockSizeInUnits = 16.0f;
-	public static int atlasMaxResolution = 4096;
-	public static int atlasMaxTileResolution = 256;
+	public static boolean runOptimiser;
+	public static boolean runRaytracingOptimiser;
+	public static boolean runFaceOptimiser;
+	public static float fgFullnessThreshold;
+	public static float bgFullnessThreshold;
+	public static int chunkSize;
+	public static int defaultChunkSize;
+	public static int biomeBlendRadius;
+	public static int removeCavesSearchRadius;
+	public static int removeCavesSearchEnergy;
+	public static int removeCavesSurfaceRadius;
+	public static int removeCavesAirCost;
+	public static int removeCavesCaveBlockCost;
+	public static float animatedTexturesFrameTimeMultiplier;
+	public static float blockSizeInUnits;
+	public static int atlasMaxResolution;
+	public static int atlasMaxTileResolution;
+	public static boolean exportVertexColorAsDisplayColor;
+	public static boolean exportDisplayColor;
+	public static float vertexColorGamma;
+	public static boolean calculateAmbientOcclusion;
+	public static boolean exportAmbientOcclusionAsDisplayOpacity;
+	public static boolean calculateCornerUVs;
+	public static String renderGamut;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -191,22 +206,19 @@ public class Config {
 		Tags.load();
 		Tints.load();
 		ConnectedTextures.load();
+		TranslationRegistry.load();
+		BedrockBiomes.load();
+		BedrockMaterials.load();
+		BiomeIds.load();
+		BlockIds.load();
 		
-		liquid.clear();
-		waterlogged.clear();
-		transparentOcclusion.clear();
-		leavesOcclusion.clear();
-		detailedOcclusion.clear();
-		noOcclusion.clear();
-		bannedMaterials.clear();
-		individualBlocks.clear();
-		caveBlocks.clear();
-		randomOffset.clear();
-		randomYOffset.clear();
-		grassColormapBlocks.clear();
-		foliageColormapBlocks.clear();
-		waterColormapBlocks.clear();
-		forceBiomeColor.clear();
+		boolean updateChunkSize = defaultChunkSize == chunkSize;
+		int oldChunkSize = chunkSize;
+		
+		ConfigDefaults.loadDefaults();
+		
+		if(!updateChunkSize)
+			chunkSize = oldChunkSize;
 		// We only tint faces with biome colours if they have tintindex specified
 		// in the block model file, but in MiEx we don't use the grass_block_side_overlay
 		// as a seprate mesh like Minecraft does. Instead, we composite it over the texture
@@ -217,35 +229,23 @@ public class Config {
 		// Most people don't delete their miex_config.json when updating which would really
 		// break things. Therefore, we add it in here just to avoid giving people headaches.
 		forceBiomeColor.add("minecraft:block/grass_block_side");
-		doubleSided.clear();
-		randomAnimationXZOffset.clear();
-		randomAnimationYOffset.clear();
-		lodNoUVScale.clear();
-		lodPriority.clear();
 		
-		fgFullnessThreshold = 0.25f;
-		bgFullnessThreshold = 0.05f;
-		boolean updateChunkSize = defaultChunkSize == chunkSize;
-		if(updateChunkSize)
-			chunkSize = 4;
-		biomeBlendRadius = 4;
-		removeCavesSearchRadius = 4;
-		removeCavesSearchEnergy = 5;
-		animatedTexturesFrameTimeMultiplier = 1.0f;
-		blockSizeInUnits = 16.0f;
-		atlasMaxResolution = 4096;
-		atlasMaxTileResolution = 256;
 		
 		Color.GAMUT = ColorGamut.ACEScg;
+		for(ColorGamut gamut : ColorGamut.values()) {
+			if(gamut.name().equalsIgnoreCase(renderGamut)) {
+				Color.GAMUT = gamut;
+				break;
+			}
+		}
 		
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
 			try {
-				String configName = FileUtil.getResourcePackDir() + resourcePacks.get(i) + "/miex_config.json";
-				if(!new File(configName).exists())
+				File configFile = new File(resourcePacks.get(i).getFolder(), "miex_config.json");
+				if(!configFile.exists())
 					continue;
-				JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(configName))))).getAsJsonObject();
+				JsonObject data = Json.read(configFile).getAsJsonObject();
 				
 				parseList("liquid", data, liquid);
 				
@@ -276,6 +276,8 @@ public class Config {
 				parseList("waterColormapBlocks", data, waterColormapBlocks);
 				
 				parseList("forceBiomeColor", data, forceBiomeColor);
+				
+				parseList("forceNoBiomeColor", data, forceNoBiomeColor);
 				
 				parseList("doubleSided", data, doubleSided);
 				
@@ -316,21 +318,30 @@ public class Config {
 				if(data.has("removeCavesSearchEnergy"))
 					removeCavesSearchEnergy = data.get("removeCavesSearchEnergy").getAsInt();
 				
+				if(data.has("removeCavesSurfaceRadius"))
+					removeCavesSurfaceRadius = data.get("removeCavesSurfaceRadius").getAsInt();
+				
+				if(data.has("removeCavesAirCost"))
+					removeCavesAirCost = data.get("removeCavesAirCost").getAsInt();
+				
+				if(data.has("removeCavesCaveBlockCost"))
+					removeCavesCaveBlockCost = data.get("removeCavesCaveBlockCost").getAsInt();
+				
 				if(data.has("animatedTexturesFrameTimeMultiplier"))
 					animatedTexturesFrameTimeMultiplier = data.get("animatedTexturesFrameTimeMultiplier").getAsFloat();
 				
 				if(data.has("renderGamut")) {
-					String gamutName = data.get("renderGamut").getAsString();
+					renderGamut = data.get("renderGamut").getAsString();
 					boolean foundGamut = false;
 					for(ColorGamut gamut : ColorGamut.values()) {
-						if(gamut.name().equalsIgnoreCase(gamutName)) {
+						if(gamut.name().equalsIgnoreCase(renderGamut)) {
 							Color.GAMUT = gamut;
 							foundGamut = true;
 							break;
 						}
 					}
 					if(foundGamut == false)
-						System.out.println("Found invalid render gamut in config: " + gamutName);
+						System.out.println("Found invalid render gamut in config: " + renderGamut);
 				}
 				
 				if(data.has("blockSizeInUnits"))
@@ -341,10 +352,31 @@ public class Config {
 				
 				if(data.has("atlasMaxTileResolution"))
 					atlasMaxTileResolution = data.get("atlasMaxTileResolution").getAsInt();
+				
+				if(data.has("exportVertexColorAsDisplayColor"))
+					exportVertexColorAsDisplayColor = data.get("exportVertexColorAsDisplayColor").getAsBoolean();
+				
+				if(data.has("exportDisplayColor"))
+					exportDisplayColor = data.get("exportDisplayColor").getAsBoolean();
+				
+				if(data.has("vertexColorGamma"))
+					vertexColorGamma = data.get("vertexColorGamma").getAsFloat();
+				
+				if(data.has("calculateAmbientOcclusion"))
+					calculateAmbientOcclusion = data.get("calculateAmbientOcclusion").getAsBoolean();
+				
+				if(data.has("exportAmbientOcclusionAsDisplayOpacity"))
+					exportAmbientOcclusionAsDisplayOpacity = data.get("exportAmbientOcclusionAsDisplayOpacity").getAsBoolean();
+				
+				if(data.has("calculateCornerUVs"))
+					calculateCornerUVs = data.get("calculateCornerUVs").getAsBoolean();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
 		}
+		
+		transparentOcclusion.addAll(ResourcePackBedrockEdition.transparentBlocks);
+		BuiltInBlockStateRegistry.load();
 	}
 	
 }

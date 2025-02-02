@@ -1,8 +1,7 @@
 package nl.bramstout.mcworldexporter.resourcepack;
 
-import java.io.BufferedReader;
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,21 +10,13 @@ import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.FileUtil;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Byte;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_Double;
-import nl.bramstout.mcworldexporter.nbt.TAG_Float;
-import nl.bramstout.mcworldexporter.nbt.TAG_Int;
-import nl.bramstout.mcworldexporter.nbt.TAG_Long;
-import nl.bramstout.mcworldexporter.nbt.TAG_Short;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.image.ImageReader;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public class Tints {
 	
@@ -79,7 +70,7 @@ public class Tints {
 			return new Color(1f,1f,1f);
 		}
 		
-		public Color getTint(TAG_Compound properties) {
+		public Color getTint(NbtTagCompound properties) {
 			if(stateTints == null || properties == null)
 				return baseTint;
 			
@@ -91,7 +82,7 @@ public class Tints {
 			return baseTint;
 		}
 		
-		private boolean useTint(TAG_Compound properties, List<Map<String, String>> checks) {
+		private boolean useTint(NbtTagCompound properties, List<Map<String, String>> checks) {
 			if(checks.isEmpty())
 				return true;
 			
@@ -103,44 +94,13 @@ public class Tints {
 			return false;
 		}
 		
-		private boolean doCheck(TAG_Compound properties, Map<String, String> check) {
-			for(NBT_Tag tag : properties.elements) {
+		private boolean doCheck(NbtTagCompound properties, Map<String, String> check) {
+			int numItems = properties.getSize();
+			for(int i = 0; i < numItems; ++i) {
+				NbtTag tag = properties.get(i);
 				String value = check.get(tag.getName());
-				String propValue = null;
 				if(value != null) {
-					switch(tag.ID()) {
-					case 1:
-						// Byte
-						propValue = Byte.toString(((TAG_Byte)tag).value);
-						break;
-					case 2:
-						// Short
-						propValue = Short.toString(((TAG_Short)tag).value);
-						break;
-					case 3:
-						// Int
-						propValue = Integer.toString(((TAG_Int)tag).value);
-						break;
-					case 4:
-						// Long
-						propValue = Long.toString(((TAG_Long)tag).value);
-						break;
-					case 5:
-						// Float
-						propValue = Float.toString(((TAG_Float)tag).value);
-						break;
-					case 6:
-						// Double
-						propValue = Double.toString(((TAG_Double)tag).value);
-						break;
-					case 8:
-						// String
-						propValue = ((TAG_String)tag).value;
-						break;
-					default:
-						break;
-					}
-					
+					String propValue = tag.asString();
 					if(propValue != null) {
 						if(!value.equals(propValue)) {
 							if(!((value.equals("false") && propValue.equals("0")) || (value.equals("true") && propValue.equals("1"))))
@@ -155,17 +115,19 @@ public class Tints {
 	}
 	
 	private static Map<String, Tint> tintRegistry = new HashMap<String, Tint>();
+	private static BufferedImage grassColorMap = null;
+	private static BufferedImage foliageColorMap = null;
+	private static Object mutex = new Object();
 	
 	public static void load() {
 		tintRegistry.clear();
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
-			File tintsFile = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/miex_block_tints.json");
+			File tintsFile = new File(resourcePacks.get(i).getFolder(), "miex_block_tints.json");
 			if(!tintsFile.exists())
 				continue;
 			try {
-				JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(tintsFile)))).getAsJsonObject();
+				JsonObject data = Json.read(tintsFile).getAsJsonObject();
 				for(Entry<String, JsonElement> entry : data.entrySet()) {
 					String blockName = entry.getKey();
 					if(blockName.startsWith("#")) {
@@ -183,10 +145,49 @@ public class Tints {
 				ex.printStackTrace();
 			}
 		}
+		
+		synchronized(mutex) {
+			grassColorMap = null;
+			foliageColorMap = null;
+		}
 	}
 	
 	public static Tint getTint(String name) {
 		return tintRegistry.getOrDefault(name, null);
+	}
+	
+	public static BufferedImage getGrassColorMap() {
+		if (grassColorMap != null)
+			return grassColorMap;
+		synchronized(mutex) {
+			if (grassColorMap != null)
+				return grassColorMap;
+			try {
+				File mapFile = ResourcePacks.getTexture("minecraft:colormap/grass");
+				if(mapFile != null && mapFile.exists())
+					grassColorMap = ImageReader.readImage(mapFile);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			return grassColorMap;
+		}
+	}
+	
+	public static BufferedImage getFoliageColorMap() {
+		if (foliageColorMap != null)
+			return foliageColorMap;
+		synchronized(mutex) {
+			if (foliageColorMap != null)
+				return foliageColorMap;
+			try {
+				File mapFile = ResourcePacks.getTexture("minecraft:colormap/foliage");
+				if(mapFile != null && mapFile.exists())
+					foliageColorMap = ImageReader.readImage(mapFile);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			return foliageColorMap;
+		}
 	}
 	
 }

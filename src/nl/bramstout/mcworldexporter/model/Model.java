@@ -39,212 +39,147 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import nl.bramstout.mcworldexporter.math.Matrix;
+import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
 public class Model {
 
 	private String name;
 	protected int id;
+	protected Model parentModel;
 	private int weight;
 	private long occludes;
 	protected String extraData;
 	protected boolean doubleSided;
+	protected String defaultTexture;
+	protected Vector3f itemFrameTranslation;
+	protected Vector3f itemFrameRotation;
+	protected Vector3f itemFrameScale;
 
 	protected Map<String, String> textures;
 	protected List<ModelFace> faces;
+	protected List<ModelBone> bones;
+	protected List<ModelLocator> locators;
 
 	public Model(Model other) {
 		this.name = other.name;
 		this.id = other.id;
-		this.textures = other.textures;
+		this.parentModel = other.parentModel;
+		this.textures = new HashMap<String, String>(other.textures);
 		this.faces = new ArrayList<ModelFace>();
 		this.weight = other.weight;
 		this.occludes = other.occludes;
 		this.extraData = other.extraData;
-		for (ModelFace face : other.faces) {
-			this.faces.add(new ModelFace(face));
+		this.defaultTexture = other.defaultTexture;
+		this.itemFrameTranslation = new Vector3f(other.itemFrameTranslation);
+		this.itemFrameRotation = new Vector3f(other.itemFrameRotation);
+		this.itemFrameScale = new Vector3f(other.itemFrameScale);
+		for (int i = 0; i < other.faces.size(); ++i) {
+			this.faces.add(new ModelFace(other.faces.get(i)));
+		}
+		this.bones = new ArrayList<ModelBone>();
+		for(int i = 0; i < other.bones.size(); ++i) {
+			this.bones.add(new ModelBone(other.bones.get(i)));
+		}
+		// Make sure to update the parent references.
+		ModelBone bone = null;
+		for(int i = 0; i < this.bones.size(); ++i) {
+			bone = this.bones.get(i);
+			if(bone.getParent() != null) {
+				String parentName = bone.getParent().getName();
+				ModelBone parent = getBone(parentName);
+				bone.setParent(parent);
+			}
+		}
+		this.locators = new ArrayList<ModelLocator>();
+		for(int i = 0; i < other.locators.size(); ++i)
+			this.locators.add(new ModelLocator(other.locators.get(i)));
+		// Make sure to update the bone references
+		ModelLocator locator = null;
+		for(int i = 0; i < this.locators.size(); ++i) {
+			locator = this.locators.get(i);
+			if(locator.bone != null) {
+				bone = getBone(locator.bone.getName());
+				locator.bone = bone;
+			}
 		}
 	}
 
-	public Model(String name, JsonObject data, boolean doubleSided) {
+	public Model(String name, ModelHandler handler, boolean doubleSided) {
 		this.name = name;
+		this.parentModel = null;
 		this.textures = new HashMap<String, String>();
 		this.faces = new ArrayList<ModelFace>();
+		this.bones = new ArrayList<ModelBone>();
+		this.locators = new ArrayList<ModelLocator>();
 		this.weight = 1;
 		this.occludes = 0;
 		this.extraData = "";
 		this.doubleSided = doubleSided;
-		if (data == null)
-			return;
+		this.defaultTexture = null;
+		this.itemFrameTranslation = new Vector3f(0f, 0f, 0f);
+		this.itemFrameRotation = new Vector3f(0f, 0f, 0f);
+		this.itemFrameScale = new Vector3f(0.25f, 0.25f, 0.25f);
 
-		if (data.has("parent")) {
-			String parentName = data.get("parent").getAsString();
-			int parentModelId = ModelRegistry.getIdForName(parentName, doubleSided);
-			Model parentModel = ModelRegistry.getModel(parentModelId);
-			if (parentModel != null) {
-				this.extraData = parentModel.extraData;
-				textures.putAll(parentModel.textures);
-				for (ModelFace face : parentModel.faces) {
-					this.faces.add(face);
-					this.occludes |= face.getOccludes();
-				}
-			}
-		}
+		this.id = ModelRegistry.getNextId(this);
 
-		this.id = ModelRegistry.getNextId();
-
-		if (data.has("textures")) {
-			for (Entry<String, JsonElement> element : data.get("textures").getAsJsonObject().entrySet()) {
-				String texName = element.getValue().getAsString();
-				if (!texName.contains(":") && !texName.startsWith("#"))
-					texName = "minecraft:" + texName;
-				textures.put(element.getKey(), texName);
-			}
-		}
-
-		if (data.has("elements")) {
-			this.faces = new ArrayList<ModelFace>();
-			this.occludes = 0;
-			for (JsonElement elementTmp : data.get("elements").getAsJsonArray().asList()) {
-				try {
-
-					JsonObject element = elementTmp.getAsJsonObject();
-					JsonArray from = element.get("from").getAsJsonArray();
-					JsonArray to = element.get("to").getAsJsonArray();
-
-					/*float minX = Math.min(from.get(0).getAsFloat(), to.get(0).getAsFloat());
-					float minY = Math.min(from.get(1).getAsFloat(), to.get(1).getAsFloat());
-					float minZ = Math.min(from.get(2).getAsFloat(), to.get(2).getAsFloat());
-					float maxX = Math.max(from.get(0).getAsFloat(), to.get(0).getAsFloat());
-					float maxY = Math.max(from.get(1).getAsFloat(), to.get(1).getAsFloat());
-					float maxZ = Math.max(from.get(2).getAsFloat(), to.get(2).getAsFloat());*/
-					float minX = from.get(0).getAsFloat();
-					float minY = from.get(1).getAsFloat();
-					float minZ = from.get(2).getAsFloat();
-					float maxX = to.get(0).getAsFloat();
-					float maxY = to.get(1).getAsFloat();
-					float maxZ = to.get(2).getAsFloat();
-
-					boolean flatX = (maxX - minX) < 0.01f;
-					boolean flatY = (maxY - minY) < 0.01f;
-					boolean flatZ = (maxZ - minZ) < 0.01f;
-					if(!doubleSided) {
-						flatX = false;
-						flatY = false;
-						flatZ = false;
-					}
-					boolean deleteSideX = minX > 8.0f;
-					boolean deleteSideY = minY > 8.0f;
-					boolean deleteSideZ = minZ > 8.0f;
-
-					if ((flatX && flatY) || (flatX && flatZ) || (flatY && flatZ))
-						continue;
-
-					JsonObject rotateData = null;
-					if (element.has("rotation"))
-						rotateData = element.get("rotation").getAsJsonObject();
-
-					if (element.has("faces")) {
-						JsonObject faceObj = element.get("faces").getAsJsonObject();
-						if (!(faceObj.has("west") && faceObj.has("east")))
-							flatX = false;
-						if (!(faceObj.has("down") && faceObj.has("up")))
-							flatY = false;
-						if (!(faceObj.has("north") && faceObj.has("south")))
-							flatZ = false;
-
-						for (Entry<String, JsonElement> face : faceObj.entrySet()) {
-							Direction dir = Direction.getDirection(face.getKey());
-
-							if (dir == Direction.EAST) {
-								if (flatX && !deleteSideX)
-									continue;
-							} else if (dir == Direction.WEST) {
-								if (flatX && deleteSideX)
-									continue;
-							} else if (dir == Direction.UP) {
-								if (flatY && !deleteSideY)
-									continue;
-							} else if (dir == Direction.DOWN) {
-								if (flatY && deleteSideY)
-									continue;
-							} else if (dir == Direction.SOUTH) {
-								if (flatZ && !deleteSideZ)
-									continue;
-							} else if (dir == Direction.NORTH) {
-								if (flatZ && deleteSideZ)
-									continue;
-							}
-
-							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
-									face.getValue().getAsJsonObject(), doubleSided);
-							if (modelFace.isValid()) {
-								modelFace.rotate(rotateData);
-								this.occludes |= modelFace.getOccludes();
-								faces.add(modelFace);
-							}
-						}
-					} else {
-						for (Direction dir : Direction.CACHED_VALUES) {
-							if (dir == Direction.EAST) {
-								if (flatX && deleteSideX)
-									continue;
-							} else if (dir == Direction.WEST) {
-								if (flatX && !deleteSideX)
-									continue;
-							} else if (dir == Direction.UP) {
-								if (flatY && deleteSideY)
-									continue;
-							} else if (dir == Direction.DOWN) {
-								if (flatY && !deleteSideY)
-									continue;
-							} else if (dir == Direction.SOUTH) {
-								if (flatZ && deleteSideZ)
-									continue;
-							} else if (dir == Direction.NORTH) {
-								if (flatZ && !deleteSideZ)
-									continue;
-							}
-
-							JsonObject faceData = null;
-							if (textures.keySet().size() > 0) {
-								faceData = new JsonObject();
-								faceData.addProperty("texture", (String) (textures.keySet().toArray()[0]));
-							}
-							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
-									faceData, doubleSided);
-							if (modelFace.isValid()) {
-								modelFace.rotate(rotateData);
-								this.occludes |= modelFace.getOccludes();
-								faces.add(modelFace);
-							}
-						}
-					}
-
-				} catch (Exception ex) {
-					ex.printStackTrace();
-				}
-			}
-		}
+		if(handler != null)
+			handler.getGeometry(this);
+		
+		occludes = 0;
+		for(int i = 0; i < faces.size(); ++i)
+			occludes |= faces.get(i).getOccludes();
 
 	}
 	
+	/**
+	 * Some built in models change based on settings
+	 * specified by higher level models (like ModelItemGenerated).
+	 * To properly handle it, this function gets called.
+	 * Normally, it does nothing, but in the event that it's
+	 * important, we can call it.
+	 * @param topLevelModel
+	 * @return
+	 */
+	public Model postConstruct(Model topLevelModel) {
+		if(parentModel != null) {
+			Model parentPostConstruct = parentModel.postConstruct(topLevelModel);
+			if(parentPostConstruct != parentModel)
+				return parentPostConstruct;
+		}
+		return this;
+	}
+	
 	public String getDefaultTexture() {
+		if(defaultTexture != null)
+			return defaultTexture;
 		if(textures.size() == 0)
-			return "";
-		String key = (String) textures.keySet().iterator().next();
-		return getTexture(key);
+			defaultTexture = "";
+		else if(faces.size() == 0) {
+			String key = (String) textures.keySet().iterator().next();
+			defaultTexture = getTexture(key);
+		}else {
+			ModelFace face = faces.get(0);
+			for(ModelFace face2 : faces) {
+				if(face2.getDirection() == Direction.UP) {
+					face = face2;
+					break;
+				}
+			}
+			defaultTexture = getTexture(face.getTexture());
+		}
+		return defaultTexture;
 	}
 
 	public String getTexture(String name) {
-		if (name.startsWith("#"))
-			name = name.substring(1);
 		String path = textures.get(name);
 		if (path == null)
-			return "";
+			return textures.getOrDefault("*", "");
 		if (path.startsWith("#"))
-			return getTexture(path.substring(1));
+			return getTexture(path);
 		return path;
 	}
 
@@ -260,6 +195,32 @@ public class Model {
 		return faces;
 	}
 	
+	public List<ModelBone> getBones(){
+		return bones;
+	}
+	
+	public ModelBone getBone(String name) {
+		for(ModelBone bone : bones)
+			if(bone.getName().equalsIgnoreCase(name))
+				return bone;
+		return null;
+	}
+	
+	public List<ModelLocator> getLocators(){
+		return locators;
+	}
+	
+	public ModelLocator getLocator(String name) {
+		for(ModelLocator locator : locators)
+			if(locator.getName().equalsIgnoreCase(name))
+				return locator;
+		return null;
+	}
+	
+	public Map<String, String> getTextures(){
+		return textures;
+	}
+	
 	public void setExtraData(String extraData) {
 		this.extraData = extraData;
 	}
@@ -267,7 +228,73 @@ public class Model {
 	public String getExtraData() {
 		return extraData;
 	}
+	
+	public Vector3f getItemFrameTranslation() {
+		return itemFrameTranslation;
+	}
+	
+	public Vector3f getItemFrameRotation() {
+		return itemFrameRotation;
+	}
+	
+	public Vector3f getItemFrameScale() {
+		return itemFrameScale;
+	}
 
+	public float[] getBoundingBox() {
+		float[] res = new float[] { 0f, 0f, 0f, 0f, 0f, 0f};
+		for(ModelFace face : faces) {
+			for(int i = 0; i < 12; i += 3) {
+				res[0] = Math.min(res[0], face.getPoints()[i]);
+				res[1] = Math.min(res[1], face.getPoints()[i + 1]);
+				res[2] = Math.min(res[2], face.getPoints()[i + 2]);
+				
+				res[3] = Math.max(res[3], face.getPoints()[i]);
+				res[4] = Math.max(res[4], face.getPoints()[i + 1]);
+				res[5] = Math.max(res[5], face.getPoints()[i + 2]);
+			}
+		}
+		return res;
+	}
+	
+	public void setItemFrameTransform(Vector3f translation, Vector3f rotation, Vector3f scale) {
+		this.itemFrameTranslation = translation;
+		this.itemFrameRotation = rotation;
+		this.itemFrameScale = scale;
+	}
+	
+	/**
+	 * Applies the transformation set on the bones
+	 */
+	public void applyBones() {
+		this.occludes = 0;
+		for(ModelBone bone : bones) {
+			Matrix transformation = bone.getMatrix();
+			for(Integer faceId : bone.faceIds) {
+				int faceIdI = faceId.intValue();
+				if(faceIdI < 0 || faceIdI >= faces.size())
+					continue;
+				faces.get(faceIdI).transform(transformation);
+			}
+		}
+		for(ModelFace face : faces)
+			this.occludes |= face.getOccludes();
+	}
+	
+	public void applyItemFrameTransformation() {
+		scale(itemFrameScale.x, itemFrameScale.y, itemFrameScale.z);
+		translate(itemFrameTranslation.x, itemFrameTranslation.y, itemFrameTranslation.z);
+		rotate(itemFrameRotation.x, itemFrameRotation.y, itemFrameRotation.z);
+	}
+	
+	public void transform(Matrix transformationMatrix) {
+		this.occludes = 0;
+		for (ModelFace face : faces) {
+			face.transform(transformationMatrix);
+			this.occludes |= face.getOccludes();
+		}
+	}
+	
 	public void rotate(float rotateX, float rotateY, boolean uvLock) {
 		this.occludes = 0;
 		for (ModelFace face : faces) {
@@ -288,6 +315,12 @@ public class Model {
 		this.occludes = 0;
 		for(ModelFace face : faces)
 			face.scale(scale);
+	}
+	
+	public void scale(float scaleX, float scaleY, float scaleZ) {
+		this.occludes = 0;
+		for(ModelFace face : faces)
+			face.scale(scaleX, scaleY, scaleZ);
 	}
 	
 	public void flip(boolean x, boolean y, boolean z) {
@@ -323,6 +356,32 @@ public class Model {
 	public void addTexture(String name, String value) {
 		textures.put(name, value);
 	}
+	
+	public void addModel(Model other) {
+		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
+		for(Entry<String, String> entry : other.getTextures().entrySet()) {
+			String tex = entry.getValue();
+			if(tex.startsWith("#"))
+				tex = texPrefix + tex.substring(1);
+			textures.put(texPrefix + entry.getKey().substring(1), tex);
+		}
+		for(ModelFace face : other.getFaces()) {
+			ModelFace copy = new ModelFace(face);
+			if(face.getTexture().startsWith("#")) {
+				copy.setTexture(texPrefix + face.getTexture().substring(1));
+			}
+			faces.add(copy);
+		}
+	}
+	
+	public void addRootBone() {
+		if(!bones.isEmpty())
+			return;
+		ModelBone bone = new ModelBone("root");
+		for(int i = 0; i < faces.size(); ++i)
+			bone.faceIds.add(i);
+		bones.add(bone);
+	}
 
 	public ModelFace addFace(float[] minMaxPoints, Direction dir, String texture) {
 		JsonObject faceData = new JsonObject();
@@ -346,7 +405,7 @@ public class Model {
 	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
 							float rotX, float rotY) {
-	return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, -1);
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, -1);
 	}
 
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
@@ -426,7 +485,7 @@ public class Model {
 			uvY = (0) * uvHeight + minMaxUVs[1];
 			uvW = width * uvWidth;
 			uvH = depth * uvHeight;
-			addFace(minMaxPoints, new float[] { uvX, uvY, uvX + uvW, uvY + uvH }, Direction.DOWN, texture, rotX, rotY);
+			addFace(minMaxPoints, new float[] { uvX, uvY + uvH, uvX + uvW, uvY }, Direction.DOWN, texture, rotX, rotY);
 		}
 
 		if (directionsList.contains(Direction.WEST)) {
@@ -464,6 +523,16 @@ public class Model {
 			uvH = height * uvHeight;
 			addFace(minMaxPoints, new float[] { uvX, uvY, uvX + uvW, uvY + uvH }, Direction.NORTH, texture, rotX, rotY);
 		}
+	}
+
+	public void calculateOccludes() {
+		occludes = 0;
+		for(int i = 0; i < faces.size(); ++i)
+			occludes |= faces.get(i).getOccludes();
+	}
+
+	public void setParentModel(Model parentModel) {
+		this.parentModel = parentModel;
 	}
 
 }

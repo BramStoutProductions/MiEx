@@ -160,7 +160,7 @@ public class TeleportDialog extends JDialog {
 				public void actionPerformed(ActionEvent e) {
 					String dimension = player.getDimension();
 					if(dimension.startsWith("minecraft:")) {
-						dimension = dimension.substring("minecraft".length());
+						dimension = dimension.substring("minecraft:".length());
 					}else {
 						dimension = dimension.replace(':', '/');
 						if(!MCWorldExporter.getApp().getWorld().getDimensions().contains(dimension)) {

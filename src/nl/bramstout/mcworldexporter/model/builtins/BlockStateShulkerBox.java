@@ -34,16 +34,19 @@ package nl.bramstout.mcworldexporter.model.builtins;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateShulkerBox extends BlockState{
 
-	public BlockStateShulkerBox(String name) {
-		super(name, null);
+	public BlockStateShulkerBox(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -51,7 +54,18 @@ public class BlockStateShulkerBox extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
@@ -61,7 +75,7 @@ public class BlockStateShulkerBox extends BlockState{
 		
 		float rotX = 0f;
 		float rotY = 0f;
-		String val = properties.getElement("facing").asString();
+		String val = properties.get("facing").asString();
 		if (val == null)
 			val = "up";
 		if (val.equals("down")) {
@@ -88,7 +102,7 @@ public class BlockStateShulkerBox extends BlockState{
 			color = colorTokens[0] + "_" + colorTokens[1];
 		}
 		
-		model.addTexture("texture", "minecraft:entity/shulker/" + (color == null ? "shulker" : "shulker_" + color));
+		model.addTexture("#texture", "minecraft:entity/shulker/" + (color == null ? "shulker" : "shulker_" + color));
 		
 		// Bottom
 		model.addEntityCube(new float[] { 0f, 0f, 0f, 16f, 8f, 16f } , new float[] { 0f, 7f, 16f, 13f }, "#texture",
@@ -99,8 +113,13 @@ public class BlockStateShulkerBox extends BlockState{
 		
 		model.rotate(rotX, rotY, false);
 		
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, null);
+		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, null,
+				needsConnectionInfo());
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 
 }

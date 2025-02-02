@@ -57,29 +57,39 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.model.Occlusion;
+import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
-import nl.bramstout.mcworldexporter.world.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
 	
 	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 	private static Object mutex = new Object();
-	private static Set<Integer> individualBlockIds = new HashSet<Integer>();
+	private static Set<IndividualBlockId> individualBlockIds = new HashSet<IndividualBlockId>();
 	public static int NUM_CHUNKS = 0;
+	public static File currentExportFile = null;
+	public static File chunksFolder = null;
 
 	public static void export(File usdFile) throws Exception {
 		if(MCWorldExporter.getApp().getWorld() == null) {
 			throw new RuntimeException("No valid world loaded.");
 		}
-		
-		BannerTextureCreator.load();
-		
 		String extensionTokens[] = usdFile.getName().split("\\.");
 		String extension = extensionTokens[extensionTokens.length-1];
 		
+		currentExportFile = usdFile;
+		chunksFolder = new File(usdFile.getParentFile(), usdFile.getName().replace("." + extension, "_chunks"));
+		BackgroundThread.waitUntilDoneWithBackgroundTasks();
+		
+		BannerTextureCreator.load();
+		
 		File file = new File(usdFile.getPath().replace("." + extension, ".miex"));
+		
+		Converter converter = Converter.getConverter(extension.toLowerCase(), file, usdFile);
+		
 		List<Future<?>> futures = new ArrayList<Future<?>>();
 		int chunkSize = Config.chunkSize;
 		
@@ -95,7 +105,7 @@ public class Exporter {
 			centerZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
 		}
 		MCWorldExporter.getApp().getExportBounds().setOffsetX(centerX);
-		MCWorldExporter.getApp().getExportBounds().setOffsetY(MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ) + 1);
+		//MCWorldExporter.getApp().getExportBounds().setOffsetY(MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ) + 1);
 		MCWorldExporter.getApp().getExportBounds().setOffsetZ(centerZ);
 		
 		LargeDataOutputStream dos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
@@ -107,34 +117,53 @@ public class Exporter {
 		exportData.write(dos);
 		
 
+		// Export entities
+		EntityExporter entityExporter = new EntityExporter(MCWorldExporter.getApp().getExportBounds(), MCWorldExporter.getApp().getWorld());
+		entityExporter.generateEntityInstances();
+		String entityFilename = file.getName().replace(".miex", "_entities.miex");
+		File entityFile = new File(file.getParentFile(), entityFilename);
+		LargeDataOutputStream entityDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(entityFile)));
+		entityExporter.writeEntities(entityDos);
+		entityDos.close();
+		dos.writeUTF(entityFilename);
+		
+		// Export chunks
 		int numChunksX = (chunkEndX - chunkStartX + 1 + chunkSize - 1) / chunkSize;
 		int numChunksZ = (chunkEndZ - chunkStartZ + 1 + chunkSize - 1) / chunkSize;
-		int numChunks = numChunksX * numChunksZ;
+		int numChunks = 0;
+		for(int i = 0; i < numChunksX; ++i) {
+			for(int j = 0; j < numChunksZ; ++j) {
+				if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(i, j))
+					numChunks++;
+			}
+		}
 		NUM_CHUNKS = numChunks;
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Exporting");
 		MCWorldExporter.getApp().getUI().getProgressBar().setNumChunks(numChunks);
 		
-		individualBlockIds = new HashSet<Integer>();
+		individualBlockIds = new HashSet<IndividualBlockId>();
 		
 		List<File> chunkFiles = new ArrayList<File>();
 		
 		dos.writeInt(numChunks);
 		
-		int j = 1;
+		int j = 0;
 		for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += chunkSize) {
-			int i = 1;
+			int i = 0;
 			for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += chunkSize) {
-				String chunkName = "chunk_" + i + "_" + j;
-				String chunkFilename = file.getName().replace(".miex", "_" + chunkName + ".miex");
-				File chunkFile = new File(file.getParentFile(), chunkFilename);
-				LargeDataOutputStream chunkDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(chunkFile)));
-				futures.add(threadPool.submit(new ExportChunkTask(new ChunkExporter(MCWorldExporter.getApp().getExportBounds(), 
-						MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, chunkSize, chunkName), chunkDos)));
-				
-				dos.writeUTF(chunkFilename);
-				chunkFiles.add(chunkFile);
-				
+				if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(i, j)) {
+					String chunkName = "chunk_" + (i + 1) + "_" + (j + 1);
+					String chunkFilename = file.getName().replace(".miex", "_" + chunkName + ".miex");
+					File chunkFile = new File(file.getParentFile(), chunkFilename);
+					LargeDataOutputStream chunkDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(chunkFile)));
+					futures.add(threadPool.submit(new ExportChunkTask(new ChunkExporter(MCWorldExporter.getApp().getExportBounds(), 
+							MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, chunkSize, chunkName), chunkDos)));
+					
+					dos.writeUTF(chunkFilename);
+					chunkFiles.add(chunkFile);
+				}
 				++i;
 			}
 			++j;
@@ -159,36 +188,53 @@ public class Exporter {
 		long individualBlocksOffset = dos.size();
 		dos.writeInt(individualBlockIds.size());
 		List<Model> models = new ArrayList<Model>();
-		for(Integer blockId : individualBlockIds) {
-			dos.writeInt(blockId);
-			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, 0, 0, 0);
+		Occlusion occlusionHandler = new Occlusion();
+		List<ModelFace> emptyFaceList = new ArrayList<ModelFace>();
+		for(IndividualBlockId blockId : individualBlockIds) {
+			dos.writeInt(blockId.getBlockId());
+			dos.writeInt(blockId.getX());
+			dos.writeInt(blockId.getY());
+			dos.writeInt(blockId.getZ());
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId.getBlockId(), 
+											blockId.getX(), blockId.getY(), blockId.getZ());
 			dos.writeUTF(state.getName());
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();
 			state.getDefaultModels(models);
 			
+			occlusionHandler.calculateCornerDataForModel(models, state, 0, emptyFaceList);
+			
 			Color tint = defaultBlendedBiome.getBiomeColor(state);
 			
+			int faceIndex = 0;
 			for(Model model : models) {
 				for(ModelFace face : model.getFaces()) {
 					String texture = model.getTexture(face.getTexture());
-					if(Config.bannedMaterials.contains(texture))
+					if(Config.bannedMaterials.contains(texture)) {
+						faceIndex++;
 						continue;
+					}
 					Color faceTint = tint;
-					if(face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture))
-						faceTint = new Color(1.0f, 1.0f, 1.0f);
+					if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
+							Config.forceNoBiomeColor.contains(state.getName()))
+						faceTint = null;
 					Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 					if(atlas != null)
 						texture = atlas.atlas;
+					
+					int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
+					
 					Mesh mesh = meshes.get(texture);
 					if(mesh == null) {
-						mesh = new Mesh(texture, texture, model.isDoubleSided());
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint);
+						mesh = new Mesh(texture, texture, false, model.isDoubleSided(), 32, 8);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
 						meshes.put(texture, mesh);
 					}else {
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
 					}
 					mesh.setExtraData(model.getExtraData());
+					
+					faceIndex++;
 				}
 			}
 			dos.writeInt(meshes.size());
@@ -214,18 +260,21 @@ public class Exporter {
 		raf.close();
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Converting");
 		
-		Converter converter = Converter.getConverter(extension.toLowerCase(), file, usdFile);
+		converter.init();
 		converter.convert();
 		
 		if(converter.deleteMiExFiles()) {
 			// Delete the .miex file, since we don't need it anymore
 			file.delete();
+			entityFile.delete();
 			for(File chunkFile : chunkFiles)
 				chunkFile.delete();
 		}
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		String message = "World exported successfully.";
 		if(BlockStateRegistry.missingBlockStates.size() > 0) {
 			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
@@ -241,6 +290,12 @@ public class Exporter {
 			}
 		}
 		System.out.println("Exported:" + usdFile.getPath());
+		
+		// Make sure to unload the entities.
+		// The entity exporter modifies the entities during simulation.
+		// In case we want to export again, we need to reload the entities
+		// to get rid of the modified data.
+		MCWorldExporter.getApp().getWorld().unloadEntities();
 		JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), message, "Done", JOptionPane.PLAIN_MESSAGE);
 	}
 	

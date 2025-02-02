@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 public class IntArray {
 
-private static final int INIT_SIZE = 1024 * 8;
+private static final int INIT_SIZE = 64;
 	
 	private int[] data;
 	private int size;
@@ -46,7 +46,7 @@ private static final int INIT_SIZE = 1024 * 8;
 	}
 	
 	public IntArray(int capacity) {
-		data = new int[size];
+		data = new int[capacity];
 		this.size = 0;
 	}
 	
@@ -77,6 +77,11 @@ private static final int INIT_SIZE = 1024 * 8;
 	
 	public int size() {
 		return this.size;
+	}
+	
+	public void clear() {
+		this.size = 0;
+		Arrays.fill(data, 0);
 	}
 	
 }

@@ -34,6 +34,8 @@ package nl.bramstout.mcworldexporter.ui;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -45,9 +47,16 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class ResourcePackExtractorDialog extends JDialog {
 
@@ -126,6 +135,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Invalid resource pack name!", "", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
+				MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
 				File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePackInput.getText());
 				File[] mods = modsFolder.listFiles();
 				int counter = 0;
@@ -135,7 +145,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 					if(!mod.getName().endsWith(".jar"))
 						continue;
 					try {
-						ResourcePack.extractResourcePackFromJar(mod, resourcePackFolder);
+						ResourcePackDefaults.extractResourcePackFromJar(mod, resourcePackFolder);
 					}catch(Exception ex) {
 						ex.printStackTrace();
 					}
@@ -143,14 +153,34 @@ public class ResourcePackExtractorDialog extends JDialog {
 					counter++;
 				}
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
-				ResourcePack.inferMiExConfigFromResourcePack(resourcePackFolder);
+				MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering MiEx config");
+				ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePackFolder);
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1.0f);
 				
 				
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mod resource pack extracted successfully!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
+				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
+				
+				// Reload everything
+				ResourcePacks.load();
+				List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
+				List<String> currentlyLoadedUUIDS = new ArrayList<String>();
+				for(ResourcePack pack : currentlyLoaded)
+					currentlyLoadedUUIDS.add(pack.getUUID());
+				
+				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
+				
+				Atlas.readAtlasConfig();
+				Config.load();
+				BlockStateRegistry.clearBlockStateRegistry();
+				ModelRegistry.clearModelRegistry();
+				BiomeRegistry.recalculateTints();
+				MCWorldExporter.getApp().getUI().update();
+				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});

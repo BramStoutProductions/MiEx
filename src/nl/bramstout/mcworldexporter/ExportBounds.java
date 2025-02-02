@@ -31,6 +31,9 @@
 
 package nl.bramstout.mcworldexporter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ExportBounds {
 	
 	private int minX;
@@ -48,6 +51,7 @@ public class ExportBounds {
 	private int lodDepth;
 	private int lodYDetail;
 	private boolean enableLOD;
+	private List<Pair<Integer, Integer>> disabledChunks;
 	
 	public ExportBounds() {
 		minX = 0;
@@ -65,11 +69,12 @@ public class ExportBounds {
 		lodDepth = 0;
 		lodYDetail = 4;
 		enableLOD = false;
+		disabledChunks = new ArrayList<Pair<Integer, Integer>>();
 	}
 	
 	public ExportBounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, 
 						int offsetX, int offsetY, int offsetZ, int lodCenterX, int lodCenterZ, 
-						int lodWidth, int lodDepth, int lodYDetail, boolean enableLOD) {
+						int lodWidth, int lodDepth, int lodYDetail, boolean enableLOD, List<Pair<Integer, Integer>> disabledChunks) {
 		this.minX = minX;
 		this.minY = minY;
 		this.minZ = minZ;
@@ -85,6 +90,9 @@ public class ExportBounds {
 		this.lodDepth = lodDepth;
 		this.lodYDetail = lodYDetail;
 		this.enableLOD = enableLOD;
+		this.disabledChunks = new ArrayList<Pair<Integer, Integer>>();
+		for(Pair<Integer, Integer> chunk : disabledChunks)
+			this.disabledChunks.add(new Pair<Integer, Integer>(chunk.getKey(), chunk.getValue()));
 	}
 	
 	public int getMinX() {
@@ -237,6 +245,7 @@ public class ExportBounds {
 	
 	public void setOffsetY(int offsetY) {
 		this.offsetY = offsetY;
+		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setOffsetZ(int offsetZ) {
@@ -303,10 +312,65 @@ public class ExportBounds {
 	public int getCenterZ() {
 		return (minZ + maxZ) / 2;
 	}
+	
+	public void enableAllChunks() {
+		disabledChunks.clear();
+		MCWorldExporter.getApp().getUI().update();
+	}
+	
+	public void disableChunk(int x, int y) {
+		Pair<Integer, Integer> chunk = new Pair<Integer, Integer>(x, y);
+		if(!disabledChunks.contains(chunk))
+			disabledChunks.add(chunk);
+		MCWorldExporter.getApp().getUI().update();
+	}
+	
+	public void enableChunk(int x, int y) {
+		Pair<Integer, Integer> chunk = new Pair<Integer, Integer>(x, y);
+		disabledChunks.remove(chunk);
+		MCWorldExporter.getApp().getUI().update();
+	}
+	
+	public void toggleChunk(int x, int y) {
+		Pair<Integer, Integer> chunk = new Pair<Integer, Integer>(x, y);
+		if(disabledChunks.contains(chunk))
+			disabledChunks.remove(chunk);
+		else
+			disabledChunks.add(chunk);
+		MCWorldExporter.getApp().getUI().update();
+	}
+	
+	public boolean isChunkEnabled(int x, int y) {
+		Pair<Integer, Integer> chunk = new Pair<Integer, Integer>(x, y);
+		return !disabledChunks.contains(chunk);
+	}
+	
+	public boolean isBlockInEnabledChunk(int x, int z) {
+		int chunkStartX = getMinX() >> 4;
+		int chunkStartZ = getMinZ() >> 4;
+		int chunkSize = Config.chunkSize;
+		int blockChunkX = x >> 4;
+		int blockChunkZ = z >> 4;
+		int exportChunkX = (blockChunkX - chunkStartX) / chunkSize;
+		int exportChunkZ = (blockChunkZ - chunkStartZ) / chunkSize;
+		return isChunkEnabled(exportChunkX, exportChunkZ);
+	}
+	
+	public List<Pair<Integer, Integer>> getDisabledChunks(){
+		return disabledChunks;
+	}
+	
+	public void setDisabledChunks(List<Pair<Integer, Integer>> disabledChunks) {
+		this.disabledChunks.clear();
+		for(Pair<Integer, Integer> chunk : disabledChunks) {
+			this.disabledChunks.add(new Pair<Integer, Integer>(chunk.getKey(), chunk.getValue()));
+		}
+		MCWorldExporter.getApp().getUI().update();
+	}
 
 	public ExportBounds copy() {
 		return new ExportBounds(minX, minY, minZ, maxX, maxY, maxZ, offsetX, offsetY, offsetZ,
-								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail, enableLOD);
+								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail, enableLOD, disabledChunks);
 	}
 	
 }

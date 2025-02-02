@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel;
+import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel3D;
 
 public class USDWriter {
 	
@@ -189,7 +191,7 @@ public class USDWriter {
 	
 	public void endDict() throws IOException{
 		indent--;
-		fw.write(getIndent() + "}\n");
+		fw.write("\n" + getIndent() + "}\n");
 	}
 	
 	public void writePayload(String path, boolean append) throws IOException {
@@ -212,10 +214,12 @@ public class USDWriter {
 			else
 				fw.write(getIndent() + "@" + paths.get(i) + "@,\n");
 		}
-		if(paths.get(paths.size()-1).startsWith("@"))
-			fw.write(getIndent() + paths.get(paths.size()-1) + "\n");
-		else
-			fw.write(getIndent() + "@" + paths.get(paths.size()-1) + "@\n");
+		if(!paths.isEmpty()) {
+			if(paths.get(paths.size()-1).startsWith("@"))
+				fw.write(getIndent() + paths.get(paths.size()-1) + "\n");
+			else
+				fw.write(getIndent() + "@" + paths.get(paths.size()-1) + "@\n");
+		}
 		indent--;
 		fw.write(getIndent() + "]\n");
 	}
@@ -324,6 +328,29 @@ public class USDWriter {
 	
 	public void writeAttributeValuePoint3f(float x, float y, float z) throws IOException{
 		fw.write(" = (" + x + "," + y + "," + z + ")");
+	}
+	
+	public void writeAttributeValueAnimation(AnimationChannel value, float timeScale) throws IOException{
+		fw.write(" = {");
+		for(int i = 0; i < value.getKeyframes().size() - 1; ++i)
+			fw.write(value.getKeyframes().get(i).time * timeScale + ":" + value.getKeyframes().get(i).value + ",");
+		if(value.getKeyframes().size() > 0)
+			fw.write(value.getKeyframes().get(value.getKeyframes().size()-1).time * timeScale + ":" + 
+						value.getKeyframes().get(value.getKeyframes().size()-1).value);
+		fw.write("}");
+	}
+	
+	public void writeAttributeValueAnimation3D(AnimationChannel3D value, float timeScale, float scaleX, float scaleY, float scaleZ) throws IOException{
+		fw.write(" = {");
+		for(int i = 0; i < value.getKeyframes().size() - 1; ++i)
+			fw.write(value.getKeyframes().get(i).time * timeScale + ": (" + value.getKeyframes().get(i).valueX * scaleX + "," + 
+						value.getKeyframes().get(i).valueY * scaleY + "," + value.getKeyframes().get(i).valueZ * scaleZ + "),");
+		if(value.getKeyframes().size() > 0)
+			fw.write(value.getKeyframes().get(value.getKeyframes().size()-1).time * timeScale + ": (" + 
+						value.getKeyframes().get(value.getKeyframes().size()-1).valueX * scaleX + "," + 
+						value.getKeyframes().get(value.getKeyframes().size()-1).valueY * scaleY + "," + 
+						value.getKeyframes().get(value.getKeyframes().size()-1).valueZ * scaleZ + ")");
+		fw.write("}");
 	}
 	
 	public void writeAttributeValueStringArray(String[] value) throws IOException{

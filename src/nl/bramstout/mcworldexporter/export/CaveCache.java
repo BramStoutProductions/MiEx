@@ -42,8 +42,8 @@ public class CaveCache {
 		public CaveCacheChunk(int minY, int height) {
 			// We add some padding because the exporter also
 			// checks neighbour blocks for occlusion
-			this.minY = minY - 1;
-			this.height = height + 2;
+			this.minY = minY - 2;
+			this.height = height + 4;
 			
 			cache = new byte[(this.height / 16) + 1][];
 		}
@@ -54,17 +54,23 @@ public class CaveCache {
 			cy &= 15;
 			if(cache[sectionY] == null)
 				return 0;
-			return cache[sectionY][cy * 16*16 + cz * 16 + cx];
+			cx >>>= 1;
+			cy >>>= 1;
+			cz >>>= 1;
+			return cache[sectionY][cy * 8*8 + cz * 8 + cx];
 		}
 		
 		public void set(int cx, int cy, int cz, byte data) {
 			cy -= minY;
 			int sectionY = cy >> 4;
 			cy &= 15;
+			cx >>>= 1;
+			cy >>>= 1;
+			cz >>>= 1;
 			if(cache[sectionY] == null)
-				cache[sectionY] = new byte[16*16*16];
+				cache[sectionY] = new byte[8*8*8];
 			
-			cache[sectionY][cy * 16*16 + cz * 16 + cx] = data;
+			cache[sectionY][cy * 8*8 + cz * 8 + cx] = data;
 		}
 		
 	}

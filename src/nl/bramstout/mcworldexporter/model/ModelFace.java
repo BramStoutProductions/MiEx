@@ -35,6 +35,9 @@ import java.util.Arrays;
 
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.math.Matrix;
+import nl.bramstout.mcworldexporter.math.Vector3f;
+
 public class ModelFace {
 
 	private float points[];
@@ -272,10 +275,46 @@ public class ModelFace {
 		calculateOcclusion(minMaxPoints2);
 	}
 	
+	private void calculateDirection() {
+		float x1 = points[1*3+0] - points[0*3+0];
+		float y1 = points[1*3+1] - points[0*3+1];
+		float z1 = points[1*3+2] - points[0*3+2];
+		float length = (float) Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+		x1 /= length;
+		y1 /= length;
+		z1 /= length;
+		
+		float x2 = points[3*3+0] - points[0*3+0];
+		float y2 = points[3*3+1] - points[0*3+1];
+		float z2 = points[3*3+2] - points[0*3+2];
+		length = (float) Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
+		x2 /= length;
+		y2 /= length;
+		z2 /= length;
+		
+		float nx = y1 * z2 - z1 * y2;
+		float ny = z1 * x2 - x1 * z2;
+		float nz = x1 * y2 - y1 * x2;
+		
+		float anx = Math.abs(nx);
+		float any = Math.abs(ny);
+		float anz = Math.abs(nz);
+		
+		if(anx >= any && anx >= anz) {
+			direction = nx >= 0 ? Direction.EAST : Direction.WEST;
+		}else if(any >= anz) {
+			direction = ny >= 0 ? Direction.UP : Direction.DOWN;
+		}else {
+			direction = nz >= 0 ? Direction.SOUTH : Direction.NORTH;
+		}
+	}
+	
 	private void calculateOcclusion(float[] minMaxPoints) {
+		occludes = 0;
+		occludedBy = 0;
 		switch (direction) {
 		case DOWN:
-			if (minMaxPoints[1] == 0.0f) {
+			if (Math.abs(minMaxPoints[1]) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
 						minMaxPoints[5]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
@@ -283,7 +322,7 @@ public class ModelFace {
 			}
 			break;
 		case UP:
-			if (minMaxPoints[4] == 16.0f) {
+			if (Math.abs(minMaxPoints[4] - 16.0f) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
 						minMaxPoints[5]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
@@ -291,7 +330,7 @@ public class ModelFace {
 			}
 			break;
 		case NORTH:
-			if (minMaxPoints[2] == 0.0f) {
+			if (Math.abs(minMaxPoints[2]) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
@@ -299,7 +338,7 @@ public class ModelFace {
 			}
 			break;
 		case SOUTH:
-			if (minMaxPoints[5] == 16.0f) {
+			if (Math.abs(minMaxPoints[5] - 16.0f) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
@@ -307,7 +346,7 @@ public class ModelFace {
 			}
 			break;
 		case WEST:
-			if (minMaxPoints[0] == 0.0f) {
+			if (Math.abs(minMaxPoints[0]) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
@@ -315,7 +354,7 @@ public class ModelFace {
 			}
 			break;
 		case EAST:
-			if (minMaxPoints[3] == 16.0f) {
+			if (Math.abs(minMaxPoints[3] - 16.0f) < 0.01f) {
 				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
@@ -328,19 +367,19 @@ public class ModelFace {
 	private long getSideOccludes(float minX, float minY, float maxX, float maxY) {
 		long res = 0;
 		// Bottom left
-		if (minX <= 0.0f && maxX >= 8.0f && minY <= 0.0f && maxY >= 8.0f) {
+		if (minX <= 0.01f && maxX >= 7.99f && minY <= 0.01f && maxY >= 7.99f) {
 			res |= 1;
 		}
 		// Bottom right
-		if (minX <= 8.0f && maxX >= 16.0f && minY <= 0.0f && maxY >= 8.0) {
+		if (minX <= 8.01f && maxX >= 15.99f && minY <= 0.01f && maxY >= 7.99f) {
 			res |= 1 << 1;
 		}
 		// Top left
-		if (minX <= 0.0 && maxX >= 8.0f && minY <= 8.0f && maxY >= 16.0f) {
+		if (minX <= 0.01f && maxX >= 7.99f && minY <= 8.01f && maxY >= 15.99f) {
 			res |= 1 << 2;
 		}
 		// Top right
-		if (minX <= 8.0f && maxX >= 16.0f && minY <= 8.0f && maxY >= 16.0f) {
+		if (minX <= 8.01f && maxX >= 15.99f && minY <= 8.01f && maxY >= 15.99f) {
 			res |= 1 << 3;
 		}
 		return res;
@@ -349,22 +388,50 @@ public class ModelFace {
 	private long getSideOccludedBy(float minX, float minY, float maxX, float maxY) {
 		long res = 0;
 		// Bottom left
-		if (minX < 8.0f && minY < 8.0f) {
+		if (minX < 7.99f && minY < 7.99f) {
 			res |= 1;
 		}
 		// Bottom right
-		if (maxX > 8.0f && minY < 8.0f) {
+		if (maxX > 8.01f && minY < 7.99f) {
 			res |= 1 << 1;
 		}
 		// Top left
-		if (minX < 8.0f && maxY > 8.0f) {
+		if (minX < 7.99f && maxY > 8.01f) {
 			res |= 1 << 2;
 		}
 		// Top right
-		if (maxX > 8.0f && maxY > 8.0f) {
+		if (maxX > 8.01f && maxY > 8.01f) {
 			res |= 1 << 3;
 		}
 		return res;
+	}
+	
+	public void transform(Matrix matrix) {
+		Vector3f v0 = new Vector3f(points[0], points[1], points[2]);
+		Vector3f v1 = new Vector3f(points[3], points[4], points[5]);
+		Vector3f v2 = new Vector3f(points[6], points[7], points[8]);
+		Vector3f v3 = new Vector3f(points[9], points[10], points[11]);
+		
+		v0 = matrix.transformPoint(v0);
+		v1 = matrix.transformPoint(v1);
+		v2 = matrix.transformPoint(v2);
+		v3 = matrix.transformPoint(v3);
+		
+		points[0] = v0.x; points[1] = v0.y; points[2] = v0.z;
+		points[3] = v1.x; points[4] = v1.y; points[5] = v1.z;
+		points[6] = v2.x; points[7] = v2.y; points[8] = v2.z;
+		points[9] = v3.x; points[10] = v3.y; points[11] = v3.z;
+		
+		float[] minMaxPoints = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateDirection();
+		calculateOcclusion(minMaxPoints);
 	}
 
 	public void rotate(JsonObject rotateData) {
@@ -417,6 +484,17 @@ public class ModelFace {
 						+ originY;
 			}
 		}
+		
+		float[] minMaxPoints = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateDirection();
+		calculateOcclusion(minMaxPoints);
 	}
 
 	public void rotate(float rotateX, float rotateY, boolean uvLock) {
@@ -545,6 +623,7 @@ public class ModelFace {
 				Math.max(points[0*3+1], points[2*3+1]),
 				Math.max(points[0*3+2], points[2*3+2]),
 		};
+		calculateDirection();
 		calculateOcclusion(minMaxPoints);
 	}
 	
@@ -671,8 +750,139 @@ public class ModelFace {
 				Math.max(points[0*3+1], points[2*3+1]),
 				Math.max(points[0*3+2], points[2*3+2]),
 		};
+		calculateDirection();
 		calculateOcclusion(minMaxPoints);
 	}
+	
+	
+	public void rotate(float rotateX, float rotateY, float rotateZ, float pivotX, float pivotY, float pivotZ) {
+		// X Rotation
+		float cosR = (float) Math.cos(Math.toRadians(rotateX));
+		float sinR = (float) Math.sin(Math.toRadians(rotateX));
+		for(int i = 0; i < 12; i += 3) {
+			points[i + 0] -= pivotX;
+			points[i + 1] -= pivotY;
+			points[i + 2] -= pivotZ;
+		}
+		
+		if (rotateX != 0.0f) {
+			float[] oldPoints = Arrays.copyOf(points, points.length);
+			for (int i = 0; i < 12; i += 3) {
+				points[i + 2] = oldPoints[i + 2] * cosR - oldPoints[i + 1] * sinR;
+				points[i + 1] = oldPoints[i + 2] * sinR + oldPoints[i + 1] * cosR;
+			}
+
+			// Update direction X rotation
+			float dirRotateX = rotateX;
+			if (dirRotateX < 0.0f)
+				dirRotateX += 360.0f;
+			while (dirRotateX > 45.0f) {
+				dirRotateX -= 90.0f;
+				switch (direction) {
+				case DOWN:
+					direction = Direction.SOUTH;
+					break;
+				case SOUTH:
+					direction = Direction.UP;
+				case UP:
+					direction = Direction.NORTH;
+					break;
+				case NORTH:
+					direction = Direction.DOWN;
+				default:
+					break;
+				}
+			}
+
+		}
+
+		if (rotateY != 0.0f) {
+			// Rotate Y
+			cosR = (float) Math.cos(Math.toRadians(rotateY));
+			sinR = (float) Math.sin(Math.toRadians(rotateY));
+			float[] oldPoints = Arrays.copyOf(points, points.length);
+			for (int i = 0; i < 12; i += 3) {
+				points[i + 0] = oldPoints[i + 0] * cosR - oldPoints[i + 2] * sinR;
+				points[i + 2] = oldPoints[i + 0] * sinR + oldPoints[i + 2] * cosR;
+			}
+
+			// Update direction Y rotation
+			float dirRotateY = rotateY;
+			if (dirRotateY < 0.0f)
+				dirRotateY += 360.0f;
+			while (dirRotateY > 45.0f) {
+				dirRotateY -= 90.0f;
+				switch (direction) {
+				case NORTH:
+					direction = Direction.EAST;
+					break;
+				case EAST:
+					direction = Direction.SOUTH;
+					break;
+				case SOUTH:
+					direction = Direction.WEST;
+					break;
+				case WEST:
+					direction = Direction.NORTH;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		
+		if (rotateZ != 0.0f) {
+			// Rotate Z
+			cosR = (float) Math.cos(Math.toRadians(rotateZ));
+			sinR = (float) Math.sin(Math.toRadians(rotateZ));
+			float[] oldPoints = Arrays.copyOf(points, points.length);
+			for (int i = 0; i < 12; i += 3) {
+				points[i + 0] = oldPoints[i + 0] * cosR - oldPoints[i + 1] * sinR;
+				points[i + 1] = oldPoints[i + 0] * sinR + oldPoints[i + 1] * cosR;
+			}
+
+			// Update direction Z rotation
+			float dirRotateZ = rotateZ;
+			if (dirRotateZ < 0.0f)
+				dirRotateZ += 360.0f;
+			while (dirRotateZ > 45.0f) {
+				dirRotateZ -= 90.0f;
+				switch (direction) {
+				case UP:
+					direction = Direction.WEST;
+					break;
+				case WEST:
+					direction = Direction.DOWN;
+					break;
+				case DOWN:
+					direction = Direction.EAST;
+					break;
+				case EAST:
+					direction = Direction.UP;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		for(int i = 0; i < 12; i += 3) {
+			points[i + 0] += pivotX;
+			points[i + 1] += pivotY;
+			points[i + 2] += pivotZ;
+		}
+		
+		float[] minMaxPoints = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateDirection();
+		calculateOcclusion(minMaxPoints);
+	}
+	
 	
 	public void flip(boolean x, boolean y, boolean z) {
 		float scaleX = x ? -1f : 1f;
@@ -706,7 +916,48 @@ public class ModelFace {
 				Math.max(points[0*3+1], points[2*3+1]),
 				Math.max(points[0*3+2], points[2*3+2]),
 		};
+		calculateDirection();
 		calculateOcclusion(minMaxPoints);
+	}
+	
+	public void mirror(boolean x, boolean y, boolean z, float pivotX, float pivotY, float pivotZ) {
+		float scaleX = x ? -1f : 1f;
+		float scaleY = y ? -1f : 1f;
+		float scaleZ = z ? -1f : 1f;
+		
+		for(int i = 0; i < 4; ++i) {
+			points[i*3+0] = (points[i*3+0] - pivotX) * scaleX + pivotX;
+			points[i*3+1] = (points[i*3+1] - pivotY) * scaleY + pivotY;
+			points[i*3+2] = (points[i*3+2] - pivotZ) * scaleZ + pivotZ;
+		}
+		
+		if(x) {
+			if(direction == Direction.EAST || direction == Direction.WEST)
+				direction = direction.getOpposite();
+		}
+		if(y) {
+			if(direction == Direction.UP || direction == Direction.DOWN)
+				direction = direction.getOpposite();
+		}
+		if(z) {
+			if(direction == Direction.NORTH || direction == Direction.SOUTH)
+				direction = direction.getOpposite();
+		}
+		
+		float[] minMaxPoints = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateDirection();
+		calculateOcclusion(minMaxPoints);
+	}
+	
+	public void setTexture(String texture) {
+		this.texture = texture;
 	}
 	
 	public long getOccludes() {
@@ -764,6 +1015,22 @@ public class ModelFace {
 	public void scale(float scale) {
 		for(int i = 0; i < points.length; ++i) {
 			points[i] = (points[i] - 8.0f) * scale + 8.0f;
+		}
+	}
+	
+	public void scale(float scaleX, float scaleY, float scaleZ) {
+		for(int i = 0; i < points.length; i += 3) {
+			points[i] = (points[i] - 8f) * scaleX + 8f;
+			points[i+1] = (points[i+1] - 8f) * scaleY + 8f;
+			points[i+2] = (points[i+2] - 8f) * scaleZ + 8f;
+		}
+	}
+	
+	public void scale(float scaleX, float scaleY, float scaleZ, float pivotX, float pivotY, float pivotZ) {
+		for(int i = 0; i < points.length; i += 3) {
+			points[i] = (points[i] - pivotX) * scaleX + pivotX;
+			points[i+1] = (points[i+1] - pivotY) * scaleY + pivotY;
+			points[i+2] = (points[i+2] - pivotZ) * scaleZ + pivotZ;
 		}
 	}
 	

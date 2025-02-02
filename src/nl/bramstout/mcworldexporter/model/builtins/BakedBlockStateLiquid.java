@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.model.builtins;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Cache;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
@@ -41,35 +42,99 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BakedBlockStateLiquid extends BakedBlockState{
 	
+	
+	private Cache<Model> modelCache;
+	private String stillTexture;
+	private String flowTexture;
+	
 	public BakedBlockStateLiquid(String name) {
 		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, false, false, 
 				Config.waterColormapBlocks.contains(name), // Only apply the water biome colour when we say to in the config.
-				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), false, 2, null);
+				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), false, 2, null, true);
+		String[] nameTokens = getName().split(":");
+		stillTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_still";
+		flowTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_flow";
+		modelCache = new Cache<Model>();
 	}
 	
 	public void getModels(int x, int y, int z, List<Model> res){
-		Model model = new Model(getName(), null, true);
+		int level00 = getLevel(x-1, y, z-1);
+		int level10 = getLevel(x  , y, z-1);
+		int level20 = getLevel(x+1, y, z-1);
+		int level01 = getLevel(x-1, y, z);
+		int level11 = getLevel(x  , y, z);
+		int level21 = getLevel(x+1, y, z);
+		int level02 = getLevel(x-1, y, z+1);
+		int level12 = getLevel(x  , y, z+1);
+		int level22 = getLevel(x+1, y, z+1);
+		
+		int blockBelow = 0;
+		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
+		if(blockBelowState == null || 
+				!(blockBelowState.hasLiquid() || blockBelowState.isTransparentOcclusion() ||
+				blockBelowState.isLeavesOcclusion()))
+			blockBelow = 1;
+		
+		long l00 = level00 + 2;
+		long l10 = level10 + 2;
+		long l20 = level20 + 2;
+		long l01 = level01 + 2;
+		long l11 = level11 + 2;
+		long l21 = level21 + 2;
+		long l02 = level02 + 2;
+		long l12 = level12 + 2;
+		long l22 = level22 + 2;
+		long bb = blockBelow;
+		
+		long key = (l00 & 0b1111L) | 
+					((l10 & 0b1111L) << 4) |
+					((l20 & 0b1111L) << 8) |
+					((l01 & 0b1111L) << 12) |
+					((l11 & 0b1111L) << 16) |
+					((l21 & 0b1111L) << 20) |
+					((l02 & 0b1111L) << 24) |
+					((l12 & 0b1111L) << 28) |
+					((l22 & 0b1111L) << 32) |
+					((bb & 0b1111L) << 36);
+		
+		Model model = modelCache.getOrDefault(key, null);
+		if(model == null) {
+			synchronized(modelCache) {
+				model = modelCache.getOrDefault(key, null);
+				if(model == null) {
+					model = generateModel(level00, level10, level20,
+										level01, level11, level21,
+										level02, level12, level22, blockBelow);
+					modelCache.put(key, model);
+				}
+			}
+		}
 		res.add(model);
+	}
+	
+	private Model generateModel(int level00, int level10, int level20, 
+								int level01, int level11, int level21,
+								int level02, int level12, int level22, int blockBelow) {
+		Model model = new Model(getName(), null, true);
 		
-		String[] nameTokens = getName().split(":");
-		model.addTexture("still", nameTokens[0] + ":block/" + nameTokens[1] + "_still");
-		model.addTexture("flow", nameTokens[0] + ":block/" + nameTokens[1] + "_flow");
+		model.addTexture("#still", stillTexture);
+		model.addTexture("#flow", flowTexture);
 		
-		float height00 = getHeight(getLevel(x-1, y, z-1));
-		float height10 = getHeight(getLevel(x  , y, z-1));
-		float height20 = getHeight(getLevel(x+1, y, z-1));
-		float height01 = getHeight(getLevel(x-1, y, z));
-		float height11 = getHeight(getLevel(x  , y, z));
-		float height21 = getHeight(getLevel(x+1, y, z));
-		float height02 = getHeight(getLevel(x-1, y, z+1));
-		float height12 = getHeight(getLevel(x  , y, z+1));
-		float height22 = getHeight(getLevel(x+1, y, z+1));
+		float height00 = getHeight(level00);
+		float height10 = getHeight(level10);
+		float height20 = getHeight(level20);
+		float height01 = getHeight(level01);
+		float height11 = getHeight(level11);
+		float height21 = getHeight(level21);
+		float height02 = getHeight(level02);
+		float height12 = getHeight(level12);
+		float height22 = getHeight(level22);
 		
 		/*
 		 * Bottom left, a.k.a. x-0.5, z-0.5
@@ -132,8 +197,9 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			topFace.getPoints()[2*3+1] = cheight10;
 			topFace.getPoints()[3*3+1] = cheight00;
 		}
-		BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
-		if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
+		//BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
+		//if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
+		if(blockBelow > 0)
 			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still", 0);
 		
 		if(height10 <= 0f) {
@@ -179,6 +245,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			// to be a block
 			eastFace.translate(0.01f, 0, 0);
 		}
+		
+		return model;
 	}
 	
 	private int getLevel(int x, int y, int z) {
@@ -205,10 +273,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			return 8;
 		}
 		
-		TAG_String levelTag = (TAG_String) block.getProperties().getElement("level");
+		NbtTag levelTag = block.getProperties().get("level");
 		if(levelTag != null) {
 			try {
-				level = Integer.parseInt(levelTag.value);
+				level = Integer.parseInt(levelTag.asString());
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

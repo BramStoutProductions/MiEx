@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 public class FloatArray {
 	
-	private static final int INIT_SIZE = 1024 * 8;
+	private static final int INIT_SIZE = 32;
 	
 	private float[] data;
 	private int size;
@@ -46,7 +46,7 @@ public class FloatArray {
 	}
 	
 	public FloatArray(int capacity) {
-		data = new float[size];
+		data = new float[capacity];
 		this.size = 0;
 	}
 	
@@ -82,6 +82,10 @@ public class FloatArray {
 	public void add(FloatArray value) {
 		for(int i = 0; i < value.size; ++i)
 			add(value.get(i));
+	}
+	
+	public void clear() {
+		this.size = 0;
 	}
 
 }

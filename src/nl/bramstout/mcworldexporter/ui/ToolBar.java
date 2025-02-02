@@ -31,12 +31,18 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.AWTEvent;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseEvent;
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 
 import javax.swing.BoxLayout;
@@ -64,6 +70,9 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.ExportData;
 import nl.bramstout.mcworldexporter.export.Exporter;
+import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
+import nl.bramstout.mcworldexporter.world.Chunk;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class ToolBar extends JPanel {
 
@@ -74,6 +83,7 @@ public class ToolBar extends JPanel {
 
 	private JButton loadWorldButton;
 	private JButton loadWorldFromExportButton;
+	private JToggleButton pauseLoadingButton;
 	private JComboBox<String> dimensionChooser;
 
 	private JSpinner minXSpinner;
@@ -82,6 +92,11 @@ public class ToolBar extends JPanel {
 	private JSpinner maxXSpinner;
 	private JSpinner maxYSpinner;
 	private JSpinner maxZSpinner;
+	private JSpinner yOffsetSpinner;
+	private JCheckBox yOffsetAutoCheckBox;
+	private Object prevYOffsetMutex = new Object();
+	private int prevYOffset;
+	private World prevWorld;
 	
 	private JCheckBox lodEnableCheckBox;
 	private JSpinner lodCenterXSpinner;
@@ -101,13 +116,25 @@ public class ToolBar extends JPanel {
 	private JSpinner chunkSizeSpinner;
 
 	private JToggleButton editFGChunksButton;
+	
+	private JButton entityButton;
 
 	private JButton exportButton;
 	
 	private File exportLastDirectory;
+	
+	private WorldBrowser worldBrowser;
+	
+	private AboutDialog aboutDialog;
 
 	public ToolBar() {
 		super();
+		
+		prevWorld = null;
+		
+		aboutDialog = new AboutDialog();
+		
+		enableEvents(AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
 		
 		exportLastDirectory = null;
 
@@ -144,6 +171,7 @@ public class ToolBar extends JPanel {
 		loadWorldButton.setPreferredSize(new Dimension(130, 24));
 		loadWorldButton.setMinimumSize(loadWorldButton.getPreferredSize());
 		loadWorldButton.setMaximumSize(loadWorldButton.getPreferredSize());
+		loadWorldButton.setToolTipText("Load in a Minecraft world.");
 		loadButtonsPanel.add(loadWorldButton);
 		
 		JPanel loadButtonsPadding = new JPanel();
@@ -157,13 +185,29 @@ public class ToolBar extends JPanel {
 		loadWorldFromExportButton.setPreferredSize(new Dimension(130, 24));
 		loadWorldFromExportButton.setMinimumSize(loadWorldFromExportButton.getPreferredSize());
 		loadWorldFromExportButton.setMaximumSize(loadWorldFromExportButton.getPreferredSize());
+		ToolTips.registerTooltip(loadWorldFromExportButton, ToolTips.LOAD_WORLD_FROM_EXPORT);
 		loadButtonsPanel.add(loadWorldFromExportButton);
+		
+		JPanel loadButtonsPadding2 = new JPanel();
+		loadButtonsPadding2.setPreferredSize(new Dimension(10, 8));
+		loadButtonsPadding2.setMinimumSize(new Dimension(10, 8));
+		loadButtonsPadding2.setMaximumSize(new Dimension(10, 8));
+		loadButtonsPadding2.setBorder(new EmptyBorder(0,0,0,0));
+		loadButtonsPanel.add(loadButtonsPadding2);
+		
+		pauseLoadingButton = new JToggleButton("Pause Loading");
+		pauseLoadingButton.setPreferredSize(new Dimension(130, 24));
+		pauseLoadingButton.setMinimumSize(pauseLoadingButton.getPreferredSize());
+		pauseLoadingButton.setMaximumSize(pauseLoadingButton.getPreferredSize());
+		ToolTips.registerTooltip(pauseLoadingButton, ToolTips.PAUSE_LOADING);
+		loadButtonsPanel.add(pauseLoadingButton);
 		
 		worldCtrlPanel.add(new JPanel());
 		dimensionChooser = new JComboBox<String>();
 		dimensionChooser.setPreferredSize(new Dimension(150, 24));
 		dimensionChooser.setMinimumSize(dimensionChooser.getPreferredSize());
 		dimensionChooser.setMaximumSize(dimensionChooser.getPreferredSize());
+		ToolTips.registerTooltip(dimensionChooser, ToolTips.DIMENSION_CHOOSER);
 		worldCtrlPanel.add(dimensionChooser);
 		worldPanel.add(worldCtrlPanel);
 		worldPanel.add(new JPanel());
@@ -176,6 +220,7 @@ public class ToolBar extends JPanel {
 		selectionPanel.setMinimumSize(new Dimension(228, 140));
 		selectionPanel.setMaximumSize(selectionPanel.getMinimumSize());
 		selectionPanel.setPreferredSize(selectionPanel.getMinimumSize());
+		ToolTips.registerTooltip(selectionPanel, ToolTips.EXPORT_BOUNDS);
 		JLabel selectionPanelLabel = new JLabel("Selection");
 		selectionPanelLabel.setAlignmentX(0.5f);
 		selectionPanel.add(selectionPanelLabel);
@@ -272,6 +317,24 @@ public class ToolBar extends JPanel {
 		selectionCtrlPanel.add(selectionMaxPanel);
 
 		selectionPanel.add(selectionCtrlPanel);
+		
+		JPanel selectionOffsetPanel = new JPanel();
+		selectionOffsetPanel.setLayout(new BoxLayout(selectionOffsetPanel, BoxLayout.X_AXIS));
+		selectionOffsetPanel.setBorder(new EmptyBorder(9, 0, 0, 0));
+		ToolTips.registerTooltip(selectionOffsetPanel, ToolTips.Y_OFFSET);
+		JLabel yOffsetLabel = new JLabel("Y Origin:  ");
+		selectionOffsetPanel.add(yOffsetLabel);
+		yOffsetSpinner = new JSpinner();
+		yOffsetSpinner.setPreferredSize(new Dimension(96, 20));
+		yOffsetSpinner.setMinimumSize(yOffsetSpinner.getPreferredSize());
+		yOffsetSpinner.setMaximumSize(yOffsetSpinner.getPreferredSize());
+		prevYOffset = 64;
+		yOffsetSpinner.setValue(64);
+		selectionOffsetPanel.add(yOffsetSpinner);
+		yOffsetAutoCheckBox = new JCheckBox("Auto");
+		yOffsetAutoCheckBox.setSelected(true);
+		selectionOffsetPanel.add(yOffsetAutoCheckBox);
+		selectionPanel.add(selectionOffsetPanel);
 
 		selectionPanel.add(new JPanel());
 		add(selectionPanel);
@@ -283,8 +346,10 @@ public class ToolBar extends JPanel {
 		lodPanel.setMinimumSize(new Dimension(144, 140));
 		lodPanel.setMaximumSize(selectionPanel.getMinimumSize());
 		lodPanel.setPreferredSize(selectionPanel.getMinimumSize());
+		ToolTips.registerTooltip(lodPanel, ToolTips.LOD);
 		lodEnableCheckBox = new JCheckBox("LOD");
 		lodEnableCheckBox.setSelected(false);
+		ToolTips.registerTooltip(lodEnableCheckBox, ToolTips.LOD_ENABLE);
 		lodPanel.add(lodEnableCheckBox);
 		lodPanel.add(new JPanel());
 
@@ -320,6 +385,7 @@ public class ToolBar extends JPanel {
 		lodYDetailLabel.setPreferredSize(new Dimension(48, 20));
 		lodYDetailLabel.setMinimumSize(lodYDetailLabel.getPreferredSize());
 		lodYDetailLabel.setMaximumSize(lodYDetailLabel.getPreferredSize());
+		ToolTips.registerTooltip(lodYDetailLabel, ToolTips.LOD_Y_DETAIL);
 		lodLabelPanel.add(lodYDetailLabel);
 		lodCtrlPanel.add(lodLabelPanel);
 
@@ -355,6 +421,7 @@ public class ToolBar extends JPanel {
 		((SpinnerNumberModel)(lodYDetailSpinner.getModel())).setMaximum(16);
 		lodYDetailSpinner.setMinimumSize(lodYDetailSpinner.getPreferredSize());
 		lodYDetailSpinner.setMaximumSize(lodYDetailSpinner.getPreferredSize());
+		ToolTips.registerTooltip(lodYDetailSpinner, ToolTips.LOD_Y_DETAIL);
 		lodSpinnerPanel.add(lodYDetailSpinner);
 		lodCtrlPanel.add(lodSpinnerPanel);
 
@@ -380,16 +447,19 @@ public class ToolBar extends JPanel {
 		zoomOutButton.setPreferredSize(new Dimension(48, 48));
 		zoomOutButton.setMinimumSize(zoomOutButton.getPreferredSize());
 		zoomOutButton.setMaximumSize(zoomOutButton.getPreferredSize());
+		ToolTips.registerTooltip(zoomOutButton, ToolTips.ZOOM_OUT);
 		zoomCtrlPanel.add(zoomOutButton);
 		zoomInButton = new JButton("+");
 		zoomInButton.setPreferredSize(new Dimension(48, 48));
 		zoomInButton.setMinimumSize(zoomInButton.getPreferredSize());
 		zoomInButton.setMaximumSize(zoomInButton.getPreferredSize());
+		ToolTips.registerTooltip(zoomInButton, ToolTips.ZOOM_IN);
 		zoomCtrlPanel.add(zoomInButton);
 		teleportButton = new JButton("TP");
 		teleportButton.setPreferredSize(new Dimension(48, 48));
 		teleportButton.setMinimumSize(teleportButton.getPreferredSize());
 		teleportButton.setMaximumSize(teleportButton.getPreferredSize());
+		ToolTips.registerTooltip(teleportButton, ToolTips.TELEPORT);
 		zoomCtrlPanel.add(teleportButton);
 		zoomPanel.add(zoomCtrlPanel);
 		zoomPanel.add(new JPanel());
@@ -400,15 +470,16 @@ public class ToolBar extends JPanel {
 		JPanel settingsPanel = new JPanel();
 		settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
 		settingsPanel.setMinimumSize(new Dimension(160, 140));
-		settingsPanel.setMaximumSize(settingsPanel.getMinimumSize());
+		settingsPanel.setMaximumSize(new Dimension(240, 140));
 		settingsPanel.setPreferredSize(settingsPanel.getMinimumSize());
 		settingsPanel.add(new JLabel(" "));
 		settingsPanel.add(new JPanel());
-		runOptimiserCheckBox = new JCheckBox("Run Optimiser");
+		runOptimiserCheckBox = new JCheckBox("Run Optimisers");
 		runOptimiserCheckBox.setSelected(Config.runOptimiser);
 		runOptimiserCheckBox.setPreferredSize(new Dimension(410, 24));
 		runOptimiserCheckBox.setMinimumSize(new Dimension(410, 24));
 		runOptimiserCheckBox.setMaximumSize(new Dimension(410, 24));
+		ToolTips.registerTooltip(runOptimiserCheckBox, ToolTips.RUN_OPTIMISERS);
 		settingsPanel.add(runOptimiserCheckBox);
 		runOptimiserCheckBox.setAlignmentX(1);
 		
@@ -417,6 +488,7 @@ public class ToolBar extends JPanel {
 		removeCavesCheckBox.setPreferredSize(new Dimension(410, 24));
 		removeCavesCheckBox.setMinimumSize(new Dimension(410, 24));
 		removeCavesCheckBox.setMaximumSize(new Dimension(410, 24));
+		ToolTips.registerTooltip(removeCavesCheckBox, ToolTips.REMOVE_CAVES);
 		settingsPanel.add(removeCavesCheckBox);
 		removeCavesCheckBox.setAlignmentX(1);
 		
@@ -426,6 +498,7 @@ public class ToolBar extends JPanel {
 		fillInCavesCheckBox.setMinimumSize(new Dimension(394, 24));
 		fillInCavesCheckBox.setMaximumSize(new Dimension(394, 24));
 		fillInCavesCheckBox.setBorder(new EmptyBorder(0, 16, 0, 0));
+		ToolTips.registerTooltip(fillInCavesCheckBox, ToolTips.REMOVE_CAVES_FILL_IN);
 		settingsPanel.add(fillInCavesCheckBox);
 		fillInCavesCheckBox.setAlignmentX(1);
 
@@ -434,6 +507,7 @@ public class ToolBar extends JPanel {
 		exportIndividualBlocksCheckBox.setPreferredSize(new Dimension(410, 24));
 		exportIndividualBlocksCheckBox.setMinimumSize(new Dimension(410, 24));
 		exportIndividualBlocksCheckBox.setMaximumSize(new Dimension(410, 24));
+		ToolTips.registerTooltip(exportIndividualBlocksCheckBox, ToolTips.EXPORT_INDIVIDUAL_BLOCKS);
 		settingsPanel.add(exportIndividualBlocksCheckBox);
 		exportIndividualBlocksCheckBox.setAlignmentX(1);
 		
@@ -442,8 +516,9 @@ public class ToolBar extends JPanel {
 		chunkSizePanel.setPreferredSize(new Dimension(410, 20));
 		chunkSizePanel.setMinimumSize(chunkSizePanel.getPreferredSize());
 		chunkSizePanel.setMaximumSize(chunkSizePanel.getPreferredSize());
+		ToolTips.registerTooltip(chunkSizePanel, ToolTips.CHUNK_SIZE);
 		JLabel chunkSizeLabel = new JLabel("Chunk Size:");
-		chunkSizeLabel.setPreferredSize(new Dimension(64, 20));
+		chunkSizeLabel.setPreferredSize(new Dimension(96, 20));
 		chunkSizeLabel.setMinimumSize(chunkSizeLabel.getPreferredSize());
 		chunkSizeLabel.setMaximumSize(chunkSizeLabel.getPreferredSize());
 		chunkSizePanel.add(chunkSizeLabel);
@@ -451,7 +526,7 @@ public class ToolBar extends JPanel {
 		chunkSizeSpinner.setPreferredSize(new Dimension(48, 20));
 		chunkSizeSpinner.setValue(Config.chunkSize);
 		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMinimum(1);
-		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMaximum(64);
+		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMaximum(1024);
 		chunkSizeSpinner.setMinimumSize(chunkSizeSpinner.getPreferredSize());
 		chunkSizeSpinner.setMaximumSize(chunkSizeSpinner.getPreferredSize());
 		chunkSizePanel.add(chunkSizeSpinner);
@@ -464,7 +539,7 @@ public class ToolBar extends JPanel {
 
 		JPanel editFGChunksPanel = new JPanel();
 		editFGChunksPanel.setLayout(new BoxLayout(editFGChunksPanel, BoxLayout.Y_AXIS));
-		editFGChunksPanel.setMinimumSize(new Dimension(120, 140));
+		editFGChunksPanel.setMinimumSize(new Dimension(90, 140));
 		editFGChunksPanel.setMaximumSize(editFGChunksPanel.getMinimumSize());
 		editFGChunksPanel.setPreferredSize(editFGChunksPanel.getMinimumSize());
 		editFGChunksPanel.add(new JLabel(" "));
@@ -474,15 +549,35 @@ public class ToolBar extends JPanel {
 		editFGChunksButton.setMinimumSize(editFGChunksButton.getPreferredSize());
 		editFGChunksButton.setMaximumSize(editFGChunksButton.getPreferredSize());
 		editFGChunksButton.setFocusable(false);
+		ToolTips.registerTooltip(editFGChunksButton, ToolTips.EDIT_FG);
 		editFGChunksPanel.add(editFGChunksButton);
 		editFGChunksPanel.add(new JPanel());
 		add(editFGChunksPanel);
+		
+		add(new JPanel());
+
+		JPanel entityPanel = new JPanel();
+		entityPanel.setLayout(new BoxLayout(entityPanel, BoxLayout.Y_AXIS));
+		entityPanel.setMinimumSize(new Dimension(90, 140));
+		entityPanel.setMaximumSize(entityPanel.getMinimumSize());
+		entityPanel.setPreferredSize(entityPanel.getMinimumSize());
+		entityPanel.add(new JLabel(" "));
+		entityPanel.add(new JPanel());
+		entityButton = new JButton("Entities");
+		entityButton.setPreferredSize(new Dimension(84, 84));
+		entityButton.setMinimumSize(entityButton.getPreferredSize());
+		entityButton.setMaximumSize(entityButton.getPreferredSize());
+		entityButton.setFocusable(false);
+		ToolTips.registerTooltip(entityButton, ToolTips.ENTITY_DIALOG);
+		entityPanel.add(entityButton);
+		entityPanel.add(new JPanel());
+		add(entityPanel);
 
 		add(new JPanel());
 
 		JPanel exportPanel = new JPanel();
 		exportPanel.setLayout(new BoxLayout(exportPanel, BoxLayout.Y_AXIS));
-		exportPanel.setMinimumSize(new Dimension(120, 140));
+		exportPanel.setMinimumSize(new Dimension(90, 140));
 		exportPanel.setMaximumSize(exportPanel.getMinimumSize());
 		exportPanel.setPreferredSize(exportPanel.getMinimumSize());
 		exportPanel.add(new JLabel(" "));
@@ -491,6 +586,7 @@ public class ToolBar extends JPanel {
 		exportButton.setPreferredSize(new Dimension(84, 84));
 		exportButton.setMinimumSize(exportButton.getPreferredSize());
 		exportButton.setMaximumSize(exportButton.getPreferredSize());
+		ToolTips.registerTooltip(exportButton, ToolTips.EXPORT);
 		exportPanel.add(exportButton);
 		exportPanel.add(new JPanel());
 		add(exportPanel);
@@ -498,23 +594,15 @@ public class ToolBar extends JPanel {
 		add(new JPanel());
 		add(new JPanel());
 		add(new JPanel());
-
+		
+		worldBrowser = new WorldBrowser();
+		
 		loadWorldButton.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-				chooser.setApproveButtonText("Load");
-				chooser.setDialogTitle("Load World");
-				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				if (new File(FileUtil.getMinecraftSavesDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getMinecraftSavesDir()));
-				chooser.setFileFilter(null);
-				chooser.setAcceptAllFileFilterUsed(false);
-				int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
-				if (result == JFileChooser.APPROVE_OPTION) {
-					MCWorldExporter.getApp().setWorld(chooser.getSelectedFile());
-				}
+				worldBrowser.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				worldBrowser.setVisible(true);
 			}
 
 		});
@@ -556,6 +644,25 @@ public class ToolBar extends JPanel {
 					if(exportData != null)
 						exportData.apply();
 				}
+			}
+
+		});
+		
+		Border pauseLoadingButtonBorder = pauseLoadingButton.getBorder();
+		pauseLoadingButton.addChangeListener(new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if(pauseLoadingButton.isSelected()) {
+					if(MCWorldExporter.getApp().getWorld() != null)
+						MCWorldExporter.getApp().getWorld().pauseLoading();
+					pauseLoadingButton.setBorder(new LineBorder(new Color(0f,0.7f,1f), 4));
+				}else {
+					if(MCWorldExporter.getApp().getWorld() != null)
+						MCWorldExporter.getApp().getWorld().unpauseLoading();
+					pauseLoadingButton.setBorder(pauseLoadingButtonBorder);
+				}
+				MCWorldExporter.getApp().getUI().update();
 			}
 
 		});
@@ -625,6 +732,32 @@ public class ToolBar extends JPanel {
 				MCWorldExporter.getApp().getExportBounds().setMaxZ((Integer) maxZSpinner.getValue());
 			}
 
+		});
+		
+		yOffsetSpinner.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				MCWorldExporter.getApp().getExportBounds().setOffsetY((Integer) yOffsetSpinner.getValue());
+				synchronized(prevYOffsetMutex) {
+					if(yOffsetAutoCheckBox.isSelected() && ((Integer) yOffsetSpinner.getValue()) != prevYOffset) {
+						// If we're in auto mode, but the value in the spinner doesn't match
+						// the value in the prevYOffset, then the user manually changed it.
+						// So, we need to turn auto off.
+						yOffsetAutoCheckBox.setSelected(false);
+					}
+				}
+			}
+			
+		});
+		
+		yOffsetAutoCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				update();
+			}
+			
 		});
 		
 		lodCenterXSpinner.addChangeListener(new ChangeListener() {
@@ -800,6 +933,16 @@ public class ToolBar extends JPanel {
 
 		});
 
+		entityButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				MCWorldExporter.getApp().getUI().getEntityDialog().setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				MCWorldExporter.getApp().getUI().getEntityDialog().setVisible(true);
+			}
+			
+		});
+		
 		exportButton.addActionListener(new ActionListener() {
 
 			@Override
@@ -843,11 +986,17 @@ public class ToolBar extends JPanel {
 
 		});
 	}
+	
+	private int prevCenterX;
+	private int prevCenterZ;
 
 	public void update() {
 		if (MCWorldExporter.getApp().getWorld() == null) {
 			dimensionChooser.removeAllItems();
 		} else {
+			if(pauseLoadingButton.isSelected() != MCWorldExporter.getApp().getWorld().isPaused())
+				pauseLoadingButton.setSelected(MCWorldExporter.getApp().getWorld().isPaused());
+			
 			boolean needUpdate = false;
 			for (String dimension : MCWorldExporter.getApp().getWorld().getDimensions()) {
 				boolean found = false;
@@ -924,10 +1073,142 @@ public class ToolBar extends JPanel {
 		if (Config.chunkSize != ((Integer) chunkSizeSpinner.getValue()).intValue()) {
 			chunkSizeSpinner.setValue(Config.chunkSize);
 		}
+		
+		if(prevWorld != MCWorldExporter.getApp().getWorld() && MCWorldExporter.getApp().getWorld() != null) {
+			synchronized(prevYOffsetMutex) {
+				prevYOffset = 64;
+				yOffsetSpinner.setValue(64);
+			}
+			yOffsetAutoCheckBox.setSelected(true);
+		}
+		
+		if(yOffsetAutoCheckBox.isSelected()) {
+			if(MCWorldExporter.getApp().getWorld() == null) {
+				yOffsetSpinner.setBorder(new EmptyBorder(1,1,1,1));
+			}else {
+				int centerX = MCWorldExporter.getApp().getExportBounds().getCenterX();
+				int centerZ = MCWorldExporter.getApp().getExportBounds().getCenterZ();
+				if(MCWorldExporter.getApp().getExportBounds().hasLod()) {
+					centerX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
+					centerZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
+				}
+				if(centerX != prevCenterX || centerZ != prevCenterZ) {
+					prevCenterX = centerX;
+					prevCenterZ = centerZ;
+					
+					yOffsetSpinner.setBorder(new LineBorder(new Color(200, 96, 96)));
+					
+					final int fcenterX = centerX;
+					final int fcenterZ = centerZ;
+					Runnable backgroundTask = new Runnable() {
+						
+						@Override
+						public void run() {
+							boolean hasNewValue = false;
+							int yOffset = 64;
+							if(MCWorldExporter.getApp().getWorld() != null) {
+								try {
+									Chunk chunk = MCWorldExporter.getApp().getWorld().getChunkFromBlockPosition(fcenterX, fcenterZ);
+									if(chunk != null) {
+										yOffset = chunk.getHeight(fcenterX, fcenterZ) + 1;
+										hasNewValue = true;
+									}
+								}catch(Exception ex) {
+								}
+							}
+							if(hasNewValue) {
+								yOffsetSpinner.setBorder(new EmptyBorder(1,1,1,1));
+								synchronized(prevYOffsetMutex) {
+									if(prevYOffset != yOffset) {
+										prevYOffset = yOffset;
+										yOffsetSpinner.setValue(yOffset);
+									}
+								}
+							}else {
+								yOffsetSpinner.setBorder(new LineBorder(new Color(200, 96, 96)));
+							}
+						}
+						
+					};
+					BackgroundThread.runInBackground(backgroundTask);
+				}
+			}
+		}else {
+			yOffsetSpinner.setBorder(new EmptyBorder(1,1,1,1));
+		}
+		
+		prevWorld = MCWorldExporter.getApp().getWorld();
 	}
 
 	public boolean isEditingFGChunks() {
 		return editFGChunksButton.isSelected();
+	}
+	
+	private boolean isHoveringOverAbout = false;
+	
+	@Override
+	public void paint(Graphics g) {
+		super.paint(g);
+		if(isHoveringOverAbout)
+			g.setColor(new Color(0.05f, 0.15f, 0.85f));
+		else
+			g.setColor(getForeground());
+		g.setFont(g.getFont().deriveFont(g.getFont().getSize2D() * 1.15f));
+		Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("About", g);
+		g.drawString("About", getWidth() - ((int) stringBounds.getWidth()) - 6, ((int) stringBounds.getHeight()) + 2);
+	}
+	
+	@Override
+	protected void processMouseMotionEvent(MouseEvent e) {
+		super.processMouseMotionEvent(e);
+		
+		Rectangle2D stringBounds = getGraphics().getFontMetrics().getStringBounds("About", getGraphics());
+		int minX = getWidth() - ((int) (stringBounds.getWidth() * 1.15f)) - 20;
+		int maxY = ((int) (stringBounds.getHeight() * 1.15f)) + 15;
+		if(e.getX() >= minX && e.getY() <= maxY) {
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			if(!isHoveringOverAbout) {
+				isHoveringOverAbout = true;
+				repaint();
+			}
+		}else {
+			setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			if(isHoveringOverAbout) {
+				isHoveringOverAbout = false;
+				repaint();
+			}
+		}
+	}
+	
+	@Override
+	protected void processMouseEvent(MouseEvent e) {
+		super.processMouseEvent(e);
+		if(e.getID() == MouseEvent.MOUSE_CLICKED && e.getButton() == MouseEvent.BUTTON1) {
+			Rectangle2D stringBounds = getGraphics().getFontMetrics().getStringBounds("About", getGraphics());
+			int minX = getWidth() - ((int) (stringBounds.getWidth() * 1.15f)) - 20;
+			int maxY = ((int) (stringBounds.getHeight() * 1.15f)) + 15;
+			if(e.getX() >= minX && e.getY() <= maxY) {
+				aboutDialog.setVisible(true);
+				aboutDialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+			}
+		}
+	}
+	
+	private void setEnabled(Component comp, boolean enabled) {
+		if(comp != this)
+			comp.setEnabled(enabled);
+		if(comp.getClass().equals(JPanel.class) || comp == this) {
+			int num = ((JPanel) comp).getComponentCount();
+			for(int i = 0; i < num; ++i) {
+				setEnabled(((JPanel) comp).getComponent(i), enabled);
+			}
+		}
+	}
+	
+	@Override
+	public void setEnabled(boolean enabled) {
+		super.setEnabled(enabled);
+		setEnabled(this, enabled);
 	}
 
 }

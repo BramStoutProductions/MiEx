@@ -35,8 +35,11 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-import javax.imageio.ImageIO;
+import nl.bramstout.mcworldexporter.image.ImageReader;
 
 public class FileUtil {
 	
@@ -51,6 +54,26 @@ public class FileUtil {
 			homeDir = envPath;
 		
 		return homeDir;
+	}
+	
+	protected static File[] additionalSaveDirs = null;
+	public static File[] getAdditionalSaveDirs() {
+		if(additionalSaveDirs != null)
+			return additionalSaveDirs;
+		
+		additionalSaveDirs = new File[] {};
+		
+		String pathsStr = System.getenv("MIEX_ADDITIONAL_SAVE_DIRS");
+		String[] paths = pathsStr.split(";");
+		for(String str : paths) {
+			File file = new File(str);
+			if(file.exists() && file.isDirectory()) {
+				additionalSaveDirs = Arrays.copyOf(additionalSaveDirs, additionalSaveDirs.length + 1);
+				additionalSaveDirs[additionalSaveDirs.length-1] = file;
+			}
+		}
+		
+		return additionalSaveDirs;
 	}
 	
 	protected static String resourcePackDir = null;
@@ -71,7 +94,7 @@ public class FileUtil {
 		if(resourcePackUSDPrefix != null)
 			return resourcePackUSDPrefix;
 		try {
-			resourcePackUSDPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
+			resourcePackUSDPrefix = new File(getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -91,7 +114,7 @@ public class FileUtil {
 		if(resourcePackMTLXPrefix != null)
 			return resourcePackMTLXPrefix;
 		try {
-			resourcePackMTLXPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
+			resourcePackMTLXPrefix = new File(getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -111,7 +134,7 @@ public class FileUtil {
 		if(resourcePackJSONPrefix != null)
 			return resourcePackJSONPrefix;
 		try {
-			resourcePackJSONPrefix = new File("./resources/").getCanonicalPath().replace('\\', '/');
+			resourcePackJSONPrefix = new File(getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -155,14 +178,32 @@ public class FileUtil {
 	}
 	
 	
+	private static Map<File, Boolean> hasAlphaCache = new HashMap<File, Boolean>();
+	
 	public static boolean hasAlpha(File file) {
+		Boolean cachedValue = hasAlphaCache.getOrDefault(file, null);
+		if(cachedValue == null) {
+			synchronized(hasAlphaCache) {
+				cachedValue = hasAlphaCache.getOrDefault(file, null);
+				if(cachedValue == null) {
+					cachedValue = Boolean.valueOf(calcHasAlpha(file));
+					hasAlphaCache.put(file, cachedValue);
+				}
+			}
+		}
+		return cachedValue.booleanValue();
+	}
+	
+	private static boolean calcHasAlpha(File file) {
 		try {
-			BufferedImage tex = ImageIO.read(file);
-			for(int i = 0; i < tex.getWidth(); ++i) {
-				for(int j = 0; j < tex.getHeight(); ++j) {
-					Color color = new Color(tex.getRGB(i, j), true);
-					if(color.getAlpha() < 255) {
-						return true;
+			BufferedImage tex = ImageReader.readImage(file);
+			if(tex != null) {
+				for(int i = 0; i < tex.getWidth(); ++i) {
+					for(int j = 0; j < tex.getHeight(); ++j) {
+						Color color = new Color(tex.getRGB(i, j), true);
+						if(color.getAlpha() < 255) {
+							return true;
+						}
 					}
 				}
 			}
@@ -172,18 +213,36 @@ public class FileUtil {
 		return false;
 	}
 	
+	private static Map<File, Boolean> hasCutoutCache = new HashMap<File, Boolean>();
+	
 	public static boolean hasCutout(File file) {
+		Boolean cachedValue = hasCutoutCache.getOrDefault(file, null);
+		if(cachedValue == null) {
+			synchronized(hasCutoutCache) {
+				cachedValue = hasCutoutCache.getOrDefault(file, null);
+				if(cachedValue == null) {
+					cachedValue = Boolean.valueOf(calcHasCutout(file));
+					hasCutoutCache.put(file, cachedValue);
+				}
+			}
+		}
+		return cachedValue.booleanValue();
+	}
+	
+	private static boolean calcHasCutout(File file) {
 		boolean hasAlpha = false;
 		try {
-			BufferedImage tex = ImageIO.read(file);
-			for(int i = 0; i < tex.getWidth(); ++i) {
-				for(int j = 0; j < tex.getHeight(); ++j) {
-					Color color = new Color(tex.getRGB(i, j), true);
-					if(color.getAlpha() > 0 && color.getAlpha() < 255) {
-						return false;
+			BufferedImage tex = ImageReader.readImage(file);
+			if(tex != null) {
+				for(int i = 0; i < tex.getWidth(); ++i) {
+					for(int j = 0; j < tex.getHeight(); ++j) {
+						Color color = new Color(tex.getRGB(i, j), true);
+						if(color.getAlpha() > 0 && color.getAlpha() < 255) {
+							return false;
+						}
+						if(color.getAlpha() < 255)
+							hasAlpha = true;
 					}
-					if(color.getAlpha() < 255)
-						hasAlpha = true;
 				}
 			}
 		} catch (Exception ex) {
@@ -219,21 +278,13 @@ public class FileUtil {
 		return "NOT FOUND";
 	}
 	
-	public static String getMinecraftSavesDir() {
-		return getMinecraftRootDir() + "/saves";
-	}
-	
-	protected static String minecraftVersionsDir = null;
-	public static String getMinecraftVersionsDir() {
-		if(minecraftVersionsDir != null)
-			return minecraftVersionsDir;
-		minecraftVersionsDir = getMinecraftRootDir() + "/versions/";
-		
-		String envPath = System.getenv("MIEX_MINECRAFT_VERSIONS_DIR");
-		if(envPath != null)
-			minecraftVersionsDir = envPath + "/";
-		
-		return minecraftVersionsDir;
+	public static String getMinecraftBedrockRootDir() {
+		if(isWindows())
+			return System.getenv("LOCALAPPDATA") + "/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang";
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
 	}
 	
 	protected static String multiMCRootDir = null;
@@ -290,17 +341,59 @@ public class FileUtil {
 		return "NOT FOUND";
 	}
 	
+	private static String getModrinthRootDir3() {
+		// Modrinth changes the name of the root directory.
+		if(isWindows())
+			return System.getenv("APPDATA") + "/ModrinthApp/";
+		else if(isMacOs())
+			return "~/Library/Application Support/ModrinthApp/";
+		else if (isLinux())
+			return "~/.config/ModrinthApp/";
+
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
+	}
+	
 	protected static String modrinthRootDir = null;
 	public static String getModrinthRootDir() {
 		if(modrinthRootDir != null)
 			return modrinthRootDir;
-		modrinthRootDir = getModrinthRootDir2();
+		modrinthRootDir = getModrinthRootDir3();
+		if(!(new File(modrinthRootDir).exists()))
+			modrinthRootDir = getModrinthRootDir2();
 		
 		String envPath = System.getenv("MIEX_MODRINTH_ROOT_DIR");
 		if(envPath != null)
 			modrinthRootDir = envPath + "/";
 		
 		return modrinthRootDir;
+	}
+	
+	public static File findJarFile(File versionsFolder, String versionName) {
+		File versionFolder = new File(versionsFolder, versionName);
+		File versionJar = new File(versionFolder, versionName + ".jar");
+		if(versionJar.exists())
+			return versionJar;
+		// It could also be located somewhere else, so let's try a few things.
+		versionJar = new File(versionFolder, "/bin/minecraft.jar");
+		if(versionJar.exists())
+			return versionJar;
+		
+		// In some cases, it might be in a sub folder with the version name
+		if(new File(versionFolder, versionName).exists())
+			versionFolder = new File(versionFolder, versionName);
+		
+		if(!versionFolder.exists() || !versionFolder.isDirectory())
+			return null;
+		
+		// If the jar doesn't exist, just pick the first jar file in the versions folder.
+		for(File f : versionFolder.listFiles()) {
+			if(f.getName().endsWith(".jar"))
+				return f;
+		}
+		return null;
 	}
 
 }

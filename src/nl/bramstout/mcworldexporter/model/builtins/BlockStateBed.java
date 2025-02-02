@@ -34,15 +34,18 @@ package nl.bramstout.mcworldexporter.model.builtins;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateBed extends BlockState{
 
-	public BlockStateBed(String name) {
-		super(name, null);
+	public BlockStateBed(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -50,7 +53,18 @@ public class BlockStateBed extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
@@ -59,7 +73,7 @@ public class BlockStateBed extends BlockState{
 		models.add(list);
 		
 		float rotY = 0f;
-		String val = properties.getElement("facing").asString();
+		String val = properties.get("facing").asString();
 		if (val == null)
 			val = "up";
 		if (val.equals("north")) {
@@ -72,7 +86,7 @@ public class BlockStateBed extends BlockState{
 			rotY = 270f;
 		}
 		
-		String partStr = properties.getElement("part").asString();
+		String partStr = properties.get("part").asString();
 		if (partStr == null)
 			partStr = "foot";
 		
@@ -85,7 +99,7 @@ public class BlockStateBed extends BlockState{
 		}
 		color = color.split(":")[1];
 		
-		model.addTexture("texture", "minecraft:entity/bed/" + color);
+		model.addTexture("#texture", "minecraft:entity/bed/" + color);
 		
 		if (partStr.equals("foot")) {
 			// Foot
@@ -105,8 +119,13 @@ public class BlockStateBed extends BlockState{
 		
 		model.rotate(0, rotY, false);
 		
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, null);
+		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 1, null,
+				needsConnectionInfo());
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 
 }

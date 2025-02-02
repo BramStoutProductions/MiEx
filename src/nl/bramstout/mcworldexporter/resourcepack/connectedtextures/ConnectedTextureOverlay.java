@@ -13,7 +13,7 @@ public class ConnectedTextureOverlay extends ConnectedTexture{
 	public String getTexture(int x, int y, int z, ModelFace face) {
 		Direction up = getUp(face);
 		
-		int connectionBits = calcConnectionBits(x, y, z, face, up);
+		int connectionBits = calcConnectionBits(x, y, z, face, up, false);
 		int tile = CtmUtils.OverlayDataToTile[connectionBits];
 		
 		if(tile < 0 || tile >= tiles.size())

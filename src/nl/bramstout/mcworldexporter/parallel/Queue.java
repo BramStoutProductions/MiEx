@@ -93,6 +93,12 @@ public class Queue<T> {
 		}catch(Exception ex) {}
 		// If we've reached the next block, then update
 		// the writeBlock value to the next block.
+		// If we are going really fast, nextBlock might still be
+		// null, so just do a quick spin lock until it's no longer
+		// null
+		while(block.nextBlock == null) {
+			Thread.yield();
+		}
 		if(index - block.startAddress == 1152)
 			writeBlock.set(block.nextBlock);
 	}

@@ -161,6 +161,10 @@ public class Renderer2D implements Runnable {
 					continue;
 				if(bufferWidth <= 0 || bufferHeight <= 0)
 					continue;
+				if(MCWorldExporter.getApp().getWorld() != null) {
+					if(MCWorldExporter.getApp().getWorld().isPaused())
+						continue;
+				}
 
 				// Render to the buffer
 
@@ -288,7 +292,7 @@ public class Renderer2D implements Runnable {
 						
 						float ftotal = (float) (0.5 + 1.0 / (1.0 + Math.exp(-0.25 * ((double) total))));
 						
-						int colour = buffer.getRGB(i-1, j-1);
+						int colour = buffer.getRGB(Math.min(i-1, buffer.getWidth()), Math.min(j-1, buffer.getHeight()));
 						Color color = new Color(colour);
 						color = new Color(	Math.min((int) (((float) color.getRed()) * ftotal), 255),
 											Math.min((int) (((float) color.getGreen()) * ftotal), 255), 
@@ -355,11 +359,17 @@ public class Renderer2D implements Runnable {
 
 		@Override
 		public void run() {
+			MCWorldExporter.worldMutex.acquireRead();
+			if(chunk.getRegion().getWorld() != MCWorldExporter.getApp().getWorld()) {
+				MCWorldExporter.worldMutex.releaseRead();
+				return;
+			}
 			try {
 				if (chunk.getChunkX() < renderer.minChunkX || chunk.getChunkX() > renderer.maxChunkX
 						|| chunk.getChunkZ() < renderer.minChunkZ || chunk.getChunkZ() > renderer.maxChunkZ) {
 					// It's outside of what we can view, so we undo the render request.
 					chunk.setRenderRequested(false);
+					MCWorldExporter.worldMutex.releaseRead();
 					return;
 				}
 
@@ -373,6 +383,7 @@ public class Renderer2D implements Runnable {
 			} catch (Exception e) {
 				World.handleError(e);
 			}
+			MCWorldExporter.worldMutex.releaseRead();
 		}
 
 	}

@@ -46,8 +46,8 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
-import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.optimiser.FaceOptimiser;
 import nl.bramstout.mcworldexporter.export.optimiser.RaytracingOptimiser;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
@@ -55,10 +55,14 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.model.Occlusion;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
+import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.World;
@@ -74,10 +78,11 @@ public class ChunkExporter {
 	private int worldOffsetY;
 	private int worldOffsetZ;
 	private Map<String, Mesh> meshes;
-	private Map<Integer, FloatArray> individualBlocks;
+	private Map<IndividualBlockId, FloatArray> individualBlocks;
 	private String name;
 	private LODCache lodCache;
 	private CaveCache caveCache;
+	private Reference<char[]> charBuffer;
 	
 	public static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 
@@ -92,12 +97,13 @@ public class ChunkExporter {
 		this.worldOffsetY = bounds.getOffsetY();
 		this.worldOffsetZ = bounds.getOffsetZ();
 		this.meshes = new HashMap<String, Mesh>();
-		this.individualBlocks = new HashMap<Integer, FloatArray>();
+		this.individualBlocks = new HashMap<IndividualBlockId, FloatArray>();
 		this.name = name;
 		this.lodCache = new LODCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
 		this.caveCache = null;
 		if(Config.fillInCaves)
 			this.caveCache = new CaveCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
+		this.charBuffer = new Reference<char[]>();
 	}
 	
 	public void generateMeshes() {
@@ -133,6 +139,8 @@ public class ChunkExporter {
 		Chunk chunk = getPrefetchedChunk(x, z);
 		if(chunk == null)
 			return;
+		
+		int stoneBlockId = BlockRegistry.getIdForName("minecraft:stone", null, chunk.getDataVersion(), charBuffer);
 		
 		int minX = Math.max(0, bounds.getMinX() - x * 16);
 		int maxX = Math.min(16, (bounds.getMaxX() + 1) - x * 16);
@@ -171,6 +179,8 @@ public class ChunkExporter {
 		List<ModelFace> detailedOcclusionFaces = new ArrayList<ModelFace>();
 		boolean placeStone = false;
 		long occlusion = 0;
+		long ambientOcclusion = 0;
+		Occlusion occlusionHandler = new Occlusion();
 		
 		for(by = minY; by < maxY; by += lodYSize) {
 			for(bz = minZ; bz < maxZ; bz += lodSize) {
@@ -197,16 +207,20 @@ public class ChunkExporter {
 							// we put in a stone block.
 							
 							if(isInCaveCached(wx, by, wz)) {
-								for(Direction dir : Direction.CACHED_VALUES) {
-									if(!isInCaveCached(wx + dir.x, by + dir.y, wz + dir.z)) {
-										placeStone = true;
-										break;
+								if(by == minY)
+									placeStone = true;
+								else {
+									for(Direction dir : Direction.CACHED_VALUES) {
+										if(!isInCaveCached(wx + dir.x, by + dir.y, wz + dir.z)) {
+											placeStone = true;
+											break;
+										}
 									}
 								}
 							}
 							if(placeStone)
 								state = BlockStateRegistry.getBakedStateForBlock(
-										BlockRegistry.getIdForName("minecraft:stone", null), blockId[1], blockId[2], blockId[3]);
+										stoneBlockId, blockId[1], blockId[2], blockId[3]);
 						}
 						if(!placeStone && state.isAir())
 							continue; // No need to do anything with air
@@ -215,6 +229,8 @@ public class ChunkExporter {
 					occlusion = getOcclusion(chunk, bx, by, bz, state, detailedOcclusionFaces, lodSize, lodYSize);
 					if(occlusion == Long.MAX_VALUE)
 						continue; // Block is in cave
+					
+					ambientOcclusion = getAmbientOcclusion(chunk, bx, by, bz, lodSize, lodYSize);
 					
 					liquidState = state.getLiquidState();
 					
@@ -243,31 +259,37 @@ public class ChunkExporter {
 						getBlendedBiome(wx, by, wz, biome);
 					
 					if(state.isIndividualBlocks() || Config.onlyIndividualBlocks) {
-						handleIndividualBlock(blockId, wx, by, wz, offsetX, offsetY, offsetZ);
+						handleIndividualBlock(blockId, wx, by, wz, offsetX, offsetY, offsetZ, state.isNeedsConnectionInfo());
 					}else {
-						handleBlock(models, state, blockId, occlusion, detailedOcclusionFaces, wx, by, wz, 
-									offsetX, offsetY, offsetZ, uvOffsetY, biome, lodSize, lodYSize);
+						handleBlock(models, state, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, detailedOcclusionFaces, 
+									wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY, biome, lodSize, lodYSize, occlusionHandler);
 					}
 					
 					
 					if(liquidState != null) {
-						handleLiquidState(models, state, liquidState, blockId, occlusion, wx, by, wz, biome, lodSize, lodYSize);
+						handleLiquidState(models, state, liquidState, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, 
+									wx, by, wz, biome, lodSize, lodYSize, occlusionHandler);
 					}
 				}
 			}
 		}
 		
-		handleEntities(chunk);
+		//handleEntities(chunk);
 	}
 	
-	private void handleIndividualBlock(int[] blockId, int wx, int by, int wz, float offsetX, float offsetY, float offsetZ) {
-		FloatArray array = individualBlocks.get(blockId[0]);
+	private void handleIndividualBlock(int[] blockId, int wx, int by, int wz, float offsetX, float offsetY, float offsetZ,
+										boolean needsConnectionInfo) {
+		IndividualBlockId id = new IndividualBlockId(blockId[0], 
+										needsConnectionInfo ? blockId[1] : 0,
+										needsConnectionInfo ? blockId[2] : 0,
+										needsConnectionInfo ? blockId[3] : 0);
+		FloatArray array = individualBlocks.get(id);
 		if(array == null) {
 			array = new FloatArray();
 			array.add(wx*16 + offsetX - worldOffsetX * 16);
 			array.add(by*16 + offsetY - worldOffsetY * 16 + 8.0f);
 			array.add(wz*16 + offsetZ - worldOffsetZ * 16);
-			individualBlocks.put(blockId[0], array);
+			individualBlocks.put(id, array);
 		}else {
 			array.add(wx*16 + offsetX - worldOffsetX * 16);
 			array.add(by*16 + offsetY - worldOffsetY * 16 + 8.0f);
@@ -275,75 +297,69 @@ public class ChunkExporter {
 		}
 	}
 	
-	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, long occlusion, 
-							List<ModelFace> detailedOcclusionFaces, int wx, int by, int wz, 
+	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, int dataVersion, long occlusion, 
+							long ambientOcclusion, List<ModelFace> detailedOcclusionFaces, int wx, int by, int wz, 
 							float offsetX, float offsetY, float offsetZ, float uvOffsetY,
-							BlendedBiome biome, int lodSize, int lodYSize) {
+							BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
 		models.clear();
 		state.getModels(blockId[1], blockId[2], blockId[3], models);
+		
+		occlusionHandler.calculateCornerDataForModel(models, state, occlusion, detailedOcclusionFaces);
+		
 		Model model;
 		ModelFace face;
+		int faceIndex = 0;
 		for(int i = 0; i < models.size(); ++i) {
 			model = models.get(i);
 			for(int j = 0; j < model.getFaces().size(); ++j) {
-				face = model.getFaces().get(j);
-				if(face.getOccludedBy() != 0 && (face.getOccludedBy() & occlusion) == face.getOccludedBy())
+				if(occlusionHandler.isFaceOccluded(faceIndex)) {
+					faceIndex++;
 					continue;
-				if(state.isDetailedOcclusion() && face.getOccludedBy() != 0) {
-					boolean occluded = false;
-					for(ModelFace face2 : detailedOcclusionFaces) {
-						if(getDetailedOcclusion(face, face2)) {
-							occluded = true;
-							break;
-						}
-					}
-					if(occluded)
-						continue;
 				}
-				addFace(meshes, state.getName(), face, model.getTexture(face.getTexture()), wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY,
-						model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale(), false);
+				
+				face = model.getFaces().get(j);
+				
+				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
+				
+				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), wx, by, wz, 
+						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), 
+						lodSize, lodYSize, state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
+				
+				faceIndex++;
 			}
 		}
 	}
+	
+	private List<ModelFace> emptyFaceList = new ArrayList<ModelFace>();
 	
 	private void handleLiquidState(List<Model> models, BakedBlockState state, BakedBlockState liquidState, int[] blockId,
-									long occlusion, int wx, int by, int wz, BlendedBiome biome, int lodSize, int lodYSize) {
+									int dataVersion, long occlusion, long ambientOcclusion, int wx, int by, int wz, 
+									BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
 		models.clear();
 		liquidState.getModels(blockId[1], blockId[2], blockId[3], models);
+		
+		occlusionHandler.calculateCornerDataForModel(models, state, occlusion, emptyFaceList);
+		
 		Model model;
 		ModelFace face;
+		int faceIndex = 0;
 		for(int i = 0; i < models.size(); ++i) {
 			model = models.get(i);
 			for(int j = 0; j < model.getFaces().size(); ++j) {
-				face = model.getFaces().get(j);
-				if(face.getOccludedBy() != 0 && (face.getOccludedBy() & occlusion) == face.getOccludedBy())
+				if(occlusionHandler.isFaceOccluded(faceIndex)) {
+					faceIndex++;
 					continue;
-				addFace(meshes, "minecraft:water", face, model.getTexture(face.getTexture()), wx, by, wz, 0f, 0f, 0f, 0f, model.getExtraData(), 
-						biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, state.isLodNoUVScale(), false);
-			}
-		}
-	}
-	
-	private void handleEntities(Chunk chunk) {
-		Entity entity;
-		List<Model> models;
-		Model model;
-		ModelFace face;
-		for(int i = 0; i < chunk.getEntities().size(); ++i) {
-			entity = chunk.getEntities().get(i);
-			if(entity.getBlockX() < bounds.getMinX() || entity.getBlockX() > bounds.getMaxX() ||
-					entity.getBlockY() < bounds.getMinY() || entity.getBlockY() >= bounds.getMaxY() ||
-					entity.getBlockZ() < bounds.getMinZ() || entity.getBlockZ() > bounds.getMaxZ())
-				continue;
-			models = entity.getModels();
-			for(int j = 0; j < models.size(); ++j) {
-				model = models.get(j);
-				for(int k = 0; k < model.getFaces().size(); ++k) {
-					face = model.getFaces().get(k);
-					addFace(meshes, entity.getName(), face, model.getTexture(face.getTexture()), entity.getX(), entity.getY(), entity.getZ(), 
-							0f, 0f, 0f, 0f, model.getExtraData(), null, model.isDoubleSided(),
-							1, 1, false, false);
 				}
+				
+				face = model.getFaces().get(j);
+				
+				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
+				
+				addFace(meshes, "minecraft:water", blockId[0], dataVersion, face, model.getTexture(face.getTexture()), wx, by, wz, 
+						0f, 0f, 0f, 0f, model.getExtraData(), biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, 
+						state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
+				
+				faceIndex++;
 			}
 		}
 	}
@@ -595,7 +611,7 @@ public class ChunkExporter {
 				}
 			}
 			if(out[0] == -2) {
-				out[0] = 0;
+				out[0] = -1;
 				out[1] = 0;
 				out[2] = 0;
 				out[3] = 0;
@@ -605,12 +621,12 @@ public class ChunkExporter {
 	
 	private void getLODBlockIdOcclusion(int wx, int wy, int wz, int lodSize, int lodYSize, Direction direction, int[] out) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
-		if (chunk != null) {
+		if (chunk != null && !chunk.hasLoadError()) {
 			getLODBlockIdOcclusion(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, 
 									lodSize, lodYSize, direction, out);
 			return;
 		}
-		out[0] = 0;
+		out[0] = -1;
 		out[1] = 0;
 		out[2] = 0;
 		out[3] = 0;
@@ -663,17 +679,18 @@ public class ChunkExporter {
 		res.normalise();
 	}
 	
-	private void addFace(Map<String, Mesh> meshes, String blockName, ModelFace face, String texture, 
+	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
 			float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
 			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
-			boolean lodNoUVScale, boolean noConnectedTextures) {
+			boolean lodNoUVScale, boolean noConnectedTextures, long ambientOcclusion, int cornerData) {
 		if(texture == null || texture.equals(""))
 			return;
 		
 		// Connected textures
 		if(!noConnectedTextures) {
+			Block block = BlockRegistry.getBlock(blockId);
 			Entry<ConnectedTexture, List<ConnectedTexture>> connectedTextures = 
-										ConnectedTextures.getConnectedTexture(blockName, texture);
+										ConnectedTextures.getConnectedTexture(blockName, block.getProperties(), texture);
 			if(connectedTextures != null) {
 				ConnectedTexture connectedTexture = connectedTextures.getKey();
 				if(connectedTexture != null) {
@@ -712,8 +729,9 @@ public class ChunkExporter {
 											getBlendedBiome((int) bx, (int) by, (int) bz, biome);
 											
 											// Get a block state for the tintBlock name
-											int blockId = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null);
-											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId, 
+											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
+																					dataVersion, charBuffer);
+											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
 																						(int) bx, (int) by, (int) bz);
 											overlayTint = biome.getBiomeColor(blockState);
 										}else {
@@ -722,8 +740,9 @@ public class ChunkExporter {
 									}
 								}
 								
-								addFace(meshes, blockName, overlayFace, newTexture, bx, by, bz, ox, oy, oz, uvOffsetY,
-										extraData, overlayTint, doubleSided, lodSize, lodYSize, lodNoUVScale, true);
+								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, bx, by, bz, ox, oy, oz, 
+										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
+										lodNoUVScale, true, ambientOcclusion, cornerData);
 							}
 						}
 					}
@@ -737,7 +756,8 @@ public class ChunkExporter {
 			// If the face doesn't have a tintIndex, set the tint to white.
 			// This is also how Minecraft does it.
 			// But don't do it, if we want to force the biome colour anyways.
-			if(face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture))
+			if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
+					Config.forceNoBiomeColor.contains(blockName))
 				tint = new Color(1.0f, 1.0f, 1.0f);
 		}
 		float lodSizeF = ((float) (lodSize-1)) / 2.0f;
@@ -762,12 +782,17 @@ public class ChunkExporter {
 		if(meshes.containsKey(meshName)) {
 			meshes.get(meshName).addFace(face, 
 					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
-					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint);
+					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint, ambientOcclusion, cornerData);
 		}else {
-			Mesh mesh = new Mesh(meshName, texture, doubleSided);
+			boolean animatedTexture = false;
+			MCMeta mcmeta = ResourcePacks.getMCMeta(texture);
+			if(mcmeta != null)
+				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
+			
+			Mesh mesh = new Mesh(meshName, texture, animatedTexture, doubleSided, 1024, 8);
 			mesh.addFace(face, 
 					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
-					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint);
+					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint, ambientOcclusion, cornerData);
 			mesh.setExtraData(extraData);
 			meshes.put(meshName, mesh);
 		}
@@ -775,6 +800,273 @@ public class ChunkExporter {
 	
 	private int[] OCCLUSION_BLOCK_ID = new int[4];
 	private List<Model> OCCLUSION_MODELS = new ArrayList<Model>();
+	
+	private long getAmbientOcclusionContributionFromCorner(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize, int corner) {
+		BakedBlockState state = null;
+		long occlusion = 0;
+		getLODBlockId(chunk, cx, cy, cz, lodSize, lodYSize, OCCLUSION_BLOCK_ID);
+		if(OCCLUSION_BLOCK_ID[0] < 0)
+			occlusion = 0;
+		else {
+			state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+			if(state.isTransparentOcclusion()) {
+				occlusion = 0;
+			}else {
+				occlusion = state.getOccludes();
+			}
+		}
+		
+		// The occludes bit set contains six sets of four bits,
+		// one for each direction of a block. Each direction,
+		// is divided up into four sections with one bit for each
+		// section. The order is BL, BR, TL, TR going from the least
+		// significant bit to most significant bit. B means bottom,
+		// which is the lower value on the secondary axis. T means
+		// top and is the opposite of bottom. L means left, which is
+		// the lower value on the primary axis. R means right and
+		// is the opposite of left.
+		
+		long contribution = 0; 
+		if(corner == 0) {
+			// -X -Y -Z
+			// NORTH, WEST, DOWN
+			contribution += ((occlusion >>> (Direction.NORTH.id * 4)) & 0b0001) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.WEST.id  * 4)) & 0b0001) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.DOWN.id  * 4)) & 0b0001) != 0 ? 1 : 0;
+		}else if(corner == 1) {
+			// +X -Y -Z
+			// NORTH, EAST, DOWN
+			contribution += ((occlusion >>> (Direction.NORTH.id * 4)) & 0b0010) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.EAST.id  * 4)) & 0b0001) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.DOWN.id  * 4)) & 0b0010) != 0 ? 1 : 0;
+		}else if(corner == 2) {
+			// -X -Y +Z
+			// SOUTH, WEST, DOWN
+			contribution += ((occlusion >>> (Direction.SOUTH.id * 4)) & 0b0001) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.WEST.id  * 4)) & 0b0010) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.DOWN.id  * 4)) & 0b0100) != 0 ? 1 : 0;
+		}else if(corner == 3) {
+			// +X -Y +Z
+			// SOUTH, EAST, DOWN
+			contribution += ((occlusion >>> (Direction.SOUTH.id * 4)) & 0b0010) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.EAST.id  * 4)) & 0b0010) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.DOWN.id  * 4)) & 0b1000) != 0 ? 1 : 0;
+		}else if(corner == 4) {
+			// -X +Y -Z
+			// NORTH, WEST, UP
+			contribution += ((occlusion >>> (Direction.NORTH.id * 4)) & 0b0100) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.WEST.id  * 4)) & 0b0100) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.UP.id    * 4)) & 0b0001) != 0 ? 1 : 0;
+		}else if(corner == 5) {
+			// +X +Y -Z
+			// NORTH, EAST, UP
+			contribution += ((occlusion >>> (Direction.NORTH.id * 4)) & 0b1000) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.EAST.id  * 4)) & 0b0100) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.UP.id    * 4)) & 0b0010) != 0 ? 1 : 0;
+		}else if(corner == 6) {
+			// -X +Y +Z
+			// SOUTH, WEST, UP
+			contribution += ((occlusion >>> (Direction.SOUTH.id * 4)) & 0b0100) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.WEST.id  * 4)) & 0b1000) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.UP.id    * 4)) & 0b0100) != 0 ? 1 : 0;
+		}else if(corner == 7) {
+			// +X +Y +Z
+			// SOUTH, EAST, UP
+			contribution += ((occlusion >>> (Direction.SOUTH.id * 4)) & 0b1000) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.EAST.id  * 4)) & 0b1000) != 0 ? 1 : 0;
+			contribution += ((occlusion >>> (Direction.UP.id    * 4)) & 0b1000) != 0 ? 1 : 0;
+		}
+		return contribution > 1 ? 1 : 0;
+	}
+	
+	private long getAmbientOcclusionForSide(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize, Direction dir) {
+		long ao00 = 0;
+		long ao01 = 0;
+		long ao10 = 0;
+		long ao11 = 0;
+		
+		if(dir == Direction.NORTH) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz - lodSize, lodSize, lodYSize, 2);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz - lodSize, lodSize, lodYSize, 6);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz - lodSize, lodSize, lodYSize, 3);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 7);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz - lodSize, lodSize, lodYSize, 3);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz - lodSize, lodSize, lodYSize, 7);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz - lodSize, lodSize, lodYSize, 2);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 6);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz - lodSize, lodSize, lodYSize, 6);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz - lodSize, lodSize, lodYSize, 2);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz - lodSize, lodSize, lodYSize, 7);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 3);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz - lodSize, lodSize, lodYSize, 7);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz - lodSize, lodSize, lodYSize, 3);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz - lodSize, lodSize, lodYSize, 6);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 2);
+		}else if(dir == Direction.SOUTH) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz + lodSize, lodSize, lodYSize, 0);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz + lodSize, lodSize, lodYSize, 4);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz + lodSize, lodSize, lodYSize, 1);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 5);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz + lodSize, lodSize, lodYSize, 1);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz + lodSize, lodSize, lodYSize, 5);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz + lodSize, lodSize, lodYSize, 0);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 4);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz + lodSize, lodSize, lodYSize, 4);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz + lodSize, lodSize, lodYSize, 0);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz + lodSize, lodSize, lodYSize, 5);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 1);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy           , cz + lodSize, lodSize, lodYSize, 5);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz + lodSize, lodSize, lodYSize, 1);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz + lodSize, lodSize, lodYSize, 4);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 0);
+		}else if(dir == Direction.EAST) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz          , lodSize, lodYSize, 0);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 4);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz - lodSize, lodSize, lodYSize, 2);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 6);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz          , lodSize, lodYSize, 2);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 6);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz + lodSize, lodSize, lodYSize, 0);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 4);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz          , lodSize, lodYSize, 4);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 0);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz - lodSize, lodSize, lodYSize, 6);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 2);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz          , lodSize, lodYSize, 6);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 2);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy           , cz + lodSize, lodSize, lodYSize, 4);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 0);
+		}else if(dir == Direction.WEST) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz          , lodSize, lodYSize, 1);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 5);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz - lodSize, lodSize, lodYSize, 3);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 7);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz          , lodSize, lodYSize, 3);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 7);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz + lodSize, lodSize, lodYSize, 1);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 5);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz          , lodSize, lodYSize, 5);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 1);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz - lodSize, lodSize, lodYSize, 7);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 3);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz          , lodSize, lodYSize, 7);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 3);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy           , cz + lodSize, lodSize, lodYSize, 5);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 1);
+		}else if(dir == Direction.UP) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz          , lodSize, lodYSize, 0);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 1);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz - lodSize, lodSize, lodYSize, 2);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 3);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz          , lodSize, lodYSize, 1);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 0);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz - lodSize, lodSize, lodYSize, 3);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz - lodSize, lodSize, lodYSize, 2);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz          , lodSize, lodYSize, 2);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 3);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz + lodSize, lodSize, lodYSize, 0);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 1);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz          , lodSize, lodYSize, 3);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz          , lodSize, lodYSize, 2);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy + lodYSize, cz + lodSize, lodSize, lodYSize, 1);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy + lodYSize, cz + lodSize, lodSize, lodYSize, 0);
+		}else if(dir == Direction.DOWN) {
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz          , lodSize, lodYSize, 4);
+			
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 5);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz - lodSize, lodSize, lodYSize, 6);
+			ao00 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 7);
+			
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz          , lodSize, lodYSize, 5);
+			
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 4);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz - lodSize, lodSize, lodYSize, 7);
+			ao01 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz - lodSize, lodSize, lodYSize, 6);
+			
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz          , lodSize, lodYSize, 6);
+			
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 7);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz + lodSize, lodSize, lodYSize, 4);
+			ao10 += getAmbientOcclusionContributionFromCorner(chunk, cx - lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 5);
+			
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz          , lodSize, lodYSize, 7);
+			
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz          , lodSize, lodYSize, 6);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx          , cy - lodYSize, cz + lodSize, lodSize, lodYSize, 5);
+			ao11 += getAmbientOcclusionContributionFromCorner(chunk, cx + lodSize, cy - lodYSize, cz + lodSize, lodSize, lodYSize, 4);
+		}
+		ao00 = Math.min(ao00, 3);
+		ao01 = Math.min(ao01, 3);
+		ao10 = Math.min(ao10, 3);
+		ao11 = Math.min(ao11, 3);
+		
+		long ao = ao00 | (ao01 << 2) | (ao10 << 4) | (ao11 << 6);
+		return ao;
+	}
+	
+	private long getAmbientOcclusion(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize) {
+		if(!Config.calculateAmbientOcclusion)
+			return 0;
+		long ao = 0;
+		for(Direction dir : Direction.CACHED_VALUES) {
+			ao |= getAmbientOcclusionForSide(chunk, cx, cy, cz, lodSize, lodYSize, dir) << (dir.id * 10);
+		}
+		return ao;
+	}
 	
 	private long getOcclusion(Chunk chunk, int cx, int cy, int cz, BakedBlockState currentState, 
 								List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
@@ -814,7 +1106,13 @@ public class ChunkExporter {
 				continue;
 			// If both sides are leaves blocks, then only one side kept.
 			if(state.isLeavesOcclusion() && currentState.isLeavesOcclusion()) {
-				if(dir == Direction.DOWN || dir == Direction.SOUTH || dir == Direction.WEST)
+				// Safe out that we have another leaf here.
+				// Used by the corner algorithm.
+				occlusion |= 0b1 << (dir.id + 32);
+				
+				if(!state.isDoubleSided())
+					continue;
+				else if(dir == Direction.DOWN || dir == Direction.SOUTH || dir == Direction.WEST)
 					continue;
 			}
 			
@@ -854,7 +1152,7 @@ public class ChunkExporter {
 				int wx = chunk.getChunkX() * 16 + cx;
 				int wy = cy;
 				int wz = chunk.getChunkZ() * 16 + cz;
-				if(occlusion == 0b111111111111111111111111)
+				if(occlusion == 0b111111111111111111111111L)
 					occlusion = Long.MAX_VALUE;
 				// Offset the position from which we test if it's in a cave to the top of
 				// the LoD block.
@@ -886,6 +1184,10 @@ public class ChunkExporter {
 	}
 	
 	public boolean isInCaveCached(int wx, int wy, int wz) {
+		// Do the isInCave check on half resolution.
+		wx &= ~1;
+		wy &= ~1;
+		wz &= ~1;
 		if(this.caveCache != null) {
 			byte cached = this.caveCache.get(wx, wy, wz);
 			if(cached >= 1)
@@ -899,32 +1201,27 @@ public class ChunkExporter {
 	
 	public int sampleHeight(int wx, int wz) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
-		if(chunk == null || !chunk.isLoaded())
+		if(chunk == null || chunk.hasLoadError())
 			return Integer.MAX_VALUE;
 		return chunk.getHeight(wx, wz);
 	}
 	
 	public boolean isInCave(int wx, int wy, int wz) {
+		// Non-existing chunks are not seen as in caves
+		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
+		if(chunk == null || chunk.hasLoadError())
+			return false;
+		
 		// First check if the current block is near the surface. If so, it's not in a cave.
 		final int surfaceDepth = Config.removeCavesSearchEnergy;
 		if((sampleHeight(wx, wz) - surfaceDepth) < wy)
 			return false;
-		if((sampleHeight(wx-1, wz-1) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx, wz-1) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx+1, wz-1) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx-1, wz) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx+1, wz) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx-1, wz+1) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx, wz+1) - surfaceDepth) < wy)
-			return false;
-		if((sampleHeight(wx+1, wz+1) - surfaceDepth) < wy)
-			return false;
+		for(int z = wz - Config.removeCavesSurfaceRadius; z <= wz + Config.removeCavesSurfaceRadius; ++z) {
+			for(int x = wx - Config.removeCavesSurfaceRadius; x <= wx + Config.removeCavesSurfaceRadius; ++x) {
+				if((sampleHeight(x, z) - surfaceDepth) < wy)
+					return false;
+			}
+		}
 		
 		// Now look for any non-cave blocks. If any non-cave blocks are found, we're not in a cave.
 		// We keep going up to find these blocks. If there is air or liquid, then we keep going some more.
@@ -967,7 +1264,7 @@ public class ChunkExporter {
 			foundAir = false;
 			blockId = lodSampleBlockId(x, y, z);
 			if(blockId < 0) {
-				yEnergy -= 5;
+				yEnergy -= Config.removeCavesCaveBlockCost;
 				continue;
 			}
 			state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
@@ -987,9 +1284,9 @@ public class ChunkExporter {
 				}
 			}
 			if(!foundLiquid && foundAir)
-				yEnergy -= 1;
+				yEnergy -= Config.removeCavesAirCost;
 			else if(!foundLiquid)
-				yEnergy -= 5;
+				yEnergy -= Config.removeCavesCaveBlockCost;
 				
 		}
 		
@@ -1027,57 +1324,13 @@ public class ChunkExporter {
 				}
 			}
 			if(!foundLiquid && foundAir)
-				yEnergy -= 1;
+				yEnergy -= Config.removeCavesAirCost;
 			else if(!foundLiquid)
-				yEnergy -= 5;
+				yEnergy -= Config.removeCavesCaveBlockCost;
 				
 		}
 		
 		return true;
-	}
-	
-	public boolean getDetailedOcclusion(ModelFace faceA, ModelFace faceB) {
-		if(faceA.getDirection() != faceB.getDirection() && faceA.getDirection() != faceB.getDirection().getOpposite())
-			return false;
-		float[] minMaxA = getMinMaxPoints(faceA);
-		float[] minMaxB = getMinMaxPoints(faceB);
-		switch(faceA.getDirection()) {
-		case UP:
-		case DOWN:
-			if(faceA.getPoints()[1] != faceB.getPoints()[1])
-				return false;
-			return faceOccludedByOtherFace(minMaxA[0], minMaxA[2], minMaxA[3], minMaxA[5], 
-											minMaxB[0], minMaxB[2], minMaxB[3], minMaxB[5]);
-		case NORTH:
-		case SOUTH:
-			if(faceA.getPoints()[2] != faceB.getPoints()[2])
-				return false;
-			return faceOccludedByOtherFace(minMaxA[0], minMaxA[1], minMaxA[3], minMaxA[4], 
-											minMaxB[0], minMaxB[1], minMaxB[3], minMaxB[4]);
-		case EAST:
-		case WEST:
-			if(faceA.getPoints()[0] != faceB.getPoints()[0])
-				return false;
-			return faceOccludedByOtherFace(minMaxA[2], minMaxA[1], minMaxA[5], minMaxA[4], 
-											minMaxB[2], minMaxB[1], minMaxB[5], minMaxB[4]);
-		}
-		return false;
-	}
-	
-	public float[] getMinMaxPoints(ModelFace face) {
-		return new float[]{
-				Math.min(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.min(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.min(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-				Math.max(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.max(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.max(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-		};
-	}
-	
-	public boolean faceOccludedByOtherFace(float minXA, float minYA, float maxXA, float maxYA,
-											float minXB, float minYB, float maxXB, float maxYB) {
-		return minXA >= minXB && minYA >= minYB && maxXA <= maxXB && maxYA <= maxYB;
 	}
 	
 	public void writeMeshes(LargeDataOutputStream dos) throws IOException {
@@ -1094,15 +1347,18 @@ public class ChunkExporter {
 		float worldScale = Config.blockSizeInUnits / 16.0f;
 				
 		dos.writeInt(individualBlocks.size());
-		for(Entry<Integer, FloatArray> blocks : individualBlocks.entrySet()) {
-			dos.writeInt(blocks.getKey());
+		for(Entry<IndividualBlockId, FloatArray> blocks : individualBlocks.entrySet()) {
+			dos.writeInt(blocks.getKey().getBlockId());
+			dos.writeInt(blocks.getKey().getX());
+			dos.writeInt(blocks.getKey().getY());
+			dos.writeInt(blocks.getKey().getZ());
 			dos.writeInt(blocks.getValue().size()/3);
 			for(int i = 0; i < blocks.getValue().size(); ++i)
 				dos.writeFloat(blocks.getValue().get(i) * worldScale);
 		}
 	}
 	
-	public Set<Integer> getIndividualBlockIds(){
+	public Set<IndividualBlockId> getIndividualBlockIds(){
 		return individualBlocks.keySet();
 	}
 	
@@ -1122,6 +1378,9 @@ public class ChunkExporter {
 		float threshold = (MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
+		RaytracingOptimiser raytracingOptimiser = new RaytracingOptimiser();
+		FaceOptimiser faceOptimiser = new FaceOptimiser();
+		
 		final Map<String, Mesh> optimisedMeshes = new HashMap<String, Mesh>();
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			final Mesh inMesh = mesh.getValue();
@@ -1131,17 +1390,19 @@ public class ChunkExporter {
 					Mesh newMesh = inMesh;
 					
 					if(Config.runRaytracingOptimiser)
-						newMesh = RaytracingOptimiser.optimiseMesh(inMesh, threshold);
+						newMesh = raytracingOptimiser.optimiseMesh(inMesh, threshold);
 					
 					if(Config.runFaceOptimiser) {
 						if(newMesh instanceof MeshGroup) {
 							MeshGroup newMeshGroup = (MeshGroup) newMesh;
 							for(int i = 0; i < newMeshGroup.getNumChildren(); ++i) {
-								Mesh faceOptimsed = FaceOptimiser.optimise(newMeshGroup.getChildren().get(i));
-								newMeshGroup.getChildren().set(i, faceOptimsed);
+								//Mesh faceOptimsed = FaceOptimiser.optimise(newMeshGroup.getChildren().get(i));
+								//newMeshGroup.getChildren().set(i, faceOptimsed);
+								faceOptimiser.optimise(newMeshGroup.getChildren().get(i));
 							}
 						}else {
-							newMesh = FaceOptimiser.optimise(newMesh);
+							//newMesh = faceOptimiser.optimise(newMesh);
+							faceOptimiser.optimise(newMesh);
 						}
 					}
 					
@@ -1157,11 +1418,11 @@ public class ChunkExporter {
 			// if can stress the garbage collector too much.
 			// So, in those cases we run it directly on this thread
 			// rather than putting each mesh into a queue.
-			if(Exporter.NUM_CHUNKS >= 16) {
+			//if(Exporter.NUM_CHUNKS >= 16) {
 				workItem.run();
-			}else {
-				futures.add(threadPool.submit(workItem));
-			}
+			//}else {
+			//	futures.add(threadPool.submit(workItem));
+			//}
 		}
 		for(Future<?> future : futures) {
 			try {

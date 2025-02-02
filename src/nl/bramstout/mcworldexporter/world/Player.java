@@ -35,25 +35,27 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public class Player {
 	
 	protected String uuid;
 	protected String name;
-	protected TAG_Compound data;
+	protected NbtTagCompound data;
 	protected double x;
 	protected double y;
 	protected double z;
 	protected String dimension;
 	
-	public Player(String uuid, TAG_Compound data, double x, double y, double z, String dimension) {
+	public Player(String uuid, NbtTagCompound data, double x, double y, double z, 
+						String dimension, boolean tryResolveName) {
 		this.uuid = uuid;
 		this.name = uuid;
 		this.data = data;
@@ -62,27 +64,30 @@ public class Player {
 		this.z = z;
 		this.dimension = dimension;
 		
-		// Try to get the player name from the UUID
-		HttpURLConnection connection = null;
-		InputStream stream = null;
-		try {
-			URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
-			connection = (HttpURLConnection) url.openConnection();
-			stream = connection.getInputStream();
-			
-			JsonObject jsonData = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonObject();
-			if(jsonData.has("name"))
-				this.name = jsonData.get("name").getAsString();
-		}catch(Exception ex) {
+		if(tryResolveName) {
+			// Try to get the player name from the UUID
+			HttpURLConnection connection = null;
+			InputStream stream = null;
+			try {
+				URL url = new URI("https://api.minecraftservices.com/minecraft/profile/lookup/" + uuid.replace("-", "")).toURL();
+				connection = (HttpURLConnection) url.openConnection();
+				stream = connection.getInputStream();
+				
+				JsonObject jsonData = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonObject();
+				if(jsonData.has("name"))
+					this.name = jsonData.get("name").getAsString();
+			}catch(Exception ex) {
+				//ex.printStackTrace();
+			}
+			try {
+				if(stream != null)
+					stream.close();
+			}catch(Exception ex) {}
+			try {
+				if(connection != null)
+					connection.disconnect();
+			}catch(Exception ex) {}
 		}
-		try {
-			if(stream != null)
-				stream.close();
-		}catch(Exception ex) {}
-		try {
-			if(connection != null)
-				connection.disconnect();
-		}catch(Exception ex) {}
 	}
 
 	public String getUuid() {
@@ -93,7 +98,7 @@ public class Player {
 		return name;
 	}
 
-	public TAG_Compound getData() {
+	public NbtTagCompound getData() {
 		return data;
 	}
 

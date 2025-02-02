@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+
 public class BiomeRegistry {
 
 	private static List<Biome> registeredBiomes = new ArrayList<Biome>();
@@ -60,7 +63,7 @@ public class BiomeRegistry {
 	}
 	
 	private static Biome getBiomeFromName(String name, int id) {
-		return new Biome(name, id);
+		return ResourcePacks.getBiome(name, id);
 	}
 
 	public static void recalculateTints() {

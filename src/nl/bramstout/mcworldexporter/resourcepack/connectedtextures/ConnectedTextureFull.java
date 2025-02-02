@@ -16,10 +16,8 @@ public class ConnectedTextureFull extends ConnectedTexture{
 	public String getTexture(int x, int y, int z, ModelFace face) {
 		Direction up = getUp(face);
 		
-		int connectionBits = calcConnectionBits(x, y, z, face, up);
+		int connectionBits = calcConnectionBits(x, y, z, face, up, innerSeams);
 		int tile = CtmUtils.ConnectionDataToTile[connectionBits];
-		
-		// TODO: Implement innerSeams
 		
 		if(tile < 0 || tile >= tiles.size())
 			return null;

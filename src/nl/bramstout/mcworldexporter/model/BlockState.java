@@ -31,24 +31,21 @@
 
 package nl.bramstout.mcworldexporter.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
-import nl.bramstout.mcworldexporter.resourcepack.Tints;
-import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagString;
+import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
+import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
+import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation.BlockConnections;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockState {
 
 	protected String name;
 	protected int id;
+	protected int dataVersion;
 	protected boolean transparentOcclusion;
 	protected boolean leavesOcclusion;
 	protected boolean detailedOcclusion;
@@ -56,7 +53,6 @@ public class BlockState {
 	protected boolean caveBlock;
 	protected boolean randomOffset;
 	protected boolean randomYOffset;
-	protected List<BlockStatePart> parts;
 	protected boolean grassColormap;
 	protected boolean foliageColormap;
 	protected boolean waterColormap;
@@ -66,11 +62,14 @@ public class BlockState {
 	protected boolean lodNoUVScale;
 	protected int lodPriority;
 	protected boolean _needsConnectionInfo;
+	protected BlockConnections blockConnections;
+	protected BlockStateHandler handler;
 	
-	public BlockState(String name, JsonObject data) {
+	public BlockState(String name, int dataVersion, BlockStateHandler handler) {
+		this.handler = handler;
 		this.name = name;
+		this.dataVersion = dataVersion;
 		this.id = BlockStateRegistry.getNextId();
-		this.parts = new ArrayList<BlockStatePart>();
 		this.transparentOcclusion = Config.transparentOcclusion.contains(name);
 		this.leavesOcclusion = Config.leavesOcclusion.contains(name);
 		this.detailedOcclusion = Config.detailedOcclusion.contains(name);
@@ -86,32 +85,18 @@ public class BlockState {
 		randomAnimationYOffset = Config.randomAnimationYOffset.contains(name);
 		lodNoUVScale = Config.lodNoUVScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
-		
-		if(data == null)
-			return;
-		
-		if(data.has("variants")) {
-			for(Entry<String, JsonElement> variant : data.get("variants").getAsJsonObject().entrySet()) {
-				parts.add(new BlockStateVariant(variant.getKey(), variant.getValue(), doubleSided));
-			}
-		} else if(data.has("multipart")) {
-			for(JsonElement part : data.get("multipart").getAsJsonArray().asList()) {
-				parts.add(new BlockStateMultiPart(part, doubleSided));
-			}
-		}
+		BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
+												.getWorld().getBlockConnectionsTranslation();
+		if(blockConnectionsTranslation != null)
+			blockConnections = blockConnectionsTranslation.getBlockConnections(name, dataVersion);
 		
 		_needsConnectionInfo = false;
-		for(BlockStatePart part : parts) {
-			if(part.needsConnectionInfo()) {
-				_needsConnectionInfo = true;
-				break;
-			}
-		}
+		if(blockConnections != null)
+			_needsConnectionInfo = true;
 		
-		if(Config.noOcclusion.contains(name)) {
-			for(BlockStatePart part : parts)
-				part.noOcclusion();
-		}
+		if(handler != null)
+			if(handler.needsConnectionInfo())
+				_needsConnectionInfo = true;
 	}
 	
 	public String getName() {
@@ -170,42 +155,58 @@ public class BlockState {
 		return lodPriority;
 	}
 	
+	public boolean hasRandomAnimationXZOffset() {
+		return randomAnimationXZOffset;
+	}
+	
+	public boolean hasRandomAnimationYOffset() {
+		return randomAnimationYOffset;
+	}
+	
+	public boolean isLodNoUVScale() {
+		return lodNoUVScale;
+	}
+	
 	public boolean needsConnectionInfo() {
 		return _needsConnectionInfo;
 	}
 	
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
-		List<List<Model>> models = new ArrayList<List<Model>>();
-		for(BlockStatePart part : parts) {
-			if(part.usePart(properties, x, y, z)) {
-				models.add(part.models);
-			}
-		}
-		Tint tint = Tints.getTint(getName());
-		Color tintColor = null;
-		if(tint != null)
-			tintColor = tint.getTint(properties);
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, randomOffset, randomYOffset,
-				grassColormap, foliageColormap, waterColormap, doubleSided, randomAnimationXZOffset,
-				randomAnimationYOffset, lodNoUVScale, lodPriority, tintColor);
+	public int getDataVersion() {
+		return dataVersion;
 	}
 	
-	protected boolean hasLiquid(TAG_Compound properties) {
-		TAG_String waterloggedTag = (TAG_String) properties.getElement("waterlogged");
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
+		BakedBlockState res = handler.getBakedBlockState(properties, x, y, z, this);
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return res;
+	}
+	
+	public boolean hasLiquid(NbtTagCompound properties) {
+		NbtTagString waterloggedTag = (NbtTagString) properties.get("waterlogged");
 		
 		if(waterloggedTag == null) {
 			if(Config.waterlogged.contains(name))
 				return true;
 			return false;
 		}
-		return waterloggedTag.value.equalsIgnoreCase("true");
+		return waterloggedTag.getData().equalsIgnoreCase("true");
 	}
 	
 	public String getDefaultTexture() {
-		if(parts.size() == 0)
-			return "";
-		return parts.get(0).getDefaultTexture();
+		return handler.getDefaultTexture();
 	}
 
 	public boolean hasTint() {

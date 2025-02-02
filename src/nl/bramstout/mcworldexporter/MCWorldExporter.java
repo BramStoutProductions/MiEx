@@ -33,21 +33,29 @@ package nl.bramstout.mcworldexporter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.export.Noise;
+import nl.bramstout.mcworldexporter.launcher.Launcher;
+import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
+import nl.bramstout.mcworldexporter.launcher.MinecraftSave;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
-import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.parallel.ReadWriteMutex;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.ui.MainWindow;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 import nl.bramstout.mcworldexporter.world.anvil.WorldAnvil;
+import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
 
 public class MCWorldExporter {
 	
@@ -56,6 +64,10 @@ public class MCWorldExporter {
 	public static String forceOpenWorld = null;
 	public static List<String> defaultResourcePacks = new ArrayList<String>();
 	public static int numUIThreads = 4;
+	public static boolean portableExports = false;
+	public static ReadWriteMutex worldMutex = new ReadWriteMutex();
+	public static String GitHubRepository = "BramStoutProductions/MiEx";
+	public static boolean offlineMode = false;
 	
 	public static MCWorldExporter getApp() {
 		return instance;
@@ -70,10 +82,6 @@ public class MCWorldExporter {
 	private List<String> fgChunks;
 	
 	public MCWorldExporter() {
-		Noise.init();
-		Config.load();
-		Atlas.readAtlasConfig();
-		
 		instance = this;
 		world = null;
 		exportBounds = new ExportBounds();
@@ -81,32 +89,90 @@ public class MCWorldExporter {
 		ui = new MainWindow();
 		ui.setLocationRelativeTo(null);
 		ui.setVisible(true);
+		ui.setEnabled(false);
 		
-		ResourcePack.setupDefaults();
-		Config.load();
-		BlockStateRegistry.clearBlockStateRegistry();
-		ModelRegistry.clearModelRegistry();
-		BiomeRegistry.recalculateTints();
-		MCWorldExporter.getApp().getUI().update();
-		MCWorldExporter.getApp().getUI().fullReRender();
-		MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
+		try {
+			ResourcePackDefaults.setupDefaults();
+			
+			ResourcePacks.init();
+			Noise.init();
+			Config.load();
+			Atlas.readAtlasConfig();
+			
+			BlockStateRegistry.clearBlockStateRegistry();
+			ModelRegistry.clearModelRegistry();
+			BiomeRegistry.recalculateTints();
+			MCWorldExporter.getApp().getUI().update();
+			MCWorldExporter.getApp().getUI().fullReRender();
+			MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		ui.setEnabled(true);
 		
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
 			public void run() {
-				if(forceOpenWorld != null)
-					setWorld(new File(forceOpenWorld));
+				if(forceOpenWorld != null) {
+					File worldFolder = new File(forceOpenWorld);
+					if(worldFolder.exists() && worldFolder.isDirectory())
+						setWorld(worldFolder);
+				}
 			}
 			
 		});
 	}
 	
 	public void setWorld(File worldFolder) {
-		if(world != null)
-			world.unload();
-		world = new WorldAnvil(worldFolder);
-		ui.reset();
+		MCWorldExporter.getApp().getUI().getEntityDialog().noDefaultSelection = false;
+		worldMutex.acquireWrite();
+		
+		try {
+			if(world != null)
+				world.unload();
+			world = null;
+			World tmpWorld = null;
+			if(WorldAnvil.supportsWorld(worldFolder))
+				tmpWorld = new WorldAnvil(worldFolder);
+			else if(WorldBedrock.supportsWorld(worldFolder))
+				tmpWorld = new WorldBedrock(worldFolder);
+			else {
+				SwingUtilities.invokeLater(new Runnable() {
+	
+					@Override
+					public void run() {
+						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "The selected folder does not contain a world.", "Error", JOptionPane.ERROR_MESSAGE);
+					}
+					
+				});
+				ui.reset();
+				worldMutex.releaseWrite();
+				return;
+			}
+			
+			int resourcePackVersion = ResourcePacks.getBaseResourcePack().getWorldVersion();
+			int worldVersion = tmpWorld.getWorldVersion();
+			if(worldVersion > resourcePackVersion && worldVersion > 0) {
+				int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+						"The base resource pack is outdated. Please update the base resource pack via the Tools button. Are you sure you still want to load the world?", 
+						"Warning", JOptionPane.YES_NO_OPTION);
+				
+				if(option != 0) {
+					ui.reset();
+					worldMutex.releaseWrite();
+					return;
+				}
+			}
+			
+			if(tmpWorld != null)
+				tmpWorld.setWorldDir(worldFolder);
+			world = tmpWorld;
+			ui.reset();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		worldMutex.releaseWrite();
 	}
 	
 	public World getWorld() {
@@ -134,11 +200,54 @@ public class MCWorldExporter {
 	
 	
 	public static void main(String[] args) {
+		
+		/*{
+			BufferedImage cornerAtlas = Occlusion.generateEdgeNormalMapAtlas(1);
+			try {
+				ImageIO.write(cornerAtlas, "PNG", new File("./src/default_data/base_resource_pack/assets/miex/textures/corner_atlas.png"));
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			cornerAtlas = Occlusion.generateEdgeNormalMapAtlas(2);
+			try {
+				ImageIO.write(cornerAtlas, "PNG", new File("./src/default_data/base_resource_pack/assets/miex/textures/corner_atlas_small.png"));
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			cornerAtlas = Occlusion.generateEdgeNormalMapAtlas(4);
+			try {
+				ImageIO.write(cornerAtlas, "PNG", new File("./src/default_data/base_resource_pack/assets/miex/textures/corner_atlas_smaller.png"));
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}*/
+		
+		
 		try {
 			String numUIThreadsEnvVar = System.getenv("MIEX_NUM_UI_THREADS");
 			if(numUIThreadsEnvVar != null) {
 				Integer val = Integer.parseInt(numUIThreadsEnvVar);
 				numUIThreads = val.intValue();
+			}
+		}catch(Exception ex) {}
+		
+		try {
+			String portableExportsEnvVar = System.getenv("MIEX_PORTABLE_EXPORTS");
+			if(portableExportsEnvVar != null) {
+				portableExports = portableExportsEnvVar.toLowerCase().startsWith("t") || portableExportsEnvVar.startsWith("1");
+			}
+		}catch(Exception ex) {}
+		
+		try {
+			String gitHubRepositoryEnvVar = System.getenv("MIEX_GITHUB_REPO");
+			if(gitHubRepositoryEnvVar != null)
+				GitHubRepository = gitHubRepositoryEnvVar;
+		}catch(Exception ex) {}
+		
+		try {
+			String offlineModeEnvVar = System.getenv("MIEX_OFFLINE_MODE");
+			if(offlineModeEnvVar != null) {
+				offlineMode = offlineModeEnvVar.toLowerCase().startsWith("t") || offlineModeEnvVar.startsWith("1");
 			}
 		}catch(Exception ex) {}
 		
@@ -162,10 +271,6 @@ public class MCWorldExporter {
 					FileUtil.resourcePackJSONPrefix = args[i+1];
 					if(!FileUtil.resourcePackJSONPrefix.endsWith("/"))
 						FileUtil.resourcePackJSONPrefix = FileUtil.resourcePackJSONPrefix + "/";
-				}else if(args[i].equalsIgnoreCase("-mcVersionsDir")) {
-					FileUtil.minecraftVersionsDir = args[i+1].replace('\\', '/');
-					if(!FileUtil.minecraftVersionsDir.endsWith("/"))
-						FileUtil.minecraftVersionsDir = FileUtil.minecraftVersionsDir + "/";
 				}else if(args[i].equalsIgnoreCase("-multimcRootDir")) {
 					FileUtil.multiMCRootDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.multiMCRootDir.endsWith("/"))
@@ -178,6 +283,19 @@ public class MCWorldExporter {
 					FileUtil.modrinthRootDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.modrinthRootDir.endsWith("/"))
 						FileUtil.modrinthRootDir = FileUtil.modrinthRootDir + "/";
+				}else if(args[i].equalsIgnoreCase("-additionalSaveDirs")) {
+					FileUtil.additionalSaveDirs = new File[] {};
+					
+					String pathsStr = args[i+1];
+					String[] paths = pathsStr.split(";");
+					for(String str : paths) {
+						File file = new File(str);
+						if(file.exists() && file.isDirectory()) {
+							FileUtil.additionalSaveDirs = Arrays.copyOf(FileUtil.additionalSaveDirs, 
+									FileUtil.additionalSaveDirs.length + 1);
+							FileUtil.additionalSaveDirs[FileUtil.additionalSaveDirs.length-1] = file;
+						}
+					}
 				}else if(args[i].equalsIgnoreCase("-usdcatExe")) {
 					if(new File(args[i+1]).exists())
 						FileUtil.usdCatExe = args[i+1];
@@ -192,6 +310,15 @@ public class MCWorldExporter {
 						numUIThreads = val.intValue();
 					}catch(Exception ex) {}
 				}
+				else if(args[i].equalsIgnoreCase("-portableExports")) {
+					portableExports = true;
+				}
+				else if(args[i].equalsIgnoreCase("-offlineMode")) {
+					offlineMode = true;
+				}
+				else if(args[i].equalsIgnoreCase("-githubRepo")) {
+					GitHubRepository = args[i+1];
+				}
 				else if(args[i].equalsIgnoreCase("-output")) {
 					forceOutputPath = args[i+1];
 					if(!forceOutputPath.endsWith(".usd"))
@@ -200,9 +327,18 @@ public class MCWorldExporter {
 				else if(args[i].equalsIgnoreCase("-world")) {
 					forceOpenWorld = args[i+1];
 					if(!(new File(forceOpenWorld).exists())) {
-						forceOpenWorld = FileUtil.getMinecraftSavesDir() + "/" + forceOpenWorld;
-						if(!(new File(forceOpenWorld).exists()))
-							forceOpenWorld = null;
+						for(Launcher launcher : LauncherRegistry.getLaunchers()) {
+							boolean foundFile = false;
+							for(MinecraftSave save : launcher.getSaves()) {
+								if(save.getLabel().equals(forceOpenWorld)) {
+									forceOpenWorld = save.getWorldFolder().getPath();
+									foundFile = true;
+									break;
+								}
+								if(foundFile)
+									break;
+							}
+						}
 					}
 				}
 			}
@@ -216,13 +352,20 @@ public class MCWorldExporter {
 		System.setOut(new Logger(System.out, false));
 		System.setErr(new Logger(System.err, true));
 		
-		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
+		
+		// Only support 64 bit Java
+		String archModel = System.getProperty("sun.arch.data.model");
+		if(!archModel.contains("64")) {
+			JOptionPane.showMessageDialog(null, "MiEx only supports 64-bit Java. Please make sure that MiEx is launched with 64-bit Java", "Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
 		new MCWorldExporter();
 	}
 

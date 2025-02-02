@@ -53,7 +53,7 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 
-public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener{
+public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, ToolTips.DynamicTooltip{
 
 	/**
 	 * 
@@ -71,6 +71,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	/**
 	 * 0: Export bounds
 	 * 1: LOD area
+	 * 2: Export Chunk toggle
 	 */
 	private int mouseSelection;
 	private int mouseButton;
@@ -115,6 +116,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		addMouseListener(this);
 		addMouseMotionListener(this);
 		addMouseWheelListener(this);
+		
+		ToolTips.registerDynamicTooltip(this, this);
 	}
 	
 	public void zoomIn() {
@@ -195,8 +198,47 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		int lodWidth = lodMaxPos.ix() - lodMinPos.ix();
 		int lodHeight = lodMaxPos.iy() - lodMinPos.iy();
 		if (selectionWidth > 1 && selectionHeight > 1) {
+			int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
+			int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
+			int chunkEndX = MCWorldExporter.getApp().getExportBounds().getMaxX() >> 4;
+			int chunkEndZ = MCWorldExporter.getApp().getExportBounds().getMaxZ() >> 4;
+			
 			g.setColor(new Color(255, 0, 255, 48));
-			g.fillRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+			//g.fillRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+			
+			int chunkI = 0;
+			int chunkJ = 0;
+			for(int j = chunkStartZ; j <= chunkEndZ; j += Config.chunkSize) {
+				chunkI = 0;
+				int blockMinZ = j * 16;
+				blockMinZ = Math.max(Math.min(blockMinZ, MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1), 
+						MCWorldExporter.getApp().getExportBounds().getMinZ());
+				int blockMaxZ = (j + Config.chunkSize) * 16;
+				blockMaxZ = Math.max(Math.min(blockMaxZ, MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1),
+						MCWorldExporter.getApp().getExportBounds().getMinZ());
+				
+				for(int i = chunkStartX; i <= chunkEndX; i += Config.chunkSize) {
+					int blockMinX = i * 16;
+					blockMinX = Math.max(Math.min(blockMinX, MCWorldExporter.getApp().getExportBounds().getMaxX() + 1), 
+										MCWorldExporter.getApp().getExportBounds().getMinX());
+					
+					int blockMaxX = (i + Config.chunkSize) * 16;
+					blockMaxX = Math.max(Math.min(blockMaxX, MCWorldExporter.getApp().getExportBounds().getMaxX() + 1), 
+										MCWorldExporter.getApp().getExportBounds().getMinX());
+					
+					Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
+					Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
+					
+					if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(chunkI, chunkJ)) {
+						g.fillRect(pixelMinPos.ix(), pixelMinPos.iy(), 
+								pixelMaxPos.ix() - pixelMinPos.ix(), pixelMaxPos.iy() - pixelMinPos.iy());
+					}
+					
+					chunkI++;
+				}
+				
+				chunkJ++;
+			}
 			
 			if(MCWorldExporter.getApp().getExportBounds().hasLod()) {
 				g.setColor(new Color(0, 255, 255, 48));
@@ -204,11 +246,6 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			}
 			
 			g.setColor(new Color(128, 128, 128, 128));
-			
-			int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
-			int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
-			int chunkEndX = MCWorldExporter.getApp().getExportBounds().getMaxX() >> 4;
-			int chunkEndZ = MCWorldExporter.getApp().getExportBounds().getMaxZ() >> 4;
 			
 			// Draw vertical lines
 			for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += Config.chunkSize) {
@@ -232,8 +269,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			
 			// Draw FG markers
 			g.setColor(new Color(48, 255, 48));
-			int chunkI = 1;
-			int chunkJ = 1;
+			chunkI = 1;
+			chunkJ = 1;
 			for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += Config.chunkSize) {
 				int blockMinZ = chunkZ * 16;
 				blockMinZ = Math.max(Math.min(blockMinZ, MCWorldExporter.getApp().getExportBounds().getMaxZ()), MCWorldExporter.getApp().getExportBounds().getMinZ());
@@ -244,24 +281,26 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 				for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += Config.chunkSize) {
 					String chunkName = "chunk_" + chunkI + "_" + chunkJ;
 					
-					if((MCWorldExporter.getApp().getFGChunks().isEmpty() && !MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) || 
-							MCWorldExporter.getApp().getFGChunks().contains(chunkName)) {
-						int blockMinX = chunkX * 16;
-						blockMinX = Math.max(Math.min(blockMinX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
-											MCWorldExporter.getApp().getExportBounds().getMinX());
-						
-						int blockMaxX = (chunkX + Config.chunkSize) * 16;
-						blockMaxX = Math.max(Math.min(blockMaxX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
-											MCWorldExporter.getApp().getExportBounds().getMinX());
-						
-						Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
-						Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
-						
-						int posX = (pixelMinPos.ix() + pixelMaxPos.ix()) / 2;
-						int posY = (pixelMinPos.iy() + pixelMaxPos.iy()) / 2;
-						
-						Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("FG", g);
-						g.drawString("FG", posX - ((int) (stringBounds.getWidth() / 2)), posY + ((int) (stringBounds.getHeight() / 2)));
+					if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(chunkI - 1, chunkJ - 1)) {
+						if((MCWorldExporter.getApp().getFGChunks().isEmpty() && !MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) || 
+								MCWorldExporter.getApp().getFGChunks().contains(chunkName)) {
+							int blockMinX = chunkX * 16;
+							blockMinX = Math.max(Math.min(blockMinX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
+												MCWorldExporter.getApp().getExportBounds().getMinX());
+							
+							int blockMaxX = (chunkX + Config.chunkSize) * 16;
+							blockMaxX = Math.max(Math.min(blockMaxX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
+												MCWorldExporter.getApp().getExportBounds().getMinX());
+							
+							Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
+							Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
+							
+							int posX = (pixelMinPos.ix() + pixelMaxPos.ix()) / 2;
+							int posY = (pixelMinPos.iy() + pixelMaxPos.iy()) / 2;
+							
+							Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("FG", g);
+							g.drawString("FG", posX - ((int) (stringBounds.getWidth() / 2)), posY + ((int) (stringBounds.getHeight() / 2)));
+						}
 					}
 					
 					chunkI += 1;
@@ -274,6 +313,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			
 			g.setColor(new Color(255, 0, 255));
 			g.drawRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+		}
+		
+		if(MCWorldExporter.getApp().getWorld().isPaused()) {
+			g.setColor(new Color(32, 32, 32, 150));
+			g.fillRect(g.getClipBounds().x, g.getClipBounds().y, g.getClipBounds().width, g.getClipBounds().height);
+			
+			g.setColor(new Color(180, 180, 180));
+			Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("World Loading Paused", g);
+			g.drawString("World Loading Paused", 
+					((int) g.getClipBounds().getCenterX()) - ((int) (stringBounds.getWidth() / 2)), 
+					((int) g.getClipBounds().getCenterY()) + ((int) (stringBounds.getHeight() / 2)));
 		}
 	}
 	
@@ -288,6 +338,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		mouseSelection = 0;
 		if(e.isShiftDown())
 			mouseSelection = 1;
+		if(e.isControlDown())
+			mouseSelection = 2;
 		int worldMinX = MCWorldExporter.getApp().getExportBounds().getMinX();
 		int worldMinZ = MCWorldExporter.getApp().getExportBounds().getMinZ();
 		int worldMaxX = MCWorldExporter.getApp().getExportBounds().getMaxX();
@@ -361,14 +413,14 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	
 	@Override
 	public void mousePressed(MouseEvent e) {
-		mouseSelection = e.isShiftDown() ? 1 : 0;
+		mouseSelection = e.isControlDown() ? 2 : (e.isShiftDown() ? 1 : 0);
 		mouseDragStartX = e.getX();
 		mouseDragStartY = e.getY();
 		mouseButton = e.getButton();
 		transformStart = transform.clone();
 		selectionStart = MCWorldExporter.getApp().getExportBounds().copy();
 		
-		if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) {
+		if(mouseSelection == 2) {
 			if (mouseButton == MouseEvent.BUTTON1) {
 				Point mouseBlock = transform.toWorld(new Point(e.getX(), e.getY()), getWidth(), getHeight());
 				
@@ -393,15 +445,44 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 				chunkX /= Config.chunkSize;
 				chunkZ /= Config.chunkSize;
 				
-				chunkX += 1;
-				chunkZ += 1;
-				
-				String chunkName = "chunk_" + chunkX + "_" + chunkZ;
-				
-				if(MCWorldExporter.getApp().getFGChunks().contains(chunkName))
-					MCWorldExporter.getApp().getFGChunks().remove(chunkName);
-				else
-					MCWorldExporter.getApp().getFGChunks().add(chunkName);
+				MCWorldExporter.getApp().getExportBounds().toggleChunk(chunkX, chunkZ);
+			}
+		}else {
+			if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) {
+				if (mouseButton == MouseEvent.BUTTON1) {
+					Point mouseBlock = transform.toWorld(new Point(e.getX(), e.getY()), getWidth(), getHeight());
+					
+					if(mouseBlock.ix() < MCWorldExporter.getApp().getExportBounds().getMinX() || 
+							mouseBlock.ix() > MCWorldExporter.getApp().getExportBounds().getMaxX() ||
+							mouseBlock.iy() < MCWorldExporter.getApp().getExportBounds().getMinZ() ||
+							mouseBlock.iy() > MCWorldExporter.getApp().getExportBounds().getMaxZ())
+						return;
+					
+					int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
+					int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
+					
+					int mouseChunkX = mouseBlock.ix() >> 4;
+					int mouseChunkZ = mouseBlock.iy() >> 4;
+					
+					int chunkX = mouseChunkX - chunkStartX;
+					int chunkZ = mouseChunkZ - chunkStartZ;
+					
+					if(chunkX < 0 || chunkZ < 0)
+						return;
+					
+					chunkX /= Config.chunkSize;
+					chunkZ /= Config.chunkSize;
+					
+					chunkX += 1;
+					chunkZ += 1;
+					
+					String chunkName = "chunk_" + chunkX + "_" + chunkZ;
+					
+					if(MCWorldExporter.getApp().getFGChunks().contains(chunkName))
+						MCWorldExporter.getApp().getFGChunks().remove(chunkName);
+					else
+						MCWorldExporter.getApp().getFGChunks().add(chunkName);
+				}
 			}
 		}
 	}
@@ -718,6 +799,20 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			zoomIn();
 		if(e.getWheelRotation() > 0)
 			zoomOut();
+	}
+
+	@Override
+	public String getTooltip() {
+		if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) {
+			return "Click on an export chunk to toggle whether it should be tagged as a foreground chunk or not. Foreground chunks have \"FG\" in it.";
+		}
+		if(mouseSelection == 1) {
+			return "Edit the LOD area selection. The blue area is the full quality area. Drag outside the current LOD area to make a new one. Drag the centre to move it. Drag the edges to expand or contract it.";
+		}
+		if(mouseSelection == 2) {
+			return "Click on export chunks to enable or disable them. Disabled chunks won't show a magenta overlay.";
+		}
+		return "Move around the world or make an export selection. Drag outside the current selection to make a new one. Drag the centre to move it. Drag the edges to expand or contract it. Hold control to enable or disable specific chunks.";
 	}
 
 }

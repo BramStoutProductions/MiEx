@@ -36,10 +36,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonObject;
-
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModelRegistry;
-import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.ModelHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class ModelRegistry {
@@ -51,10 +51,12 @@ public class ModelRegistry {
 	public static List<String> missingModels = new ArrayList<String>();
 	
 	public static int getIdForName(String name, boolean doubleSided) {
-		if(!name.contains("/"))
-			name = "block/" + name;
-		if(!name.contains(":"))
-			name = "minecraft:" + name;
+		if(!name.contains("geometry.")) {
+			if(!name.contains("/"))
+				name = "block/" + name;
+			if(!name.contains(":"))
+				name = "minecraft:" + name;
+		}
 		String idName = name;
 		if(doubleSided)
 			idName = idName + "DS";
@@ -64,7 +66,6 @@ public class ModelRegistry {
 				id = nameToId.get(idName);
 				if(id == null) {
 					Model model = getModelFromName(name, doubleSided);
-					registeredModels.add(model);
 					nameToId.put(idName, model.getId());
 					return model.getId();
 				}
@@ -73,9 +74,14 @@ public class ModelRegistry {
 		return id.intValue();
 	}
 	
-	public static int getNextId() {
+	public static int getNextId(Model model) {
 		synchronized(mutex) {
-			return counter++;
+			counter++;
+			if(registeredModels.size() <= counter)
+				for(int i = registeredModels.size(); i <= counter; ++i)
+					registeredModels.add(null);
+			registeredModels.set(counter, model);
+			return counter;
 		}
 	}
 	
@@ -85,17 +91,20 @@ public class ModelRegistry {
 	
 	private static Model getModelFromName(String name, boolean doubleSided) {
 		if(BuiltInModelRegistry.builtins.containsKey(name)) {
-			if(!ResourcePack.hasOverride(name, "models", ".json", "assets"))
+			if(!ResourcePacks.hasOverride(name, "models", ".json", "assets"))
 				return BuiltInModelRegistry.newModel(name);
 		}
-		JsonObject data = ResourcePack.getJSONData(name, "models", "assets");
-		if(data == null) {
+		ModelHandler handler = ResourcePacks.getModelHandler(name);
+		if(handler == null) {
 			synchronized(missingModels) {
 				missingModels.add(name);
 			}
-			World.handleError(new RuntimeException("No blockstate file for " + name));
+			World.handleError(new RuntimeException("No model file for " + name));
+			
+			// Make sure that there is a valid handler anyways.
+			handler = new ModelHandlerJavaEdition(null);
 		}
-		return new Model(name, data, doubleSided);
+		return new Model(name, handler, doubleSided);
 	}
 	
 	public static void clearModelRegistry() {

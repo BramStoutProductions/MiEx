@@ -4,52 +4,59 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextureRandom.Symmetry;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures.BlockStateConstraint;
+import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 
 public class OptifineLoader extends ConnectedTexturesLoader{
 
 	@Override
 	public void load() {
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
-			File assetsFolder = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/assets");
-			if(!assetsFolder.exists() || !assetsFolder.isDirectory())
+			if(!(resourcePacks.get(i) instanceof ResourcePackJavaEdition))
 				continue;
 			
-			for(File namespace : assetsFolder.listFiles())
-				processNamespace(namespace, resourcePacks.get(i));
-		}
-	}
-	
-	private void processNamespace(File namespaceFolder, String resourcePackName) {
-		File optifineCTMFolder = new File(namespaceFolder, "optifine/ctm");
-		if(!optifineCTMFolder.exists() || !optifineCTMFolder.isDirectory())
-			return;
-		
-		processFolder(optifineCTMFolder, "optifine;" + namespaceFolder.getName(), "ctm/", resourcePackName);
-	}
-	
-	private void processFolder(File folder, String namespace, String parent, String resourcePackName) {
-		for(File f : folder.listFiles()) {
-			if(f.isDirectory()) {
-				processFolder(f, namespace, parent + f.getName() + "/", resourcePackName);
-			}else if(f.isFile() && f.getName().endsWith(".properties")){
-				processFile(f, folder, namespace, parent, resourcePackName);
+			for(File rootFolder : ((ResourcePackJavaEdition) resourcePacks.get(i)).getFolders()) {
+				File assetsFolder = new File(rootFolder, "assets");
+				if(!assetsFolder.exists() || !assetsFolder.isDirectory())
+					continue;
+				
+				for(File namespace : assetsFolder.listFiles())
+					processNamespace(namespace, resourcePacks.get(i));
 			}
 		}
 	}
 	
-	private void processFile(File f, File folder, String namespace, String parent, String resourcePackName) {
+	private void processNamespace(File namespaceFolder, ResourcePack resourcePack) {
+		File optifineCTMFolder = new File(namespaceFolder, "optifine/ctm");
+		if(!optifineCTMFolder.exists() || !optifineCTMFolder.isDirectory())
+			return;
+		
+		processFolder(optifineCTMFolder, "optifine;" + namespaceFolder.getName(), "ctm/", resourcePack);
+	}
+	
+	private void processFolder(File folder, String namespace, String parent, ResourcePack resourcePack) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				processFolder(f, namespace, parent + f.getName() + "/", resourcePack);
+			}else if(f.isFile() && f.getName().endsWith(".properties")){
+				processFile(f, folder, namespace, parent, resourcePack);
+			}
+		}
+	}
+	
+	private void processFile(File f, File folder, String namespace, String parent, ResourcePack resourcePack) {
 		String matchTiles = null;
 		String matchBlocks = null;
 		if(f.getName().startsWith("block")) {
@@ -261,7 +268,7 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 			try {
 				CtmUtils.createFullTilesFromCompact(connectedTexture.getTiles(), 
 						namespace + ":" + parent + f.getName().split("\\.")[0] + "_", 
-						fullTiles, resourcePackName);
+						fullTiles, resourcePack);
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
@@ -393,21 +400,32 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 			}
 		}
 		if(matchBlocks != null) {
-			String[] blocksTokens = matchBlocks.split("[ ,]");
+			String[] blocksTokens = matchBlocks.split("[ ]");
 			for(String block : blocksTokens) {
 				String[] blockTokens = block.split(":");
 				String blockNamespace = "minecraft";
 				String blockName = blockTokens[0];
+				BlockStateConstraint stateConstraint = new BlockStateConstraint();
 				if(blockTokens.length > 1) {
+					int propertyStartIndex = 1;
 					if(!blockTokens[1].contains("=")){
 						// If the next token doesn't contain an =,
 						// then it's the block name and not a property
 						blockNamespace = blockTokens[0];
 						blockName = blockTokens[1];
+						propertyStartIndex=2;
 					}
-					// TODO: Add in support for specifying block properties here.
+					for(int i = propertyStartIndex; i < blockTokens.length; ++i) {
+						int equalsIndex = blockTokens[i].indexOf('=');
+						if(equalsIndex < 0)
+							continue;
+						String propertyName = blockTokens[i].substring(0, equalsIndex);
+						String valueStr = blockTokens[i].substring(equalsIndex + 1);
+						String[] valueTokens = valueStr.split(",");
+						stateConstraint.checks.put(propertyName, Arrays.asList(valueTokens));
+					}
 				}
-				ConnectedTextures.registerConnectedTextureByBlock(blockNamespace + ":" + blockName, connectedTexture);
+				ConnectedTextures.registerConnectedTextureByBlock(blockNamespace + ":" + blockName, stateConstraint, connectedTexture);
 			}
 		}
 	}

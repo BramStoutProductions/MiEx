@@ -7,7 +7,15 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import org.iq80.leveldb.shaded.guava.io.Files;
+
+import com.google.gson.JsonObject;
+
+import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.MCMetaJavaEdition;
 
 public class CtmUtils {
 	
@@ -185,10 +193,35 @@ public class CtmUtils {
 		0b00000111
 	};
 	
+	private static class TileImage{
+		
+		public BufferedImage image;
+		public int numFrames;
+		public File mcMetaFile;
+		
+		public TileImage(BufferedImage image, File imgFile) {
+			this.image = image;
+			this.numFrames = 0;
+			this.mcMetaFile = new File(imgFile.getPath() + ".mcmeta");
+			JsonObject data = null;
+			if(this.mcMetaFile.exists()) {
+				try {
+					data = Json.read(this.mcMetaFile).getAsJsonObject();
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			MCMetaJavaEdition mcMeta = new MCMetaJavaEdition(imgFile, data);
+			numFrames = mcMeta.getFrameCount();
+		}
+		
+	}
+	
 	public static void createFullTilesFromCompact(List<String> compactTiles, String prefix, 
-													List<String> fullTiles, String resourcePackName) {
+													List<String> fullTiles, ResourcePack resourcePack) {
 		// If the full tiles already exist, then we don't have to create them again.
-		if(ResourcePack.getFile(prefix + "0", "textures", ".png", "assets").exists()) {
+		File fullTileFile = ResourcePacks.getTexture(prefix + "0"); 
+		if(fullTileFile != null && fullTileFile.exists()) {
 			for(int fullTileIndex = 0; fullTileIndex < TileToConnectionData.length; ++fullTileIndex) {
 				String fullTileName = prefix + Integer.toString(fullTileIndex);
 				fullTiles.add(fullTileName);
@@ -199,22 +232,26 @@ public class CtmUtils {
 		if(compactTiles.size() < 5)
 			return;
 		
-		BufferedImage[] images = new BufferedImage[5];
+		TileImage[] images = new TileImage[5];
 		try {
 			for(int i = 0; i < images.length; ++i) {
-				File imgFile = ResourcePack.getFile(compactTiles.get(i), "textures", ".png", "assets");
-				if(!imgFile.exists())
+				File imgFile = ResourcePacks.getTexture(compactTiles.get(i));
+				if(imgFile == null || !imgFile.exists())
 					return; // Texture didn't exist, so we can't make the full tiles anymore
-				images[i] = ImageIO.read(imgFile);
-				if(images[i].getWidth() != images[0].getWidth() ||
-						images[i].getHeight() != images[0].getHeight())
+				BufferedImage img = ImageReader.readImage(imgFile);
+				if(img == null)
+					return;
+				images[i] = new TileImage(img, imgFile);
+				if(images[i].image.getWidth() != images[0].image.getWidth() ||
+						images[i].image.getHeight() != images[0].image.getHeight())
 					return; // Resolution of the textures don't match. They need to match.
 			}
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
-		int width = images[0].getWidth();
-		int height = images[0].getHeight();
+		int width = images[0].image.getWidth();
+		int height = images[0].image.getHeight() / images[0].numFrames;
+		int numFrames = images[0].numFrames;
 		int halfWidth = width / 2;
 		int halfHeight = height / 2;
 		
@@ -224,50 +261,58 @@ public class CtmUtils {
 			// All of the full tiles can be created from some combination
 			// of these corners.
 			
-			BufferedImage fullTileImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+			BufferedImage fullTileImg = new BufferedImage(width, height * numFrames, BufferedImage.TYPE_INT_ARGB);
 			
-			// Place the corners in the full tile image.
-			for(int cornerId = 0; cornerId < 4; ++cornerId) {
-				int neededConnectionData = fullTileData & CompactCornerMasks[cornerId];
-				int compactTileIndex = -1;
-				for(int i = 0; i < CompactTileToConnectionData.length; ++i) {
-					int sampleConnectionData = CompactTileToConnectionData[i] & CompactCornerMasks[cornerId];
-					if(sampleConnectionData == neededConnectionData) {
-						compactTileIndex = i;
-						break;
+			for(int frame = 0; frame < numFrames; frame++) {
+				// Place the corners in the full tile image.
+				for(int cornerId = 0; cornerId < 4; ++cornerId) {
+					int neededConnectionData = fullTileData & CompactCornerMasks[cornerId];
+					int compactTileIndex = -1;
+					for(int i = 0; i < CompactTileToConnectionData.length; ++i) {
+						int sampleConnectionData = CompactTileToConnectionData[i] & CompactCornerMasks[cornerId];
+						if(sampleConnectionData == neededConnectionData) {
+							compactTileIndex = i;
+							break;
+						}
 					}
-				}
-				if(compactTileIndex < 0) {
-					// We couldn't find the right corner
-					throw new RuntimeException("No matching corner!");
-				}
-				
-				// Let's draw the corner
-				
-				// Figure out the position of the corner
-				int cornerX = cornerId % 2;
-				int cornerY = cornerId / 2;
-				if(cornerY == 1)
-					cornerX = 1-cornerX;
-				cornerX *= halfWidth;
-				cornerY *= halfHeight;
-				
-				// Set the pixels
-				for(int j = 0; j < halfHeight; ++j) {
-					for(int i = 0; i < halfWidth; ++i) {
-						fullTileImg.setRGB(cornerX + i, cornerY + j, images[compactTileIndex].getRGB(cornerX + i, cornerY + j));
+					if(compactTileIndex < 0) {
+						// We couldn't find the right corner
+						throw new RuntimeException("No matching corner!");
+					}
+					
+					// Let's draw the corner
+					
+					// Figure out the position of the corner
+					int cornerX = cornerId % 2;
+					int cornerY = cornerId / 2;
+					if(cornerY == 1)
+						cornerX = 1-cornerX;
+					cornerX *= halfWidth;
+					cornerY *= halfHeight;
+					
+					// Set the pixels
+					for(int j = 0; j < halfHeight; ++j) {
+						for(int i = 0; i < halfWidth; ++i) {
+							fullTileImg.setRGB(cornerX + i, cornerY + j + height * frame, 
+									images[compactTileIndex].image.getRGB(cornerX + i, cornerY + j + height * frame));
+						}
 					}
 				}
 			}
 			
 			String fullTileName = prefix + Integer.toString(fullTileIndex);
-			String fullTilePath = ResourcePack.getFilePath(fullTileName, "textures", ".png", "assets");
-			fullTilePath = fullTilePath.replace("/base_resource_pack/", "/" + resourcePackName + "/");
-			File fullTileFile = new File(fullTilePath);
+			fullTileFile = resourcePack.getResource(fullTileName, "textures", "assets", ".png");
 			try {
 				ImageIO.write(fullTileImg, "PNG", fullTileFile);
 			}catch(Exception ex) {
 				ex.printStackTrace();
+			}
+			if(images[0].mcMetaFile.exists()) {
+				try {
+					Files.copy(images[0].mcMetaFile, new File(fullTileFile.getPath() + ".mcmeta"));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 			fullTiles.add(fullTileName);
 		}

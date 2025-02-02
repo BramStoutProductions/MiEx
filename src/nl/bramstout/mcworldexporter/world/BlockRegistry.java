@@ -32,41 +32,95 @@
 package nl.bramstout.mcworldexporter.world;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.StringMap;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public class BlockRegistry {
 	
 	private static List<Block> registeredBlocks = new ArrayList<Block>();
-	private static Map<String, Integer> nameToId = new HashMap<String, Integer>();
+	private static StringMap<Integer> nameToId = new StringMap<Integer>();
 	private static Object mutex = new Object();
 	private static AtomicInteger changeCounter = new AtomicInteger();
 	
+	public static NbtTagCompound EMPTY_COMPOUND = NbtTagCompound.newNonPooledInstance("");
+	
+	private static final char[] INT_TO_CHAR = new char[] {
+			'0', '1', '2', '3', '4', '5', '6', '7', 
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+	};
+	
 	static {
 		// Make sure that air always gets an id of 0
-		getIdForName("minecraft:air", new TAG_Compound(""));
+		getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
 	}
 	
-	public static int getIdForName(String name, TAG_Compound properties) {
-		if(!name.contains(":"))
-			name = "minecraft:" + name;
+	private static int getUniqueName(String name, NbtTagCompound properties, int dataVersion, Reference<char[]> buffer) {
+		if(name.equals("air") || name.equals("minecraft:air")) {
+			// Make air always refer to the same block no matter the data version.
+			dataVersion = 0;
+		}
+		int fullLength = name.length() + 8 + 8;
+		boolean containsNamespace = name.contains(":");
+		if(!containsNamespace)
+			fullLength += 10;
+		
+		if(buffer.value == null || buffer.value.length < fullLength) {
+			buffer.value = new char[fullLength];
+		}
+		
+		if(!containsNamespace) {
+			buffer.value[0] = 'm';
+			buffer.value[1] = 'i';
+			buffer.value[2] = 'n';
+			buffer.value[3] = 'e';
+			buffer.value[4] = 'c';
+			buffer.value[5] = 'r';
+			buffer.value[6] = 'a';
+			buffer.value[7] = 'f';
+			buffer.value[8] = 't';
+			buffer.value[9] = ':';
+		}
+		int iOffset = containsNamespace ? 0 : 10;
+		for(int i = 0; i < name.length(); ++i) {
+			buffer.value[iOffset + i] = name.charAt(i);
+		}
+		iOffset += name.length();
+		
+		int propertyHash = properties.hashCode();
+		for(int i = 0; i < 8; ++i) {
+			buffer.value[iOffset + i] = INT_TO_CHAR[(propertyHash >>> (i * 4)) & 0xF];
+		}
+		
+		iOffset += 8;
+		for(int i = 0; i < 8; ++i) {
+			buffer.value[iOffset + i] = INT_TO_CHAR[(dataVersion >>> (i * 4)) & 0xF];
+		}
+		
+		return fullLength;
+	}
+	
+	public static int getIdForName(String name, NbtTagCompound properties, int dataVersion, Reference<char[]> charBuffer) {
+		//if(!name.contains(":"))
+		//	name = "minecraft:" + name;
 		if(properties == null)
-			properties = new TAG_Compound("");
-		String idName = name + properties.toString();
-		Integer id = nameToId.get(idName);
+			properties = EMPTY_COMPOUND;
+		//String idName = name + Integer.toHexString(properties.hashCode());
+		//String idName = getUniqueName(name, properties);
+		int nameLength = getUniqueName(name, properties, dataVersion, charBuffer);
+		Integer id = nameToId.getOrNull(charBuffer.value, nameLength);
 		if(id == null) {
 			synchronized(mutex) {
-				id = nameToId.get(idName);
+				id = nameToId.getOrNull(charBuffer.value, nameLength);
 				if(id == null) {
 					id = registeredBlocks.size();
-					registeredBlocks.add(getBlockFromName(name, properties, id.intValue()));
-					nameToId.put(idName, id);
+					registeredBlocks.add(getBlockFromName(name, properties, id.intValue(), dataVersion));
+					nameToId.put(new String(charBuffer.value, 0, nameLength), id);
 				}
 			}
 		}
@@ -77,8 +131,8 @@ public class BlockRegistry {
 		return registeredBlocks.get(id < 0 ? 0 : id);
 	}
 	
-	private static Block getBlockFromName(String name, TAG_Compound properties, int id) {
-		return new Block(name, properties, id);
+	private static Block getBlockFromName(String name, NbtTagCompound properties, int id, int dataVersion) {
+		return new Block(name, properties, id, dataVersion);
 	}
 	
 	public static void clearBlockRegistry() {
@@ -90,7 +144,7 @@ public class BlockRegistry {
 		BlockStateRegistry.clearBlockStateRegistry();
 		ModelRegistry.clearModelRegistry();
 		// Make sure that air always gets an id of 0
-		getIdForName("minecraft:air", new TAG_Compound(""));
+		getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
 	}
 	
 	public static int getChangeCounter() {

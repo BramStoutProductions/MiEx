@@ -34,17 +34,19 @@ package nl.bramstout.mcworldexporter.model.builtins;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateSkull extends BlockState{
 
-	public BlockStateSkull(String name) {
-		super(name, null);
+	public BlockStateSkull(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -52,7 +54,18 @@ public class BlockStateSkull extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
@@ -64,7 +77,7 @@ public class BlockStateSkull extends BlockState{
 
 		float rotY = 0f;
 		if (isWall) {
-			String val = properties.getElement("facing").asString();
+			String val = properties.get("facing").asString();
 			if (val == null)
 				val = "north";
 			if (val.equals("north")) {
@@ -77,7 +90,7 @@ public class BlockStateSkull extends BlockState{
 				rotY = 90f;
 			}
 		} else {
-			String val = properties.getElement("rotation").asString();
+			String val = properties.get("rotation").asString();
 			if (val == null)
 				val = "0";
 			int ival = 0;
@@ -107,24 +120,24 @@ public class BlockStateSkull extends BlockState{
 
 		if(name.contains("player")) {
 			// Check for skin
-			NBT_Tag tag = properties.getElement("ExtraType");
+			NbtTag tag = properties.get("ExtraType");
 			
-			if(tag != null && tag.ID() == 8) {
-				texture = "minecraft:entity/player/" + ((TAG_String) tag).value;
+			if(tag != null && tag.getId() == 8) {
+				texture = "minecraft:entity/player/" + tag.asString();
 			} else {
-				tag = properties.getElement("SkullOwner");
+				tag = properties.get("SkullOwner");
 				
-				if(tag != null && tag.ID() == 10) {
-					NBT_Tag tag2 = ((TAG_Compound) tag).getElement("Name");
+				if(tag != null && tag.getId() == 10) {
+					NbtTag tag2 = ((NbtTagCompound) tag).get("Name");
 					
-					if(tag2 != null && tag2.ID() == 8) {
-						texture = "minecraft:entity/player/" + ((TAG_String) tag2).value;
+					if(tag2 != null && tag2.getId() == 8) {
+						texture = "minecraft:entity/player/" + tag2.asString();
 					}
 				}
 			}
 		}
 		
-		model.addTexture("texture", texture);
+		model.addTexture("#texture", texture);
 		
 		if (name.contains("dragon")) {
 			float scale = 12f / 16f;
@@ -180,8 +193,13 @@ public class BlockStateSkull extends BlockState{
 		
 		model.rotate(0, rotY, false);
 		
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null);
+		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null,
+				needsConnectionInfo());
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 	
 	private void addCube(Model model, float pMinX, float pMinY, float pMinZ, float pMaxX, float pMaxY, float pMaxZ, 

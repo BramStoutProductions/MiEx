@@ -60,6 +60,7 @@ public class BakedBlockState {
 	private boolean lodNoUVScale;
 	private int lodPriority;
 	private Color tint;
+	private boolean needsConnectionInfo;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
 							boolean transparentOcclusion, boolean leavesOcclusion, boolean detailedOcclusion,
@@ -67,11 +68,13 @@ public class BakedBlockState {
 							boolean randomOffset, boolean randomYOffset,
 							boolean grassColormap, boolean foliageColormap, boolean waterColormap,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, int lodPriority, Color tint) {
+							boolean lodNoUVScale, int lodPriority, Color tint, boolean needsConnectionInfo) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
-		for(List<Model> modelList : models) {
+		List<Model> modelList = null;
+		for(int i = 0; i < models.size(); ++i) {
+			modelList = models.get(i);
 			long tmpOccludes = 0xFFFFFFFFFFFFFFFL;
 			for(Model model : modelList) {
 				tmpOccludes &= model.getOccludes();
@@ -96,6 +99,7 @@ public class BakedBlockState {
 		this.lodNoUVScale = lodNoUVScale;
 		this.lodPriority = lodPriority;
 		this.tint = tint;
+		this.needsConnectionInfo = needsConnectionInfo;
 	}
 	
 	public long getOccludes() {
@@ -227,6 +231,14 @@ public class BakedBlockState {
 	
 	public Color getTint() {
 		return tint;
+	}
+	
+	public boolean isNeedsConnectionInfo() {
+		return needsConnectionInfo;
+	}
+	
+	public boolean isSolidBlock() {
+		return (this.occludes & 0xFFFFFFL) == 0xFFFFFFL && !this.transparentOcclusion && !this.leavesOcclusion;
 	}
 
 }

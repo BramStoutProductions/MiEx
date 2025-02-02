@@ -47,6 +47,9 @@ public abstract class Converter {
 		public MiExConverter(File inputFile, File outputFile) {}
 		
 		@Override
+		public void init() throws Exception{}
+		
+		@Override
 		public void convert() throws Exception {}
 		
 		@Override
@@ -113,6 +116,8 @@ public abstract class Converter {
 			return new MiExConverter(inputFile, outputFile);
 		}
 	}
+	
+	public abstract void init() throws Exception;
 	
 	public abstract void convert() throws Exception;
 	

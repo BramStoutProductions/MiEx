@@ -31,9 +31,7 @@
 
 package nl.bramstout.mcworldexporter.atlas;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,12 +39,11 @@ import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.Config;
-import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class Atlas {
 	
@@ -118,8 +115,7 @@ public class Atlas {
 		items.clear();
 		atlasToTemplateTexture.clear();
 		atlases.clear();
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
 			try {
 				if(i < (resourcePacks.size()-1)) {
@@ -128,18 +124,20 @@ public class Atlas {
 					// those.
 					// We don't need to do it for the base resource pack, since the items map
 					// is already empty.
-					File assetsFolder = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/assets");
-					if(assetsFolder.exists() && assetsFolder.isDirectory()) {
-						for(File namespace : assetsFolder.listFiles())
-							if(namespace.isDirectory())
-								processNamespace(namespace);
+					for(File rootFolder : resourcePacks.get(i).getFolders()) {
+						File assetsFolder = new File(rootFolder, "assets");
+						if(assetsFolder.exists() && assetsFolder.isDirectory()) {
+							for(File namespace : assetsFolder.listFiles())
+								if(namespace.isDirectory())
+									processNamespace(namespace);
+						}
 					}
 				}
 				
 				
-				String atlasName = FileUtil.getResourcePackDir() + resourcePacks.get(i) + "/miex_atlas.json";
-				if(new File(atlasName).exists()) {
-					JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(new File(atlasName))))).getAsJsonObject();
+				File atlasFile = new File(resourcePacks.get(i).getFolder(), "miex_atlas.json");
+				if(atlasFile.exists()) {
+					JsonObject data = Json.read(atlasFile).getAsJsonObject();
 					for (Entry<String, JsonElement> entry : data.entrySet()) {
 						try {
 							if(Config.bannedMaterials.contains(entry.getKey()))

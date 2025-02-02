@@ -31,245 +31,198 @@
 
 package nl.bramstout.mcworldexporter.export;
 
+import java.util.Arrays;
+
 public class IndexCache {
 	
 	private static class Node{
 		
-		long startKey;
-		long keyLength;
-		Node child00;
-		Node child01;
-		long key1;
-		int value1;
-		long key2;
-		int value2;
-		long key3;
-		int value3;
-		long key4;
-		int value4;
-		long key5;
-		int value5;
-		long key6;
-		int value6;
-		long key7;
-		int value7;
-		long key8;
-		int value8;
-		long key9;
-		int value9;
-		long key10;
-		int value10;
-		long key11;
-		int value11;
-		long key12;
-		int value12;
-		long key13;
-		int value13;
-		long key14;
-		int value14;
-		long key15;
-		int value15;
-		long key16;
-		int value16;
-		boolean leafNode;
+		private static final int maxSize = 256;
+		private static final int maxDepth = 24;
 		
-		public Node() {
-			startKey = 0;
-			keyLength = 1l << 63;
-			child00 = null;
-			child01 = null;
-			key1 = -1;
-			value1 = -1;
-			key2 = -1;
-			value2 = -1;
-			key3 = -1;
-			value3 = -1;
-			key4 = -1;
-			value4 = -1;
-			key5 = -1;
-			value5 = -1;
-			key6 = -1;
-			value6 = -1;
-			key7 = -1;
-			value7 = -1;
-			key8 = -1;
-			value8 = -1;
-			key9 = -1;
-			value9 = -1;
-			key10 = -1;
-			value10 = -1;
-			key11 = -1;
-			value11 = -1;
-			key12 = -1;
-			value12 = -1;
-			key13 = -1;
-			value13 = -1;
-			key14 = -1;
-			value14 = -1;
-			key15 = -1;
-			value15 = -1;
-			key16 = -1;
-			value16 = -1;
-			leafNode = true;
+		private int[] indices;
+		private long[] hashes;
+		private int hashesSize;
+		private Node node0;
+		private Node node1;
+		private Node node2;
+		private Node node3;
+		private long splitHash01;
+		private long splitHash12;
+		private long splitHash23;
+		private int depth;
+		
+		public Node(int initialCapacity, int depth) {
+			indices = new int[initialCapacity];
+			hashes = new long[initialCapacity];
+			hashesSize = 0;
+			node0 = null;
+			node1 = null;
+			node2 = null;
+			node3 = null;
+			splitHash01 = 0;
+			splitHash12 = 0;
+			splitHash23 = 0;
+			this.depth = depth;
 		}
 		
-		public int getOrDefault(long key, int defaultValue) {
-			if(!leafNode) {
-				// This is an intermediate node.
-				// Check if it's in the left or right child.
-				if(((key - startKey) & keyLength) == 0) {
-					if(child00 == null)
-						return defaultValue;
-					return child00.getOrDefault(key, defaultValue);
-				}else {
-					if(child01 == null)
-						return defaultValue;
-					return child01.getOrDefault(key, defaultValue);
+		public void clear() {
+			if(indices == null)
+				indices = new int[64];
+			if(hashes == null)
+				hashes = new long[64];
+			hashesSize = 0;
+			node0 = null;
+			node1 = null;
+			node2 = null;
+			node3 = null;
+			splitHash01 = 0;
+			splitHash12 = 0;
+			splitHash23 = 0;
+		}
+		
+		private int getIndex(long hash) {
+			int left = 0;
+			int right = hashesSize - 1;
+			int middle = 0;
+			int index = -1;
+			while(left <= right) {
+				middle = (left + right) >>> 1;
+				if(hashes[middle] < hash)
+					left = middle + 1;
+				else if(hashes[middle] > hash)
+					right = middle - 1;
+				else {
+					index = middle;
+					break;
 				}
-			}else{
-				// This is a leaf node, so check the keys for a hit.
-				if(key == key1)
-					return value1;
-				else if(key == key2)
-					return value2;
-				else if(key == key3)
-					return value3;
-				else if(key == key4)
-					return value4;
-				else if(key == key5)
-					return value5;
-				else if(key == key6)
-					return value6;
-				else if(key == key7)
-					return value7;
-				else if(key == key8)
-					return value8;
-				else if(key == key9)
-					return value9;
-				else if(key == key10)
-					return value10;
-				else if(key == key11)
-					return value11;
-				else if(key == key12)
-					return value12;
-				else if(key == key13)
-					return value13;
-				else if(key == key14)
-					return value14;
-				else if(key == key15)
-					return value15;
-				else if(key == key16)
-					return value16;
+			}
+			return index;
+		}
+		
+		private int getInsertIndex(long hash) {
+			int left = 0;
+			int right = hashesSize - 1;
+			int middle = 0;
+			while(left <= right) {
+				middle = (left + right) >>> 1;
+				if(hashes[middle] < hash)
+					left = middle + 1;
+				else if(hashes[middle] > hash)
+					right = middle - 1;
+				else {
+					break;
+				}
+			}
+			if(hashesSize > 0 && hash > hashes[middle])
+				middle++;
+			return middle;
+		}
+		
+		public int getOrDefault(long hash, int defaultValue) {
+			if(node0 != null) {
+				if(hash < splitHash01)
+					return node0.getOrDefault(hash, defaultValue);
+				else if(hash < splitHash12)
+					return node1.getOrDefault(hash, defaultValue);
+				else if(hash < splitHash23)
+					return node2.getOrDefault(hash, defaultValue);
 				else
-					return defaultValue;
+					return node3.getOrDefault(hash, defaultValue);
 			}
+			// This is a leaf node, so do a binary search through hashes
+			int index = getIndex(hash);
+			if(index < 0)
+				return defaultValue;
+			
+			return indices[index];
 		}
 		
-		public void put(long key, int value) {
-			if(!leafNode) {
-				// This is an intermediate node.
-				// Check if it's in the left or right child.
-				if(((key - startKey) & keyLength) == 0) {
-					if(child00 == null) {
-						long childKeyLength = keyLength >>> 1;
-						child00 = new Node();
-						child00.startKey = startKey;
-						child00.keyLength = childKeyLength;
-					}
-					child00.put(key, value);
-				}else {
-					if(child01 == null) {
-						long childKeyLength = keyLength >>> 1;
-						child01 = new Node();
-						child01.startKey = startKey + keyLength;
-						child01.keyLength = childKeyLength;
-					}
-					child01.put(key, value);
-				}
-			}else {
-				// This is a leaf node.
-				// If they key matches or it's empty,
-				// put it in that slot.
-				if(key == key1 || key1 == -1) {
-					key1 = key;
-					value1 = value;
-				}else if(key == key2 || key2 == -1) {
-					key2 = key;
-					value2 = value;
-				}else if(key == key3 || key3 == -1) {
-					key3 = key;
-					value3 = value;
-				}else if(key == key4 || key4 == -1) {
-					key4 = key;
-					value4 = value;
-				}else if(key == key5 || key5 == -1) {
-					key5 = key;
-					value5 = value;
-				}else if(key == key6 || key6 == -1) {
-					key6 = key;
-					value6 = value;
-				}else if(key == key7 || key7 == -1) {
-					key7 = key;
-					value7 = value;
-				}else if(key == key8 || key8 == -1) {
-					key8 = key;
-					value8 = value;
-				}else if(key == key9 || key9 == -1) {
-					key9 = key;
-					value9 = value;
-				}else if(key == key10 || key10 == -1) {
-					key10 = key;
-					value10 = value;
-				}else if(key == key11 || key11 == -1) {
-					key11 = key;
-					value11 = value;
-				}else if(key == key12 || key12 == -1) {
-					key12 = key;
-					value12 = value;
-				}else if(key == key13 || key13 == -1) {
-					key13 = key;
-					value13 = value;
-				}else if(key == key14 || key14 == -1) {
-					key14 = key;
-					value14 = value;
-				}else if(key == key15 || key15 == -1) {
-					key15 = key;
-					value15 = value;
-				}else if(key == key16 || key16 == -1) {
-					key16 = key;
-					value16 = value;
-				}else {
-					// We've reached the end
-					// which means that we need to
-					// split this node up.
-					leafNode = false;
-					
-					put(key1, value1);
-					put(key2, value2);
-					put(key3, value3);
-					put(key4, value4);
-					put(key5, value5);
-					put(key6, value6);
-					put(key7, value7);
-					put(key8, value8);
-					put(key9, value9);
-					put(key10, value10);
-					put(key11, value11);
-					put(key12, value12);
-					put(key13, value13);
-					put(key14, value14);
-					put(key15, value15);
-					put(key16, value16);
-					put(key, value);
+		public void put(long hash, int index) {
+			if(node0 == null && hashesSize >= maxSize && depth < maxDepth) {
+				split();
+			}
+			if(node0 != null) {
+				if(hash < splitHash01)
+					node0.put(hash, index);
+				else if(hash < splitHash12)
+					node1.put(hash, index);
+				else if(hash < splitHash23)
+					node2.put(hash, index);
+				else
+					node3.put(hash, index);
+				return;
+			}
+			
+			int insertIndex = getInsertIndex(hash);
+			if(insertIndex < hashesSize) {
+				if(hashes[insertIndex] == hash) {
+					// Add it to the existing hash
+					indices[insertIndex] = index;
+					return;
 				}
 			}
+			// We need to insert it
+			if(hashesSize == hashes.length) {
+				// We're already at capacity, so increase our lists
+				indices = Arrays.copyOf(indices, indices.length * 2);
+				hashes = Arrays.copyOf(hashes, hashes.length * 2);
+			}
+			
+			// First move all values insertIndex and after up.
+			for(int i = hashesSize - 1; i >= insertIndex; --i) {
+				indices[i + 1] = indices[i];
+				hashes[i + 1] = hashes[i];
+			}
+			
+			// Now we insert out new values
+			hashes[insertIndex] = hash;
+			indices[insertIndex] = index;
+			hashesSize++;
 		}
+		
+		private void split() {
+			int middleIndex = hashesSize >>> 1;
+			int middleLeftIndex = hashesSize >>> 2;
+			int middleRightIndex = middleIndex + middleLeftIndex;
+			node0 = new Node(middleLeftIndex, depth + 1);
+			node1 = new Node(middleIndex - middleLeftIndex, depth + 1);
+			node2 = new Node(middleRightIndex - middleIndex, depth + 1);
+			node3 = new Node(hashesSize - middleRightIndex, depth + 1);
+			splitHash01 = hashes[middleLeftIndex];
+			splitHash12 = hashes[middleIndex];
+			splitHash23 = hashes[middleRightIndex];
+			for(int i = 0; i < middleLeftIndex; ++i) {
+				node0.hashes[i] = hashes[i];
+				node0.indices[i] = indices[i];
+				node0.hashesSize = middleLeftIndex;
+			}
+			for(int i = middleLeftIndex; i < middleIndex; ++i) {
+				node1.hashes[i - middleLeftIndex] = hashes[i];
+				node1.indices[i - middleLeftIndex] = indices[i];
+				node1.hashesSize = middleIndex - middleLeftIndex;
+			}
+			for(int i = middleIndex; i < middleRightIndex; ++i) {
+				node2.hashes[i - middleIndex] = hashes[i];
+				node2.indices[i - middleIndex] = indices[i];
+				node2.hashesSize = middleRightIndex - middleIndex;
+			}
+			for(int i = middleRightIndex; i < hashesSize; ++i) {
+				node3.hashes[i - middleRightIndex] = hashes[i];
+				node3.indices[i - middleRightIndex] = indices[i];
+				node3.hashesSize = hashesSize - middleRightIndex;
+			}
+			hashes = null;
+			indices = null;
+			hashesSize = 0;
+		}
+		
 	}
 	
 	private Node rootNode;
 	
 	public IndexCache() {
-		rootNode = new Node();
+		rootNode = new Node(64, 0);
 	}
 	
 	public int getOrDefault(long key, int defaultValue) {
@@ -278,6 +231,10 @@ public class IndexCache {
 	
 	public void put(long key, int value) {
 		rootNode.put(key, value);
+	}
+	
+	public void clear() {
+		rootNode.clear();
 	}
 	
 }

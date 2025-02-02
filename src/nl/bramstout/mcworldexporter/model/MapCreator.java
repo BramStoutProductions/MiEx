@@ -32,52 +32,38 @@
 package nl.bramstout.mcworldexporter.model;
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.zip.GZIPInputStream;
 
+import org.iq80.leveldb.DB;
+
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Byte_Array;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagByteArray;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.bedrock.BedrockUtils;
+import nl.bramstout.mcworldexporter.world.bedrock.ByteArrayDataInputStream;
+import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
 
 public class MapCreator {
 	
-	public static Model createMapModel(int mapId) {
+	public static Model createMapModel(long mapId, boolean isBedrock) {
 		Model model = new Model("map", null, false);
+		model.setItemFrameTransform(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, 0f), new Vector3f(2f, 2f, 2f));
 
-		int[] colorIds = new int[128 * 128];
+		RGB[] colorIds = new RGB[128 * 128];
 
-		try {
-			File dataDir = new File(MCWorldExporter.getApp().getWorld().getWorldDir(), "data");
-			File mapFile = new File(dataDir, "map_" + mapId + ".dat");
-
-			if (!mapFile.exists())
-				return null;
-
-			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(mapFile)));
-
-			DataInputStream dis = new DataInputStream(is);
-			TAG_Compound root = (TAG_Compound) NBT_Tag.make(dis);
-			TAG_Compound dataTag = (TAG_Compound) root.getElement("data");
-			if (dataTag == null)
-				return null;
-			TAG_Byte_Array colors = (TAG_Byte_Array) dataTag.getElement("colors");
-			if (colors == null)
-				return null;
-
-			for (int i = 0; i < 128 * 128; ++i) {
-				colorIds[i] = colors.data[i];
-			}
-			
-			dis.close();
-
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		if(isBedrock) {
+			readBedrockMapData(mapId, colorIds);
+		}else {
+			readJavaMapData(mapId, colorIds);
 		}
 		
-		model.addTexture("VertexColor", "vertexcolor:vertexcolor");
+		model.addTexture("#VertexColor", "vertexcolor:vertexcolor");
 
 		for (int i = 0; i < 128; ++i) {
 			for (int j = 0; j < 128; ++j) {
@@ -86,7 +72,7 @@ public class MapCreator {
 				float xMax = x + (1f / 8f);
 				float yMax = y + (1f / 8f);
 
-				RGB color = getRGBFromId(colorIds[i + j * 128]);
+				RGB color = colorIds[i + j * 128];
 				if (color == null)
 					continue;
 
@@ -98,6 +84,92 @@ public class MapCreator {
 		}
 
 		return model;
+	}
+	
+	private static void readJavaMapData(long mapId, RGB[] colorIds) {
+		try {
+			File dataDir = new File(MCWorldExporter.getApp().getWorld().getWorldDir(), "data");
+			File mapFile = new File(dataDir, "map_" + mapId + ".dat");
+
+			if (!mapFile.exists())
+				return;
+
+			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(mapFile)));
+
+			NbtDataInputStream dis = new NbtDataInputStream(is);
+			NbtTagCompound root = (NbtTagCompound) NbtTag.readFromStream(dis);
+			NbtTagCompound dataTag = (NbtTagCompound) root.get("data");
+			if (dataTag == null) {
+				root.free();
+				return;
+			}
+			NbtTagByteArray colors = (NbtTagByteArray) dataTag.get("colors");
+			if (colors == null) {
+				root.free();
+				return;
+			}
+
+			for (int i = 0; i < 128 * 128; ++i) {
+				colorIds[i] = getRGBFromId(((int) colors.getData()[i]) & 0xFF);
+			}
+			
+			dis.close();
+			root.free();
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private static void readBedrockMapData(long mapId, RGB[] colorIds) {
+		DB worldDB = null;
+		if(MCWorldExporter.getApp().getWorld() instanceof WorldBedrock) {
+			worldDB = ((WorldBedrock) MCWorldExporter.getApp().getWorld()).getWorldDB();
+		}
+		if(worldDB == null)
+			return;
+		
+		byte[] key = BedrockUtils.bytes("map_" + (mapId | 0xC000000000000000L));
+		byte[] data = worldDB.get(key);
+		if(data == null)
+			return;
+		
+		ByteArrayDataInputStream dis = new ByteArrayDataInputStream(data);
+		
+		try {
+			NbtTagCompound root = (NbtTagCompound) NbtTag.readFromStream(dis);
+			NbtTagByteArray colors = (NbtTagByteArray) root.get("colors");
+			if (colors == null) {
+				root.free();
+				return;
+			}
+	
+			for (int i = 0; i < 128 * 128; ++i) {
+				int r = ((int) colors.getData()[i*4]) & 0xFF;
+				int g = ((int) colors.getData()[i*4 + 1]) & 0xFF;
+				int b = ((int) colors.getData()[i*4 + 2]) & 0xFF;
+				int a = ((int) colors.getData()[i*4 + 3]) & 0xFF;
+				
+				if(a < 127) {
+					colorIds[i] = null;
+					continue;
+				}
+				
+				RGB baseColor = new RGB(r, g, b);
+				baseColor.x = (float) Math.pow(baseColor.x / 255f, 2.2f);
+				baseColor.y = (float) Math.pow(baseColor.y / 255f, 2.2f);
+				baseColor.z = (float) Math.pow(baseColor.z / 255f, 2.2f);
+				
+				baseColor.x = baseColor.x * Color.GAMUT.r0 + baseColor.y * Color.GAMUT.r1 + baseColor.z * Color.GAMUT.r2;
+				baseColor.y = baseColor.x * Color.GAMUT.g0 + baseColor.y * Color.GAMUT.g1 + baseColor.z * Color.GAMUT.g2;
+				baseColor.z = baseColor.x * Color.GAMUT.b0 + baseColor.y * Color.GAMUT.b1 + baseColor.z * Color.GAMUT.b2;
+				colorIds[i] = baseColor;
+			}
+			
+			root.free();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	private static RGB getRGBFromId(int colorId) {
@@ -123,16 +195,12 @@ public class MapCreator {
 		baseColor.y = (float) Math.pow(baseColor.y / 255f, 2.2f);
 		baseColor.z = (float) Math.pow(baseColor.z / 255f, 2.2f);
 		
-		baseColor.x = baseColor.x * sRGB_TO_ACEScg[0][0] + baseColor.y * sRGB_TO_ACEScg[0][1] + baseColor.z * sRGB_TO_ACEScg[0][2];
-		baseColor.y = baseColor.x * sRGB_TO_ACEScg[1][0] + baseColor.y * sRGB_TO_ACEScg[1][1] + baseColor.z * sRGB_TO_ACEScg[1][2];
-		baseColor.z = baseColor.x * sRGB_TO_ACEScg[2][0] + baseColor.y * sRGB_TO_ACEScg[2][1] + baseColor.z * sRGB_TO_ACEScg[2][2];
+		baseColor.x = baseColor.x * Color.GAMUT.r0 + baseColor.y * Color.GAMUT.r1 + baseColor.z * Color.GAMUT.r2;
+		baseColor.y = baseColor.x * Color.GAMUT.g0 + baseColor.y * Color.GAMUT.g1 + baseColor.z * Color.GAMUT.g2;
+		baseColor.z = baseColor.x * Color.GAMUT.b0 + baseColor.y * Color.GAMUT.b1 + baseColor.z * Color.GAMUT.b2;
 
 		return baseColor;
 	}
-
-	private static final float sRGB_TO_ACEScg[][] = { { 0.61313242239054f, 0.33953801579967f, 0.04741669604827f },
-			{ 0.07012438083392f, 0.91639401131357f, 0.01345152395824f },
-			{ 0.02058765752818f, 0.10957457161068f, 0.86978540403533f } };
 
 	private static final RGB BASE_COLORS[] = { null, new RGB(127, 178, 56), new RGB(247, 233, 163),
 			new RGB(199, 199, 199), new RGB(255, 0, 0), new RGB(160, 160, 255), new RGB(167, 167, 167),
@@ -148,7 +216,8 @@ public class MapCreator {
 			new RGB(135, 107, 98), new RGB(87, 92, 92), new RGB(122, 73, 88), new RGB(76, 62, 92),
 			new RGB(76, 50, 35), new RGB(76, 82, 42), new RGB(142, 60, 46), new RGB(37, 22, 16),
 			new RGB(189, 48, 49), new RGB(148, 63, 97), new RGB(92, 25, 29), new RGB(22, 126, 134),
-			new RGB(58, 142, 140), new RGB(86, 44, 62), new RGB(20, 180, 133) };
+			new RGB(58, 142, 140), new RGB(86, 44, 62), new RGB(20, 180, 133), new RGB(100, 100, 100),
+			new RGB(216, 175, 147), new RGB(127, 167, 150)};
 	
 	private static class RGB{
 		float x;

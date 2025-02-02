@@ -31,42 +31,25 @@
 
 package nl.bramstout.mcworldexporter.resourcepack;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
-
-import nl.bramstout.mcworldexporter.FileUtil;
+import java.util.Map.Entry;
 
 public class Tags {
 	
 	private static Map<String, List<String>> tagToResourceIdentifiers = new HashMap<String, List<String>>();
+	private static Map<String, List<String>> resourceIdentifiersToTags = new HashMap<String, List<String>>();
 	
 	public static void load() {
-		tagToResourceIdentifiers.clear();
+		Map<String, List<String>> tagToResourceIdentifiers = new HashMap<String, List<String>>();
+		Map<String, List<String>> resourceIdentifiersToTags = new HashMap<String, List<String>>();
 		
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
-		for(int i = resourcePacks.size()-1; i > 0; i--) {
-			String resourcePack = resourcePacks.get(i);
-			File dataFolder = new File(FileUtil.getResourcePackDir(), resourcePack + "/data");
-			if(!dataFolder.exists())
-				continue;
-			for(File namespace : dataFolder.listFiles()) {
-				if(!namespace.isDirectory())
-					continue;
-				processNamespace(namespace.getName(), namespace);
-			}
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
+		for(int i = resourcePacks.size()-1; i >= 0; i--) {
+			ResourcePack resourcePack = resourcePacks.get(i);
+			resourcePack.parseTags(tagToResourceIdentifiers);
 		}
 		
 		// The tagToResourceIdentifiers is now filled with the tags, but
@@ -86,8 +69,18 @@ public class Tags {
 				for(String value : values) {
 					if(value.startsWith("#")) {
 						List<String> referencedValues = tagToResourceIdentifiers.getOrDefault(value.substring(1), null);
-						if(referencedValues == null)
-							continue;
+						if(referencedValues == null) {
+							// The tag identifier could be relative to the current tag.
+							int semicolonValue = value.indexOf((int) ':');
+							int semicolonKey = key.indexOf((int) ':');
+							String keyPart = key.substring(semicolonKey + 1);
+							int slashKey = keyPart.indexOf((int) '/');
+							String tag = value.substring(1, semicolonValue + 1) + keyPart.substring(0, slashKey + 1) + 
+									value.substring(semicolonValue + 1);
+							referencedValues = tagToResourceIdentifiers.getOrDefault(tag, null);
+							if(referencedValues == null)
+								continue;
+						}
 						newValues.addAll(referencedValues);
 						
 						// We just included the values from a referenced
@@ -104,74 +97,19 @@ public class Tags {
 			}
 		}
 		
-	}
-	
-	private static void processNamespace(String namespace, File namespaceFolder) {
-		File tagsFolder = new File(namespaceFolder, "tags");
-		if(!tagsFolder.exists())
-			return;
-		processFolder(namespace, "", tagsFolder);
-	}
-	
-	private static void processFolder(String namespace, String parent, File folder) {
-		for(File file : folder.listFiles()) {
-			if(file.isDirectory()) {
-				processFolder(namespace, parent + file.getName() + "/", file);
-			}else if(file.isFile()) {
-				if(!file.getName().endsWith(".json"))
-					continue;
-				processTagsFile(namespace + ":" + parent + file.getName().split("\\.")[0], file);
+		for(Entry<String, List<String>> entry : tagToResourceIdentifiers.entrySet()) {
+			for(String resourceId : entry.getValue()) {
+				List<String> tags = resourceIdentifiersToTags.getOrDefault(resourceId, null);
+				if(tags == null) {
+					tags = new ArrayList<String>();
+					resourceIdentifiersToTags.put(resourceId, tags);
+				}
+				tags.add(entry.getKey());
 			}
 		}
-	}
-	
-	private static void processTagsFile(String resourceIdentifier, File file) {
-		try {
-			JsonReader reader = new JsonReader(new BufferedReader(new FileReader(file)));
-			JsonObject data = JsonParser.parseReader(reader).getAsJsonObject();
-			
-			boolean replace = false;
-			if(data.has("replace"))
-				replace = data.get("replace").getAsBoolean();
-			
-			List<String> values = new ArrayList<String>();
-			
-			if(data.has("values")) {
-				JsonArray jsonValues = data.get("values").getAsJsonArray();
-				for(JsonElement el : jsonValues.asList()) {
-					String name = null;
-					if(el.isJsonPrimitive()) {
-						name = el.getAsString();
-					}else if(el.isJsonObject()) {
-						if(el.getAsJsonObject().has("id")) {
-							name = el.getAsJsonObject().get("id").getAsString();
-						}
-					}
-					if(name != null) {
-						if(!name.contains(":")) {
-							if(name.startsWith("#"))
-								name = "#minecraft:" + name.substring(1);
-							else
-								name = "minecraft:" + name;
-						}
-						values.add(name);
-					}
-				}
-			}
-			
-			if(replace) {
-				tagToResourceIdentifiers.put(resourceIdentifier, values);
-			}else {
-				List<String> existingList = tagToResourceIdentifiers.getOrDefault(resourceIdentifier, null);
-				if(existingList == null) {
-					tagToResourceIdentifiers.put(resourceIdentifier, values);
-				}else {
-					existingList.addAll(values);
-				}
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		
+		Tags.tagToResourceIdentifiers = tagToResourceIdentifiers;
+		Tags.resourceIdentifiersToTags = resourceIdentifiersToTags;
 	}
 	
 	private static List<String> emptyList = new ArrayList<String>();
@@ -184,6 +122,10 @@ public class Tags {
 		if(res == null)
 			return emptyList;
 		return res;
+	}
+	
+	public static List<String> getTagsForResourceId(String resourceId){
+		return resourceIdentifiersToTags.getOrDefault(resourceId, emptyList);
 	}
 	
 	

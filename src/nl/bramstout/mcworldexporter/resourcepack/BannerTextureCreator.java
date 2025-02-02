@@ -32,10 +32,7 @@
 package nl.bramstout.mcworldexporter.resourcepack;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +42,9 @@ import javax.imageio.ImageIO;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.image.ImageReader;
 
 public class BannerTextureCreator {
 	
@@ -144,40 +140,20 @@ public class BannerTextureCreator {
 		colorMap.put("black", new Color(0xFF191919, true, false));
 		
 		
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
+		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
-			File dataFolder = new File(FileUtil.getResourcePackDir(), resourcePacks.get(i) + "/data");
-			if(!dataFolder.exists() || !dataFolder.isDirectory())
-				continue;
-			for(File namespace : dataFolder.listFiles()) {
-				File bannerPatternFolder = new File(namespace, "banner_pattern");
-				if(!bannerPatternFolder.exists() || !bannerPatternFolder.isDirectory())
-					continue;
-				for(File bannerPattern : bannerPatternFolder.listFiles()) {
-					if(!bannerPattern.isFile() || !bannerPattern.getName().endsWith(".json"))
-						continue;
-					try {
-						JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(bannerPattern)))).getAsJsonObject();
-						if(data.has("asset_id")) {
-							String id = data.get("asset_id").getAsString();
-							if(!id.contains(":"))
-								id = "minecraft:" + id;
-							String[] tokens = id.split(":");
-							patternMap.put(namespace.getName() + ":" + bannerPattern.getName().replace(".json", ""), 
-									tokens[0] + ":entity/banner/" + tokens[1]);
-						}
-					}catch(Exception ex) {
-						ex.printStackTrace();
-					}
-				}
-			}
+			resourcePacks.get(i).parseBannerPatterns(patternMap);
 		}
 	}
 	
 	public static void createBannerTexture(String data, File textureFolder, String name) throws Exception {
 		JsonObject jsonData = JsonParser.parseString(data).getAsJsonObject();
-		BufferedImage baseImg = ImageIO.read(ResourcePack.getFile(patternMap.get(""), "textures", ".png", "assets"));
+		File baseImgFile = ResourcePacks.getTexture(patternMap.get(""));
+		if(baseImgFile == null || !baseImgFile.exists())
+			return;
+		BufferedImage baseImg = ImageReader.readImage(baseImgFile);
+		if(baseImg == null)
+			return;
 		BufferedImage resImg = new BufferedImage(baseImg.getWidth(), baseImg.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		for(int j = 0; j < baseImg.getHeight(); j++)
 			for(int i = 0; i < baseImg.getWidth(); ++i)
@@ -187,9 +163,13 @@ public class BannerTextureCreator {
 		}
 		if(jsonData.has("patterns")) {
 			for(JsonElement el : jsonData.get("patterns").getAsJsonArray().asList()) {
-				BufferedImage img = ImageIO.read(ResourcePack.getFile(
-						patternMap.getOrDefault(el.getAsJsonObject().get("name").getAsString(), ""), 
-						"textures", ".png", "assets"));
+				File imgFile = ResourcePacks.getTexture(
+						patternMap.getOrDefault(el.getAsJsonObject().get("name").getAsString(), ""));
+				if(imgFile == null || !imgFile.exists())
+					continue;
+				BufferedImage img = ImageReader.readImage(imgFile);
+				if(img == null)
+					continue;
 				composite(resImg, img, 
 						colorMap.getOrDefault(el.getAsJsonObject().get("color").getAsString(), new Color(1f, 1f, 1f, 1f)));
 			}

@@ -43,11 +43,11 @@
                         "value": "@texture@"
                     },
                     "inputs:wrapS": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "string",
+                        "type": "token",
                         "value": "repeat"
                     },
                     "inputs:st": {
@@ -65,6 +65,64 @@
                     "inputs:varname": {
                         "type": "string",
                         "value": "st"
+                    }
+                }
+            }
+        },
+        "@texture@.animated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated": {
+            "UV_ANIMATED": {
+                "type": "UsdTransform2d",
+                "attributes": {
+                    "outputs:result": {
+                        "type": "float2"
+                    },
+                    "inputs:in": {
+                        "type": "float2",
+                        "connection": "${FILE.inputs:st}"
+                    },
+                    "inputs:scale": {
+                        "type": "float2",
+                        "expression": "${frameScale(inverse=true)}"
+                    },
+                    "inputs:translation": {
+                        "type": "float2",
+                        "expression": "${frameId(reverse=true)}"
+                    }
+                }
+            },
+            "FILE": {
+                "attributes": {
+                    "inputs:st": {
+                        "connection": "UV_ANIMATED.outputs:result"
                     }
                 }
             }

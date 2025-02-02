@@ -32,9 +32,18 @@
 package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
 
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
+import javax.swing.OverlayLayout;
 import javax.swing.border.EmptyBorder;
+
+import nl.bramstout.mcworldexporter.ReleaseChecker;
 
 public class MainWindow extends JFrame{
 
@@ -43,22 +52,70 @@ public class MainWindow extends JFrame{
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private JLayeredPane rootPanel;
+	private JPanel contentPanel;
+	private JPanel loadingPanel;
 	private JPanel topPanel;
 	private ReleasePanel releasePanel;
 	private ToolBar toolbar;
 	private WorldViewer2D viewer;
 	private ProgressBar progressBar;
 	private ResourcePackManager resourcePackManager;
+	private EntityDialog entityDialog;
 	
 	public MainWindow() {
 		super();
+		entityDialog = new EntityDialog(this);
+		
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setLayout(new BorderLayout());
+		
+		rootPanel = new JLayeredPane();
+		rootPanel.setLayout(new OverlayLayout(rootPanel));
+		rootPanel.setBorder(new EmptyBorder(0,0,0,0));
+		add(rootPanel);
+		
+		contentPanel = new JPanel();
+		contentPanel.setLayout(new BorderLayout());
+		contentPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+		rootPanel.add(contentPanel, Integer.valueOf(0), 0);
+		
+		loadingPanel = new JPanel() {
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+			
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				g.setColor(new Color(
+						(getBackground().getRed() * 15) / 16,
+						(getBackground().getGreen() * 15) / 16,
+						(getBackground().getBlue() * 15) / 16,
+						170));
+				g.fillRect(0, 0, getWidth(), getHeight());
+			}
+			
+		};
+		loadingPanel.setLayout(new BoxLayout(loadingPanel, BoxLayout.X_AXIS));
+		loadingPanel.setOpaque(false);
+		rootPanel.add(loadingPanel, Integer.valueOf(1), 0);
+		JLabel loadingLabel = new JLabel("Loading");
+		loadingLabel.setFont(loadingLabel.getFont().deriveFont(32.0f));
+		loadingLabel.setHorizontalTextPosition(JLabel.CENTER);
+		JPanel paddingPanel1 = new JPanel();
+		paddingPanel1.setOpaque(false);
+		JPanel paddingPanel2 = new JPanel();
+		paddingPanel2.setOpaque(false);
+		loadingPanel.add(paddingPanel1);
+		loadingPanel.add(loadingLabel);
+		loadingPanel.add(paddingPanel2);
 		
 		topPanel = new JPanel();
 		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
 		topPanel.setBorder(new EmptyBorder(0,0,0,0));
-		add(topPanel, BorderLayout.NORTH);
+		contentPanel.add(topPanel, BorderLayout.NORTH);
 		
 		releasePanel = new ReleasePanel();
 		topPanel.add(releasePanel);
@@ -67,20 +124,20 @@ public class MainWindow extends JFrame{
 		topPanel.add(toolbar);
 		
 		viewer = new WorldViewer2D();
-		add(viewer, BorderLayout.CENTER);
+		contentPanel.add(viewer, BorderLayout.CENTER);
 		
 		progressBar = new ProgressBar();
-		add(progressBar, BorderLayout.SOUTH);
+		contentPanel.add(progressBar, BorderLayout.SOUTH);
 		
 		resourcePackManager = new ResourcePackManager();
-		add(resourcePackManager, BorderLayout.EAST);
+		contentPanel.add(resourcePackManager, BorderLayout.EAST);
 		
 		setSize(1400, 800);
 		setTitle("");
 	}
 	
 	public void setTitle(String title) {
-		super.setTitle("MiEx | " + title);
+		super.setTitle("MiEx " + ReleaseChecker.CURRENT_VERSION + " | " + title);
 	}
 	
 	public void update() {
@@ -98,6 +155,18 @@ public class MainWindow extends JFrame{
 		viewer.reset();
 	}
 	
+	
+	@Override
+	public void setEnabled(boolean b) {
+		if(b)
+			super.setEnabled(b);
+		toolbar.setEnabled(b);
+		resourcePackManager.setEnabled(b);
+		entityDialog.setEnabled(b);
+		viewer.setEnabled(b);
+		loadingPanel.setVisible(!b);
+	}
+	
 	public WorldViewer2D getViewer() {
 		return viewer;
 	}
@@ -112,6 +181,10 @@ public class MainWindow extends JFrame{
 	
 	public ResourcePackManager getResourcePackManager() {
 		return resourcePackManager;
+	}
+	
+	public EntityDialog getEntityDialog() {
+		return entityDialog;
 	}
 
 }

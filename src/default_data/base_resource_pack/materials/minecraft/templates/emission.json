@@ -4,7 +4,7 @@
                     "minecraft:block/fire_1", "minecraft:block/glowstone", "minecraft:block/lava_flow",
                     "minecraft:block/lava_still", "minecraft:block/magma", "minecraft:block/nether_portal",
                     "minecraft:block/sea_lantern", "minecraft:block/shroomlight", "minecraft:block/soul_campfire_fire",
-                    "minecraft:block/soul_fire_0", "minecraft:block/soul_fire_1"],
+                    "minecraft:block/soul_fire_0", "minecraft:block/soul_fire_1", "minecraft:font/glowing/*"],
     "include": [ "base" ],
     "network": {
         "@texture@": {

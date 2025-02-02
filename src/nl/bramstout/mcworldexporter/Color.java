@@ -47,6 +47,13 @@ public class Color {
 		a = 1.0f;
 	}
 	
+	public Color(Color other) {
+		r = other.r;
+		g = other.g;
+		b = other.b;
+		a = other.a;
+	}
+	
 	public Color(int RGB) {
 		int rI = (RGB >> 16) & 0xFF;
 		int gI = (RGB >> 8) & 0xFF;
@@ -110,6 +117,22 @@ public class Color {
 		this.r = r;
 		this.g = g;
 		this.b = b;
+		this.a = a;
+	}
+	
+	public void setR(float r) {
+		this.r = r;
+	}
+	
+	public void setG(float g) {
+		this.g = g;
+	}
+	
+	public void setB(float b) {
+		this.b = b;
+	}
+	
+	public void setA(float a) {
 		this.a = a;
 	}
 	

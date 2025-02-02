@@ -40,14 +40,16 @@ import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
+import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 
 public abstract class World {
 
 	protected File worldDir;
 	protected List<String> dimensions;
 	protected String currentDimension;
-	// protected Map<Long, Region> regions;
 	protected Region[] regions;
 	protected int regionMinX;
 	protected int regionMinZ;
@@ -55,14 +57,19 @@ public abstract class World {
 	protected int regionMaxZ;
 	protected int regionsStride;
 	protected List<Player> players;
+	protected BlockConnectionsTranslation blockConnectionsTranslation;
+	protected int worldVersion;
+	
+	protected boolean paused;
 
 	public World(File worldDir) {
 		dimensions = new ArrayList<String>();
 		players = new ArrayList<Player>();
 		currentDimension = "";
-		// regions = new HashMap<Long, Region>();
 		regions = null;
-		setWorldDir(worldDir);
+		blockConnectionsTranslation = null;
+		worldVersion = 0;
+		paused = false;
 	}
 
 	protected abstract void loadWorldSettings();
@@ -72,6 +79,34 @@ public abstract class World {
 	protected abstract void findRegions();
 	
 	protected abstract void _unload();
+	
+	protected abstract void _pause();
+	
+	protected abstract void _unpause();
+	
+	public void reloadFromResourcepack() {
+	}
+	
+	public void pauseLoading() {
+		if(!paused) {
+			paused = true;
+			_pause();
+		}
+	}
+	
+	public void unpauseLoading() {
+		if(paused) {
+			paused = false;
+			_unpause();
+			forceReRender();
+			MCWorldExporter.getApp().getUI().update();
+			MCWorldExporter.getApp().getUI().fullReRender();
+		}
+	}
+	
+	public boolean isPaused() {
+		return paused;
+	}
 	
 	public void unload() {
 		if(regions != null) {
@@ -93,11 +128,25 @@ public abstract class World {
 			handleError(ex);
 		}
 	}
-
-	// protected abstract long getRegionIdFromChunkPosition(int chunkX, int chunkZ);
+	
+	public void unloadEntities() {
+		if(regions != null) {
+			for(Region region : regions) {
+				if(region == null)
+					continue;
+				try {
+					region.unloadEntities();
+				}catch(Exception ex) {
+					handleError(ex);
+				}
+			}
+		}
+	}
 
 	public Region getRegion(int chunkX, int chunkZ) {
-		// long id = getRegionIdFromChunkPosition(chunkX, chunkZ);
+		if(paused)
+			return null;
+		
 		if (regions == null)
 			return null;
 
@@ -115,6 +164,8 @@ public abstract class World {
 	}
 
 	public Chunk getChunk(int chunkX, int chunkZ) throws Exception {
+		if(paused)
+			return null;
 		Region region = getRegion(chunkX, chunkZ);
 		if (region == null)
 			return null;
@@ -122,6 +173,9 @@ public abstract class World {
 	}
 
 	public Chunk getChunkFromBlockPosition(int blockX, int blockZ) throws Exception {
+		if(paused)
+			return null;
+		
 		if (blockX < 0)
 			blockX -= 15;
 		if (blockZ < 0)
@@ -135,6 +189,9 @@ public abstract class World {
 	}
 
 	public int getBlockId(int blockX, int blockY, int blockZ) {
+		if(paused)
+			return 0;
+		
 		try {
 			Chunk chunk = getChunkFromBlockPosition(blockX, blockZ);
 			if (chunk != null)
@@ -146,6 +203,8 @@ public abstract class World {
 	}
 
 	public int getBiomeId(int blockX, int blockY, int blockZ) {
+		if(paused)
+			return 0;
 		try {
 			Chunk chunk = getChunkFromBlockPosition(blockX, blockZ);
 			if (chunk != null)
@@ -157,6 +216,8 @@ public abstract class World {
 	}
 
 	public int getHeight(int blockX, int blockZ) {
+		if(paused)
+			return Integer.MIN_VALUE;
 		try {
 			Chunk chunk = getChunkFromBlockPosition(blockX, blockZ);
 			if (chunk != null)
@@ -168,6 +229,7 @@ public abstract class World {
 	}
 
 	public void setWorldDir(File worldDir) {
+		this.paused = false;
 		this.worldDir = worldDir;
 		this.dimensions.clear();
 		this.currentDimension = "";
@@ -184,6 +246,7 @@ public abstract class World {
 		}catch(Exception ex) {
 			handleError(ex);
 		}
+		MCWorldExporter.getApp().getUI().update();
 	}
 
 	public void loadDimension(String dimension) {
@@ -191,8 +254,10 @@ public abstract class World {
 			return;
 		if (this.currentDimension.equals(dimension))
 			return;
+		MCWorldExporter.getApp().getUI().getEntityDialog().noDefaultSelection = false;
 		this.currentDimension = dimension;
-
+		this.paused = false;
+		
 		BlockRegistry.clearBlockRegistry();
 		
 		if(regions != null) {
@@ -215,6 +280,8 @@ public abstract class World {
 	}
 
 	public void forceReRender() {
+		if(paused)
+			return;
 		if (regions != null) {
 			for (Region region : regions) {
 				if(region != null)
@@ -237,6 +304,46 @@ public abstract class World {
 	
 	public List<Player> getPlayers(){
 		return players;
+	}
+	
+	public int getWorldVersion() {
+		return worldVersion;
+	}
+	
+	public BlockConnectionsTranslation getBlockConnectionsTranslation() {
+		return blockConnectionsTranslation;
+	}
+	
+	public List<List<Entity>> getEntitiesInRegion(int minX, int minZ, int maxX, int maxZ){
+		int chunkMinX = minX >> 4;
+		int chunkMinZ = minZ >> 4;
+		int chunkMaxX = maxX >> 4;
+		int chunkMaxZ = maxZ >> 4;
+		List<List<Entity>> res = new ArrayList<List<Entity>>();
+		if(paused)
+			return res;
+		for(int chunkZ = chunkMinZ; chunkZ <= chunkMaxZ; ++chunkZ) {
+			for(int chunkX = chunkMinX; chunkX <= chunkMaxX; ++chunkX) {
+				try {
+					Chunk chunk = getChunk(chunkX, chunkZ);
+					if(chunk == null)
+						continue;
+					List<Entity> entities = chunk.getEntities();
+					if(entities == null || entities.isEmpty())
+						continue;
+					res.add(entities);
+				}catch(Exception ex) {}
+			}
+		}
+		return res;
+	}
+	
+	public List<List<Entity>> getEntitiesInRange(int x, int z, int radius){
+		return getEntitiesInRegion(x - radius, z - radius, x + radius, z + radius);
+	}
+	
+	public List<List<Entity>> getEntitiesInRegion(ExportBounds bounds){
+		return getEntitiesInRegion(bounds.getMinX(), bounds.getMinZ(), bounds.getMaxX(), bounds.getMaxZ());
 	}
 	
 	private static Set<String> handledErrors = new HashSet<String>();

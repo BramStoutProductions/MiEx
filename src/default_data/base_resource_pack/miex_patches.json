@@ -1,0 +1,48 @@
+[
+    {
+        "type": "copy",
+        "src": "assets/minecraft/textures/font/*.png",
+        "dst": "assets/minecraft/textures/font/glowing/*.png"
+    },
+    {
+        "type": "patch_json",
+        "file": "assets/minecraft/models/block/bell_*.json",
+        "patches": [
+            {
+                "parent": "textures",
+                "add": {
+                    "bell_body": "entity/bell/bell_body"
+                }
+            },
+            {
+                "parent": "elements",
+                "add": [
+                    {
+                        "from": [ 5, 6, 5 ],
+                        "to": [ 11, 13, 11 ],
+                        "faces": {
+                            "north": { "uv": [ 3, 6.5, 6,  3 ], "texture": "#bell_body" },
+                            "east":  { "uv": [ 6, 6.5, 9,  3 ], "texture": "#bell_body" },
+                            "south": { "uv": [ 9, 6.5, 12, 3 ], "texture": "#bell_body" },
+                            "west":  { "uv": [ 0, 6.5, 3,  3 ], "texture": "#bell_body" },
+                            "up":    { "uv": [ 3, 0,   6,  3 ], "texture": "#bell_body" },
+                            "down":  { "uv": [ 6, 0,   9,  3 ], "texture": "#bell_body" }
+                        }
+                    },
+                    {
+                        "from": [ 4, 4, 4 ],
+                        "to": [ 12, 6, 12 ],
+                        "faces": {
+                            "north": { "uv": [ 4,  11.5, 8,  10.5 ], "texture": "#bell_body" },
+                            "east":  { "uv": [ 8,  11.5, 12, 10.5 ], "texture": "#bell_body" },
+                            "south": { "uv": [ 12, 11.5, 16, 10.5 ], "texture": "#bell_body" },
+                            "west":  { "uv": [ 0,  11.5, 4,  10.5 ], "texture": "#bell_body" },
+                            "up":    { "uv": [ 4,  10.5, 8,  6.5  ], "texture": "#bell_body" },
+                            "down":  { "uv": [ 8,  10.5, 12, 6.5  ], "texture": "#bell_body" }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]

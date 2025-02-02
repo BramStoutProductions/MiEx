@@ -31,107 +31,17 @@
 
 package nl.bramstout.mcworldexporter.resourcepack;
 
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+public abstract class MCMeta {
 
-import javax.imageio.ImageIO;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
-
-public class MCMeta {
-
-	private boolean animate;
-	private boolean interpolate;
-	private int frameTime;
-	private int[] frames;
-	private int frameCount;
-	private int tileWidth;
-	private int tileHeight;
-	private int imgWidth;
-	private int imgHeight;
-	
-	public MCMeta(String texture) {
-		animate = false;
-		interpolate = false;
-		frameTime = 1;
-		frames = null;
-		frameCount = 1;
-		tileWidth = 1;
-		tileHeight = 1;
-		imgWidth = 16;
-		imgHeight = 16;
-		
-		File file = ResourcePack.getFile(texture, "textures", ".png.mcmeta", "assets");
-		if(!file.exists())
-			return;
-		
-		try {
-			JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(file)))).getAsJsonObject();
-			
-			if(!data.has("animation"))
-				return;
-			
-			JsonObject animData = data.get("animation").getAsJsonObject();
-			animate = true;
-			
-			if(animData.has("interpolate"))
-				interpolate = animData.get("interpolate").getAsBoolean();
-			
-			if(animData.has("width"))
-				tileWidth = animData.get("width").getAsInt();
-			
-			if(animData.has("height"))
-				tileHeight = animData.get("height").getAsInt();
-			
-			if(animData.has("frametime"))
-				frameTime = animData.get("frametime").getAsInt();
-			
-			File texFile = ResourcePack.getFile(texture, "textures", ".exr", "assets");
-			if(!texFile.exists())
-				texFile = ResourcePack.getFile(texture, "textures", ".png", "assets");
-			BufferedImage img = ImageIO.read(texFile);
-			frameCount = (img.getHeight() * tileHeight) / (img.getWidth() * tileWidth);
-			imgWidth = img.getWidth();
-			imgHeight = img.getHeight();
-			
-			if(animData.has("frames")) {
-				JsonArray framesArray = animData.get("frames").getAsJsonArray();
-				frames = new int[framesArray.size() * 2];
-				for(int i = 0; i < framesArray.size(); ++i) {
-					JsonElement frameElement = framesArray.get(i);
-					if(frameElement.isJsonPrimitive()) {
-						frames[i*2] = frameElement.getAsInt();
-						frames[i*2+1] = frameTime;
-					}else if(frameElement.isJsonObject()) {
-						JsonObject frameData = frameElement.getAsJsonObject();
-						int frameDataIndex = i;
-						int frameDataTime = frameTime;
-						if(frameData.has("index"))
-							frameDataIndex = frameData.get("index").getAsInt();
-						if(frameData.has("time"))
-							frameDataTime = frameData.get("time").getAsInt();
-						frames[i*2] = frameDataIndex;
-						frames[i*2+1] = frameDataTime;
-					}
-				}
-			}
-			if(frames == null || frames.length == 0){
-				frames = new int[frameCount * 2];
-				for(int i = 0; i < frameCount*2; i += 2) {
-					frames[i] = i/2;
-					frames[i+1] = frameTime;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	protected boolean animate;
+	protected boolean interpolate;
+	protected int frameTime;
+	protected int[] frames;
+	protected int frameCount;
+	protected int tileWidth;
+	protected int tileHeight;
+	protected int imgWidth;
+	protected int imgHeight;
 
 	public boolean isAnimate() {
 		return animate;

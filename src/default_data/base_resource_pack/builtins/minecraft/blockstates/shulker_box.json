@@ -1,0 +1,57 @@
+{
+    "blocks": [
+        "minecraft:shulker_box", "minecraft:white_shulker_box", "minecraft:orange_shulker_box", 
+        "minecraft:magenta_shulker_box", "minecraft:light_blue_shulker_box", "minecraft:yellow_shulker_box", 
+        "minecraft:lime_shulker_box", "minecraft:pink_shulker_box", "minecraft:gray_shulker_box", 
+        "minecraft:light_gray_shulker_box", "minecraft:cyan_shulker_box", "minecraft:purple_shulker_box", 
+        "minecraft:blue_shulker_box", "minecraft:brown_shulker_box", "minecraft:green_shulker_box", 
+        "minecraft:red_shulker_box", "minecraft:black_shulker_box"
+    ],
+    "defaultTexture": "minecraft:entity/shulker/shulker",
+    "handler": {
+        "variables": [
+            "rotX = 0.0",
+            "rotY = 0.0",
+            "rotX = thisBlock.state.facing == 'down' ? 180.0 : 0.0",
+            "rotX = thisBlock.state.facing == 'north' ? 90.0 : 0.0",
+            "rotY = thisBlock.state.facing == 'north' ? 0.0 : 0.0",
+            "rotX = thisBlock.state.facing == 'east' ? 90.0 : 0.0",
+            "rotY = thisBlock.state.facing == 'east' ? 90.0 : 0.0",
+            "rotX = thisBlock.state.facing == 'south' ? 90.0 : 0.0",
+            "rotY = thisBlock.state.facing == 'south' ? 180.0 : 0.0",
+            "rotX = thisBlock.state.facing == 'west' ? 90.0 : 0.0",
+            "rotY = thisBlock.state.facing == 'west' ? 270.0 : 0.0",
+            "type = thisBlock.name.substring(thisBlock.name.indexOf(':') + 1)",
+            "type = type.substring(0, type.length() - 11)",
+            "type = type.endsWith('_') ? type.substring(0, type.length() - 1) : type",
+            "type = type == '' ? 'shulker' : ('shulker_' + type)"
+        ],
+        "textures": {
+            "texture": "'minecraft:entity/shulker/' + type"
+        },
+        "transform": {
+            "rotate": [ "rotX", "rotY", 0.0 ]
+        },
+        "elements": [
+            {
+                "from": [ 0, 0, 0 ],
+                "to": [ 16, 8, 16 ],
+                "entityUVs": [ 0, 7, 16, 13 ],
+                "texture": "'#texture'",
+                "faces": {
+                    "down": {},
+                    "east": {},
+                    "north": {},
+                    "south": {},
+                    "west": {}
+                }
+            },
+            {
+                "from": [ 0.01, 4, 0.01 ],
+                "to": [ 15.99, 16, 15.99 ],
+                "entityUVs": [ 0, 0, 16, 7 ],
+                "texture": "'#texture'"
+            }
+        ]
+    }
+}

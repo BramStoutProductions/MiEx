@@ -43,14 +43,21 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.atlas.AtlasCreator;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class AtlasCreatorDialog extends JDialog {
 
@@ -60,6 +67,9 @@ public class AtlasCreatorDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 	
 	private JTextField saveToInput;
+	private JSpinner repeatsInput;
+	private JSpinner paddingInput;
+	private ResourcePackSelector resourcePackSelector;
 	
 	public AtlasCreatorDialog() {
 		super(MCWorldExporter.getApp().getUI());
@@ -74,16 +84,70 @@ public class AtlasCreatorDialog extends JDialog {
 		leftSide.setBorder(new EmptyBorder(16, 16, 16, 8));
 		
 		JLabel excludeTexturesLabel = new JLabel("Exclude Textures");
+		ToolTips.registerTooltip(excludeTexturesLabel, ToolTips.ATLAS_CREATOR_DIALOG_EXCLUDE_TEXTURES);
 		leftSide.add(excludeTexturesLabel);
 		JTextArea excludeTexturesCtrl = new JTextArea();
+		ToolTips.registerTooltip(excludeTexturesCtrl, ToolTips.ATLAS_CREATOR_DIALOG_EXCLUDE_TEXTURES);
 		leftSide.add(excludeTexturesCtrl);
 		
 		leftSide.add(new JPanel());
 		
 		JLabel utilityTexturesLabel = new JLabel("Utility Texture Suffixes");
+		ToolTips.registerTooltip(utilityTexturesLabel, ToolTips.ATLAS_CREATOR_DIALOG_UTILITY_TEXTURES);
 		leftSide.add(utilityTexturesLabel);
-		JTextArea utilityTexturesCtrl = new JTextArea("emission\nbump\nnormal\nspecular\nroughness\nn\ns");
+		JTextArea utilityTexturesCtrl = new JTextArea("_emission\n_emissionMask\n_bump\n_normal\n_specular\n_roughness\n_metalness\n_n\n_s");
+		ToolTips.registerTooltip(utilityTexturesCtrl, ToolTips.ATLAS_CREATOR_DIALOG_UTILITY_TEXTURES);
 		leftSide.add(utilityTexturesCtrl);
+		
+		leftSide.add(new JPanel());
+		
+		JPanel repeatsPanel = new JPanel();
+		repeatsPanel.setLayout(new BoxLayout(repeatsPanel, BoxLayout.X_AXIS));
+		repeatsPanel.setBorder(new EmptyBorder(0,0,0,0));
+		repeatsPanel.setPreferredSize(new Dimension(1000, 24));
+		repeatsPanel.setMaximumSize(new Dimension(1000, 24));
+		ToolTips.registerTooltip(repeatsPanel, ToolTips.ATLAS_CREATOR_DIALOG_REPEATS);
+		leftSide.add(repeatsPanel);
+		JLabel repeatsLabel = new JLabel("Repeats");
+		repeatsPanel.add(repeatsLabel);
+		repeatsPanel.add(new JPanel());
+		repeatsInput = new JSpinner(new SpinnerNumberModel(Integer.valueOf(4), 
+				Integer.valueOf(1), Integer.valueOf(64), Integer.valueOf(1)));
+		repeatsPanel.add(repeatsInput);
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		repeatsPanel.add(new JPanel());
+		
+		JPanel paddingPanel = new JPanel();
+		paddingPanel.setLayout(new BoxLayout(paddingPanel, BoxLayout.X_AXIS));
+		paddingPanel.setBorder(new EmptyBorder(0,0,0,0));
+		paddingPanel.setPreferredSize(new Dimension(1000, 24));
+		paddingPanel.setMaximumSize(new Dimension(1000, 24));
+		ToolTips.registerTooltip(paddingPanel, ToolTips.ATLAS_CREATOR_DIALOG_PADDING);
+		leftSide.add(paddingPanel);
+		JLabel paddingLabel = new JLabel("Padding ");
+		paddingPanel.add(paddingLabel);
+		paddingPanel.add(new JPanel());
+		paddingInput = new JSpinner(new SpinnerNumberModel(Integer.valueOf(1), 
+				Integer.valueOf(0), Integer.valueOf(64), Integer.valueOf(1)));
+		paddingPanel.add(paddingInput);
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
+		paddingPanel.add(new JPanel());
 		
 		leftSide.add(new JPanel());
 		
@@ -96,20 +160,20 @@ public class AtlasCreatorDialog extends JDialog {
 		
 		saveToInput = new JTextField();
 		saveToInput.setToolTipText("The resource pack name to save the atlases to.");
+		ToolTips.registerTooltip(saveToInput, ToolTips.ATLAS_CREATOR_DIALOG_SAVE_TO);
 		createPanel.add(saveToInput);
 		
 		JButton createButton = new JButton("Create Atlasses");
 		createPanel.add(createButton);
 		
-		ResourcePackSelector resourcePackSelector = new ResourcePackSelector();
+		resourcePackSelector = new ResourcePackSelector(false);
 		resourcePackSelector.setBorder(new EmptyBorder(16, 8, 16, 16));
-		resourcePackSelector.setMaximumSize(new Dimension(324, 1000));
-		resourcePackSelector.setPreferredSize(new Dimension(324, 1000));
+		resourcePackSelector.setMaximumSize(new Dimension(396, 1000));
+		resourcePackSelector.setPreferredSize(new Dimension(396, 1000));
 		root.add(resourcePackSelector);
-		resourcePackSelector.reset();
-		resourcePackSelector.clear();
-		for(int i = ResourcePack.getActiveResourcePacks().size()-1; i >= 0; --i)
-			resourcePackSelector.enableResourcePack(ResourcePack.getActiveResourcePacks().get(i));
+		resourcePackSelector.reset(false);
+		for(int i = ResourcePacks.getActiveResourcePacks().size()-1; i >= 0; --i)
+			resourcePackSelector.enableResourcePack(ResourcePacks.getActiveResourcePacks().get(i).getUUID());
 		
 		setSize(800, 600);
 		setTitle("Atlas Creator");
@@ -124,14 +188,21 @@ public class AtlasCreatorDialog extends JDialog {
 				}
 				
 				// Set the resource packs
-				List<String> oldResourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-				ResourcePack.setActiveResourcePacks(resourcePackSelector.getActiveResourcePacks());
+				List<ResourcePack> oldResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+				List<String> oldResourcePackUUIDS = new ArrayList<String>();
+				for(ResourcePack pack : oldResourcePacks)
+					oldResourcePackUUIDS.add(pack.getUUID());
+				ResourcePacks.setActiveResourcePackUUIDs(resourcePackSelector.getActiveResourcePacks());
 				
 				AtlasCreator creator = new AtlasCreator();
 				creator.resourcePack = saveToInput.getText();
+				creator.repeats = ((Integer) repeatsInput.getValue()).intValue();
+				creator.padding = ((Integer) paddingInput.getValue()).intValue();
 				String excludeTexturesArray[] = excludeTexturesCtrl.getText().split("\\n");
 				for(String s : excludeTexturesArray) {
-					if(!s.startsWith("block/"))
+					if(s.isEmpty())
+						continue;
+					if(!s.startsWith("block/") && !s.startsWith("item/"))
 						s = "block/" + s;
 					if(!s.contains(":"))
 						s = "minecraft:" + s;
@@ -151,12 +222,19 @@ public class AtlasCreatorDialog extends JDialog {
 				setVisible(false);
 				
 				// Restore resource packs.
-				ResourcePack.setActiveResourcePacks(oldResourcePacks);
+				ResourcePacks.load();
+				ResourcePacks.setActiveResourcePacks(oldResourcePacks);
 				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset();
-				MCWorldExporter.getApp().getUI().getResourcePackManager().clear();
-				for(int i = oldResourcePacks.size()-1; i >= 0; --i)
-					MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(oldResourcePacks.get(i));
+				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(oldResourcePackUUIDS);
+				
+				Atlas.readAtlasConfig();
+				Config.load();
+				BlockStateRegistry.clearBlockStateRegistry();
+				ModelRegistry.clearModelRegistry();
+				BiomeRegistry.recalculateTints();
+				MCWorldExporter.getApp().getUI().update();
+				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});
@@ -166,7 +244,12 @@ public class AtlasCreatorDialog extends JDialog {
 	public void setVisible(boolean b) {
 		super.setVisible(b);
 		if(b) {
+			resourcePackSelector.reset(false);
+			for(int i = ResourcePacks.getActiveResourcePacks().size()-1; i >= 0; --i)
+				resourcePackSelector.enableResourcePack(ResourcePacks.getActiveResourcePacks().get(i).getUUID());
 			saveToInput.setText("Save To Resource Pack");
+			repeatsInput.setValue(Integer.valueOf(4));
+			paddingInput.setValue(Integer.valueOf(1));
 		}
 	}
 

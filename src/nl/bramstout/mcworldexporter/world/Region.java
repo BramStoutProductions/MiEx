@@ -51,9 +51,13 @@ public abstract class Region {
 	
 	public abstract void unload();
 	
+	public abstract void unloadEntities();
+	
 	public abstract Chunk getChunk(int worldChunkX, int worldChunkZ) throws Exception;
 	
 	public abstract void forceReRender();
+	
+	public abstract void pause();
 	
 	public File getRegionFile() {
 		return regionFile;

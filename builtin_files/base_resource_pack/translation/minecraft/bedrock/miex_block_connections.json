@@ -27,6 +27,38 @@
                     }
                 }
             ],
+            "#block/doors": [
+                {
+                    "condition": "half=upper",
+                    "connections": {
+                        "0_-1_0=this_block[open=true]": {
+                            "blockState": {
+                                "open": "true"
+                            }
+                        },
+                        "0_-1_0=this_block[facing=east]": {
+                            "blockState": {
+                                "facing": "east"
+                            }
+                        },
+                        "0_-1_0=this_block[facing=south]": {
+                            "blockState": {
+                                "facing": "south"
+                            }
+                        },
+                        "0_-1_0=this_block[facing=west]": {
+                            "blockState": {
+                                "facing": "west"
+                            }
+                        },
+                        "0_-1_0=this_block[facing=north]": {
+                            "blockState": {
+                                "facing": "north"
+                            }
+                        }
+                    }
+                }
+            ],
             "chorus_plant": [
                 {
                     "connections": {

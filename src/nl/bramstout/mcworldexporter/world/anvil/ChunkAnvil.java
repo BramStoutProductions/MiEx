@@ -32,28 +32,22 @@
 package nl.bramstout.mcworldexporter.world.anvil;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
-import nl.bramstout.mcworldexporter.entity.EntityRegistry;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Byte;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_Int;
-import nl.bramstout.mcworldexporter.nbt.TAG_List;
-import nl.bramstout.mcworldexporter.nbt.TAG_Long_Array;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
-import nl.bramstout.mcworldexporter.world.Block;
-import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.world.Chunk;
+import nl.bramstout.mcworldexporter.world.anvil.chunkreader.ChunkReader;
+import nl.bramstout.mcworldexporter.world.anvil.entityreader.EntityReader;
 
 public class ChunkAnvil extends Chunk {
 
@@ -92,7 +86,16 @@ public class ChunkAnvil extends Chunk {
 				return;
 			
 			FileChannel fileChannel = ((RegionAnvil)region).getRegionChannel();
-			MappedByteBuffer buffer = fileChannel.map(MapMode.READ_ONLY, dataOffset, dataSize);
+			if(fileChannel == null) {
+				loadError = false;
+				return;
+			}
+			MappedByteBuffer buffer = null;
+			try {
+				buffer = fileChannel.map(MapMode.READ_ONLY, dataOffset, dataSize);
+			}catch(Exception ex) {
+				return;
+			}
 			int len = buffer.getInt();
 			int compressionType = buffer.get();
 			byte[] byteBuffer = new byte[len - 1];
@@ -106,221 +109,90 @@ public class ChunkAnvil extends Chunk {
 			else
 				throw new Exception("Could not load chunk. Some chunks might not be loaded. Invalid compression type: " + compressionType);
 
-			DataInputStream dis = new DataInputStream(is);
-			TAG_Compound rootTag = (TAG_Compound) NBT_Tag.make(dis);
+			NbtDataInputStream dis = new NbtDataInputStream(is);
+			NbtTagCompound rootTag = (NbtTagCompound) NbtTag.readFromStream(dis);
 			dis.close();
 
 			int dataVersion = 0;
-			NBT_Tag dataVersionTag = rootTag.getElement("DataVersion");
-			if (dataVersionTag != null && dataVersionTag.ID() == 3)
-				dataVersion = ((TAG_Int) dataVersionTag).value;
+			NbtTag dataVersionTag = rootTag.get("DataVersion");
+			if (dataVersionTag != null && dataVersionTag.getId() == 3)
+				dataVersion = ((NbtTagInt) dataVersionTag).getData();
+			
+			this.dataVersion = dataVersion;
 
-			// Only support chunk formats from 21w43a and later
-			if (dataVersion < 2844)
+			ChunkReader chunkReader = ChunkReader.getChunkReader(dataVersion);
+			if(chunkReader == null) {
+				rootTag.free();
 				throw new Exception("Chunk format not supported. Some chunks might not be loaded. Data version: " + dataVersion);
-
-			if (!((TAG_String) rootTag.getElement("Status")).value.contains("full")) {
-				blocks = new int[1][];
-				biomes = new short[1][];
-				return;
 			}
-
-			chunkSectionOffset = ((TAG_Int) rootTag.getElement("yPos")).value;
-
-			TAG_List sections = (TAG_List) rootTag.getElement("sections");
-			int maxSectionY = chunkSectionOffset;
-			TAG_Compound section = null;
-			for (NBT_Tag tag : sections.elements) {
-				section = (TAG_Compound) tag;
-				maxSectionY = Math.max(maxSectionY, ((TAG_Byte) section.getElement("Y")).value);
-			}
-
-			blocks = new int[maxSectionY - chunkSectionOffset + 1][];
-			biomes = new short[maxSectionY - chunkSectionOffset + 1][];
-
-			int sectionY;
-			TAG_Compound blockStates = null;
-			TAG_Compound biomesTag = null;
-			TAG_List palette = null;
-			int[] paletteMap = null;
-			String blockName = "";
-			TAG_Compound blockProperties = null;
-			int i = 0;
-			TAG_Long_Array sectionData;
-			int[] sectionBlocks = null;
-			short[] sectionBiomes = null;
-			int bitsPerId = 0;
-			int idsPerLong = 0;
-			int longIndex = 0;
-			int idIndex = 0;
-			long paletteIndex = 0;
-
-			for (NBT_Tag tag : sections.elements) {
-				section = (TAG_Compound) tag;
-				sectionY = ((TAG_Byte) section.getElement("Y")).value;
-				blockStates = (TAG_Compound) section.getElement("block_states");
-				
-				biomesTag = (TAG_Compound) section.getElement("biomes");
-				if(blockStates != null){
-					palette = (TAG_List) blockStates.getElement("palette");
-					if (paletteMap == null || palette.elements.length > paletteMap.length)
-						paletteMap = new int[palette.elements.length];
-					i = 0;
-					for (NBT_Tag block : palette.elements) {
-						blockName = ((TAG_String) ((TAG_Compound) block).getElement("Name")).value;
-						blockProperties = (TAG_Compound) ((TAG_Compound) block).getElement("Properties");
-						paletteMap[i] = BlockRegistry.getIdForName(blockName, blockProperties);
-						++i;
-					}
-					
-					// If this section is entirely air, let's keep the section array still null for efficiency
-					if(palette.elements.length == 1 && paletteMap[0] == 0)
-						continue;
-	
-					sectionData = (TAG_Long_Array) blockStates.getElement("data");
-					sectionBlocks = new int[16*16*16];
-					blocks[sectionY - chunkSectionOffset] = sectionBlocks;
-	
-					if (sectionData == null) {
-						Arrays.fill(sectionBlocks, paletteMap[0]);
-					} else {
-						bitsPerId = Math.max(32 - Integer.numberOfLeadingZeros(palette.elements.length - 1), 4);
-						idsPerLong = 64 / bitsPerId;
-						longIndex = 0;
-						idIndex = 0;
-						paletteIndex = 0;
-						for (i = 0; i < 16 * 16 * 16; ++i) {
-							longIndex = i / idsPerLong;
-							idIndex = i % idsPerLong;
-							paletteIndex = (sectionData.data[longIndex] >>> (idIndex * bitsPerId)) & (-1l >>> (64 - bitsPerId));
-							sectionBlocks[i] = paletteMap[(int) paletteIndex];
-						}
-					}
-				}
-				
-				if(biomesTag != null){
-					palette = (TAG_List) biomesTag.getElement("palette");
-					if (paletteMap == null || palette.elements.length > paletteMap.length)
-						paletteMap = new int[palette.elements.length];
-					i = 0;
-					for (NBT_Tag block : palette.elements) {
-						blockName = ((TAG_String) block).value;
-						paletteMap[i] = BiomeRegistry.getIdForName(blockName);
-						++i;
-					}
-	
-					sectionData = (TAG_Long_Array) biomesTag.getElement("data");
-					sectionBiomes = new short[4*4*4];
-					biomes[sectionY - chunkSectionOffset] = sectionBiomes;
-	
-					if (sectionData == null) {
-						Arrays.fill(sectionBiomes, (short) paletteMap[0]);
-					} else {
-						bitsPerId = Math.max(32 - Integer.numberOfLeadingZeros(palette.elements.length - 1), 1);
-						idsPerLong = 64 / bitsPerId;
-						longIndex = 0;
-						idIndex = 0;
-						paletteIndex = 0;
-						for (i = 0; i < 4 * 4 * 4; ++i) {
-							longIndex = i / idsPerLong;
-							idIndex = i % idsPerLong;
-							paletteIndex = (sectionData.data[longIndex] >>> (idIndex * bitsPerId)) & (-1l >>> (64 - bitsPerId));
-							sectionBiomes[i] = (short) paletteMap[(int) paletteIndex];
-						}
-					}
-				}
+			try {
+				chunkReader.readChunk(this, rootTag, dataVersion);
+			}catch(Exception ex) {
+				rootTag.free();
+				throw ex;
 			}
 			
-			TAG_List blockEntities = (TAG_List) rootTag.getElement("block_entities");
-			if(blockEntities != null) {
-				TAG_Compound blockEntity = null;
-				String blockEntityName = "";
-				int blockEntityX = 0;
-				int blockEntityY = 0;
-				int blockEntityZ = 0;
-				int blockId = 0;
-				int blockEntitySectionY = 0;
-				int currentBlockId = 0;
-				Block currentBlock = null;
-				for(NBT_Tag tag : blockEntities.elements) {
-					blockEntity = (TAG_Compound) tag;
-					TAG_Byte keepPackedTag = (TAG_Byte)blockEntity.getElement("keepPacked");
-					if(keepPackedTag == null || keepPackedTag.value > 0)
-						continue;
-					blockEntityName = ((TAG_String) blockEntity.getElement("id")).value;
-					blockEntityX = ((TAG_Int) blockEntity.getElement("x")).value;
-					blockEntityY = ((TAG_Int) blockEntity.getElement("y")).value;
-					blockEntityZ = ((TAG_Int) blockEntity.getElement("z")).value;
-					blockEntityX -= chunkX * 16;
-					blockEntityZ -= chunkZ * 16;
-					// Make sure that the block entity is actually in the chunk.
-					if(blockEntityX < 0 || blockEntityX >= 15 || blockEntityZ < 0 || blockEntityZ >= 15)
-						continue;
-					
-					currentBlockId = getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ);
-					currentBlock = BlockRegistry.getBlock(currentBlockId);
-					blockEntity.elements.addAll(currentBlock.getProperties().elements);
-					if(currentBlockId > 0)
-						blockEntityName = currentBlock.getName();
-					
-					blockId = BlockRegistry.getIdForName(blockEntityName, blockEntity);
-					blockEntitySectionY = (blockEntityY < 0 ? (blockEntityY - 15) : blockEntityY) / 16;
-					blockEntityY -= blockEntitySectionY * 16;
-					
-					blockEntitySectionY -= chunkSectionOffset;
-					if(blockEntitySectionY >= blocks.length)
-						continue;
-					if(blocks[blockEntitySectionY] == null)
-						blocks[blockEntitySectionY] = new int[16*16*16];
-					
-					blocks[blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
-				}
-			}
-			
-			// Entities
-			if(entityDataSize > 0) {
-				fileChannel = ((RegionAnvil)region).getEntityChannel();
-				buffer = fileChannel.map(MapMode.READ_ONLY, entityDataOffset, entityDataSize);
-				len = buffer.getInt();
-				compressionType = buffer.get();
-				byteBuffer = new byte[len - 1];
-				buffer.get(byteBuffer, 0, len - 1);
-	
-				is = null;
-				if (compressionType == 1)
-					is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
-				else if (compressionType == 2)
-					is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
-				else
-					throw new Exception("Could not load chunk");
-	
-				dis = new DataInputStream(is);
-				rootTag = (TAG_Compound) NBT_Tag.make(dis);
-				dis.close();
-	
-				dataVersion = 0;
-				dataVersionTag = rootTag.getElement("DataVersion");
-				if (dataVersionTag != null && dataVersionTag.ID() == 3)
-					dataVersion = ((TAG_Int) dataVersionTag).value;
-	
-				// Only support chunk formats from 21w43a and later
-				if (dataVersion < 2844)
-					throw new Exception("Chunk format not supported");
-				
-				TAG_List entitiesTag = (TAG_List) rootTag.getElement("Entities");
-				for(NBT_Tag tag : entitiesTag.elements) {
-					TAG_Compound entityTag = (TAG_Compound) tag;
-					String name = ((TAG_String)entityTag.getElement("id")).value;
-					Entity entity = EntityRegistry.newEntity(name, entityTag);
-					if(entity != null)
-						entities.add(entity);
-				}
-			}
-			
+			rootTag.free();
 			
 			calculateHeightmap();
+			this.lastAccess = System.currentTimeMillis();
 		}
 		loadError = false;
+	}
+	
+	@Override
+	protected void _loadEntities() throws Exception {
+		entities = new ArrayList<Entity>();
+		// Entities
+		if(entityDataSize > 0) {
+			FileChannel fileChannel = ((RegionAnvil)region).getEntityChannel();
+			if(fileChannel == null) {
+				// Older chunk versions store the entities in the main chunk file.
+				// If the entity file channel returns null, it means there isn't
+				// one, so we are dealing with an older chunk version, where the
+				// data is in the main chunk file.
+				fileChannel = ((RegionAnvil)region).getRegionChannel();
+			}
+			
+			MappedByteBuffer buffer = fileChannel.map(MapMode.READ_ONLY, entityDataOffset, entityDataSize);
+			int len = buffer.getInt();
+			byte compressionType = buffer.get();
+			byte[] byteBuffer = new byte[len - 1];
+			buffer.get(byteBuffer, 0, len - 1);
+
+			InputStream is = null;
+			if (compressionType == 1)
+				is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
+			else if (compressionType == 2)
+				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
+			else
+				throw new Exception("Could not load chunk");
+
+			NbtDataInputStream dis = new NbtDataInputStream(is);
+			NbtTagCompound rootTag = (NbtTagCompound) NbtTag.readFromStream(dis);
+			dis.close();
+
+			int dataVersion = 0;
+			NbtTag dataVersionTag = rootTag.get("DataVersion");
+			if (dataVersionTag != null && dataVersionTag.getId() == 3)
+				dataVersion = ((NbtTagInt) dataVersionTag).getData();
+
+			
+			EntityReader reader = EntityReader.getEntityReader(dataVersion);
+			if(reader == null) {
+				rootTag.free();
+				throw new Exception("Chunk format not supported");
+			}
+			
+			try {
+				reader.readEntities(this, rootTag);
+			}catch(Exception ex) {
+				rootTag.free();
+				throw ex;
+			}
+			
+			rootTag.free();
+		}
 	}
 
 	@Override
@@ -328,7 +200,6 @@ public class ChunkAnvil extends Chunk {
 		synchronized(mutex) {
 			blocks = null;
 			biomes = null;
-			entities.clear();
 			chunkSectionOffset = 0;
 		}
 	}

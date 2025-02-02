@@ -37,36 +37,67 @@ import java.util.Map;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.BuiltInBlockStateHandler;
 
 public class BuiltInBlockStateRegistry {
 	
 	public static Map<String, Class<? extends BlockState>> builtins = new HashMap<String, Class<? extends BlockState>>();
 	
-	static {
-		builtins.put("minecraft:chest", BlockStateChest.class);
-		builtins.put("minecraft:trapped_chest", BlockStateChest.class);
-		builtins.put("minecraft:ender_chest", BlockStateChest.class);
+	public static void load(){
+		BuiltInBlockState.load();
 		
-		builtins.put("minecraft:acacia_sign", BlockStateSign.class);
-		builtins.put("minecraft:warped_sign", BlockStateSign.class);
-		builtins.put("minecraft:spruce_sign", BlockStateSign.class);
-		builtins.put("minecraft:oak_sign", BlockStateSign.class);
-		builtins.put("minecraft:dark_oak_sign", BlockStateSign.class);
+		Map<String, Class<? extends BlockState>> builtins = new HashMap<String, Class<? extends BlockState>>();
+		/*builtins.put("minecraft:chest", BlockStateChest.class);
+		builtins.put("minecraft:trapped_chest", BlockStateChest.class);
+		builtins.put("minecraft:ender_chest", BlockStateChest.class);*/
+		
+		/*builtins.put("minecraft:acacia_sign", BlockStateSign.class);
+		builtins.put("minecraft:bamboo_sign", BlockStateSign.class);
 		builtins.put("minecraft:birch_sign", BlockStateSign.class);
+		builtins.put("minecraft:cherry_sign", BlockStateSign.class);
 		builtins.put("minecraft:crimson_sign", BlockStateSign.class);
+		builtins.put("minecraft:dark_oak_sign", BlockStateSign.class);
 		builtins.put("minecraft:jungle_sign", BlockStateSign.class);
 		builtins.put("minecraft:mangrove_sign", BlockStateSign.class);
+		builtins.put("minecraft:oak_sign", BlockStateSign.class);
+		builtins.put("minecraft:spruce_sign", BlockStateSign.class);
+		builtins.put("minecraft:warped_sign", BlockStateSign.class);
 		builtins.put("minecraft:acacia_wall_sign", BlockStateSign.class);
-		builtins.put("minecraft:warped_wall_sign", BlockStateSign.class);
-		builtins.put("minecraft:spruce_wall_sign", BlockStateSign.class);
-		builtins.put("minecraft:oak_wall_sign", BlockStateSign.class);
-		builtins.put("minecraft:dark_oak_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:bamboo_wall_sign", BlockStateSign.class);
 		builtins.put("minecraft:birch_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:cherry_wall_sign", BlockStateSign.class);
 		builtins.put("minecraft:crimson_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:dark_oak_wall_sign", BlockStateSign.class);
 		builtins.put("minecraft:jungle_wall_sign", BlockStateSign.class);
 		builtins.put("minecraft:mangrove_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:oak_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:spruce_wall_sign", BlockStateSign.class);
+		builtins.put("minecraft:warped_wall_sign", BlockStateSign.class);*/
 		
-		builtins.put("minecraft:shulker_box", BlockStateShulkerBox.class);
+		/*builtins.put("minecraft:acacia_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:bamboo_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:birch_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:cherry_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:crimson_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:dark_oak_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:jungle_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:mangrove_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:oak_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:spruce_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:warped_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:acacia_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:bamboo_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:birch_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:cherry_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:crimson_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:dark_oak_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:jungle_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:mangrove_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:oak_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:spruce_wall_hanging_sign", BlockStateHangingSign.class);
+		builtins.put("minecraft:warped_wall_hanging_sign", BlockStateHangingSign.class);*/
+		
+		/*builtins.put("minecraft:shulker_box", BlockStateShulkerBox.class);
 		builtins.put("minecraft:white_shulker_box", BlockStateShulkerBox.class);
 		builtins.put("minecraft:orange_shulker_box", BlockStateShulkerBox.class);
 		builtins.put("minecraft:magenta_shulker_box", BlockStateShulkerBox.class);
@@ -82,11 +113,11 @@ public class BuiltInBlockStateRegistry {
 		builtins.put("minecraft:brown_shulker_box", BlockStateShulkerBox.class);
 		builtins.put("minecraft:green_shulker_box", BlockStateShulkerBox.class);
 		builtins.put("minecraft:red_shulker_box", BlockStateShulkerBox.class);
-		builtins.put("minecraft:black_shulker_box", BlockStateShulkerBox.class);
+		builtins.put("minecraft:black_shulker_box", BlockStateShulkerBox.class);*/
 		
-		builtins.put("minecraft:end_portal", BlockStateEndPortal.class);
+		//builtins.put("minecraft:end_portal", BlockStateEndPortal.class);
 		
-		builtins.put("minecraft:bed", BlockStateBed.class);
+		/*builtins.put("minecraft:bed", BlockStateBed.class);
 		builtins.put("minecraft:white_bed", BlockStateBed.class);
 		builtins.put("minecraft:orange_bed", BlockStateBed.class);
 		builtins.put("minecraft:magenta_bed", BlockStateBed.class);
@@ -102,9 +133,9 @@ public class BuiltInBlockStateRegistry {
 		builtins.put("minecraft:brown_bed", BlockStateBed.class);
 		builtins.put("minecraft:green_bed", BlockStateBed.class);
 		builtins.put("minecraft:red_bed", BlockStateBed.class);
-		builtins.put("minecraft:black_bed", BlockStateBed.class);
+		builtins.put("minecraft:black_bed", BlockStateBed.class);*/
 		
-		builtins.put("skeleton_skull", BlockStateSkull.class);
+		/*builtins.put("skeleton_skull", BlockStateSkull.class);
 		builtins.put("wither_skeleton_skull", BlockStateSkull.class);
 		builtins.put("zombie_head", BlockStateSkull.class);
 		builtins.put("player_head", BlockStateSkull.class);
@@ -115,6 +146,8 @@ public class BuiltInBlockStateRegistry {
 		builtins.put("zombie_wall_head", BlockStateSkull.class);
 		builtins.put("player_wall_head", BlockStateSkull.class);
 		builtins.put("creeper_wall_head", BlockStateSkull.class);
+		builtins.put("dragon_wall_head", BlockStateSkull.class);*/
+		builtins.put("dragon_head", BlockStateSkull.class);
 		builtins.put("dragon_wall_head", BlockStateSkull.class);
 		
 		builtins.put("minecraft:white_banner", BlockStateBanner.class);
@@ -152,12 +185,20 @@ public class BuiltInBlockStateRegistry {
 		
 		for(String liquidType : Config.liquid)
 			builtins.put(liquidType, BlockStateLiquid.class);
+		
+		BuiltInBlockStateRegistry.builtins = builtins;
 	}
 	
-	public static BlockState newBlockState(String name) {
+	public static BlockState newBlockState(String name, int dataVersion) {
+		BuiltInBlockStateHandler builtInBlockStateHandler = BuiltInBlockState.getHandler(name);
+		if(builtInBlockStateHandler != null) {
+			// We have a custom version specified.
+			return new BuiltInBlockState(name, dataVersion, builtInBlockStateHandler);
+		}
+		
 		Class<? extends BlockState> classObj = builtins.get(name);
 		try {
-			return classObj.getConstructor(String.class).newInstance(name);
+			return classObj.getConstructor(String.class, int.class).newInstance(name, dataVersion);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e) {
 			e.printStackTrace();

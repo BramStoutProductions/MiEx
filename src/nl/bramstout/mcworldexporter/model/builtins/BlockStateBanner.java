@@ -35,19 +35,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_Int;
-import nl.bramstout.mcworldexporter.nbt.TAG_List;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagList;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateBanner extends BlockState{
 
-	public BlockStateBanner(String name) {
-		super(name, null);
+	public BlockStateBanner(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -55,7 +56,18 @@ public class BlockStateBanner extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
@@ -68,7 +80,7 @@ public class BlockStateBanner extends BlockState{
 		boolean isWall = name.contains("wall");
 		float rotY = 0f;
 		if (isWall) {
-			String val = properties.getElement("facing").asString();
+			String val = properties.get("facing").asString();
 			if (val == null)
 				val = "north";
 			if (val.equals("north")) {
@@ -81,7 +93,7 @@ public class BlockStateBanner extends BlockState{
 				rotY = 90f;
 			}
 		} else {
-			String val = properties.getElement("rotation").asString();
+			String val = properties.get("rotation").asString();
 			if (val == null)
 				val = "0";
 			int ival = 0;
@@ -93,7 +105,7 @@ public class BlockStateBanner extends BlockState{
 			rotY = (((float) ival) / 16f) * 360f;
 		}
 		
-		modelBase.addTexture("base", "minecraft:entity/banner_base");
+		modelBase.addTexture("#base", "minecraft:entity/banner_base");
 		
 		float scale = 2f / 3f;
 		float offsetX = 8f;
@@ -124,7 +136,7 @@ public class BlockStateBanner extends BlockState{
 		modelBase.rotate(0, rotY, false);
 		
 		String extraData = getExtraData(properties);
-		modelBanner.addTexture("texture", "banner:banner_" + Integer.toHexString(extraData.hashCode()));
+		modelBanner.addTexture("#texture", "banner:banner_" + Integer.toHexString(extraData.hashCode()));
 		modelBanner.setExtraData(extraData);
 		
 		minX = -10f * scale + offsetX;
@@ -138,40 +150,45 @@ public class BlockStateBanner extends BlockState{
 		
 		modelBanner.rotate(0, rotY, false);
 		
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null);
+		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, true, 0, null,
+				needsConnectionInfo());
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 	
-	private String getExtraData(TAG_Compound properties) {
+	private String getExtraData(NbtTagCompound properties) {
 		String extraData = "{ ";
 
 		extraData = extraData + "\"color\": " + getBannerColor() + ", ";
 
 		extraData = extraData + "\"patterns\": [";
-		NBT_Tag patternsTag = properties.getElement("Patterns");
+		NbtTag patternsTag = properties.get("Patterns");
 		if(patternsTag == null)
-			patternsTag = properties.getElement("patterns");
+			patternsTag = properties.get("patterns");
 		if (patternsTag != null) {
 			int i = 0;
-			for (NBT_Tag patternNBTTag : ((TAG_List) patternsTag).elements) {
-				TAG_Compound patternTag = (TAG_Compound) patternNBTTag;
-				NBT_Tag patternNameTag = patternTag.getElement("Pattern");
+			for (NbtTag patternNBTTag : ((NbtTagList) patternsTag).getData()) {
+				NbtTagCompound patternTag = (NbtTagCompound) patternNBTTag;
+				NbtTag patternNameTag = patternTag.get("Pattern");
 				if(patternNameTag == null)
-					patternNameTag = patternTag.getElement("pattern");
-				String patternName = ((TAG_String) patternNameTag).value;
-				NBT_Tag patternColorTag = patternTag.getElement("Color");
+					patternNameTag = patternTag.get("pattern");
+				String patternName = patternNameTag.asString();
+				NbtTag patternColorTag = patternTag.get("Color");
 				String colorString = "0";
 				if(patternColorTag != null)
-					colorString = Integer.toString(((TAG_Int) patternTag.getElement("Color")).value);
+					colorString = patternTag.get("Color").asString();
 				else {
-					patternColorTag = patternTag.getElement("color");
+					patternColorTag = patternTag.get("color");
 					if(patternColorTag != null) {
-						colorString = "\"" + ((TAG_String) patternColorTag).value + "\"";
+						colorString = "\"" + patternColorTag.asString() + "\"";
 					}
 				}
 
 				extraData = extraData + " { \"name\": \"" + patternName + "\", \"color\": " + colorString
-						+ (i >= (((TAG_List) patternsTag).elements.length - 1) ? "} " : "}, ");
+						+ (i >= (((NbtTagList) patternsTag).getSize() - 1) ? "} " : "}, ");
 				++i;
 			}
 		}

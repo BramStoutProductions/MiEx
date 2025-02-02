@@ -31,14 +31,22 @@
 
 package nl.bramstout.mcworldexporter.world.anvil;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import javax.swing.JOptionPane;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
+import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -46,6 +54,72 @@ public class WorldAnvil extends World{
 
 	public WorldAnvil(File worldDir) {
 		super(worldDir);
+		blockConnectionsTranslation = new BlockConnectionsTranslation("java");
+		blockConnectionsTranslation.load();
+		File levelDatFile = new File(worldDir, "level.dat");
+		if(levelDatFile.exists()) {
+			GZIPInputStream is = null;
+			try {
+				is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(levelDatFile)));
+				DataInputStream dis = new DataInputStream(is);
+				NbtTagCompound root = (NbtTagCompound) NbtTag.readFromStream(dis);
+				NbtTagCompound tag = root;
+				if(tag.get("Data") != null)
+					tag = (NbtTagCompound) tag.get("Data");
+				
+				NbtTagInt dataVersionTag = (NbtTagInt) tag.get("DataVersion");
+				if(dataVersionTag != null)
+					this.worldVersion = dataVersionTag.getData();
+				
+				NbtTagCompound versionTag = (NbtTagCompound) tag.get("Version");
+				if(versionTag != null) {
+					NbtTagInt idTag = (NbtTagInt) versionTag.get("Id");
+					if(idTag != null)
+						this.worldVersion = idTag.getData();
+				}
+				root.free();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			if(is != null) {
+				try {
+					is.close();
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	@Override
+	protected void _pause() {
+		if(regions != null) {
+			for(Region region : regions) {
+				if(region == null)
+					continue;
+				try {
+					region.pause();
+				}catch(Exception ex) {
+					handleError(ex);
+				}
+			}
+		}
+		regions = null;
+	}
+	
+	@Override
+	protected void _unpause() {
+		loadWorldSettings();
+		findDimensions();
+		findRegions();
+	}
+	
+	public static boolean supportsWorld(File worldDir) {
+		if(!new File(worldDir, "level.dat").exists())
+			return false;
+		List<String> dimensions = new ArrayList<String>();
+		findDimensions(dimensions, worldDir);
+		return dimensions.size() > 0;
 	}
 
 	@Override
@@ -69,22 +143,20 @@ public class WorldAnvil extends World{
 
 	@Override
 	protected void findDimensions() {
+		findDimensions(dimensions, worldDir);
+	}
+	
+	private static void findDimensions(List<String> dimensions, File worldDir) {
 		dimensions.clear();
 		if(new File(worldDir, "region").exists()) {
 			dimensions.add("overworld");
 		}
 		for(File f : worldDir.listFiles()) {
-			findDimensionsInFolder(f, "");
-		}
-		
-		if(dimensions.isEmpty()) {
-			// If we couldn't find any dimensions, then this
-			// must be an invalid world, so let the user know.
-			throw new RuntimeException("Invalid world selected");
+			findDimensionsInFolder(dimensions, f, "");
 		}
 	}
 	
-	private void findDimensionsInFolder(File folder, String parent) {
+	private static void findDimensionsInFolder(List<String> dimensions, File folder, String parent) {
 		if(new File(folder, "region").exists()) {
 			String dim = folder.getName();
 			if(dim.equals("DIM-1"))
@@ -94,7 +166,7 @@ public class WorldAnvil extends World{
 			dimensions.add(parent + dim);
 		}else if(folder.isDirectory()){
 			for(File f : folder.listFiles()) {
-				findDimensionsInFolder(f, parent + folder.getName() + "/");
+				findDimensionsInFolder(dimensions, f, parent + folder.getName() + "/");
 			}
 		}
 	}
@@ -118,11 +190,11 @@ public class WorldAnvil extends World{
 		}
 		
 		File regionFolder = new File(new File(worldDir, currentDimension), "region");
-		if(currentDimension == "overworld")
+		if(currentDimension.equals("overworld"))
 			regionFolder = new File(worldDir, "region");
-		if(currentDimension == "the_nether")
+		if(currentDimension.equals("the_nether"))
 			regionFolder = new File(worldDir, "DIM-1/region");
-		if(currentDimension == "the_end")
+		if(currentDimension.equals("the_end"))
 			regionFolder = new File(worldDir, "DIM1/region");
 		
 		if(!regionFolder.exists())
@@ -134,6 +206,10 @@ public class WorldAnvil extends World{
 		regionMaxZ = Integer.MIN_VALUE;
 		
 		File[] files = regionFolder.listFiles();
+		if(files.length <= 0) {
+			regions = null;
+			return;
+		}
 		
 		List<Region> tmpRegions = new ArrayList<Region>(files.length);
 		

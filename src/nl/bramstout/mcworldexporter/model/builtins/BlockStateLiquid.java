@@ -31,14 +31,17 @@
 
 package nl.bramstout.mcworldexporter.model.builtins;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateLiquid extends BlockState{
 
-	public BlockStateLiquid(String name) {
-		super(name, null);
+	public BlockStateLiquid(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -46,8 +49,23 @@ public class BlockStateLiquid extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
-		return new BakedBlockStateLiquid(name);
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
+		BakedBlockState bakedState = new BakedBlockStateLiquid(name);
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 
 }

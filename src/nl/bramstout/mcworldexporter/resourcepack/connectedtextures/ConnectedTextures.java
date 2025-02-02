@@ -7,10 +7,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+
 public class ConnectedTextures {
 	
+	public static class BlockStateConstraint{
+		
+		public Map<String, List<String>> checks;
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof BlockStateConstraint))
+				return false;
+			return checks.equals(((BlockStateConstraint) obj).checks);
+		}
+		
+		@Override
+		public int hashCode() {
+			return checks.hashCode();
+		}
+		
+		public boolean meetsConstraint(NbtTagCompound properties) {
+			for(Entry<String, List<String>> entry : checks.entrySet()) {
+				NbtTag tag = properties.get(entry.getKey());
+				if(tag == null)
+					return false;
+				if(!entry.getValue().contains(tag.asString()))
+					return false;
+			}
+			return true;
+		}
+		
+	}
+	
 	private static Map<String, List<ConnectedTexture>> connectedTexturesByTile = new HashMap<String, List<ConnectedTexture>>();
-	private static Map<String, List<ConnectedTexture>> connectedTexturesByBlock = new HashMap<String, List<ConnectedTexture>>();
+	private static Map<String, Map<BlockStateConstraint, List<ConnectedTexture>>> connectedTexturesByBlock = 
+			new HashMap<String, Map<BlockStateConstraint, List<ConnectedTexture>>>();
 	
 	private static ConnectedTexturesLoader[] loaders = new ConnectedTexturesLoader[] {
 		new OptifineLoader()	
@@ -31,17 +64,22 @@ public class ConnectedTextures {
 		connectedTextures.add(connectedTexture);
 	}
 	
-	protected static void registerConnectedTextureByBlock(String block, ConnectedTexture connectedTexture) {
-		List<ConnectedTexture> connectedTextures = connectedTexturesByBlock.get(block);
+	protected static void registerConnectedTextureByBlock(String block, BlockStateConstraint constraint, ConnectedTexture connectedTexture) {
+		Map<BlockStateConstraint, List<ConnectedTexture>> connectedTextures = connectedTexturesByBlock.get(block);
 		if(connectedTextures == null) {
-			connectedTextures = new ArrayList<ConnectedTexture>();
+			connectedTextures = new HashMap<BlockStateConstraint, List<ConnectedTexture>>();
 			connectedTexturesByBlock.put(block, connectedTextures);
 		}
-		connectedTextures.add(connectedTexture);
+		List<ConnectedTexture> connectedTextures2 = connectedTextures.getOrDefault(constraint, null);
+		if(connectedTextures2 == null) {
+			connectedTextures2 = new ArrayList<ConnectedTexture>();
+			connectedTextures.put(constraint, connectedTextures2);
+		}
+		connectedTextures2.add(connectedTexture);
 	}
 	
-	public static Entry<ConnectedTexture, List<ConnectedTexture>> getConnectedTexture(String block, String texture) {
-		List<ConnectedTexture> connectedTextures = getConnectedTextures(block, texture);
+	public static Entry<ConnectedTexture, List<ConnectedTexture>> getConnectedTexture(String block, NbtTagCompound properties, String texture) {
+		List<ConnectedTexture> connectedTextures = getConnectedTextures(block, properties, texture);
 		if(connectedTextures == null)
 			return null;
 		ConnectedTexture main = null;
@@ -77,8 +115,8 @@ public class ConnectedTextures {
 		};
 	}
 	
-	private static List<ConnectedTexture> getConnectedTextures(String block, String texture) {
-		List<ConnectedTexture> byBlock = connectedTexturesByBlock.get(block);
+	private static List<ConnectedTexture> getConnectedTextures(String block, NbtTagCompound properties, String texture) {
+		Map<BlockStateConstraint, List<ConnectedTexture>> byBlock = connectedTexturesByBlock.get(block);
 		List<ConnectedTexture> byTile = connectedTexturesByTile.get(texture);
 		
 		if(byBlock == null && byTile == null)
@@ -87,13 +125,17 @@ public class ConnectedTextures {
 		List<ConnectedTexture> res = new ArrayList<ConnectedTexture>();
 		int maxPriority = 0;
 		if(byBlock != null) {
-			for(ConnectedTexture tex : byBlock) {
-				if(tex.getPriority() == maxPriority)
-					res.add(tex);
-				else if(tex.getPriority() > maxPriority) {
-					maxPriority = tex.getPriority();
-					res.clear();
-					res.add(tex);
+			for(Entry<BlockStateConstraint, List<ConnectedTexture>> texs : byBlock.entrySet()) {
+				if(!texs.getKey().meetsConstraint(properties))
+					continue;
+				for(ConnectedTexture tex : texs.getValue()) {
+					if(tex.getPriority() == maxPriority)
+						res.add(tex);
+					else if(tex.getPriority() > maxPriority) {
+						maxPriority = tex.getPriority();
+						res.clear();
+						res.add(tex);
+					}
 				}
 			}
 		}

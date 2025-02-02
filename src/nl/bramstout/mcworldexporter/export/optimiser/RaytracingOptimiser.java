@@ -31,10 +31,10 @@
 
 package nl.bramstout.mcworldexporter.export.optimiser;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Stack;
 
+import nl.bramstout.mcworldexporter.Poolable;
+import nl.bramstout.mcworldexporter.SingleThreadedMemoryPool;
 import nl.bramstout.mcworldexporter.export.Mesh;
 import nl.bramstout.mcworldexporter.export.MeshGroup;
 
@@ -75,30 +75,51 @@ import nl.bramstout.mcworldexporter.export.MeshGroup;
  */
 public class RaytracingOptimiser {
 	
-	private static class BVHNode{
+	public static class BVHNode extends Poolable{
 		
 		public float minX, minY, minZ, maxX, maxY, maxZ = 0f;
 		public BVHNode left = null;
 		public BVHNode right = null;
-		public List<Integer> prims = new ArrayList<Integer>();
+		public int[] prims = null;
+		public int primsOffset = 0;
+		public int primsCount = 0;
+		public int primsCapacity = 0;
 		public int depth = 0;
 		
+		public BVHNode() {}
+		
+		public void setup() {
+			minX = 0f;
+			minY = 0f;
+			minZ = 0f;
+			maxX = 0f;
+			maxY = 0f;
+			maxZ = 0f;
+			left = null;
+			right = null;
+			prims = null;
+			primsOffset = 0;
+			primsCount = 0;
+			primsCapacity = 0;
+			depth = 0;
+		}
+		
 		public void calculateBoundingBox(Mesh mesh) {
-			if(prims.size() >= 1) {
-				float size = mesh.getFaceCenters().get(prims.get(0) * 4 + 3) * 16f;
-				minX = mesh.getFaceCenters().get(prims.get(0) * 4 + 0);
-				minY = mesh.getFaceCenters().get(prims.get(0) * 4 + 1);
-				minZ = mesh.getFaceCenters().get(prims.get(0) * 4 + 2);
+			if(primsCount >= 1) {
+				float size = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 3) * 16f;
+				minX = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 0);
+				minY = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 1);
+				minZ = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 2);
 				maxX = minX + size;
 				maxY = minY + size;
 				maxZ = minZ + size;
 				
 				float x, y, z = 0f;
-				for(int i = 1; i < prims.size(); ++i) {
-					x = mesh.getFaceCenters().get(prims.get(i) * 4 + 0);
-					y = mesh.getFaceCenters().get(prims.get(i) * 4 + 1);
-					z = mesh.getFaceCenters().get(prims.get(i) * 4 + 2);
-					size = mesh.getFaceCenters().get(prims.get(i) * 4 + 3) * 16f;
+				for(int i = 1; i < primsCount; ++i) {
+					x = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 0);
+					y = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 1);
+					z = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 2);
+					size = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 3) * 16f;
 					minX = Math.min(minX, x);
 					minY = Math.min(minY, y);
 					minZ = Math.min(minZ, z);
@@ -110,7 +131,7 @@ public class RaytracingOptimiser {
 		}
 		
 		public boolean shouldSplit() {
-			if(prims.size() <= 1)
+			if(primsCount <= 1)
 				return false;
 			
 			float volume = getVolume();
@@ -121,7 +142,7 @@ public class RaytracingOptimiser {
 			return false;
 		}
 		
-		public void split(Mesh mesh) {
+		public void split(Mesh mesh, SingleThreadedMemoryPool<BVHNode> nodePool) {
 			float dx = maxX - minX;
 			float dy = maxY - minY;
 			float dz = maxZ - minZ;
@@ -139,10 +160,10 @@ public class RaytracingOptimiser {
 			float averageY = 0f;
 			float averageZ = 0f;
 			float x, y, z = 0;
-			for(int i = 0; i < prims.size(); ++i) {
-				x = mesh.getFaceCenters().get(prims.get(i) * 4 + 0);
-				y = mesh.getFaceCenters().get(prims.get(i) * 4 + 1);
-				z = mesh.getFaceCenters().get(prims.get(i) * 4 + 2);
+			for(int i = 0; i < primsCount; ++i) {
+				x = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 0);
+				y = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 1);
+				z = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 2);
 				spreadX += (x - cx) * (x - cx);
 				spreadY += (y - cy) * (y - cy);
 				spreadZ += (z - cz) * (z - cz);
@@ -153,21 +174,21 @@ public class RaytracingOptimiser {
 				averageY += y;
 				averageZ += z;
 			}
-			spreadX = (float) Math.sqrt(spreadX / prims.size()) / dx;
-			spreadY = (float) Math.sqrt(spreadY / prims.size()) / dy;
-			spreadZ = (float) Math.sqrt(spreadZ / prims.size()) / dz;
-			biasX = Math.abs(biasX / prims.size() / dx);
-			biasY = Math.abs(biasY / prims.size() / dy);
-			biasZ = Math.abs(biasZ / prims.size() / dz);
+			spreadX = (float) Math.sqrt(spreadX / ((float) primsCount)) / dx;
+			spreadY = (float) Math.sqrt(spreadY / ((float) primsCount)) / dy;
+			spreadZ = (float) Math.sqrt(spreadZ / ((float) primsCount)) / dz;
+			biasX = Math.abs(biasX / ((float) primsCount) / dx);
+			biasY = Math.abs(biasY / ((float) primsCount) / dy);
+			biasZ = Math.abs(biasZ / ((float) primsCount) / dz);
 			spreadX += biasX;
 			spreadY += biasY;
 			spreadZ += biasZ;
 			spreadX *= Math.pow(dx / maxD, 0.25f);
 			spreadY *= Math.pow(dy / maxD, 0.25f);
 			spreadZ *= Math.pow(dz / maxD, 0.25f);
-			averageX /= prims.size();
-			averageY /= prims.size();
-			averageZ /= prims.size();
+			averageX /= ((float) primsCount);
+			averageY /= ((float) primsCount);
+			averageZ /= ((float) primsCount);
 			
 			int componentOffset = 0;
 			if(spreadY > spreadX)
@@ -181,31 +202,70 @@ public class RaytracingOptimiser {
 			if(componentOffset == 2)
 				threshold = averageZ;
 			
-			left = new BVHNode();
-			right = new BVHNode();
+			//left = new BVHNode();
+			//right = new BVHNode();
+			left = nodePool.alloc();
+			left.setup();
+			right = nodePool.alloc();
+			right.setup();
 			left.depth = depth + 1;
 			right.depth = depth + 1;
-			((ArrayList<Integer>)left.prims).ensureCapacity(prims.size()/2);
-			((ArrayList<Integer>)right.prims).ensureCapacity(prims.size()/2);
+			left.prims = prims;
+			right.prims = prims;
+			left.primsOffset = primsOffset;
+			right.primsOffset = primsOffset + (primsCapacity / 2);
+			left.primsCapacity = primsCapacity / 2;
+			right.primsCapacity = primsCapacity / 2;
 			
 			float pos = 0;
-			for(int i = 0; i < prims.size(); ++i) {
-				pos = mesh.getFaceCenters().get(prims.get(i) * 4 + componentOffset);
+			int primIndex = 0;
+			for(int i = 0; i < primsCount; ++i) {
+				primIndex = prims[primsOffset + i];
+				pos = mesh.getFaceCenters().get(primIndex * 4 + componentOffset);
 				if(pos < threshold)
-					left.prims.add(prims.get(i));
+					left.addPrim(primIndex);
 				else
-					right.prims.add(prims.get(i));
+					right.addPrim(primIndex);
 			}
-			if(left.prims.isEmpty() || right.prims.isEmpty()) {
+			if(left.primsCount == 0 || right.primsCount == 0) {
+				left.free(nodePool);
+				right.free(nodePool);
 				left = null;
 				right = null;
 				return;
 			}
+			// The left and right children can have different prim counts
+			// so we need to move the right prims over so that each
+			// prim has double the capacity compared to its prims count.
+			left.primsCapacity = left.primsCount * 2;
+			int rightPrimsOffset = (left.primsOffset + left.primsCapacity) - right.primsOffset;
+			if(rightPrimsOffset > 0) {
+				// We need to move the numbers to the right
+				for(int i = (right.primsOffset + right.primsCount) - 1; i >= right.primsOffset; i--) {
+					right.prims[i + rightPrimsOffset] = right.prims[i];
+				}
+			}else if(rightPrimsOffset < 0) {
+				// We need to move the numbers to the left
+				for(int i = right.primsOffset; i < (right.primsOffset + right.primsCount); i++) {
+					right.prims[i + rightPrimsOffset] = right.prims[i];
+				}
+			}
+			right.primsOffset = left.primsOffset + left.primsCapacity;
+			right.primsCapacity = primsCapacity - left.primsCapacity;
 			
-			prims = null;
+			primsCount = 0;
 			
 			left.calculateBoundingBox(mesh);
 			right.calculateBoundingBox(mesh);
+		}
+		
+		public void addPrim(int prim) {
+			if(primsOffset + primsCount >= prims.length || 
+					primsCount > primsCapacity) {
+				throw new RuntimeException();
+			}
+			prims[primsOffset + primsCount] = prim;
+			primsCount++;
 		}
 		
 		public float getVolume() {
@@ -227,22 +287,48 @@ public class RaytracingOptimiser {
 			float fullness = (leftVolume * leftFullness + rightVolume * rightFullness) / volume;
 			return fullness;
 		}
+		
+		public void free(SingleThreadedMemoryPool<BVHNode> nodePool) {
+			if(left != null)
+				left.free(nodePool);
+			if(right != null)
+				right.free(nodePool);
+			nodePool.free(this);
+		}
 	}
 	
 	private static class BVH{
 		
 		public BVHNode root;
+		public int[] primsArray;
+		
+		public void free(SingleThreadedMemoryPool<BVHNode> nodePool) {
+			root.free(nodePool);
+		}
 		
 	}
 	
-	private static BVH buildBVH(Mesh mesh) {
+	private SingleThreadedMemoryPool<BVHNode> nodePool = new SingleThreadedMemoryPool<BVHNode>(BVHNode.class);
+	private int[] primsArray = null;
+	
+	private BVH buildBVH(Mesh mesh) {
 		BVH bvh = new BVH();
+		//bvh.primsArray = new int[Integer.highestOneBit((mesh.getFaceCenters().size() / 4) * 2 + 1) << 1];
+		int primsArraySize = (mesh.getFaceCenters().size() / 4) * 2;
+		if(primsArray == null || primsArray.length < primsArraySize)
+			primsArray = new int[primsArraySize];
+		bvh.primsArray = primsArray;
 		
 		Stack<BVHNode> stack = new Stack<BVHNode>();
 		
-		BVHNode currentNode = new BVHNode();
+		//BVHNode currentNode = new BVHNode();
+		BVHNode currentNode = nodePool.alloc();
+		currentNode.setup();
+		currentNode.prims = bvh.primsArray;
+		currentNode.primsOffset = 0;
+		currentNode.primsCapacity = bvh.primsArray.length;
 		for(int i = 0; i < mesh.getFaceCenters().size() / 4; ++i) {
-			currentNode.prims.add(i);
+			currentNode.addPrim(i);
 		}
 		currentNode.calculateBoundingBox(mesh);
 		stack.add(currentNode);
@@ -251,7 +337,7 @@ public class RaytracingOptimiser {
 		while(!stack.empty()) {
 			currentNode = stack.pop();
 			if(currentNode.shouldSplit()) {
-				currentNode.split(mesh);
+				currentNode.split(mesh, nodePool);
 				if(currentNode.left != null) {
 					stack.add(currentNode.left);
 					stack.add(currentNode.right);
@@ -262,8 +348,10 @@ public class RaytracingOptimiser {
 		return bvh;
 	}
 	
-	private static void addPrimsToMesh(Mesh origMesh, Mesh outMesh, BVHNode node) {
-		Stack<BVHNode> stack = new Stack<BVHNode>();
+	private Stack<BVHNode> stack = new Stack<BVHNode>();
+	
+	private void addPrimsToMesh(Mesh origMesh, Mesh outMesh, BVHNode node) {
+		stack.clear();
 		stack.add(node);
 		
 		while(!stack.empty()) {
@@ -272,21 +360,22 @@ public class RaytracingOptimiser {
 				stack.add(node.left);
 				stack.add(node.right);
 			}else {
-				for(int i = 0; i < node.prims.size(); ++i) {
-					outMesh.addFaceFromMesh(origMesh, node.prims.get(i));
+				for(int i = 0; i < node.primsCount; ++i) {
+					outMesh.addFaceFromMesh(origMesh, node.prims[node.primsOffset + i]);
 				}
 			}
 		}
 	}
 	
-	private static Mesh newMesh(Mesh origMesh, BVHNode node, int meshCounter) {
-		Mesh mesh = new Mesh(origMesh.getName() + meshCounter, origMesh.getTexture(), origMesh.isDoubleSided());
+	private Mesh newMesh(Mesh origMesh, BVHNode node, int meshCounter) {
+		Mesh mesh = new Mesh(origMesh.getName() + meshCounter, origMesh.getTexture(), origMesh.hasAnimatedTexture(), 
+							origMesh.isDoubleSided(), 128, 8);
 		mesh.setExtraData(origMesh.getExtraData());
 		addPrimsToMesh(origMesh, mesh, node);
 		return mesh;
 	}
 	
-	public static Mesh optimiseMesh(Mesh mesh, float fullnessThreshold) {
+	public Mesh optimiseMesh(Mesh mesh, float fullnessThreshold) {
 		if(fullnessThreshold <= 0f)
 			return mesh;
 		fullnessThreshold = Math.min(fullnessThreshold, 0.99f);
@@ -307,6 +396,7 @@ public class RaytracingOptimiser {
 				stack.add(currentNode.right);
 			}
 		}
+		bvh.free(nodePool);
 		if(outMesh.getNumChildren() <= 1)
 			return mesh;
 		return outMesh;

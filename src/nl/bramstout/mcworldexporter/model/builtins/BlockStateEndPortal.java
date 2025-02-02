@@ -34,16 +34,19 @@ package nl.bramstout.mcworldexporter.model.builtins;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockStateEndPortal extends BlockState{
 
-	public BlockStateEndPortal(String name) {
-		super(name, null);
+	public BlockStateEndPortal(String name, int dataVersion) {
+		super(name, dataVersion, null);
 	}
 	
 	public String getDefaultTexture() {
@@ -51,7 +54,18 @@ public class BlockStateEndPortal extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(TAG_Compound properties, int x, int y, int z) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+		if(blockConnections != null && runBlockConnections) {
+			properties = (NbtTagCompound) properties.copy();
+			String newName = blockConnections.map(name, properties, x, y, z);
+			if(newName != null && !newName.equals(name)) {
+				Reference<char[]> charBuffer = new Reference<char[]>();
+				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
+				properties.free();
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+			}
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
@@ -59,12 +73,17 @@ public class BlockStateEndPortal extends BlockState{
 		list.add(model);
 		models.add(list);
 		
-		model.addTexture("texture", "minecraft:block/end_portal");
+		model.addTexture("#texture", "minecraft:block/end_portal");
 		
 		model.addFace(new float[] { 0f, 12f, 0f, 16f, 12f, 16f } , Direction.UP, "#texture");
 		
-		return new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, false, 1, null);
+		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
+				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, false, false, false, false, 1, null,
+				needsConnectionInfo());
+		if(blockConnections != null && runBlockConnections) {
+			properties.free(); // Free the copy that we made.
+		}
+		return bakedState;
 	}
 
 }

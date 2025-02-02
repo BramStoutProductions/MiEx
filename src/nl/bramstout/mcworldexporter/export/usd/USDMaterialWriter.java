@@ -8,10 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.iq80.leveldb.shaded.guava.io.Files;
+
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Util;
+import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.materials.Materials.MaterialNetwork;
@@ -19,6 +23,9 @@ import nl.bramstout.mcworldexporter.materials.Materials.MaterialTemplate;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingAttribute;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingNode;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.MCMetaJavaEdition;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class USDMaterialWriter extends MaterialWriter{
 	
@@ -79,7 +86,7 @@ public class USDMaterialWriter extends MaterialWriter{
 				continue; // Ignore JSON specific terminals
 			String connPath = "";
 			if(conn.getValue().startsWith("shared/")) {
-				connPath = sharedPrims + "/" + conn.getValue().substring(6);
+				connPath = sharedPrims + "/" + conn.getValue().substring(7);
 			}else {
 				String[] tokens = conn.getValue().split("\\.");
 				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
@@ -110,6 +117,8 @@ public class USDMaterialWriter extends MaterialWriter{
 	private void writeShadingNode(ShadingNode node, String texture, 
 										String parentPrim, String sharedPrims) throws IOException {
 		// If it's not a USD node, then don't write it down.
+		if(node.type == null)
+			return;
 		if(node.type.contains(":") && !node.type.startsWith("USD:"))
 			return;
 		_hasWrittenAnything = true;
@@ -135,7 +144,7 @@ public class USDMaterialWriter extends MaterialWriter{
 		}else if(attr.connection != null) {
 			String connPath = "";
 			if(attr.connection.startsWith("shared/")) {
-				connPath = sharedPrims + "/" + attr.connection.substring(6);
+				connPath = sharedPrims + "/" + attr.connection.substring(7);
 			}else {
 				String[] tokens = attr.connection.split("\\.");
 				connPath = parentPrim + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
@@ -222,7 +231,9 @@ public class USDMaterialWriter extends MaterialWriter{
 			}
 		}
 				
-		MCMeta animData = new MCMeta(texture);
+		MCMeta animData = ResourcePacks.getMCMeta(texture);
+		if(animData == null)
+			animData = new MCMetaJavaEdition(null, null);
 		
 		// Because time samples aren't being looped,
 		// we need to specify time frames for a very large range,
@@ -322,14 +333,20 @@ public class USDMaterialWriter extends MaterialWriter{
 				writer.writeAttributeValueFloat(data[0]);
 			else
 				writer.writeAttributeValueFloatCompound(data);
+		}else if(expression.equalsIgnoreCase("animData")) {
+			String animDataStr = Materials.getAnimationData(animData, frameTimeMultiplier);
+			writer.writeAttributeValueString(animDataStr);
 		}
 	}
 	
 	private String getAssetPathForTexture(String texture) {
 		try {
 			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
-			if(!file.exists())
+			if(file == null || !file.exists()) {
+				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
+			}
+			
 			String fullPath = file.getCanonicalPath().replace('\\', '/');
 			String resourcePathDir = new File(FileUtil.getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 			if(!resourcePathDir.endsWith("/"))
@@ -341,6 +358,20 @@ public class USDMaterialWriter extends MaterialWriter{
 			
 			if(fullPath.startsWith(resourcePathDir)) {
 				String relativePath = fullPath.substring(resourcePathDir.length());
+				
+				if(MCWorldExporter.portableExports) {
+					File outFile = new File(Exporter.chunksFolder, "resources/" + relativePath);
+					File outFolder = outFile.getParentFile();
+					if(!outFolder.exists())
+						outFolder.mkdirs();
+					try {
+						Files.copy(file, outFile);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+					return "./" + Exporter.chunksFolder.getName() + "/resources/" + relativePath;
+				}
+				
 				return FileUtil.getResourcePackUSDPrefix() + relativePath;
 			}
 			if(fullPath.startsWith(outputDir)) {

@@ -31,28 +31,27 @@
 
 package nl.bramstout.mcworldexporter.materials;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.stream.JsonReader;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
-import nl.bramstout.mcworldexporter.world.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Materials {
@@ -119,7 +118,7 @@ public class Materials {
 			return true;
 		}
 		
-		public void override(ShadingAttribute other, MaterialNetwork context) {
+		public void override(ShadingAttribute other, MaterialNetwork context, boolean isFlatten, ShadingNode thisNode) {
 			if(other.type != null)
 				type = other.type;
 			if(other.value != null) {
@@ -136,7 +135,7 @@ public class Materials {
 				// to specify the value/connection/expression of some other attribute.
 				// This makes it easy to insert a node somewhere in a network.
 				// For that you use the pattern ${nodeName.attrName}
-				if(other.connection.startsWith("${")) {
+				if(other.connection.startsWith("${") && isFlatten) {
 					String tokens[] = other.connection.substring(2, other.connection.length()-1).split("\\.");
 					if(tokens.length == 2) {
 						ShadingNode node = context.getNode(tokens[0]);
@@ -150,7 +149,13 @@ public class Materials {
 									this.connection = attr.connection;
 								else if(attr.expression != null)
 									this.expression = attr.expression;
+							}else {
+								throw new RuntimeException("Could not find attribute for reference " + other.connection + 
+										" in node " + thisNode.name);
 							}
+						}else {
+							throw new RuntimeException("Could not find node for reference " + other.connection + 
+										" in node " + thisNode.name);
 						}
 					}
 				}
@@ -199,21 +204,21 @@ public class Materials {
 			return true;
 		}
 		
-		public void override(ShadingNode other, MaterialNetwork context) {
+		public void override(ShadingNode other, MaterialNetwork context, boolean isFlatten) {
 			if(other.type != null)
 				this.type = other.type;
 			for(ShadingAttribute otherAttr : other.attributes) {
 				boolean found = false;
 				for(ShadingAttribute attr : attributes) {
 					if(otherAttr.name.equals(attr.name)) {
-						attr.override(otherAttr, context);
+						attr.override(otherAttr, context, isFlatten, this);
 						found = true;
 						break;
 					}
 				}
 				if(!found) {
 					ShadingAttribute attr = new ShadingAttribute(otherAttr.name, otherAttr.type, null, null, null);
-					attr.override(otherAttr, context);
+					attr.override(otherAttr, context, isFlatten, this);
 					attributes.add(attr);
 				}
 			}
@@ -262,19 +267,19 @@ public class Materials {
 			return true;
 		}
 		
-		public void override(MaterialNetwork other) {
+		public void override(MaterialNetwork other, boolean isFlatten) {
 			for(ShadingNode otherNode : other.nodes) {
 				boolean found = false;
 				for(ShadingNode node : nodes) {
 					if(otherNode.name.equals(node.name)) {
-						node.override(otherNode, this);
+						node.override(otherNode, this, isFlatten);
 						found = true;
 						break;
 					}
 				}
 				if(!found) {
 					ShadingNode node = new ShadingNode(otherNode.name, otherNode.type);
-					node.override(otherNode, this);
+					node.override(otherNode, this, isFlatten);
 					nodes.add(node);
 				}
 			}
@@ -328,10 +333,10 @@ public class Materials {
 				}
 				File file = getTextureFile(fullPath, currentWorkingDirectory);
 				if(invert && (!checkAlpha && !checkCutout && !checkAnimated && !checkInterpolated)) {
-					if(file.exists())
+					if(file != null && file.exists())
 						return false;
 				}else {
-					if(!file.exists())
+					if(file == null || !file.exists())
 						return false;
 				}
 				
@@ -354,7 +359,9 @@ public class Materials {
 					}
 				}
 				if(checkAnimated || checkInterpolated) {
-					MCMeta mcmeta = new MCMeta(texture);
+					MCMeta mcmeta = ResourcePacks.getMCMeta(fullPath);
+					if(mcmeta == null)
+						return false;
 					if(checkAnimated) {
 						if(invert) {
 							if(!(!mcmeta.isAnimate() || mcmeta.isInterpolate()))
@@ -467,7 +474,12 @@ public class Materials {
 			for(MaterialNetwork network : networks) {
 				if(!network.evaluateCondition(texture, hasBiomeColor, currentWorkingDirectory))
 					continue;
-				material.networks.get(0).override(network);
+				try {
+					material.networks.get(0).override(network, true);
+				}catch(Exception ex) {
+					System.out.println("Could not merge network with condition " + network.condition + " for texture " + texture);
+					throw ex;
+				}
 			}
 			return material;
 		}
@@ -488,48 +500,56 @@ public class Materials {
 		if(templates == null)
 			reload();
 		
-		// If we are using templates, then they are created based on which template
-		// the textures are in, but those templates don't have a search string
-		// for the right atlasses (they can't know what name they would be anyways).
-		// So, if this texture is an atlas, then get one of the original textures
-		// that was put into this atlas. Then we use that texture to find the right
-		// template to use.
-		String templateTexture = Atlas.getTemplateTextureForAtlas(texture, texture);
-		
-		for(List<MaterialTemplate> templateList : templates) {
-			MaterialTemplate currentTemplate = null;
-			for(MaterialTemplate template : templateList) {
-				if(currentTemplate == null || template.priority > currentTemplate.priority)
-					if(template.isInSelection(templateTexture))
-						currentTemplate = template;
+		try {
+			// If we are using templates, then they are created based on which template
+			// the textures are in, but those templates don't have a search string
+			// for the right atlasses (they can't know what name they would be anyways).
+			// So, if this texture is an atlas, then get one of the original textures
+			// that was put into this atlas. Then we use that texture to find the right
+			// template to use.
+			String templateTexture = Atlas.getTemplateTextureForAtlas(texture, texture);
+			
+			for(List<MaterialTemplate> templateList : templates) {
+				MaterialTemplate currentTemplate = null;
+				for(MaterialTemplate template : templateList) {
+					if(currentTemplate == null || template.priority > currentTemplate.priority)
+						if(template.isInSelection(templateTexture))
+							currentTemplate = template;
+				}
+				if(currentTemplate != null)
+					return currentTemplate.flatten(texture, hasBiomeColor, currentWorkingDirectory);
 			}
-			if(currentTemplate != null)
-				return currentTemplate.flatten(texture, hasBiomeColor, currentWorkingDirectory);
+		}catch(Exception ex) {
+			System.out.println("Failed to get material for texture " + texture);
+			ex.printStackTrace();
 		}
 		return null;
 	}
 	
 	public static void reload() {
-		templates = new ArrayList<List<MaterialTemplate>>();
-		sharedNodes.nodes.clear();
-		
-		List<MaterialNetwork> sharedNetworks = new ArrayList<MaterialNetwork>();
-		List<String> resourcePacks = new ArrayList<String>(ResourcePack.getActiveResourcePacks());
-		resourcePacks.add("base_resource_pack");
-		for(int resourcePackIndex = 0; resourcePackIndex < resourcePacks.size(); resourcePackIndex++) {
-			String resourcePack = resourcePacks.get(resourcePackIndex);
-			List<MaterialTemplate> templateList = new ArrayList<MaterialTemplate>();
+		try {
+			templates = new ArrayList<List<MaterialTemplate>>();
+			sharedNodes.nodes.clear();
 			
-			File materialsDir = new File(FileUtil.getResourcePackDir() + resourcePack + "/materials/minecraft/templates");
-			loadFromDir(materialsDir, sharedNetworks, resourcePacks, resourcePackIndex, templateList);
-			templates.add(templateList);
-		}
-		for(int i = sharedNetworks.size()-1; i >= 0; --i) {
-			sharedNodes.override(sharedNetworks.get(i));
+			List<MaterialNetwork> sharedNetworks = new ArrayList<MaterialNetwork>();
+			List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
+			for(int resourcePackIndex = 0; resourcePackIndex < resourcePacks.size(); resourcePackIndex++) {
+				ResourcePack resourcePack = resourcePacks.get(resourcePackIndex);
+				List<MaterialTemplate> templateList = new ArrayList<MaterialTemplate>();
+				
+				File materialsDir = new File(resourcePack.getFolder(), "materials/minecraft/templates");
+				loadFromDir(materialsDir, sharedNetworks, resourcePacks, resourcePackIndex, templateList);
+				templates.add(templateList);
+			}
+			for(int i = sharedNetworks.size()-1; i >= 0; --i) {
+				sharedNodes.override(sharedNetworks.get(i), false);
+			}
+		}catch(Exception ex) {
+			new RuntimeException("Could not load material templates", ex).printStackTrace();
 		}
 	}
 	
-	private static void loadFromDir(File dir, List<MaterialNetwork> sharedNetworks, List<String> resourcePacks, 
+	private static void loadFromDir(File dir, List<MaterialNetwork> sharedNetworks, List<ResourcePack> resourcePacks, 
 									int resourcePackIndex, List<MaterialTemplate> templateList) {
 		File[] files = dir.listFiles();
 		if(files == null)
@@ -543,7 +563,7 @@ public class Materials {
 				continue;
 			if(f.getName().equals("shared.json")) {
 				try {
-					JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(f)))).getAsJsonObject();
+					JsonObject data = Json.read(f).getAsJsonObject();
 					MaterialNetwork network = parseNetwork(data);
 					if(network != null)
 						sharedNetworks.add(network);
@@ -562,74 +582,80 @@ public class Materials {
 		}
 	}
 	
-	private static MaterialTemplate parseTemplateFile(File file, List<String> resourcePacks, int resourcePackIndex) throws Exception {
-		JsonObject data = JsonParser.parseReader(new JsonReader(new BufferedReader(new FileReader(file)))).getAsJsonObject();
-		
-		MaterialTemplate template = null;
-		if(data.has("include")) {
-			for(JsonElement el : data.get("include").getAsJsonArray().asList()) {
-				File includeFile = null;
-				
-				// If we are including some file, start the check at the start of the
-				// resource pack list. However, if we include a file with the same
-				// name, then we are overriding that file, so we want to start at
-				// the next resource pack from this one, otherwise we might end up
-				// in a loop.
-				int startIndex = 0;
-				if(el.getAsString().equalsIgnoreCase(file.getPath().replace('\\', '/').split("/materials/minecraft/templates/")[1].split("\\.")[0]))
-					startIndex = resourcePackIndex + 1;
-				
-				int includeIndex;
-				for(includeIndex = startIndex; includeIndex < resourcePacks.size(); ++includeIndex) {
-					File testFile = new File(FileUtil.getResourcePackDir() + resourcePacks.get(includeIndex) + 
-							"/materials/minecraft/templates/" + el.getAsString() + ".json");
-					if(testFile.exists()) {
-						includeFile = testFile;
-						break;
+	private static MaterialTemplate parseTemplateFile(File file, List<ResourcePack> resourcePacks, int resourcePackIndex) throws Exception {
+		try {
+			JsonObject data = Json.read(file).getAsJsonObject();
+			
+			MaterialTemplate template = null;
+			if(data.has("include")) {
+				for(JsonElement el : data.get("include").getAsJsonArray().asList()) {
+					File includeFile = null;
+					
+					// If we are including some file, start the check at the start of the
+					// resource pack list. However, if we include a file with the same
+					// name, then we are overriding that file, so we want to start at
+					// the next resource pack from this one, otherwise we might end up
+					// in a loop.
+					int startIndex = 0;
+					if(el.getAsString().equalsIgnoreCase(file.getPath().replace('\\', '/').split("/materials/minecraft/templates/")[1].split("\\.")[0]))
+						startIndex = resourcePackIndex + 1;
+					
+					int includeIndex;
+					for(includeIndex = startIndex; includeIndex < resourcePacks.size(); ++includeIndex) {
+						File testFile = new File(resourcePacks.get(includeIndex).getFolder(), 
+								"materials/minecraft/templates/" + el.getAsString() + ".json");
+						if(testFile.exists()) {
+							includeFile = testFile;
+							break;
+						}
+					}
+					if(includeFile != null) {
+						MaterialTemplate includeTemplate = parseTemplateFile(includeFile, resourcePacks, includeIndex);
+						if(template == null)
+							template = includeTemplate;
+						else
+							template.combine(includeTemplate);
 					}
 				}
-				if(includeFile != null) {
-					MaterialTemplate includeTemplate = parseTemplateFile(includeFile, resourcePacks, includeIndex);
-					if(template == null)
-						template = includeTemplate;
-					else
-						template.combine(includeTemplate);
+			}
+			if(template == null)
+				template = new MaterialTemplate(file.getCanonicalPath());
+			else
+				template.name = file.getCanonicalPath();
+			
+			if(data.has("priority")) {
+				template.priority = data.get("priority").getAsInt();
+			}
+			
+			if(data.has("selection")) {
+				template.selection.clear();
+				for(JsonElement el : data.get("selection").getAsJsonArray().asList()) {
+					template.selection.add(el.getAsString());
 				}
 			}
-		}
-		if(template == null)
-			template = new MaterialTemplate(file.getCanonicalPath());
-		else
-			template.name = file.getCanonicalPath();
-		
-		if(data.has("priority")) {
-			template.priority = data.get("priority").getAsInt();
-		}
-		
-		if(data.has("selection")) {
-			template.selection.clear();
-			for(JsonElement el : data.get("selection").getAsJsonArray().asList()) {
-				template.selection.add(el.getAsString());
-			}
-		}
-		
-		if(data.has("shadingGroup")) {
-			for(Entry<String, JsonElement> el : data.get("shadingGroup").getAsJsonObject().entrySet()) {
-				template.shadingGroup.put(el.getKey(), el.getValue().getAsString());
-			}
-		}
-		
-		if(data.has("network")) {
-			for(Entry<String, JsonElement> el : data.get("network").getAsJsonObject().entrySet()) {
-				MaterialNetwork network = parseNetwork(el.getValue().getAsJsonObject());
-				if(network != null) {
-					network.condition = el.getKey();
-					template.networks.add(network);
+			
+			if(data.has("shadingGroup")) {
+				for(Entry<String, JsonElement> el : data.get("shadingGroup").getAsJsonObject().entrySet()) {
+					template.shadingGroup.put(el.getKey(), el.getValue().getAsString());
 				}
 			}
+			
+			if(data.has("network")) {
+				for(Entry<String, JsonElement> el : data.get("network").getAsJsonObject().entrySet()) {
+					MaterialNetwork network = parseNetwork(el.getValue().getAsJsonObject());
+					if(network != null) {
+						network.condition = el.getKey();
+						template.networks.add(network);
+					}
+				}
+			}
+			
+			return template;
+		}catch(Exception ex) {
+			System.err.println(file.getPath());
+			ex.printStackTrace();
 		}
-		
-		return template;
+		return null;
 	}
 	
 	private static MaterialNetwork parseNetwork(JsonObject obj) {
@@ -641,7 +667,7 @@ public class Materials {
 				boolean found = false;
 				for(ShadingNode existingNode : network.nodes) {
 					if(existingNode.name.equals(node.name)) {
-						existingNode.override(node, network);
+						existingNode.override(node, network, false);
 						found = true;
 						break;
 					}
@@ -733,6 +759,9 @@ public class Materials {
 			File file = new File(currentWorkingDirectory, texture + ".exr");
 			if(file.exists())
 				return file;
+			file = new File(currentWorkingDirectory, texture + ".tga");
+			if(file.exists())
+				return file;
 			return new File(currentWorkingDirectory, texture + ".png");
 		}
 		if(texture.contains(".")) {
@@ -741,14 +770,32 @@ public class Materials {
 			String filename = tokens[0];
 			for(int i = 1; i < tokens.length-1; ++i)
 				filename = filename + "." + tokens[i];
-			return ResourcePack.getFile(filename, "textures", "." + extension, "assets");
+			return ResourcePacks.getFile(filename, "textures", "." + extension, "assets");
 		}
-		// First check if there is an exr, if so use it.
-		File file = ResourcePack.getFile(texture, "textures", ".exr", "assets");
-		if(file.exists())
+		File file = ResourcePacks.getTexture(texture);
+		if(file != null && file.exists())
 			return file;
 		
-		return ResourcePack.getFile(texture, "textures", ".png", "assets");
+		return ResourcePacks.getFile(texture, "textures", ".png", "assets");
+	}
+	
+	public static String getAnimationData(MCMeta animData, float frameTimeMultiplier) {
+		JsonObject res = new JsonObject();
+		
+		res.addProperty("fps", 20f / frameTimeMultiplier);
+		res.addProperty("frameCount", animData.getFrameCount());
+		res.addProperty("interpolate", animData.isInterpolate());
+		JsonArray keyframes = new JsonArray();
+		int numKeyframes = animData.getFrames().length / 2;
+		for(int i = 0; i < numKeyframes; ++i) {
+			JsonObject keyframe = new JsonObject();
+			keyframe.addProperty("frame", animData.getFrames()[i * 2]);
+			keyframe.addProperty("duration", animData.getFrames()[i * 2 + 1]);
+			keyframes.add(keyframe);
+		}
+		res.add("keyframes", keyframes);
+		
+		return new GsonBuilder().create().toJson(res);
 	}
 	
 	public static void getFrameIdSamples(List<Float> timeCodes, List<Float> values, float startFrame, float endFrame, 
@@ -770,7 +817,9 @@ public class Materials {
 			if(args.getOrDefault("reverse", "false").equals("true"))
 				frameId = animData.getFrameCount() - frameId - 1;
 			
-			float value = ((float) frameId) / ((float) animData.getFrameCount());
+			float value = (float) frameId;
+			if(args.getOrDefault("normalised", "true").equals("true"))
+				value /= ((float) animData.getFrameCount());
 			if(args.getOrDefault("powerof2", "false").equals("true"))
 				value *= animData.getPowerOfTwoScaleCompensation();
 				

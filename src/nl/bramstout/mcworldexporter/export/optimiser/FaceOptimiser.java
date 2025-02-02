@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.export.optimiser;
 import java.util.Arrays;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.atlas.Atlas.AtlasItem;
 import nl.bramstout.mcworldexporter.export.Mesh;
@@ -43,33 +44,63 @@ import nl.bramstout.mcworldexporter.export.Mesh;
  */
 public class FaceOptimiser {
 
-	public static Mesh optimise(Mesh inMesh) {
-		// Go bottom and top
-		Mesh outMesh = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
-		outMesh.setExtraData(inMesh.getExtraData());
+	private Mesh tempMesh1 = new Mesh();
+	private int[][] facesPerVertex = null;
+	
+	public void optimise(Mesh inMesh) {
+		/*MCMeta mcmeta = ResourcePacks.getMCMeta(inMesh.getTexture());
+		if(mcmeta != null) {
+			// Don't optimise the faces of animated materials.
+			if(mcmeta.isAnimate() || mcmeta.isInterpolate())
+				return;
+				//return inMesh;
+		}*/
+		if(inMesh.hasAnimatedTexture()) {
+			// Don't optimise the faces of animated materials.
+			return;
+		}
 		
-		boolean[] processedFaces = new boolean[inMesh.getEdgeIndices().size()/4];
-		int[][] facesPerVertex = getFacesPerVertex(inMesh);
-		process(inMesh, outMesh, processedFaces, facesPerVertex, 0);
+		CombinedFace combinedFace = new CombinedFace();
+		
+		// Go bottom and top
+		//Mesh outMesh = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
+		tempMesh1.reset(inMesh.getName(), inMesh.getTexture(), inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
+		tempMesh1.setExtraData(inMesh.getExtraData());
+		
+		boolean[] processedFaces = new boolean[inMesh.getFaceIndices().size()/4];
+		getFacesPerVertex(inMesh);
+		process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, combinedFace);
 		
 		// Go left and right
-		Mesh outMesh2 = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
-		outMesh2.setExtraData(inMesh.getExtraData());
+		//Mesh outMesh2 = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
+		//outMesh2.setExtraData(inMesh.getExtraData());
 		
-		processedFaces = new boolean[outMesh.getEdgeIndices().size()/4];
-		facesPerVertex = getFacesPerVertex(outMesh);
-		process(outMesh, outMesh2, processedFaces, facesPerVertex, 1);
+		inMesh.reset(inMesh.getName(), inMesh.getTexture(), inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
+		inMesh.setExtraData(tempMesh1.getExtraData());
 		
-		return outMesh2;
+		processedFaces = new boolean[tempMesh1.getFaceIndices().size()/4];
+		getFacesPerVertex(tempMesh1);
+		process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, combinedFace);
+		
+		//return outMesh2;
 	}
 	
-	private static int[][] getFacesPerVertex(Mesh mesh){
-		int[][] facesPerVertex = new int[mesh.getVertices().size()/3][];
+	private void getFacesPerVertex(Mesh mesh){
+		int facesPerVertexSize = mesh.getVertices().size() / 3;
+		if(facesPerVertex == null || facesPerVertex.length < facesPerVertexSize)
+			facesPerVertex = new int[facesPerVertexSize][];
+		else {
+			for(int i = 0; i < facesPerVertexSize; ++i) {
+				if(facesPerVertex[i] == null) {
+					facesPerVertex[i] = new int[5];
+				}
+				facesPerVertex[i][0] = 0;
+			}
+		}
 		
-		for(int faceIndex = 0; faceIndex < mesh.getEdgeIndices().size()/4; ++faceIndex) {
+		for(int faceIndex = 0; faceIndex < mesh.getFaceIndices().size()/4; ++faceIndex) {
 			for(int i = 0; i < 4; ++i) {
-				int edgeIndex = mesh.getEdgeIndices().get(faceIndex * 4 + i);
-				int vertexId = mesh.getEdges().get(edgeIndex * 3);
+				int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
 				
 				if(facesPerVertex[vertexId] == null) {
 					facesPerVertex[vertexId] = new int[5];
@@ -85,8 +116,6 @@ public class FaceOptimiser {
 				facesPerVertex[vertexId][0] = arrayLength;
 			}
 		}
-		
-		return facesPerVertex;
 	}
 	
 	private static class CombinedFace{
@@ -94,19 +123,26 @@ public class FaceOptimiser {
 		float[] vertices;
 		float[] us;
 		float[] vs;
+		float[] cornerUVs;
 		float[] normals;
 		float[] colors;
+		boolean hasColors;
+		float[] ao;
 		
-		public CombinedFace(Mesh mesh, int face) {
+		public CombinedFace() {
 			vertices = new float[3*4];
 			us = new float[4];
 			vs = new float[4];
+			cornerUVs = new float[8];
 			normals = new float[3];
-			colors = null;
-			
+			colors = new float[3];
+			hasColors = false;
+			ao = new float[4];
+		}
+		
+		public void setup(Mesh mesh, int face) {
 			for(int edgeId = 0; edgeId < 4; ++edgeId) {
-				int edgeIndex = mesh.getEdgeIndices().get(face*4 + edgeId);
-				int vertexIndex = mesh.getEdges().get(edgeIndex*3);
+				int vertexIndex = mesh.getFaceIndices().get(face*4 + edgeId);
 				vertices[edgeId*3] = mesh.getVertices().get(vertexIndex*3);
 				vertices[edgeId*3+1] = mesh.getVertices().get(vertexIndex*3+1);
 				vertices[edgeId*3+2] = mesh.getVertices().get(vertexIndex*3+2);
@@ -114,14 +150,22 @@ public class FaceOptimiser {
 				int uvIndex = mesh.getUvIndices().get(face * 4 + edgeId);
 				us[edgeId] = mesh.getUs().get(uvIndex);
 				vs[edgeId] = mesh.getVs().get(uvIndex);
+				
+				int cornerUVIndex = mesh.getCornerUVIndices().get(face * 4 + edgeId);
+				cornerUVs[edgeId * 2] = mesh.getCornerUVs().get(cornerUVIndex * 2);
+				cornerUVs[edgeId * 2 + 1] = mesh.getCornerUVs().get(cornerUVIndex * 2 + 1);
+				
+				int aoIndex = mesh.getAOIndices().get(face * 4 + edgeId);
+				ao[edgeId] = mesh.getAO().get(aoIndex);
 			}
 			int normalIndex = mesh.getNormalIndices().get(face*4);
 			normals[0] = mesh.getNormals().get(normalIndex*3);
 			normals[1] = mesh.getNormals().get(normalIndex*3+1);
 			normals[2] = mesh.getNormals().get(normalIndex*3+2);
 			
-			if(mesh.getColors() != null) {
-				colors = new float[3];
+			hasColors = false;
+			if(mesh.hasColors()) {
+				hasColors = true;
 				int colorIndex = mesh.getColorIndices().get(face*4);
 				colors[0] = mesh.getColors().get(colorIndex*3);
 				colors[1] = mesh.getColors().get(colorIndex*3+1);
@@ -131,9 +175,8 @@ public class FaceOptimiser {
 		
 		public void extend(int edgeId, Mesh mesh, int includeFace, int includeEdge, 
 							float offsetU, float offsetV, boolean reverse, AtlasItem currentAtlasItem) {
-			int includeEdgeIndex = mesh.getEdgeIndices().get(includeFace*4 + includeEdge);
-			int vertexIndex1 = mesh.getEdges().get(includeEdgeIndex*3);
-			int vertexIndex2 = mesh.getEdges().get(includeEdgeIndex*3+1);
+			int vertexIndex1 = mesh.getFaceIndices().get(includeFace*4 + includeEdge);
+			int vertexIndex2 = mesh.getFaceIndices().get(includeFace*4 + ((includeEdge + 1) % 4));
 			
 			int vert1 = (edgeId+1) % 4;
 			int vert2 = edgeId;
@@ -149,6 +192,11 @@ public class FaceOptimiser {
 			vertices[vert2*3] = mesh.getVertices().get(vertexIndex2*3);
 			vertices[vert2*3+1] = mesh.getVertices().get(vertexIndex2*3+1);
 			vertices[vert2*3+2] = mesh.getVertices().get(vertexIndex2*3+2);
+			
+			if((vertices[0] == vertices[3] && vertices[1] == vertices[4] && vertices[2] == vertices[5]) || 
+					(vertices[0] == vertices[9] && vertices[1] == vertices[10] && vertices[2] == vertices[11])) {
+				throw new RuntimeException();
+			}
 			
 			int uvIndex1 = mesh.getUvIndices().get(includeFace*4 + includeEdge);
 			int uvIndex2 = mesh.getUvIndices().get(includeFace*4 + ((includeEdge+1)%4));
@@ -185,17 +233,18 @@ public class FaceOptimiser {
 		
 	}
 	
-	private static void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[][] facesPerVertex, int edgeId) {
+	private void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[][] facesPerVertex, 
+								int edgeId, CombinedFace combinedFace) {
 		// Get the atlas items if this mesh uses an atlas.
 		// If this mesh doesn't use an atlas, then Atlas.getItems()
 		// will return null.
 		List<AtlasItem> atlas = Atlas.getItems(inMesh.getTexture());
 		
-		for(int faceIndex = 0; faceIndex < inMesh.getEdgeIndices().size()/4; ++faceIndex) {
+		for(int faceIndex = 0; faceIndex < inMesh.getFaceIndices().size()/4; ++faceIndex) {
 			if(processedFaces[faceIndex])
 				continue; // We have already processed this face, so skip.
 			
-			CombinedFace combinedFace = new CombinedFace(inMesh, faceIndex);
+			combinedFace.setup(inMesh, faceIndex);
 			AtlasItem currentAtlasItem = null;
 			if(atlas != null) {
 				for(AtlasItem item : atlas) {
@@ -228,17 +277,18 @@ public class FaceOptimiser {
 			}
 			
 			if(processedFaces[faceIndex])
-				outMesh.addFace(combinedFace.vertices, combinedFace.us, combinedFace.vs, combinedFace.normals, combinedFace.colors);
+				outMesh.addFace(combinedFace.vertices, combinedFace.us, combinedFace.vs, combinedFace.cornerUVs, combinedFace.normals, 
+						combinedFace.hasColors ? combinedFace.colors : null, combinedFace.ao);
 		}
 		// Add in any faces that we weren't able to combine
-		for(int faceIndex = 0; faceIndex < inMesh.getEdgeIndices().size()/4; ++faceIndex) {
+		for(int faceIndex = 0; faceIndex < inMesh.getFaceIndices().size()/4; ++faceIndex) {
 			if(processedFaces[faceIndex])
 				continue;
 			outMesh.addFaceFromMesh(inMesh, faceIndex);
 		}
 	}
 	
-	private static void processFace(Mesh inMesh, boolean[] processedFaces, int[][] facesPerVertex, int faceIndex, 
+	private void processFace(Mesh inMesh, boolean[] processedFaces, int[][] facesPerVertex, int faceIndex, 
 										int edgeId, CombinedFace combinedFace,
 										List<AtlasItem> atlas, AtlasItem currentAtlasItem) {
 		int origEdgeId = edgeId;
@@ -247,14 +297,34 @@ public class FaceOptimiser {
 		// Basically, we keep checking face by face if we can find a neighbouring face that we
 		// can include into our larger face. If so, then we try again but that neighbouring face
 		// becomes the source face to check with.
-		for(int tmpCounter = 0; tmpCounter < inMesh.getEdgeIndices().size()/4; ++tmpCounter) {
+		for(int tmpCounter = 0; tmpCounter < inMesh.getFaceIndices().size()/4; ++tmpCounter) {
 			// Get the vertex ids
-			int edgeIndex = inMesh.getEdgeIndices().get(faceIndex * 4 + edgeId);
-			int vertexId1 = inMesh.getEdges().get(edgeIndex * 3);
-			int vertexId2 = inMesh.getEdges().get(edgeIndex * 3 + 1);
+			int vertexId1 = inMesh.getFaceIndices().get(faceIndex * 4 + edgeId);
+			int vertexId2 = inMesh.getFaceIndices().get(faceIndex * 4 + ((edgeId + 1) % 4));
+			int vertexId3 = inMesh.getFaceIndices().get(faceIndex * 4 + ((edgeId + 2) % 4));
+			
+			float v1X = inMesh.getVertices().get(vertexId2 * 3);
+			float v1Y = inMesh.getVertices().get(vertexId2 * 3 + 1);
+			float v1Z = inMesh.getVertices().get(vertexId2 * 3 + 2);
+			float v2X = inMesh.getVertices().get(vertexId3 * 3);
+			float v2Y = inMesh.getVertices().get(vertexId3 * 3 + 1);
+			float v2Z = inMesh.getVertices().get(vertexId3 * 3 + 2);
+			float vdX = v2X - v1X;
+			float vdY = v2Y - v1Y;
+			float vdZ = v2Z - v1Z;
+			float vdLength = (float) Math.sqrt(vdX * vdX + vdY * vdY + vdZ * vdZ);
+			if(vdLength > 0.0000001f) {
+				vdX /= vdLength;
+				vdY /= vdLength;
+				vdZ /= vdLength;
+			}
+			
 			int normalId = inMesh.getNormalIndices().get(faceIndex*4);
+			float normalX = inMesh.getNormals().get(normalId*3);
+			float normalY = inMesh.getNormals().get(normalId*3+1);
+			float normalZ = inMesh.getNormals().get(normalId*3+2);
 			int colorId = 0;
-			if(inMesh.getColorIndices() != null)
+			if(inMesh.hasColors())
 				colorId = inMesh.getColorIndices().get(faceIndex*4);
 			
 			int uvIndex1 = inMesh.getUvIndices().get(faceIndex * 4 + edgeId);
@@ -277,6 +347,19 @@ public class FaceOptimiser {
 			}
 			float uDir = u3 - u1;
 			float vDir = v3 - v1;
+			float uLength = Math.abs(uDir);
+			float vLength = Math.abs(vDir);
+			
+			int cornerUVIndex = inMesh.getCornerUVIndices().get(faceIndex * 4 + edgeId);
+			
+			int aoIndex0 = inMesh.getAOIndices().get(faceIndex * 4 + edgeId);
+			float ao0 = inMesh.getAO().get(aoIndex0);
+			int aoIndex1 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+1)%4));
+			float ao1 = inMesh.getAO().get(aoIndex1);
+			int aoIndex2 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+2)%4));
+			float ao2 = inMesh.getAO().get(aoIndex2);
+			int aoIndex3 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+3)%4));
+			float ao3 = inMesh.getAO().get(aoIndex3);
 			
 			boolean addedFace = false;
 			
@@ -289,25 +372,30 @@ public class FaceOptimiser {
 					continue; // Already processed, so skip
 				
 				int normalId2 = inMesh.getNormalIndices().get(faceIndex2*4);
-				if(normalId2 != normalId)
+				float normalX2 = inMesh.getNormals().get(normalId2*3);
+				float normalY2 = inMesh.getNormals().get(normalId2*3+1);
+				float normalZ2 = inMesh.getNormals().get(normalId2*3+2);
+				//if(normalId2 != normalId)
+				//	continue; // Normals don't match
+				if(Math.abs(normalX - normalX2) > 0.01f || Math.abs(normalY - normalY2) > 0.01f ||
+						Math.abs(normalZ - normalZ2) > 0.01f)
 					continue; // Normals don't match
 				
 				int colorId2 = 0;
-				if(inMesh.getColorIndices() != null)
+				if(inMesh.hasColors())
 					colorId2 = inMesh.getColorIndices().get(faceIndex2*4);
 				if(colorId2 != colorId)
 					continue; // Colours don't match.
 				
-				int edgeId2;
-				int vertexId2_1;
-				int vertexId2_2;
+				int edgeId2 = 0;
+				int vertexId2_1 = 0;
+				int vertexId2_2 = 0;
 				boolean match = false;
 				boolean reverse = false;
 				
 				for(edgeId2 = 0; edgeId2 < 4; ++edgeId2) {
-					int edgeIndex2 = inMesh.getEdgeIndices().get(faceIndex2 * 4 + edgeId2);
-					vertexId2_1 = inMesh.getEdges().get(edgeIndex2 * 3);
-					vertexId2_2 = inMesh.getEdges().get(edgeIndex2 * 3 + 1);
+					vertexId2_1 = inMesh.getFaceIndices().get(faceIndex2 * 4 + edgeId2);
+					vertexId2_2 = inMesh.getFaceIndices().get(faceIndex2 * 4 + ((edgeId2 + 1) % 4));
 					
 					if(vertexId2_1 == vertexId1 && vertexId2_2 == vertexId2) {
 						match = true;
@@ -322,6 +410,49 @@ public class FaceOptimiser {
 				
 				if(!match)
 					continue;
+				
+				// The face needs to be going in the same direction.
+				int vertexId2_3 = inMesh.getFaceIndices().get(faceIndex2 * 4 + ((edgeId2 + 2) % 4));
+				int vertexId2_4 = inMesh.getFaceIndices().get(faceIndex2 * 4 + ((edgeId2 + 3) % 4));
+				if(vertexId3 == vertexId2_3 || vertexId3 == vertexId2_4) {
+					// This face shares at least 3 our of 4 vertices,
+					// which would make this a duplicate face.
+					continue;
+				}
+				
+				float v2_1X = inMesh.getVertices().get(vertexId2_2 * 3);
+				float v2_1Y = inMesh.getVertices().get(vertexId2_2 * 3 + 1);
+				float v2_1Z = inMesh.getVertices().get(vertexId2_2 * 3 + 2);
+				float v2_2X = inMesh.getVertices().get(vertexId2_3 * 3);
+				float v2_2Y = inMesh.getVertices().get(vertexId2_3 * 3 + 1);
+				float v2_2Z = inMesh.getVertices().get(vertexId2_3 * 3 + 2);
+				float v2_dX = v2_2X - v2_1X;
+				float v2_dY = v2_2Y - v2_1Y;
+				float v2_dZ = v2_2Z - v2_1Z;
+				float vdLength2 = (float) Math.sqrt(v2_dX * v2_dX + v2_dY * v2_dY + v2_dZ * v2_dZ);
+				if(vdLength > 0.0000001f) {
+					v2_dX /= vdLength2;
+					v2_dY /= vdLength2;
+					v2_dZ /= vdLength2;
+				}
+				
+				//float dot = vdX * v2_dX + vdY * v2_dY + vdZ * v2_dZ;
+				//if(dot < 0.5f)
+				//	continue;
+				
+				// It needs to use the same corner data.
+				if(Config.calculateCornerUVs) {
+					boolean cornerUVMatch = false;
+					for(int edgeId22 = 0; edgeId22 < 4; ++edgeId22) {
+						int cornerUVIndex2 = inMesh.getCornerUVIndices().get(faceIndex2 * 4 + edgeId22);
+						if(cornerUVIndex2 == cornerUVIndex) {
+							cornerUVMatch = true;
+							break;
+						}
+					}
+					if(!cornerUVMatch)
+						continue;
+				}
 				
 				// We have a face that shares an edge, so now check if it's a proper match.
 				// The UVs need to match in a repeating pattern.
@@ -359,10 +490,16 @@ public class FaceOptimiser {
 				
 				float uDir2 = u2_3 - u2_1;
 				float vDir2 = v2_3 - v2_1;
+				float uLength2 = Math.abs(uDir2);
+				float vLength2 = Math.abs(vDir2);
 				float duDir = Math.abs(-uDir2 - uDir);
 				float dvDir = Math.abs(-vDir2 - vDir);
 				if(duDir > 0.001f || dvDir > 0.001f)
 					continue; // Uv's don't go in the same direction (it's mirrored)
+				float duLength = Math.abs(uLength2 - uLength);
+				float dvLength = Math.abs(vLength2 - vLength);
+				if(duLength > 0.001f || dvLength > 0.001f)
+					continue; // Uv's aren't of the same size.
 				
 				// Let's figure out by what to offset the UVs
 				float offsetU = Math.min(u1, u2) - Math.min(u2_1, u2_2);
@@ -405,6 +542,18 @@ public class FaceOptimiser {
 					totalOffsetV -= minV;
 				}
 				
+				// Make sure that AO matches.
+				int aoIndex2_0 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+2)%4));
+				float ao2_0 = inMesh.getAO().get(aoIndex2_0);
+				int aoIndex2_1 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+3)%4));
+				float ao2_1 = inMesh.getAO().get(aoIndex2_1);
+				int aoIndex2_2 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+0)%4));
+				float ao2_2 = inMesh.getAO().get(aoIndex2_2);
+				int aoIndex2_3 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+1)%4));
+				float ao2_3 = inMesh.getAO().get(aoIndex2_3);
+				if(ao0 != ao2_0 || ao1 != ao2_1 || ao2 != ao2_2 || ao3 != ao2_3)
+					continue;
+				
 				// Everything matches, so let's include this face.
 				
 				combinedFace.extend(origEdgeId, inMesh, faceIndex2, (edgeId2+2)%4, 
@@ -425,7 +574,7 @@ public class FaceOptimiser {
 		}
 	}
 	
-	private static boolean UVsMatch(float u, float v, float u2, float v2) {
+	private boolean UVsMatch(float u, float v, float u2, float v2) {
 		// UVs repeat on the 0-1 space, so we wrap it around.
 		u -= Math.floor(u);
 		v -= Math.floor(v);

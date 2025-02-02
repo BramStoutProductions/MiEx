@@ -36,11 +36,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonObject;
-
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
+import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
-import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -56,16 +57,16 @@ public class BlockStateRegistry {
 	private static Object mutex2 = new Object();
 	public static List<String> missingBlockStates = new ArrayList<String>();
 	
-	public static int getIdForName(String name) {
+	public static int getIdForName(String name, int dataVersion) {
 		if(!name.contains(":"))
 			name = "minecraft:" + name;
-		String idName = name;
+		String idName = name + Integer.toHexString(dataVersion);
 		Integer id = nameToId.get(idName);
 		if(id == null) {
 			synchronized(mutex) {
 				id = nameToId.get(idName);
 				if(id == null) {
-					BlockState state = getStateFromName(name);
+					BlockState state = getStateFromName(name, dataVersion);
 					registeredStates.add(state);
 					nameToId.put(idName, state.getId());
 					return state.getId();
@@ -85,24 +86,39 @@ public class BlockStateRegistry {
 		return registeredStates.get(id < 0 ? 0 : id);
 	}
 	
-	private static BlockState getStateFromName(String name) {
-		if(BuiltInBlockStateRegistry.builtins.containsKey(name)) {
-			if(!ResourcePack.hasOverride(name, "blockstates", ".json", "assets"))
-				return BuiltInBlockStateRegistry.newBlockState(name);
+	private static BlockState getStateFromName(String name, int dataVersion) {
+		if(BuiltInBlockStateRegistry.builtins.containsKey(name) || BuiltInBlockState.hasHandler(name)) {
+			if(!ResourcePacks.hasOverride(name, "blockstates", ".json", "assets"))
+				return BuiltInBlockStateRegistry.newBlockState(name, dataVersion);
 		}
-		JsonObject data = ResourcePack.getJSONData(name, "blockstates", "assets");
-		if(data == null) {
+		BlockStateHandler handler = ResourcePacks.getBlockStateHandler(name);
+		if(handler == null) {
 			synchronized(missingBlockStates) {
 				missingBlockStates.add(name);
 			}
 			World.handleError(new RuntimeException("No blockstate file for " + name));
+			
+			// Make sure that there is a valid handler anyways.
+			handler = new BlockStateHandlerJavaEdition(name, null);
 		}
-		return new BlockState(name, data);
+		return new BlockState(name, dataVersion, handler);
 	}
 	
 	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z) {
+		return getBakedStateForBlock(blockId, x, y, z, true);
+	}
+	
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, boolean runBlockConnections) {
 		if(blockId < 0)
 			blockId = 0;
+		
+		if(!runBlockConnections) {
+			Block block = BlockRegistry.getBlock(blockId);
+			int stateId = getIdForName(block.getName(), block.getDataVersion());
+			BlockState state = getState(stateId);
+			return state.getBakedBlockState(block.getProperties(), x, y, z, false);
+		}
+		
 		if(blockId >= bakedBlockStates.size()) {
 			synchronized(mutex2) {
 				for(int i = bakedBlockStates.size(); i < blockId + 1; ++i) {
@@ -111,10 +127,10 @@ public class BlockStateRegistry {
 				}
 				
 				Block block = BlockRegistry.getBlock(blockId);
-				int stateId = getIdForName(block.getName());
+				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
 				
-				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z);
+				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, true);
 				if(!state.needsConnectionInfo())
 					bakedBlockStates.set(blockId, bakedState);
 				needsConnectionInfo.set(blockId, state.needsConnectionInfo());
@@ -129,9 +145,9 @@ public class BlockStateRegistry {
 			
 			if(needsConnectionInfo.get(blockId).booleanValue()) {
 				Block block = BlockRegistry.getBlock(blockId);
-				int stateId = getIdForName(block.getName());
+				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, true);
 			}
 		}catch(Exception ex) {} // Empty catch because due to race condition it could fail, but that's fine.
 		
@@ -142,16 +158,16 @@ public class BlockStateRegistry {
 			
 			if(needsConnectionInfo.get(blockId).booleanValue()) {
 				Block block = BlockRegistry.getBlock(blockId);
-				int stateId = getIdForName(block.getName());
+				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, true);
 			}
 			
 			Block block = BlockRegistry.getBlock(blockId);
-			int stateId = getIdForName(block.getName());
+			int stateId = getIdForName(block.getName(), block.getDataVersion());
 			BlockState state = getState(stateId);
 			
-			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z);
+			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, true);
 			if(!state.needsConnectionInfo())
 				bakedBlockStates.set(blockId, bakedState);
 			needsConnectionInfo.set(blockId, state.needsConnectionInfo());

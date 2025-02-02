@@ -127,7 +127,8 @@ public class Logger extends PrintStream{
 
 				@Override
 				public void run() {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "An error happened somewhere. Please check the log for more information.", "Error", JOptionPane.ERROR_MESSAGE);
+					if(MCWorldExporter.getApp() != null)
+						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "An error happened somewhere. Please check the log for more information.", "Error", JOptionPane.ERROR_MESSAGE);
 					hasShownPopup.set(false);
 				}
 				

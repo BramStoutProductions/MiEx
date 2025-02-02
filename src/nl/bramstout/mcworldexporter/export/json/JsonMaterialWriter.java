@@ -1,7 +1,7 @@
 package nl.bramstout.mcworldexporter.export.json;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +25,9 @@ import nl.bramstout.mcworldexporter.materials.Materials.MaterialTemplate;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingAttribute;
 import nl.bramstout.mcworldexporter.materials.Materials.ShadingNode;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.java.MCMetaJavaEdition;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class JsonMaterialWriter extends MaterialWriter {
 
@@ -46,12 +49,13 @@ public class JsonMaterialWriter extends MaterialWriter {
 		if (!hasWrittenAnything())
 			return;
 
-		FileWriter writer = null;
+		FileOutputStream writer = null;
 		try {
 			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
 			String jsonString = gson.toJson(root);
-			writer = new FileWriter(outputFile);
-			writer.write(jsonString);
+			writer = new FileOutputStream(outputFile);
+			byte[] utf8Str = jsonString.getBytes("UTF-8");
+			writer.write(utf8Str);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -81,7 +85,7 @@ public class JsonMaterialWriter extends MaterialWriter {
 		JsonObject sharedNodesObj = new JsonObject();
 
 		writeMaterialNetwork(Materials.sharedNodes, sharedNodesObj, "", parentPrim + "/sharedNodes",
-				parentPrim + "/sharedNodes");
+				parentPrim + "/sharedNodes", "");
 
 		root.add("sharedNodes", sharedNodesObj);
 	}
@@ -91,19 +95,19 @@ public class JsonMaterialWriter extends MaterialWriter {
 			String sharedPrims) throws IOException {
 		JsonObject matObj = new JsonObject();
 
-		String matName = "MAT_"
-				+ Util.makeSafeName(texture)
-				+ (hasBiomeColor ? "_BIOME" : "");
+		String suffix = "_" + Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME": "");
+		
+		String matName = "MAT" + suffix;
 
 		JsonObject terminalsObj = new JsonObject();
 
 		for (Entry<String, String> conn : material.shadingGroup.entrySet()) {
 			String connPath = "";
 			if (conn.getValue().startsWith("shared/")) {
-				connPath = sharedPrims + "/" + conn.getValue().substring(6);
+				connPath = sharedPrims + "/" + conn.getValue().substring(7);
 			} else {
 				String[] tokens = conn.getValue().split("\\.");
-				connPath = parentPrim + "/" + matName + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
+				connPath = parentPrim + "/" + matName + "/" + tokens[0] + suffix;
 				for (int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -117,18 +121,18 @@ public class JsonMaterialWriter extends MaterialWriter {
 
 		JsonObject networkObj = new JsonObject();
 		for (MaterialNetwork network : material.networks)
-			writeMaterialNetwork(network, networkObj, texture, parentPrim + "/" + matName, sharedPrims);
+			writeMaterialNetwork(network, networkObj, texture, parentPrim + "/" + matName, sharedPrims, suffix);
 		matObj.add("network", networkObj);
 
 		root.add(matName, matObj);
 	}
 
 	private void writeMaterialNetwork(MaterialNetwork network, JsonObject networkObj, String texture, 
-										String parentPrim, String sharedPrims)
+										String parentPrim, String sharedPrims, String suffix)
 			throws IOException {
 		for (ShadingNode node : network.nodes) {
 			try {
-				writeShadingNode(node, networkObj, texture, parentPrim, sharedPrims);
+				writeShadingNode(node, networkObj, texture, parentPrim, sharedPrims, suffix);
 			} catch (Exception ex) {
 				System.out.println("Could not write node " + node.name + "for texture " + texture);
 				throw ex;
@@ -136,10 +140,11 @@ public class JsonMaterialWriter extends MaterialWriter {
 		}
 	}
 	
-	private void writeShadingNode(ShadingNode node, JsonObject networkObj, String texture, String parentPrim, String sharedPrims)
+	private void writeShadingNode(ShadingNode node, JsonObject networkObj, String texture, 
+									String parentPrim, String sharedPrims, String suffix)
 			throws IOException {
 		// If it's not a JSON node, then don't write it down.
-		if (!node.type.startsWith("JSON:"))
+		if (node.type == null || !node.type.startsWith("JSON:"))
 			return;
 		_hasWrittenAnything = true;
 		
@@ -150,15 +155,15 @@ public class JsonMaterialWriter extends MaterialWriter {
 		
 		JsonObject attrsObj = new JsonObject();
 		for (ShadingAttribute attr : node.attributes) {
-			writeShadingAttribute(attr, attrsObj, texture, parentPrim, sharedPrims);
+			writeShadingAttribute(attr, attrsObj, texture, parentPrim, sharedPrims, suffix);
 		}
 		shaderObj.add("attributes", attrsObj);
 		
-		networkObj.add(node.name + "_" + Util.makeSafeName(texture), shaderObj);
+		networkObj.add(node.name + suffix, shaderObj);
 	}
 	
 	private void writeShadingAttribute(ShadingAttribute attr, JsonObject attrsObj, String texture, 
-										String parentPrim, String sharedPrims) throws IOException {
+										String parentPrim, String sharedPrims, String suffix) throws IOException {
 		JsonObject attrObj = new JsonObject();
 		attrObj.addProperty("type", attr.type);
 		if (attr.expression != null) {
@@ -166,10 +171,10 @@ public class JsonMaterialWriter extends MaterialWriter {
 		} else if (attr.connection != null) {
 			String connPath = "";
 			if (attr.connection.startsWith("shared/")) {
-				connPath = sharedPrims + "/" + attr.connection.substring(6);
+				connPath = sharedPrims + "/" + attr.connection.substring(7);
 			} else {
 				String[] tokens = attr.connection.split("\\.");
-				connPath = parentPrim + "/" + tokens[0] + "_" + Util.makeSafeName(texture);
+				connPath = parentPrim + "/" + tokens[0] + suffix;
 				for (int i = 1; i < tokens.length; ++i)
 					connPath += "." + tokens[i];
 			}
@@ -237,7 +242,9 @@ public class JsonMaterialWriter extends MaterialWriter {
 			}
 		}
 				
-		MCMeta animData = new MCMeta(texture);
+		MCMeta animData = ResourcePacks.getMCMeta(texture);
+		if(animData == null)
+			animData = new MCMetaJavaEdition(null, null);
 		
 		// Because time samples aren't being looped,
 		// we need to specify time frames for a very large range,
@@ -310,6 +317,9 @@ public class JsonMaterialWriter extends MaterialWriter {
 			}
 			
 			writeKeyframes(attrObj, timeCodes, values, isFloat2 ? 2 : 1);
+		}else if(expression.equalsIgnoreCase("animData")) {
+			String animDataStr = Materials.getAnimationData(animData, frameTimeMultiplier);
+			attrObj.addProperty("value", animDataStr);
 		}
 	}
 	
@@ -335,8 +345,10 @@ public class JsonMaterialWriter extends MaterialWriter {
 	private String getAssetPathForTexture(String texture) {
 		try {
 			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
-			if(!file.exists())
+			if(file == null || !file.exists()) {
+				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
+			}
 			String fullPath = file.getCanonicalPath().replace('\\', '/');
 			String resourcePathDir = new File(FileUtil.getResourcePackDir()).getCanonicalPath().replace('\\', '/');
 			if(!resourcePathDir.endsWith("/"))

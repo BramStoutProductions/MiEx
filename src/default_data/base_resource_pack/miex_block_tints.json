@@ -5,6 +5,9 @@
     "spruce_leaves": {
         "tint": "#619961"
     },
+    "cherry_leaves": {
+        "tint": null
+    },
     "lily_pad": {
         "tint": "#208030"
     },

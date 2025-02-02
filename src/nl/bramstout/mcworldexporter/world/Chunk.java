@@ -43,11 +43,12 @@ import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.parallel.Queue;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
-import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public abstract class Chunk {
 
-	private static Queue<Chunk> loadedChunks = new Queue<Chunk>();
+	protected static Queue<Chunk> loadedChunks = new Queue<Chunk>();
 	private static Queue<Chunk> loadedChunkImages = new Queue<Chunk>();
 	private static final int MAX_LOADED_CHUNKS = 64*64;
 	private static final int MAX_LOADED_CHUNK_IMAGES = 512*512;
@@ -112,9 +113,11 @@ public abstract class Chunk {
 		thread.start();
 	}
 
+	protected int dataVersion;
 	protected int chunkX;
 	protected int chunkZ;
 	protected boolean loadError;
+	protected boolean isLoading;
 	protected long lastAccess;
 	protected long lastImageAccess;
 	/**
@@ -126,7 +129,7 @@ public abstract class Chunk {
 	 * A list of biome sections. Each biome section is a list of biome ids from the
 	 * BiomeRegistry. Each biome section stores 4*4*4 biome ids in the YZX order.
 	 */
-	protected short[][] biomes;
+	protected int[][] biomes;
 	/**
 	 * The offset needed to be added to the chunk section Y to get the chunk section
 	 * index in blocks.
@@ -156,18 +159,20 @@ public abstract class Chunk {
 
 	private int blockRegistryChangeCounter;
 	
-	private SpinLock loadLock;
+	protected SpinLock loadLock;
 
 	public Chunk(Region region, int chunkX, int chunkZ) {
 		this.region = region;
 		this.chunkX = chunkX;
 		this.chunkZ = chunkZ;
+		this.dataVersion = Integer.MAX_VALUE;
 		this.loadError = false;
+		this.isLoading = false;
 		this.blocks = null;
 		this.biomes = null;
 		this.heightMap = null;
 		this.heightMapMaxVal = 320;
-		this.entities = new ArrayList<Entity>();
+		this.entities = null;
 		this.chunkSectionOffset = 0;
 		this.chunkImg = null;
 		this.chunkImgSmall = null;
@@ -189,18 +194,73 @@ public abstract class Chunk {
 			return;
 		
 		loadLock.aqcuire();
+		isLoading = true;
 		try {
 			_load();
 			this.lastAccess = System.currentTimeMillis();
 			loadedChunks.push(this);
 		} finally {
+			isLoading = false;
 			loadLock.release();
 		}
 	}
 	
-	protected abstract void _load() throws Exception ;
+	public void loadEntities() throws Exception{
+		if(this.loadError || this.entities != null)
+			return;
+		
+		loadLock.aqcuire();
+		try {
+			if(this.entities != null)
+				return;
+			_loadEntities();
+		} finally {
+			loadLock.release();
+		}
+	}
+	
+	protected abstract void _load() throws Exception;
+	
+	protected abstract void _loadEntities() throws Exception;
 
 	public abstract void unload();
+	
+	public void unloadEntities() {
+		loadLock.aqcuire();
+		try {
+			this.entities = null;
+		} finally {
+			loadLock.release();
+		}
+	}
+	
+	public int[][] _getBlocks() {
+		return blocks;
+	}
+	
+	public int[][] _getBiomes(){
+		return biomes;
+	}
+	
+	public int _getChunkSectionOffset() {
+		return chunkSectionOffset;
+	}
+	
+	public void _setBlocks(int[][] blocks) {
+		this.blocks = blocks;
+	}
+	
+	public void _setBiomes(int[][] biomes) {
+		this.biomes = biomes;
+	}
+	
+	public void _setChunkSectionOffset(int chunkSectionOffset) {
+		this.chunkSectionOffset = chunkSectionOffset;
+	}
+	
+	public List<Entity> _getEntities() {
+		return entities;
+	}
 
 	public int getChunkX() {
 		return chunkX;
@@ -210,12 +270,20 @@ public abstract class Chunk {
 		return chunkZ;
 	}
 
+	public int getDataVersion() {
+		return dataVersion;
+	}
+	
 	public boolean hasLoadError() {
-		return loadError;
+		return loadError && !isLoading;
 	}
 	
 	public boolean isLoaded() {
 		return !loadError && this.blocks != null;
+	}
+	
+	public Region getRegion() {
+		return region;
 	}
 
 	public int getBlockId(int worldX, int worldY, int worldZ) {
@@ -278,16 +346,35 @@ public abstract class Chunk {
 			}
 		if (heightMap == null)
 			return 0;
-		return heightMap[z * 16 + x];
+		// In very rare cases heightMap can end up being null.
+		// This is due to race conditions, but for performance
+		// reasons I don't want to use a mutex
+		try {
+			return heightMap[z * 16 + x];
+		}catch(Exception ex) {}
+		return 0;
 	}
 	
 	public int getHeightLocalNoLoad(int x, int z) {
 		if (heightMap == null)
 			return 0;
-		return heightMap[z * 16 + x];
+		// In very rare cases heightMap can end up being null.
+		// This is due to race conditions, but for performance
+		// reasons I don't want to use a mutex
+		try {
+			return heightMap[z * 16 + x];
+		}catch(Exception ex) {}
+		return 0;
 	}
 
 	public List<Entity> getEntities() {
+		this.lastAccess = System.currentTimeMillis();
+		if (entities == null)
+			try {
+				loadEntities();
+			} catch (Exception e) {
+				World.handleError(e);
+			}
 		return entities;
 	}
 
@@ -319,7 +406,7 @@ public abstract class Chunk {
 		int colour = 0;
 		String defaultTexture = state.getDefaultTexture();
 		if (defaultTexture != "") {
-			colour = ResourcePack.getDefaultColour(defaultTexture);
+			colour = ResourcePacks.getDefaultColour(defaultTexture);
 
 			if (state.hasTint()) {
 				int biomeId = getBiomeIdLocal(x, y, z);
@@ -335,6 +422,8 @@ public abstract class Chunk {
 	}
 
 	public void renderChunkImage() {
+		if(region.world.isPaused())
+			return;
 		this.lastAccess = System.currentTimeMillis();
 		if (this.renderRequested && this.fullReRender)
 			calculateHeightmap();
@@ -389,7 +478,7 @@ public abstract class Chunk {
 					}
 					if (blockId > 0) {
 						Block block = BlockRegistry.getBlock(blockId);
-						int stateId = BlockStateRegistry.getIdForName(block.getName());
+						int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 						BlockState state = BlockStateRegistry.getState(stateId);
 						colour = getColourForBlock(state, x, height, z);
 						
@@ -400,7 +489,7 @@ public abstract class Chunk {
 							for(int sampleY = height - 1; sampleY >= MCWorldExporter.getApp().getExportBounds().getMinY(); --sampleY) {
 								blockId = getBlockIdLocal(x, sampleY, z);
 								block = BlockRegistry.getBlock(blockId);
-								stateId = BlockStateRegistry.getIdForName(block.getName());
+								stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 								state = BlockStateRegistry.getState(stateId);
 								if(state.isWaterColormap())
 									continue;

@@ -44,10 +44,11 @@ public abstract class ConnectedTexture {
 		return connectLogic.connects(face, x, y, z, dx, dy, dz);
 	}
 	
-	protected int calcConnectionBits(int x, int y, int z, ModelFace face, Direction up) {
+	protected int calcConnectionBits(int x, int y, int z, ModelFace face, Direction up, boolean innerSeams) {
 		Direction left = getLeft(up, face);
 		Direction down = up.getOpposite();
 		Direction right = left.getOpposite();
+		Direction forward = face.getDirection();
 		
 		int res = 0;
 		
@@ -74,6 +75,34 @@ public abstract class ConnectedTexture {
 		
 		if(connects(face, x, y, z, left.x, left.y, left.z))
 			res |= 1;
+		
+		if(!innerSeams) {
+			// To avoid additional work, only check connects if we're not already connecting
+			// in that direction.
+			if((res&(1<<7))==0 && connects(face, x, y, z, up.x + left.x + forward.x, up.y + left.y + forward.y, up.z + left.z + forward.z))
+				res |= 1 << 7;
+			
+			if((res&(1<<6))==0 && connects(face, x, y, z, up.x + forward.x, up.y + forward.y, up.z + forward.z))
+				res |= 1 << 6;
+			
+			if((res&(1<<5))==0 && connects(face, x, y, z, up.x + right.x + forward.x, up.y + right.y + forward.y, up.z + right.z + forward.z))
+				res |= 1 << 5;
+			
+			if((res&(1<<4))==0 && connects(face, x, y, z, right.x + forward.x, right.y + forward.y, right.z + forward.z))
+				res |= 1 << 4;
+			
+			if((res&(1<<3))==0 && connects(face, x, y, z, down.x + right.x + forward.x, down.y + right.y + forward.y, down.z + right.z + forward.z))
+				res |= 1 << 3;
+			
+			if((res&(1<<2))==0 && connects(face, x, y, z, down.x + forward.x, down.y + forward.y, down.z + forward.z))
+				res |= 1 << 2;
+			
+			if((res&(1<<1))==0 && connects(face, x, y, z, down.x + left.x + forward.x, down.y + left.y + forward.y, down.z + left.z + forward.z))
+				res |= 1 << 1;
+			
+			if((res&1)==0 && connects(face, x, y, z, left.x + forward.x, left.y + forward.y, left.z + forward.z))
+				res |= 1;
+		}
 		
 		return res;
 	}

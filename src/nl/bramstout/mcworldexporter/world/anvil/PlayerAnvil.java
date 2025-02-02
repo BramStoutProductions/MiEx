@@ -37,40 +37,42 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.zip.GZIPInputStream;
 
-import nl.bramstout.mcworldexporter.nbt.NBT_Tag;
-import nl.bramstout.mcworldexporter.nbt.TAG_Compound;
-import nl.bramstout.mcworldexporter.nbt.TAG_Double;
-import nl.bramstout.mcworldexporter.nbt.TAG_List;
-import nl.bramstout.mcworldexporter.nbt.TAG_String;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagDouble;
+import nl.bramstout.mcworldexporter.nbt.NbtTagList;
+import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.world.Player;
 
 public class PlayerAnvil extends Player{
 
 	public PlayerAnvil(String uuid, File playerFile) {
-		super(uuid, null, 0, 0, 0, null);
+		super(uuid, null, 0, 0, 0, "minecraft:overworld", true);
 		try {
 			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(playerFile)));
 			DataInputStream dis = new DataInputStream(is);
-			NBT_Tag nbtData = NBT_Tag.make(dis);
-			if(nbtData instanceof TAG_Compound) {
-				this.data = (TAG_Compound) nbtData;
+			NbtTag nbtData = NbtTag.readFromStream(dis);
+			if(nbtData instanceof NbtTagCompound) {
+				this.data = (NbtTagCompound) nbtData;
+				this.data.acquireOwnership();
 				
-				NBT_Tag posTag = this.data.getElement("Pos");
-				if(posTag != null && posTag instanceof TAG_List) {
-					x = ((TAG_Double)((TAG_List)posTag).getElement(0)).value;
-					y = ((TAG_Double)((TAG_List)posTag).getElement(1)).value;
-					z = ((TAG_Double)((TAG_List)posTag).getElement(2)).value;
+				NbtTag posTag = this.data.get("Pos");
+				if(posTag != null && posTag instanceof NbtTagList) {
+					x = ((NbtTagDouble)((NbtTagList)posTag).get(0)).getData();
+					y = ((NbtTagDouble)((NbtTagList)posTag).get(1)).getData();
+					z = ((NbtTagDouble)((NbtTagList)posTag).get(2)).getData();
 				}else {
 					System.out.println("Could not get position for player " + this.name);
 				}
 				
-				NBT_Tag dimensionTag = this.data.getElement("Dimension");
-				if(dimensionTag != null && dimensionTag instanceof TAG_String) {
-					this.dimension = ((TAG_String) dimensionTag).value;
+				NbtTag dimensionTag = this.data.get("Dimension");
+				if(dimensionTag != null && dimensionTag instanceof NbtTagString) {
+					this.dimension = ((NbtTagString) dimensionTag).getData();
 				}
 			}
+			nbtData.free();
 		}catch(Exception ex) {
-			ex.printStackTrace();
+			//ex.printStackTrace();
 		}
 	}
 	
