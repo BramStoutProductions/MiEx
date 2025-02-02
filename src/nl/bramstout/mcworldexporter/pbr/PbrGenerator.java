@@ -59,7 +59,7 @@ import nl.bramstout.mcworldexporter.resourcepack.TextureGroup;
 
 public class PbrGenerator {
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
+	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads(4096));
 	
 	public List<ResourcePack> resourcePacks;
 	public ResourcePack saveToResourcePack;
@@ -118,7 +118,7 @@ public class PbrGenerator {
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
 			
 			List<Future<?>> futures = new ArrayList<Future<?>>();
-			for(int i = 0; i < ThreadPool.getNumThreads(); ++i) {
+			for(int i = 0; i < ThreadPool.getNumThreads(4096); ++i) {
 				futures.add(threadPool.submit(new PbrProcessor(this)));
 			}
 			for(Future<?> future : futures) {

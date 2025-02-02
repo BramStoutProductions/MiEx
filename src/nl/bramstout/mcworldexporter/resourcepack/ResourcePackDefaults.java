@@ -138,8 +138,10 @@ public class ResourcePackDefaults {
 					break;
 				}
 			}
-			if(versionJar == null)
+			if(versionJar == null) {
+				System.out.println("No version jar found for selected version " + selectedVersion);
 				return;
+			}
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.3f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Updating base resource pack");
@@ -147,6 +149,7 @@ public class ResourcePackDefaults {
 			int worldVersion = getWorldVersionFromJar(versionJar);
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.35f);
 			
+			System.out.println("Extracting base_resource_pack from " + versionJar.getAbsolutePath());
 			extractResourcePackFromJar(versionJar, new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.45f);
@@ -189,8 +192,10 @@ public class ResourcePackDefaults {
 		    		continue;
 		    	
 		    	JsonObject data = JsonParser.parseReader(new InputStreamReader(zipIn)).getAsJsonObject();
-		    	if(data.has("world_version"))
+		    	if(data.has("world_version")) {
+		    		zipIn.close();
 		    		return data.get("world_version").getAsInt();
+		    	}
 		    	
 		        zipIn.closeEntry();
 		    }
@@ -212,22 +217,26 @@ public class ResourcePackDefaults {
 		    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/"))
 		    		continue;
 		    	
-		        File outFile = new File(resourcePackDir, entryName);
-		        if (!entry.isDirectory()) {
-		        	File dir = outFile.getParentFile();
-		        	dir.mkdirs();
-		            OutputStream os = new FileOutputStream(outFile);
-		            try {
-		            	int read = 0;
-			            while ((read = zipIn.read(bytesIn)) != -1) {
-			                os.write(bytesIn, 0, read);
+		    	try {
+			        File outFile = new File(resourcePackDir, entryName);
+			        if (!entry.isDirectory()) {
+			        	File dir = outFile.getParentFile();
+			        	dir.mkdirs();
+			            OutputStream os = new FileOutputStream(outFile);
+			            try {
+			            	int read = 0;
+				            while ((read = zipIn.read(bytesIn)) != -1) {
+				                os.write(bytesIn, 0, read);
+				            }
+			            }catch(Exception ex) {
+			            	ex.printStackTrace();
 			            }
-		            }catch(Exception ex) {
-		            	ex.printStackTrace();
-		            }
-		            os.close();
-		        }
-		        zipIn.closeEntry();
+			            os.close();
+			        }
+			        zipIn.closeEntry();
+		    	}catch(Exception ex) {
+		    		ex.printStackTrace();
+		    	}
 		    }
 		}catch(Exception ex) {
 			ex.printStackTrace();

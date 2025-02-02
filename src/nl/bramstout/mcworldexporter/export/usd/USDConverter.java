@@ -47,9 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -72,6 +69,8 @@ import nl.bramstout.mcworldexporter.export.json.JsonMaterialWriter;
 import nl.bramstout.mcworldexporter.export.materialx.MaterialXMaterialWriter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
+import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.parallel.ThreadPool.Task;
 import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -125,7 +124,7 @@ public class USDConverter extends Converter{
 	private List<ChunkInfo> chunkInfosFG = new ArrayList<ChunkInfo>();
 	private List<ChunkInfo> chunkInfosBG = new ArrayList<ChunkInfo>();
 	private Object mutex = new Object();
-	private static ExecutorService threadPool = Executors.newWorkStealingPool();
+	private static ThreadPool threadPool = new ThreadPool(2048);
 	public static File currentOutputDir = null;
 	
 	public USDConverter(File inputFile, File outputFile) throws IOException {
@@ -276,13 +275,13 @@ public class USDConverter extends Converter{
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setNumChunks(numChunks);;
 
-		List<Future<?>> futures = new ArrayList<Future<?>>();
+		List<Task> futures = new ArrayList<Task>();
 		for(int chunkId = 0; chunkId < numChunks; ++chunkId) {
 			futures.add(threadPool.submit(new ConvertChunkTask(new File(inputFile.getParentFile(), chunkFilenames[chunkId]), this)));
 		}
-		for(Future<?> future : futures) {
+		for(Task future : futures) {
 			try {
-				future.get();
+				future.waitUntilTaskIsDone();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

@@ -34,10 +34,13 @@ package nl.bramstout.mcworldexporter;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import nl.bramstout.mcworldexporter.image.ImageReader;
 
@@ -361,7 +364,7 @@ public class FileUtil {
 		if(modrinthRootDir != null)
 			return modrinthRootDir;
 		modrinthRootDir = getModrinthRootDir3();
-		if(!(new File(modrinthRootDir).exists()))
+		if(!(new File(modrinthRootDir.substring(0, modrinthRootDir.length()-1)).exists()))
 			modrinthRootDir = getModrinthRootDir2();
 		
 		String envPath = System.getenv("MIEX_MODRINTH_ROOT_DIR");
@@ -390,10 +393,37 @@ public class FileUtil {
 		
 		// If the jar doesn't exist, just pick the first jar file in the versions folder.
 		for(File f : versionFolder.listFiles()) {
-			if(f.getName().endsWith(".jar"))
-				return f;
+			if(f.getName().endsWith(".jar")) {
+				if(isValidJarFile(f))
+					return f;
+			}
 		}
 		return null;
+	}
+	
+	private static boolean isValidJarFile(File jarFile){
+		ZipInputStream zipIn = null;
+		try {
+			zipIn = new ZipInputStream(new FileInputStream(jarFile));
+		    ZipEntry entry = null;
+		    
+		    while ((entry = zipIn.getNextEntry()) != null) {
+		    	String entryName = entry.getName();
+		    	if(entryName.equals("version.json")) {
+		    		zipIn.close();
+		    		return true;
+		    	}
+		    }
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		try {
+		if(zipIn != null)
+			zipIn.close();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	    return false;
 	}
 
 }

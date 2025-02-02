@@ -343,6 +343,8 @@ public class USDMaterialWriter extends MaterialWriter{
 			}
 		}else if(expression.equalsIgnoreCase("biomeColor")) {
 			Color color = Materials.getBiomeColor(args);
+			if(color == null)
+				color = new Color();
 			float[] data = null;
 			String attrTypeLower = attrType.toLowerCase();
 			if(attrTypeLower.contains("2"))

@@ -66,7 +66,7 @@ import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
+	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads(1024));
 	private static Object mutex = new Object();
 	private static Set<IndividualBlockId> individualBlockIds = new HashSet<IndividualBlockId>();
 	public static int NUM_CHUNKS = 0;

@@ -412,10 +412,17 @@ public abstract class Chunk {
 				int biomeId = getBiomeIdLocal(x, y, z);
 				Biome biome = BiomeRegistry.getBiome(biomeId);
 				nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state);
-				Color color = new Color(colour);
-				color = new Color((int) (((float) color.getRed()) * tint.getR()),
-						(int) (((float) color.getGreen()) * tint.getG()), (int) (((float) color.getBlue()) * tint.getB()));
-				colour = color.getRGB();
+				//Color color = new Color(colour);
+				//color = new Color((int) (((float) color.getRed()) * tint.getR()),
+				//		(int) (((float) color.getGreen()) * tint.getG()), (int) (((float) color.getBlue()) * tint.getB()));
+				//colour = color.getRGB();
+				int r = (colour >>> 16) & 0xFF;
+				int g = (colour >>> 8) & 0xFF;
+				int b = (colour) & 0xFF;
+				r = (int) (((float) r) * tint.getR());
+				g = (int) (((float) g) * tint.getG());
+				b = (int) (((float) b) * tint.getB());
+				colour = (r << 16) | (g << 8) | b;
 			}
 		}
 		return colour;
@@ -425,8 +432,14 @@ public abstract class Chunk {
 		if(region.world.isPaused())
 			return;
 		this.lastAccess = System.currentTimeMillis();
-		if (this.renderRequested && this.fullReRender)
+		if (this.renderRequested && this.fullReRender) {
+			try {
+				load();
+			} catch (Exception e) {
+				World.handleError(e);
+			}
 			calculateHeightmap();
+		}
 		this.shouldRender = false;
 		this.fullReRender = false;
 		if (blocks == null || heightMap == null || isRendering
@@ -597,6 +610,7 @@ public abstract class Chunk {
 		this.chunkImgSmall = null;
 		this.chunkImgSmaller = null;
 		this.chunkImgSmaller2 = null;
+		this.chunkImgSmallest = null;
 		this.heightMap = null;
 	}
 
@@ -659,6 +673,16 @@ public abstract class Chunk {
 				tmpHeightMap[i] = (short) minY;
 		}
 		heightMap = tmpHeightMap;
+	}
+	
+	private int renderCounter = 0;
+	
+	public int getRenderCounter() {
+		return renderCounter;
+	}
+	
+	public void setRenderCounter(int renderCounter) {
+		this.renderCounter = renderCounter;
 	}
 
 }

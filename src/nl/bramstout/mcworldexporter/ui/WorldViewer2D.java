@@ -758,6 +758,14 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			return copy;
 		}
 		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof CameraTransform))
+				return false;
+			CameraTransform other = (CameraTransform) obj;
+			return other.zoomLevel == zoomLevel && other.camPosX == camPosX && other.camPosY == camPosY;
+		}
+		
 	}
 	
 	

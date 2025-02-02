@@ -241,7 +241,7 @@ public class EntityExporter {
 	private World world;
 	private Map<ModelKey, EntityPrototype> entityPrototypes;
 	private Map<ModelKey, List<EntityInstance>> entityInstances;
-	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
+	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads(1024));
 	
 	public EntityExporter(ExportBounds bounds, World world) {
 		this.bounds = bounds;
@@ -522,7 +522,7 @@ public class EntityExporter {
 			float deltaTime = 1f / ((float) fps);
 			
 			int numEntities2 = entities.size();
-			int numTasks = ThreadPool.getNumThreads() * 4;
+			int numTasks = ThreadPool.getNumThreads(1024) * 4;
 			int numEntitiesPerTask = (numEntities2 + numTasks - 1) / numTasks;
 			List<Future<?>> futures = new ArrayList<Future<?>>();
 			for(int i = 0; i < numTasks; ++i) {

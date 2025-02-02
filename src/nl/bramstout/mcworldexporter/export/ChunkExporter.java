@@ -38,8 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import nl.bramstout.mcworldexporter.Color;
@@ -56,7 +54,6 @@ import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.Occlusion;
-import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
@@ -83,8 +80,6 @@ public class ChunkExporter {
 	private LODCache lodCache;
 	private CaveCache caveCache;
 	private Reference<char[]> charBuffer;
-	
-	public static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads());
 
 	
 	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name) {
