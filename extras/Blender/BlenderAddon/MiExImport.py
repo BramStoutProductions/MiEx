@@ -67,8 +67,7 @@ class SetupMaterials:
                 raise e
         
         self.mat.use_backface_culling = True
-        if self.hasTransparency:
-            self.mat.blend_method = 'BLEND'
+        self.mat.blend_method = 'HASHED'
 
     def import_node(self,name,data):
         node = self.mat.node_tree.nodes.new(data['type'])
@@ -235,6 +234,9 @@ class MiexImport(Operator, ImportHelper):
         return self.read_data(context, self.filepath, options)
 
     def read_data(self, context, filepath, options: dict):
+        temp_frame_start = bpy.context.scene.frame_start
+        temp_frame_end = bpy.context.scene.frame_end
+
         if not os.path.exists(filepath):
             # Add popup warining that the material file is missing
             def draw(self, context):
@@ -323,9 +325,11 @@ class MiexImport(Operator, ImportHelper):
             except Exception as e:
                 self.report({'ERROR'}, f"Material failed: {key}")
                 return {'CANCELLED'}
+        
+        bpy.context.scene.frame_start = temp_frame_start
+        bpy.context.scene.frame_end = temp_frame_end
 
         return {'FINISHED'}
-
 
 def menu_func_import(self, context):
     self.layout.operator(MiexImport.bl_idname, text="MiEx (.usd)")
