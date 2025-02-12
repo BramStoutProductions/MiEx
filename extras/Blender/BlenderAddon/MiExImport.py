@@ -234,8 +234,6 @@ class MiexImport(Operator, ImportHelper):
         return self.read_data(context, self.filepath, options)
 
     def read_data(self, context, filepath, options: dict):
-        temp_frame_start = bpy.context.scene.frame_start
-        temp_frame_end = bpy.context.scene.frame_end
 
         if not os.path.exists(filepath):
             # Add popup warining that the material file is missing
@@ -266,7 +264,7 @@ class MiexImport(Operator, ImportHelper):
         else:
             Usd.Stage.SetGlobalVariantFallbacks({"MiEx_LOD": ["render"]}) 
         
-        bpy.ops.wm.usd_import(filepath=filepath, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING',import_proxy=bool(options['import_type'] != 'render'))
+        bpy.ops.wm.usd_import(filepath=filepath, set_frame_range=False, scale=1.0/16.0, mtl_name_collision_mode='REFERENCE_EXISTING',import_proxy=bool(options['import_type'] != 'render'))
 
         if options['hide_background'] == 'hide':
             # find an 'empty' called background
@@ -325,9 +323,6 @@ class MiexImport(Operator, ImportHelper):
             except Exception as e:
                 self.report({'ERROR'}, f"Material failed: {key}")
                 return {'CANCELLED'}
-        
-        bpy.context.scene.frame_start = temp_frame_start
-        bpy.context.scene.frame_end = temp_frame_end
 
         return {'FINISHED'}
 
