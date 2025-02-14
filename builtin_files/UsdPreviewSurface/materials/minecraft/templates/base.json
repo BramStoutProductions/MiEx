@@ -184,11 +184,11 @@
                         "value": "@texture@_emission"
                     },
                     "inputs:wrapS": {
-                        "type": "token",
+                        "type": "string",
                         "value": "repeat"
                     },
                     "inputs:wrapT": {
-                        "type": "token",
+                        "type": "string",
                         "value": "repeat"
                     },
                     "inputs:st": {
