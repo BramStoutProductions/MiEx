@@ -83,6 +83,8 @@ public class MCWorldExporter {
 	
 	public MCWorldExporter() {
 		instance = this;
+		LauncherRegistry.initLaunchers();
+		
 		world = null;
 		exportBounds = new ExportBounds();
 		fgChunks = new ArrayList<String>();
@@ -222,9 +224,10 @@ public class MCWorldExporter {
 			}
 		}*/
 		
+		Environment.loadFromEnvFile();
 		
 		try {
-			String numUIThreadsEnvVar = System.getenv("MIEX_NUM_UI_THREADS");
+			String numUIThreadsEnvVar = Environment.getEnv("MIEX_NUM_UI_THREADS");
 			if(numUIThreadsEnvVar != null) {
 				Integer val = Integer.parseInt(numUIThreadsEnvVar);
 				numUIThreads = val.intValue();
@@ -232,20 +235,20 @@ public class MCWorldExporter {
 		}catch(Exception ex) {}
 		
 		try {
-			String portableExportsEnvVar = System.getenv("MIEX_PORTABLE_EXPORTS");
+			String portableExportsEnvVar = Environment.getEnv("MIEX_PORTABLE_EXPORTS");
 			if(portableExportsEnvVar != null) {
 				portableExports = portableExportsEnvVar.toLowerCase().startsWith("t") || portableExportsEnvVar.startsWith("1");
 			}
 		}catch(Exception ex) {}
 		
 		try {
-			String gitHubRepositoryEnvVar = System.getenv("MIEX_GITHUB_REPO");
+			String gitHubRepositoryEnvVar = Environment.getEnv("MIEX_GITHUB_REPO");
 			if(gitHubRepositoryEnvVar != null)
 				GitHubRepository = gitHubRepositoryEnvVar;
 		}catch(Exception ex) {}
 		
 		try {
-			String offlineModeEnvVar = System.getenv("MIEX_OFFLINE_MODE");
+			String offlineModeEnvVar = Environment.getEnv("MIEX_OFFLINE_MODE");
 			if(offlineModeEnvVar != null) {
 				offlineMode = offlineModeEnvVar.toLowerCase().startsWith("t") || offlineModeEnvVar.startsWith("1");
 			}
@@ -284,17 +287,14 @@ public class MCWorldExporter {
 					if(!FileUtil.modrinthRootDir.endsWith("/"))
 						FileUtil.modrinthRootDir = FileUtil.modrinthRootDir + "/";
 				}else if(args[i].equalsIgnoreCase("-additionalSaveDirs")) {
-					FileUtil.additionalSaveDirs = new File[] {};
+					FileUtil.additionalSaveDirs = new String[] {};
 					
 					String pathsStr = args[i+1];
 					String[] paths = pathsStr.split(";");
 					for(String str : paths) {
-						File file = new File(str);
-						if(file.exists() && file.isDirectory()) {
-							FileUtil.additionalSaveDirs = Arrays.copyOf(FileUtil.additionalSaveDirs, 
-									FileUtil.additionalSaveDirs.length + 1);
-							FileUtil.additionalSaveDirs[FileUtil.additionalSaveDirs.length-1] = file;
-						}
+						FileUtil.additionalSaveDirs = Arrays.copyOf(FileUtil.additionalSaveDirs, 
+								FileUtil.additionalSaveDirs.length + 1);
+						FileUtil.additionalSaveDirs[FileUtil.additionalSaveDirs.length-1] = str;
 					}
 				}else if(args[i].equalsIgnoreCase("-usdcatExe")) {
 					if(new File(args[i+1]).exists())
@@ -354,6 +354,7 @@ public class MCWorldExporter {
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| UnsupportedLookAndFeelException e) {
 			e.printStackTrace();

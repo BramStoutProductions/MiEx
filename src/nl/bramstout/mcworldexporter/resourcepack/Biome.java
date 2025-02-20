@@ -33,6 +33,8 @@ package nl.bramstout.mcworldexporter.resourcepack;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.world.Block;
 
 public abstract class Biome {
 
@@ -81,12 +83,15 @@ public abstract class Biome {
 		this.waterColour = color;
 	}
 	
-	public Color getBiomeColor(BlockState block) {
-		if(block.isGrassColormap())
+	public Color getBiomeColor(BlockState state, Block block) {
+		Tint tint = Tints.getTint(block.getName());
+		if(tint != null)
+			return tint.getTint(block.getProperties());
+		if(state.isGrassColormap())
 			return getGrassColour();
-		else if(block.isFoliageColormap())
+		else if(state.isFoliageColormap())
 			return getFoliageColour();
-		else if(block.isWaterColormap())
+		else if(state.isWaterColormap())
 			return getWaterColour();
 		return new Color();
 	}

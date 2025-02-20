@@ -64,6 +64,32 @@ public class ModelFace {
 		tintIndex = other.tintIndex;
 	}
 
+	public ModelFace(float[] points, float[] uvs, String texture, int tintIndex, Direction direction, boolean doubleSided) {
+		if(points.length != (4 * 3))
+			throw new RuntimeException("Incorrect number of points");
+		if(uvs.length != (4 * 2))
+			throw new RuntimeException("Incorrect number of uvs");
+		this.points = points;
+		this.uvs = uvs;
+		vertexColors = null;
+		occludes = 0;
+		occludedBy = 0;
+		this.direction = direction;
+		this.doubleSided = doubleSided;
+		this.texture = texture;
+		this.tintIndex = tintIndex;
+		
+		float[] minMaxPoints2 = {
+				Math.min(points[0*3+0], points[2*3+0]),
+				Math.min(points[0*3+1], points[2*3+1]),
+				Math.min(points[0*3+2], points[2*3+2]),
+				Math.max(points[0*3+0], points[2*3+0]),
+				Math.max(points[0*3+1], points[2*3+1]),
+				Math.max(points[0*3+2], points[2*3+2]),
+		};
+		calculateOcclusion(minMaxPoints2);
+	}
+	
 	public ModelFace(float[] minMaxPoints, Direction direction, JsonObject faceData, boolean doubleSided) {
 		points = new float[4 * 3];
 		uvs = new float[4 * 2];

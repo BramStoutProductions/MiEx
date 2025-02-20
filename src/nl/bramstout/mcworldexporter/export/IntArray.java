@@ -81,7 +81,7 @@ private static final int INIT_SIZE = 64;
 	
 	public void clear() {
 		this.size = 0;
-		Arrays.fill(data, 0);
+		//Arrays.fill(data, 0);
 	}
 	
 }

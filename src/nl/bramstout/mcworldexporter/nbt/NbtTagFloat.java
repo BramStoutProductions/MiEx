@@ -98,5 +98,22 @@ public class NbtTagFloat extends NbtTag{
 		result = 31 * result + Float.hashCode(data);
 		return result;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof NbtTagByte)
+			return ((NbtTagByte) obj).getData() == data;
+		if(obj instanceof NbtTagShort)
+			return ((NbtTagShort) obj).getData() == data;
+		if(obj instanceof NbtTagInt)
+			return ((NbtTagInt) obj).getData() == data;
+		if(obj instanceof NbtTagLong)
+			return ((NbtTagLong) obj).getData() == data;
+		if(obj instanceof NbtTagFloat)
+			return ((NbtTagFloat) obj).getData() == data;
+		if(obj instanceof NbtTagDouble)
+			return ((NbtTagDouble) obj).getData() == data;
+		return false;
+	}
 
 }

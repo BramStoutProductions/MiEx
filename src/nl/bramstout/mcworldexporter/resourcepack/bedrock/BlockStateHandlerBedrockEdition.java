@@ -76,7 +76,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 		if(data == null)
 			return;
 		
-		this.doubleSided = Config.doubleSided.contains(name);
+		this.doubleSided = Config.doubleSided.contains(name) | Config.forceDoubleSidedOnEverything;
 		
 		if(data.has("components")) {
 			parts.add(new BlockStatePart(null, data.get("components").getAsJsonObject()));

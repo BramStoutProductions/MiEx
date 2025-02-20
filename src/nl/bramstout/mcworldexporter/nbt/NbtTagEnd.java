@@ -58,5 +58,10 @@ public class NbtTagEnd extends NbtTag{
 
 	@Override
 	protected void read(DataInput dis) throws Exception {}
+	
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof NbtTagEnd;
+	}
 
 }

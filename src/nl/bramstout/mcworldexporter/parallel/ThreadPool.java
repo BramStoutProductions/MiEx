@@ -46,19 +46,48 @@ public class ThreadPool {
 		return Math.min(Math.max(Runtime.getRuntime().availableProcessors() - MCWorldExporter.numUIThreads, 1), maxThreads);
 	}
 	
-	private List<Thread> threads;
+	private String name;
+	private List<Worker> threads;
 	private Queue<Task> queue;
+	private int numThreads;
 
-	public ThreadPool(int memoryAllowedPerThread) {
-		threads = new ArrayList<Thread>();
+	public ThreadPool(String name, int memoryAllowedPerThread) {
+		this.name = name;
+		threads = new ArrayList<Worker>();
 		queue = new Queue<Task>();
+		numThreads = getNumThreads(memoryAllowedPerThread);
 
-		for (int i = 0; i < getNumThreads(memoryAllowedPerThread); i++) {
-			Thread thread = new Thread(new Worker(this));
-			thread.setName("Threadpool-" + i);
+		for (int i = 0; i < numThreads; i++) {
+			Worker worker = new Worker(this);
+			Thread thread = new Thread(worker);
+			thread.setName(name + "-" + i);
 			thread.start();
-			this.threads.add(thread);
+			this.threads.add(worker);
 		}
+	}
+	
+	public void setNumThreads(int memoryAllowedPerThread) {
+		int newNumThreads = getNumThreads(memoryAllowedPerThread);
+		
+		if(newNumThreads == numThreads)
+			return; // Nothing to do.
+		else if(newNumThreads > numThreads) {
+			// Add extra threads.
+			for (int i = numThreads; i < newNumThreads; i++) {
+				Worker worker = new Worker(this);
+				Thread thread = new Thread(worker);
+				thread.setName(name + "-" + i);
+				thread.start();
+				this.threads.add(worker);
+			}
+		}else {
+			// Remove extra threads.
+			for(int i = numThreads-1; i >= newNumThreads; --i) {
+				Worker worker = this.threads.remove(i);
+				worker.stop();
+			}
+		}
+		numThreads = newNumThreads;
 	}
 
 	public Task submit(Runnable runnable) {
@@ -94,15 +123,21 @@ public class ThreadPool {
 	private static class Worker implements Runnable {
 
 		private ThreadPool pool;
+		private boolean stop;
 
 		public Worker(ThreadPool pool) {
 			this.pool = pool;
+			this.stop = false;
+		}
+		
+		public void stop() {
+			this.stop = true;
 		}
 
 		@Override
 		public void run() {
 			int counter = 0;
-			while (true) {
+			while (!this.stop) {
 				Thread.yield();
 				Task task = pool.queue.pop();
 				if (task == null) {

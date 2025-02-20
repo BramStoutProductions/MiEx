@@ -39,9 +39,11 @@ public abstract class Region {
 	protected int x;
 	protected int z;
 	protected World world;
+	protected String dimension;
 	
 	public Region(World world, File regionFile, int x, int z) {
 		this.world = world;
+		this.dimension = world.getCurrentDimensions();
 		this.regionFile = regionFile;
 		this.x = x;
 		this.z = z;
@@ -73,6 +75,10 @@ public abstract class Region {
 	
 	public World getWorld() {
 		return world;
+	}
+	
+	public String getDimension() {
+		return dimension;
 	}
 	
 }

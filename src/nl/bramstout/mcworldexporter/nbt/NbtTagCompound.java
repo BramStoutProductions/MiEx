@@ -435,5 +435,18 @@ public class NbtTagCompound extends NbtTag{
 		}
 		return result;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof NbtTagCompound))
+			return false;
+		if(((NbtTagCompound) obj).getSize() != getSize())
+			return false;
+		for(int i = 0; i < getSize(); ++i) {
+			if(!((NbtTagCompound) obj).get(i).equals(get(i)))
+				return false;
+		}
+		return true;
+	}
 
 }

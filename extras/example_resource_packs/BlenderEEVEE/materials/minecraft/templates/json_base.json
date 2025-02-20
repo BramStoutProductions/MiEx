@@ -1,0 +1,468 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "shadingGroup": {
+        "surface": "PLACEHOLDER.outputs:surface",
+        "json:Surface": "MAT.BSDF"
+    },
+    "include": [ "json_base" ],
+    "network": {
+        "!@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:ShaderNodeBsdfPrincipled",
+                "attributes": {
+                    "BSDF": {
+                        "type": "Shader"
+                    },
+                    "Specular IOR Level":{
+                        "type": "Float",
+                        "value": 0.0
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "PLACEHOLDER": {
+                "type": "UsdPreviewSurface",
+                "attributes": {
+                    "outputs:surface": {
+                        "type": "token"
+                    }
+                }
+            },
+            "MAT": {
+                "type": "JSON:ShaderNodeBsdfPrincipled",
+                "attributes": {
+                    "BSDF": {
+                        "type": "Shader"
+                    },
+                    "Specular IOR Level":{
+                        "type": "Float",
+                        "value": 0.0
+                    },
+                    "Base Color": {
+                        "type": "Color",
+                        "connection": "FILE.Color"
+                    }
+                }
+            },
+            "FILE": {
+                "type": "JSON:ShaderNodeTexImage",
+                "attributes": {
+                    "image": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "interpolation": {
+                        "type": "str",
+                        "value": "Closest"
+                    },
+                    "Color": {
+                        "type": "Color"
+                    }
+                }
+            }
+        },
+        "@texture@.animated":{
+            "FILE": {
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVMAP.Vector"
+                    }
+                }
+            },
+            "UVMAP": {
+                "type": "JSON:ShaderNodeMapping",
+                "attributes": {
+                    "vector_type": {
+                        "type": "str",
+                        "value": "TEXTURE"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UV.UV"
+                    },
+                    "Location": {
+                        "type": "Vector",
+                        "connection": "UVOFFSET.Vector"
+                    },
+                    "Scale": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UV": {
+                "type": "JSON:ShaderNodeTexCoord",
+                "attributes": {
+                    "UV": {
+                        "Type": "Vector"
+                    }
+                }
+            },
+            "UVOFFSETANIM": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameId}"
+                    }
+                }
+            },
+            "UVOFFSET": {
+                "type": "JSON:ShaderNodeVectorMath",
+                "attributes": {
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UVSCALE": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "X": {
+                        "type": "Float",
+                        "value": 1.0
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameScale}"
+                    },
+                    "Z": {
+                        "type": "Float",
+                        "value": 1.0
+                    }
+                }
+            }
+        },
+        "@texture@.interpolated":{
+            "FILE": {
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVMAP.Vector"
+                    }
+                }
+            },
+            "FILE2": {
+                "type": "JSON:ShaderNodeTexImage",
+                "attributes": {
+                    "image": {
+                        "type": "asset",
+                        "value": "@texture@"
+                    },
+                    "interpolation": {
+                        "type": "str",
+                        "value": "Closest"
+                    },
+                    "Color": {
+                        "type": "Color"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVMAP2.Vector"
+                    }
+                }
+            },
+            "UVMAP": {
+                "type": "JSON:ShaderNodeMapping",
+                "attributes": {
+                    "vector_type": {
+                        "type": "str",
+                        "value": "TEXTURE"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UV.UV"
+                    },
+                    "Location": {
+                        "type": "Vector",
+                        "connection": "UVOFFSET.Vector"
+                    },
+                    "Scale": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UVMAP2": {
+                "type": "JSON:ShaderNodeMapping",
+                "attributes": {
+                    "vector_type": {
+                        "type": "str",
+                        "value": "TEXTURE"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UV.UV"
+                    },
+                    "Location": {
+                        "type": "Vector",
+                        "connection": "UVOFFSET2.Vector"
+                    },
+                    "Scale": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UV": {
+                "type": "JSON:ShaderNodeTexCoord",
+                "attributes": {
+                    "UV": {
+                        "Type": "Vector"
+                    }
+                }
+            },
+            "UVOFFSETANIM": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameId}"
+                    }
+                }
+            },
+            "UVOFFSET": {
+                "type": "JSON:ShaderNodeVectorMath",
+                "attributes": {
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UVOFFSETANIM2": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameId(offset=1)}"
+                    }
+                }
+            },
+            "UVOFFSET2": {
+                "type": "JSON:ShaderNodeVectorMath",
+                "attributes": {
+                    "operation": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "Vector": {
+                        "type": "Vector",
+                        "connection": "UVOFFSETANIM2.Vector"
+                    },
+                    "Vector_001": {
+                        "type": "Vector",
+                        "connection": "UVSCALE.Vector"
+                    }
+                }
+            },
+            "UVSCALE": {
+                "type": "JSON:ShaderNodeCombineXYZ",
+                "attributes": {
+                    "Vector": {
+                        "type": "Vector"
+                    },
+                    "X": {
+                        "type": "Float",
+                        "value": 1.0
+                    },
+                    "Y": {
+                        "type": "Float",
+                        "expression": "${frameScale}"
+                    },
+                    "Z": {
+                        "type": "Float",
+                        "value": 1.0
+                    }
+                }
+            },
+            "INTERPOLATE": {
+                "type": "JSON:ShaderNodeMix",
+                "attributes": {
+                    "Result": {
+                        "type": "Color"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "FILE.Color"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "FILE2.Color"
+                    },
+                    "Factor": {
+                        "type": "Float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "Base Color": {
+                        "type": "Color",
+                        "connection": "INTERPOLATE.Result"
+                    }
+                }
+            }
+        },
+        "@texture@.a":{
+            "FILE": {
+                "attributes": {
+                    "Alpha": {
+                        "type": "Float"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "Alpha": {
+                        "type": "Float",
+                        "connection": "FILE.Alpha"
+                    }
+                }
+            }
+        },
+        "@texture@.a&&@texture@.interpolated":{
+            "FILE": {
+                "attributes": {
+                    "Alpha": {
+                        "type": "Float"
+                    }
+                }
+            },
+            "FILE2": {
+                "attributes": {
+                    "Alpha": {
+                        "type": "Float"
+                    }
+                }
+            },
+            "INTERPOLATEALPHA": {
+                "type": "JSON:ShaderNodeMix",
+                "attributes": {
+                    "Result": {
+                        "type": "Float"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "FLOAT"
+                    },
+                    "A": {
+                        "type": "Float",
+                        "connection": "FILE.Alpha"
+                    },
+                    "B": {
+                        "type": "Float",
+                        "connection": "FILE2.Alpha"
+                    },
+                    "Factor": {
+                        "type": "Float",
+                        "expression": "${interpFactor}"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "Alpha": {
+                        "type": "Float",
+                        "connection": "INTERPOLATEALPHA.Result"
+                    }
+                }
+            }
+        },
+        "@biomeColor@": {
+            "BIOME": {
+                "type": "JSON:ShaderNodeVertexColor",
+                "attributes": {
+                    "Color": {
+                        "type": "Color"
+                    },
+                    "layer_name": {
+                        "type": "str",
+                        "value": "Cd"
+                    }
+                }
+            },
+            "BIOMEMULT": {
+                "type": "JSON:ShaderNodeMix",
+                "attributes": {
+                    "Result": {
+                        "type": "Color"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
+                    "blend_type": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "${MAT.Base Color}"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "BIOME.Color"
+                    },
+                    "Factor": {
+                        "type": "Float",
+                        "value": 1.0
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "Base Color": {
+                        "type": "Color",
+                        "connection": "BIOMEMULT.Result"
+                    }
+                }
+            }
+        }
+    }
+}

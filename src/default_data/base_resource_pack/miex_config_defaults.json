@@ -598,5 +598,9 @@
   "exportAmbientOcclusionAsDisplayOpacity": false,
   "calculateCornerUVs": false,
   "renderGamut": "ACEScg",
-  "exportDisplayColor": true
+  "exportDisplayColor": true,
+  "memoryPerThread": 1024,
+  "forceDoubleSidedOnEverything": false,
+  "minCubeSize": -1.0,
+  "maxMaterialNameLength": -1
 }

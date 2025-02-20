@@ -1,0 +1,6 @@
+{
+    "doubleSided": [],
+    "renderGamut": "sRGB",
+    "forceDoubleSidedOnEverything": true,
+    "maxMaterialNameLength": 50
+}

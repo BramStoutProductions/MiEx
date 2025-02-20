@@ -594,7 +594,8 @@ public class MolangParser {
 		char c = reader.read();
 		MolangExpression falseExpr = null;
 		if(c != ':') {
-			reader.back();
+			if(c != 0)
+				reader.back();
 			falseExpr = new MolangConstantExpression(new MolangValue());
 		}else {
 			falseExpr = parseExpression(reader);

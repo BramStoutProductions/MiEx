@@ -41,6 +41,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
@@ -268,6 +269,17 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 		
 		origin = origin.subtract(inflate);
 		size = size.add(inflate * 2f);
+		
+		if(Config.minCubeSize > 0.0f) {
+			if(Math.abs(size.x) < Config.minCubeSize)
+				size.x = Config.minCubeSize * Math.signum(size.x);
+			
+			if(Math.abs(size.y) < Config.minCubeSize)
+				size.y = Config.minCubeSize * Math.signum(size.y);
+			
+			if(Math.abs(size.z) < Config.minCubeSize)
+				size.z = Config.minCubeSize * Math.signum(size.z);
+		}
 		
 		List<ModelFace> faces = new ArrayList<ModelFace>();
 		

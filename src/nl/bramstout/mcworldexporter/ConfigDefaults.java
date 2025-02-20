@@ -99,6 +99,10 @@ public class ConfigDefaults {
 	public static boolean exportAmbientOcclusionAsDisplayOpacity;
 	public static boolean calculateCornerUVs;
 	public static String renderGamut;
+	public static int memoryPerThread;
+	public static boolean forceDoubleSidedOnEverything;
+	public static float minCubeSize;
+	public static int maxMaterialNameLength;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -247,6 +251,10 @@ public class ConfigDefaults {
 		exportAmbientOcclusionAsDisplayOpacity = false;
 		calculateCornerUVs = false;
 		renderGamut = "ACEScg";
+		memoryPerThread = 1024;
+		forceDoubleSidedOnEverything = false;
+		minCubeSize = -1.0f;
+		maxMaterialNameLength = -1;
 	}
 	
 	public static void loadDefaults() {

@@ -81,7 +81,8 @@ public class BuiltInFilesDialog extends JDialog implements ComponentListener{
 	private AtomicBoolean doneFlag;
 	
 	public BuiltInFilesDialog() {
-		super();
+		super(MCWorldExporter.getApp().getUI());
+		setModalityType(ModalityType.APPLICATION_MODAL);
 		doneFlag = new AtomicBoolean(false);
 		
 		JPanel root = new JPanel();
@@ -174,8 +175,8 @@ public class BuiltInFilesDialog extends JDialog implements ComponentListener{
 		deltaViewer.load(null);
 		fileList.load(files);
 		
-		setVisible(true);
 		setLocationRelativeTo(null);
+		setVisible(true);
 		
 		if(SwingUtilities.isEventDispatchThread())
 			return;
@@ -442,8 +443,10 @@ public class BuiltInFilesDialog extends JDialog implements ComponentListener{
 			revalidate();
 			repaint();
 			
-			if(file == null)
+			if(file == null) {
+				invalidate();
 				return;
+			}
 			
 			try {
 				// Read the data
@@ -454,6 +457,11 @@ public class BuiltInFilesDialog extends JDialog implements ComponentListener{
 					bufferOriginalSize = readFromURL(actualFile.toURI().toURL(), bufferOriginal);
 				
 				bufferNewSize = readFromURL(file.url, bufferNew);
+				
+				if(bufferNewSize > (64 * 1024)) {
+					invalidate();
+					return;
+				}
 				
 				// Now parse the data.
 				List<Line> originalLines = parseLines(bufferOriginal, bufferOriginalSize);

@@ -46,6 +46,7 @@ public class SingleThreadedMemoryPool<T extends Poolable> {
 		public Constructor<T> typeConstructor;
 		public Page<T> nextPage = null;
 		public int pageIndex = 0;
+		public int numAllocations = 0;
 		
 		@SuppressWarnings("unchecked")
 		public Page(Class<T> type) {
@@ -58,9 +59,16 @@ public class SingleThreadedMemoryPool<T extends Poolable> {
 		}
 		
 		public T alloc() {
+			// If we have as many items allocated as we can fit in this page,
+			// no need to through everything to find a free spot. There isn't one.
+			if(numAllocations >= PAGE_SIZE)
+				return null;
 			int index = getFreeIndex();
 			if(index < 0)
 				return null;
+			
+			numAllocations++;
+			
 			T val = data[index];
 			if(val == null) {
 				try {
@@ -88,12 +96,16 @@ public class SingleThreadedMemoryPool<T extends Poolable> {
 			long occupancyVal = occupancy[occupancyIndex];
 			long newOccupancyVal = occupancyVal & ~(0b1L << bitIndex);
 			occupancy[occupancyIndex] = newOccupancyVal;
+			
+			numAllocations--;
 		}
 		
 		private int getFreeIndex() {
+			int startIndex = numAllocations;
 			long occupancyVal = 0;
 			long newOccupancyVal = 0;
-			for(int i = 0; i < occupancy.length; ++i) {
+			for(int index = 0; index < occupancy.length; ++index) {
+				int i = (startIndex + index) % occupancy.length;
 				occupancyVal = occupancy[i];
 				if(occupancyVal == 0xFFFFFFFFFFFFFFFFL)
 					continue;

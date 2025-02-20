@@ -64,7 +64,7 @@ public abstract class Chunk {
 					List<Chunk> putBackIn = new ArrayList<Chunk>();
 					Chunk chunk = null;
 					while((chunk = loadedChunks.pop()) != null) {
-						if((System.currentTimeMillis() - chunk.lastAccess) > 1000) {
+						if((System.currentTimeMillis() - chunk.lastAccess) > 1000 && !chunk.isLoading) {
 							chunk.unload();
 						}else {
 							putBackIn.add(chunk);
@@ -110,6 +110,7 @@ public abstract class Chunk {
 	
 	static {
 		Thread thread = new Thread(new LoadedChunksGC());
+		thread.setName("Chunk_unloader");
 		thread.start();
 	}
 
@@ -402,7 +403,7 @@ public abstract class Chunk {
 			renderRequested = false;
 	}
 	
-	private int getColourForBlock(BlockState state, int x, int y, int z) {
+	private int getColourForBlock(Block block, BlockState state, int x, int y, int z) {
 		int colour = 0;
 		String defaultTexture = state.getDefaultTexture();
 		if (defaultTexture != "") {
@@ -411,18 +412,16 @@ public abstract class Chunk {
 			if (state.hasTint()) {
 				int biomeId = getBiomeIdLocal(x, y, z);
 				Biome biome = BiomeRegistry.getBiome(biomeId);
-				nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state);
-				//Color color = new Color(colour);
-				//color = new Color((int) (((float) color.getRed()) * tint.getR()),
-				//		(int) (((float) color.getGreen()) * tint.getG()), (int) (((float) color.getBlue()) * tint.getB()));
-				//colour = color.getRGB();
-				int r = (colour >>> 16) & 0xFF;
-				int g = (colour >>> 8) & 0xFF;
-				int b = (colour) & 0xFF;
-				r = (int) (((float) r) * tint.getR());
-				g = (int) (((float) g) * tint.getG());
-				b = (int) (((float) b) * tint.getB());
-				colour = (r << 16) | (g << 8) | b;
+				nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state, block);
+				if(tint != null) {
+					int r = (colour >>> 16) & 0xFF;
+					int g = (colour >>> 8) & 0xFF;
+					int b = (colour) & 0xFF;
+					r = (int) (((float) r) * tint.getR());
+					g = (int) (((float) g) * tint.getG());
+					b = (int) (((float) b) * tint.getB());
+					colour = (r << 16) | (g << 8) | b;
+				}
 			}
 		}
 		return colour;
@@ -493,7 +492,7 @@ public abstract class Chunk {
 						Block block = BlockRegistry.getBlock(blockId);
 						int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 						BlockState state = BlockStateRegistry.getState(stateId);
-						colour = getColourForBlock(state, x, height, z);
+						colour = getColourForBlock(block, state, x, height, z);
 						
 						if(state.isWaterColormap()) {
 							// Let's make water transparent. We keep going down until we find
@@ -508,7 +507,7 @@ public abstract class Chunk {
 									continue;
 								
 								// We have found a non-water block!
-								int bgColour = getColourForBlock(state, x, sampleY, z);
+								int bgColour = getColourForBlock(block, state, x, sampleY, z);
 								if(bgColour == 0)
 									bgColour = colour;
 								Color fgColor = new Color(colour);

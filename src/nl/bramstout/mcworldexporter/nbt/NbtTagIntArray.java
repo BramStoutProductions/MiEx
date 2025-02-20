@@ -105,4 +105,33 @@ public class NbtTagIntArray extends NbtTag{
 		return result;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof NbtTagByteArray) {
+			if(((NbtTagByteArray) obj).getData().length != data.length)
+				return false;
+			for(int i = 0; i < data.length; ++i)
+				if(((NbtTagByteArray) obj).getData()[i] != data[i])
+					return false;
+			return true;
+		}
+		if(obj instanceof NbtTagIntArray) {
+			if(((NbtTagIntArray) obj).getData().length != data.length)
+				return false;
+			for(int i = 0; i < data.length; ++i)
+				if(((NbtTagIntArray) obj).getData()[i] != data[i])
+					return false;
+			return true;
+		}
+		if(obj instanceof NbtTagLongArray) {
+			if(((NbtTagLongArray) obj).getData().length != data.length)
+				return false;
+			for(int i = 0; i < data.length; ++i)
+				if(((NbtTagLongArray) obj).getData()[i] != data[i])
+					return false;
+			return true;
+		}
+		return false;
+	}
+	
 }

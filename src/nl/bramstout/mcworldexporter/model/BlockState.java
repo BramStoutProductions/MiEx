@@ -80,7 +80,7 @@ public class BlockState {
 		grassColormap = Config.grassColormapBlocks.contains(name);
 		foliageColormap = Config.foliageColormapBlocks.contains(name);
 		waterColormap = Config.waterColormapBlocks.contains(name);
-		doubleSided = Config.doubleSided.contains(name);
+		doubleSided = Config.doubleSided.contains(name) || Config.forceDoubleSidedOnEverything;
 		randomAnimationXZOffset = Config.randomAnimationXZOffset.contains(name);
 		randomAnimationYOffset = Config.randomAnimationYOffset.contains(name);
 		lodNoUVScale = Config.lodNoUVScale.contains(name);

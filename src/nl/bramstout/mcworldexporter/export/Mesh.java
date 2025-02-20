@@ -45,6 +45,7 @@ public class Mesh {
 	
 	private String name;
 	private String texture;
+	private String matTexture;
 	private boolean animatedTexture;
 	private String extraData;
 	private FloatArray vertices;
@@ -69,12 +70,14 @@ public class Mesh {
 	//private IndexCache normalCache;
 	
 	public Mesh() {
-		this("", "", false, false, 6, 4);
+		this("", "", "", false, false, 6, 4);
 	}
 	
-	public Mesh(String name, String texture, boolean animatedTexture, boolean doubleSided, int largeCapacity, int smallCapacity) {
+	public Mesh(String name, String texture, String matTexture, boolean animatedTexture, 
+				boolean doubleSided, int largeCapacity, int smallCapacity) {
 		this.name = name;
 		this.texture = texture;
+		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
 		this.extraData = "";
 		this.vertices = new FloatArray(largeCapacity*3);
@@ -99,9 +102,10 @@ public class Mesh {
 		//this.normalCache = new IndexCache();
 	}
 	
-	public void reset(String name, String texture, boolean animatedTexture, boolean doubleSided) {
+	public void reset(String name, String texture, String matTexture, boolean animatedTexture, boolean doubleSided) {
 		this.name = name;
 		this.texture = texture;
+		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
 		this.extraData = "";
 		this.vertices.clear();
@@ -127,12 +131,13 @@ public class Mesh {
 		this.faceCache.clear();
 	}
 	
-	public Mesh(String name, String texture, boolean animatedTexture, boolean doubleSided, String extraData, float[] vertices,
-				float[] uvs, float[] cornerUVs, float[] colors, float[] normals, float[] ao, int[] faceIndices,
+	public Mesh(String name, String texture, String matTexture, boolean animatedTexture, boolean doubleSided, String extraData, 
+				float[] vertices, float[] uvs, float[] cornerUVs, float[] colors, float[] normals, float[] ao, int[] faceIndices,
 				int[] faceCounts, int[] uvIndices, int[] cornerUVIndices, int[] colorIndices, int[] normalIndices,
 				int[] aoIndices) {
 		this.name = name;
 		this.texture = texture;
+		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
 		this.extraData = extraData;
 		this.vertices = new FloatArray(vertices);
@@ -856,6 +861,7 @@ public class Mesh {
 		dos.writeUTF(name);
 		dos.writeInt(doubleSided ? 1 : 0);
 		dos.writeUTF(texture);
+		dos.writeUTF(matTexture);
 		dos.writeUTF(extraData);
 		dos.writeInt(vertices.size() / 3); // num vertices
 		dos.writeInt(us.size()); // num UVs
@@ -941,6 +947,14 @@ public class Mesh {
 	public void setTexture(String texture, boolean animatedTexture) {
 		this.texture = texture;
 		this.animatedTexture = animatedTexture;
+	}
+	
+	public String getMatTexture() {
+		return matTexture;
+	}
+	
+	public void setMatTexture(String texture) {
+		this.matTexture = texture;
 	}
 	
 	public boolean hasAnimatedTexture() {

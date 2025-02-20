@@ -101,4 +101,11 @@ public class NbtTagString extends NbtTag{
 		return result;
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof NbtTagString)
+			return ((NbtTagString) obj).getData().equals(data);
+		return false;
+	}
+	
 }

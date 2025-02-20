@@ -59,6 +59,7 @@ public class BiomeJavaEdition extends Biome{
 		if(data != null) {
 			foliageColourI = 0;
 			grassColourI = 0;
+			String grassColourModifier = null;
 			JsonObject effectsObj = data.getAsJsonObject("effects");
 			if(effectsObj != null) {
 				JsonElement foliageColourObj = effectsObj.get("foliage_color");
@@ -72,6 +73,10 @@ public class BiomeJavaEdition extends Biome{
 				JsonElement waterColourObj = effectsObj.get("water_color");
 				if(waterColourObj != null)
 					waterColourI = waterColourObj.getAsInt();
+				
+				JsonElement grassColourModifierObj = effectsObj.get("grass_color_modifier");
+				if(grassColourModifierObj != null)
+					grassColourModifier = grassColourModifierObj.getAsString();
 			}
 			
 			float downfall = 0.5f;
@@ -105,6 +110,21 @@ public class BiomeJavaEdition extends Biome{
 					int tintYI = (int) (tintY * ((float) (grassColorMap.getHeight()-1)));
 					
 					grassColourI = grassColorMap.getRGB(tintXI, tintYI);
+					
+					if(grassColourModifier != null) {
+						if(grassColourModifier.equalsIgnoreCase("dark_forest")) {
+							grassColourI &= 0xFEFEFE;
+							int gcR = (grassColourI >> 16) & 0xFF;
+							int gcG = (grassColourI >> 8) & 0xFF;
+							int gcB = grassColourI & 0xFF;
+							gcR = (gcR + 0x28) / 2;
+							gcG = (gcG + 0x34) / 2;
+							gcB = (gcB + 0x0A) / 2;
+							grassColourI = (gcR << 16) | (gcG << 8) | gcB;
+						}else if(grassColourModifier.equalsIgnoreCase("swamp")) {
+							grassColourI = 0x6A7039;
+						}
+					}
 				}
 			}
 		}

@@ -47,7 +47,6 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
-import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.export.usd.USDConverter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
@@ -126,7 +125,7 @@ public class JsonMaterialWriter extends MaterialWriter {
 			String sharedPrims) throws IOException {
 		JsonObject matObj = new JsonObject();
 
-		String suffix = "_" + Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME": "");
+		String suffix = MaterialWriter.getMaterialName(texture, material, hasBiomeColor).substring(3);
 		
 		String matName = "MAT" + suffix;
 

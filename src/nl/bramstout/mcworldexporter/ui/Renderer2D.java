@@ -40,6 +40,7 @@ import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.CameraTransform;
@@ -49,7 +50,7 @@ import nl.bramstout.mcworldexporter.world.World;
 
 public class Renderer2D implements Runnable {
 
-	private static ThreadPool threadPool = new ThreadPool(1536);
+	private static ThreadPool threadPool = new ThreadPool("Renderer2D", 1536);
 
 	private BufferedImage buffer;
 	private BufferedImage heightBuffer;
@@ -61,6 +62,8 @@ public class Renderer2D implements Runnable {
 	private CameraTransform bufferTransform;
 	private CameraTransform frontBufferTransform;
 	private SpinLock frontBufferLock;
+	private World prevWorld;
+	private String prevDimension;
 
 	private Vector<Chunk> finishedChunksStack;
 
@@ -72,6 +75,10 @@ public class Renderer2D implements Runnable {
 	private int maxChunkX;
 	private int maxChunkZ;
 	
+	private int heightSampleBlockX;
+	private int heightSampleBlockZ;
+	private int heightSample;
+	
 	private int renderCounter;
 
 	public Renderer2D() {
@@ -80,6 +87,12 @@ public class Renderer2D implements Runnable {
 		frontBuffer = null;
 		postBuffer = null;
 		tmpBuffer = null;
+		prevWorld = null;
+		prevDimension = null;
+		
+		heightSampleBlockX = 0;
+		heightSampleBlockZ = 0;
+		heightSample = 0;
 
 		renderRequested = new AtomicBoolean(false);
 		clearBuffer = new AtomicBoolean(false);
@@ -94,6 +107,9 @@ public class Renderer2D implements Runnable {
 	
 	private void drawChunk(Chunk chunk, BufferedImage img, Graphics g, 
 							CameraTransform bufferTransform) {
+		if(chunk.getRegion().getDimension() != prevDimension)
+			return;
+		
 		chunk.setRenderCounter(renderCounter);
 		Point chunkPixelPos = bufferTransform.toScreen(
 				new Point(chunk.getChunkX() * 16, chunk.getChunkZ() * 16), buffer.getWidth(),
@@ -157,8 +173,38 @@ public class Renderer2D implements Runnable {
 	
 	private void reprojectBuffer(BufferedImage buffer, Graphics2D g, 
 			CameraTransform newBufferTransform, CameraTransform oldBufferTransform) {
-		if(newBufferTransform.equals(oldBufferTransform))
-			return; // No need to do any reprojection is the transform didn't change.
+		if(MCWorldExporter.getApp().getWorld() == null)
+			return;
+		if(newBufferTransform.equals(oldBufferTransform)) {
+			// No need to do any reprojection is the transform didn't change.
+			// We do still need to update the render counter
+			
+			try {
+				Point minBlock = bufferTransform.toWorld(new Point(0, 0), buffer.getWidth(), buffer.getHeight());
+				Point maxBlock = bufferTransform.toWorld(new Point(buffer.getWidth(), buffer.getHeight()),
+						buffer.getWidth(), buffer.getHeight());
+	
+				minChunkX = minBlock.ix() >> 4 + 1;
+				minChunkZ = minBlock.iy() >> 4 + 1;
+				maxChunkX = maxBlock.ix() >> 4 - 1;
+				maxChunkZ = maxBlock.iy() >> 4 - 1;
+	
+				for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
+					for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
+						Chunk chunk = MCWorldExporter.getApp().getWorld().getChunk(chunkX, chunkZ);
+						if (chunk == null)
+							continue;
+						
+						// Only update the render counter if it was rendered the previous frame.
+						if(chunk.getRenderCounter() == (renderCounter - 1))
+							chunk.setRenderCounter(renderCounter);
+					}
+				}
+			}catch(Exception ex) {
+				World.handleError(ex);
+			}
+			return;
+		}
 		
 		if(newBufferTransform.zoomLevel == oldBufferTransform.zoomLevel) {
 			// Zoom level is still the same, so all we're doing is moving pixels over.
@@ -222,6 +268,22 @@ public class Renderer2D implements Runnable {
 				// is run once every 16ms.
 				Thread.sleep(Math.max(16 - (System.currentTimeMillis() - lastTime), 0));
 				lastTime = System.currentTimeMillis();
+				
+				// Pause rendering when the exporter is exporting.
+				if(Exporter.isExporting())
+					continue;
+				
+				// Sample the height buffer
+				if(this.heightBuffer != null) {
+					Point heightSamplePixel = bufferTransform.toScreen(new Point(heightSampleBlockX, heightSampleBlockZ), 
+																		bufferWidth, bufferHeight);
+					heightSample = 0;
+					if(heightSamplePixel.ix() >= 0 && heightSamplePixel.ix() < heightBuffer.getWidth() && 
+							heightSamplePixel.iy() >= 0 && heightSamplePixel.iy() < heightBuffer.getHeight()) {
+						heightSample = (heightBuffer.getRGB(heightSamplePixel.ix(), heightSamplePixel.iy()) & 0x00FFFFFF) - 1024;
+					}
+				}
+				
 				// If there isn't a render requested, skip.
 				boolean fullRender = renderRequested.getAndSet(false);
 				boolean clearBuffer = this.clearBuffer.getAndSet(false);
@@ -241,9 +303,15 @@ public class Renderer2D implements Runnable {
 				renderCounter++;
 
 				// Make sure that the buffer is the right size.
-				if (buffer == null || buffer.getWidth() != bufferWidth || buffer.getHeight() != bufferHeight) {
+				if (buffer == null || buffer.getWidth() != bufferWidth || buffer.getHeight() != bufferHeight ||
+						MCWorldExporter.getApp().getWorld() != prevWorld || 
+						(MCWorldExporter.getApp().getWorld() != null && 
+						MCWorldExporter.getApp().getWorld().getCurrentDimensions() != prevDimension)) {
 					buffer = new BufferedImage(bufferWidth, bufferHeight, BufferedImage.TYPE_INT_ARGB);
 					heightBuffer = new BufferedImage(bufferWidth, bufferHeight, BufferedImage.TYPE_INT_ARGB);
+					prevWorld = MCWorldExporter.getApp().getWorld();
+					if(MCWorldExporter.getApp().getWorld() != null)
+						prevDimension = MCWorldExporter.getApp().getWorld().getCurrentDimensions();
 					fullRender = true;
 					clearBuffer = true;
 				}
@@ -433,6 +501,15 @@ public class Renderer2D implements Runnable {
 	public CameraTransform getCameraTransform() {
 		return frontBufferTransform;
 	}
+	
+	public void setHeightSampleCoordinates(int blockX, int blockZ) {
+		this.heightSampleBlockX = blockX;
+		this.heightSampleBlockZ = blockZ;
+	}
+	
+	public int getHeightSample() {
+		return heightSample;
+	}
 
 	private static class LoadChunkTask implements Runnable {
 
@@ -447,14 +524,17 @@ public class Renderer2D implements Runnable {
 		@Override
 		public void run() {
 			MCWorldExporter.worldMutex.acquireRead();
-			if(chunk.getRegion().getWorld() != MCWorldExporter.getApp().getWorld()) {
+			if(chunk.getRegion().getWorld() != MCWorldExporter.getApp().getWorld() || 
+					chunk.getRegion().getDimension() != MCWorldExporter.getApp().getWorld().getCurrentDimensions()) {
 				MCWorldExporter.worldMutex.releaseRead();
 				return;
 			}
 			try {
 				if (chunk.getChunkX() < renderer.minChunkX || chunk.getChunkX() > renderer.maxChunkX
-						|| chunk.getChunkZ() < renderer.minChunkZ || chunk.getChunkZ() > renderer.maxChunkZ) {
+						|| chunk.getChunkZ() < renderer.minChunkZ || chunk.getChunkZ() > renderer.maxChunkZ
+						|| Exporter.isExporting()) {
 					// It's outside of what we can view, so we undo the render request.
+					// Or the exporter is exporting, in which case stop trying to render the screen.
 					chunk.setRenderRequested(false);
 					MCWorldExporter.worldMutex.releaseRead();
 					return;

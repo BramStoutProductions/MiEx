@@ -42,9 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JOptionPane;
 
@@ -52,6 +50,7 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
@@ -60,23 +59,41 @@ import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.model.Occlusion;
 import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.parallel.ThreadPool.Task;
 import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
 	
-	private static ExecutorService threadPool = Executors.newWorkStealingPool(ThreadPool.getNumThreads(1024));
+	private static ThreadPool threadPool = new ThreadPool("Exporter", 1024);
 	private static Object mutex = new Object();
 	private static Set<IndividualBlockId> individualBlockIds = new HashSet<IndividualBlockId>();
 	public static int NUM_CHUNKS = 0;
 	public static File currentExportFile = null;
 	public static File chunksFolder = null;
+	private static AtomicBoolean isExporting = new AtomicBoolean();
 
-	public static void export(File usdFile) throws Exception {
+	public static boolean isExporting() {
+		return isExporting.get();
+	}
+	
+	public static void export(File usdFile) throws Exception{
+		isExporting.set(true);
+		try {
+			_export(usdFile);
+		}catch(Exception e) {
+			isExporting.set(false);
+			throw e;
+		}
+		isExporting.set(false);
+	}
+	
+	private static void _export(File usdFile) throws Exception {
 		if(MCWorldExporter.getApp().getWorld() == null) {
 			throw new RuntimeException("No valid world loaded.");
 		}
+		
 		String extensionTokens[] = usdFile.getName().split("\\.");
 		String extension = extensionTokens[extensionTokens.length-1];
 		
@@ -84,14 +101,23 @@ public class Exporter {
 		chunksFolder = new File(usdFile.getParentFile(), usdFile.getName().replace("." + extension, "_chunks"));
 		BackgroundThread.waitUntilDoneWithBackgroundTasks();
 		
+		MaterialWriter.clearCounters();
+		
 		BannerTextureCreator.load();
 		
 		File file = new File(usdFile.getPath().replace("." + extension, ".miex"));
 		
 		Converter converter = Converter.getConverter(extension.toLowerCase(), file, usdFile);
 		
-		List<Future<?>> futures = new ArrayList<Future<?>>();
+		List<Task> futures = new ArrayList<Task>();
 		int chunkSize = Config.chunkSize;
+		
+		// Set the amount of threads based on how much memory each thread may use.
+		// The amount of memory that each thread may use is scaled by the chunk size.
+		// The value coming from the config assumes a chunkSize of 16.
+		//float memoryScalingFactor = (float) Math.sqrt(((float) (chunkSize * chunkSize)) / (16f * 16f));
+		float memoryScalingFactor = ((float) chunkSize) / 16f;
+		threadPool.setNumThreads(Math.max((int) (((float) Config.memoryPerThread) * memoryScalingFactor), 64));
 		
 		int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
 		int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
@@ -169,9 +195,9 @@ public class Exporter {
 			++j;
 		}
 		
-		for(Future<?> future : futures) {
+		for(Task future : futures) {
 			try {
-				future.get();
+				future.waitUntilTaskIsDone();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
@@ -218,17 +244,19 @@ public class Exporter {
 					if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
 							Config.forceNoBiomeColor.contains(state.getName()))
 						faceTint = null;
+					
+					String matTexture = texture;
 					Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 					if(atlas != null)
 						texture = atlas.atlas;
 					
 					int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 					
-					Mesh mesh = meshes.get(texture);
+					Mesh mesh = meshes.get(matTexture);
 					if(mesh == null) {
-						mesh = new Mesh(texture, texture, false, model.isDoubleSided(), 32, 8);
+						mesh = new Mesh(matTexture, texture, matTexture, false, model.isDoubleSided(), 32, 8);
 						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
-						meshes.put(texture, mesh);
+						meshes.put(matTexture, mesh);
 					}else {
 						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
 					}
@@ -313,9 +341,11 @@ public class Exporter {
 		public void run() {
 			try {
 				chunk.generateMeshes();
-				if(Config.runOptimiser)
-					chunk.optimiseMeshes();
-				chunk.writeMeshes(dos);
+				//NbtTag.freeMemoryFromPools();
+				//if(Config.runOptimiser)
+				//	chunk.optimiseMeshes();
+				//chunk.writeMeshes(dos);
+				chunk.optimiseAndWriteMeshes(dos);
 				dos.close();
 				synchronized(mutex) {
 					individualBlockIds.addAll(chunk.getIndividualBlockIds());

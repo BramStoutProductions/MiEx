@@ -274,6 +274,7 @@ public abstract class World {
 
 		findRegions();
 
+		MCWorldExporter.getApp().getUI().reset();
 		MCWorldExporter.getApp().getUI().setTitle(this.worldDir.getName() + " - " + dimension);
 		MCWorldExporter.getApp().getUI().update();
 		MCWorldExporter.getApp().getUI().fullReRender();
@@ -308,6 +309,22 @@ public abstract class World {
 	
 	public int getWorldVersion() {
 		return worldVersion;
+	}
+	
+	public int getRegionMinX() {
+		return regionMinX;
+	}
+	
+	public int getRegionMinZ() {
+		return regionMinZ;
+	}
+	
+	public int getRegionMaxX() {
+		return regionMaxX;
+	}
+	
+	public int getRegionMaxZ() {
+		return regionMaxZ;
 	}
 	
 	public BlockConnectionsTranslation getBlockConnectionsTranslation() {

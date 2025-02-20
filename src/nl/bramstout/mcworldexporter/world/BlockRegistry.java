@@ -40,6 +40,7 @@ import nl.bramstout.mcworldexporter.StringMap;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.world.anvil.chunkreader.BlockIds;
 
 public class BlockRegistry {
 	
@@ -128,7 +129,7 @@ public class BlockRegistry {
 	}
 	
 	public static Block getBlock(int id) {
-		return registeredBlocks.get(id < 0 ? 0 : id);
+		return registeredBlocks.get((id < 0 || id >= registeredBlocks.size()) ? 0 : id);
 	}
 	
 	private static Block getBlockFromName(String name, NbtTagCompound properties, int id, int dataVersion) {
@@ -141,6 +142,7 @@ public class BlockRegistry {
 			registeredBlocks.clear();
 			nameToId.clear();
 		}
+		BlockIds.clear();
 		BlockStateRegistry.clearBlockStateRegistry();
 		ModelRegistry.clearModelRegistry();
 		// Make sure that air always gets an id of 0

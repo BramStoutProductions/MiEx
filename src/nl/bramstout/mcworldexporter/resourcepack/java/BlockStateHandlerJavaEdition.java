@@ -58,7 +58,7 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 		if(data == null)
 			return;
 		
-		boolean doubleSided = Config.doubleSided.contains(name);
+		boolean doubleSided = Config.doubleSided.contains(name) | Config.forceDoubleSidedOnEverything;
 		
 		if(data.has("variants")) {
 			for(Entry<String, JsonElement> variant : data.get("variants").getAsJsonObject().entrySet()) {

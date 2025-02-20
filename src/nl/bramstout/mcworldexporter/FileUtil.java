@@ -52,27 +52,26 @@ public class FileUtil {
 			return homeDir;
 		homeDir = "./";
 		
-		String envPath = System.getenv("MIEX_HOME_DIR");
+		String envPath = Environment.getEnv("MIEX_HOME_DIR");
 		if(envPath != null)
 			homeDir = envPath;
 		
 		return homeDir;
 	}
 	
-	protected static File[] additionalSaveDirs = null;
-	public static File[] getAdditionalSaveDirs() {
+	protected static String[] additionalSaveDirs = null;
+	public static String[] getAdditionalSaveDirs() {
 		if(additionalSaveDirs != null)
 			return additionalSaveDirs;
 		
-		additionalSaveDirs = new File[] {};
+		additionalSaveDirs = new String[] {};
 		
-		String pathsStr = System.getenv("MIEX_ADDITIONAL_SAVE_DIRS");
-		String[] paths = pathsStr.split(";");
-		for(String str : paths) {
-			File file = new File(str);
-			if(file.exists() && file.isDirectory()) {
+		String pathsStr = Environment.getEnv("MIEX_ADDITIONAL_SAVE_DIRS");
+		if(pathsStr != null) {
+			String[] paths = pathsStr.split(";");
+			for(String str : paths) {
 				additionalSaveDirs = Arrays.copyOf(additionalSaveDirs, additionalSaveDirs.length + 1);
-				additionalSaveDirs[additionalSaveDirs.length-1] = file;
+				additionalSaveDirs[additionalSaveDirs.length-1] = str;
 			}
 		}
 		
@@ -85,7 +84,7 @@ public class FileUtil {
 			return resourcePackDir;
 		resourcePackDir = "./resources/";
 		
-		String envPath = System.getenv("MIEX_RESOURCEPACK_DIR");
+		String envPath = Environment.getEnv("MIEX_RESOURCEPACK_DIR");
 		if(envPath != null)
 			resourcePackDir = envPath + "/";
 		
@@ -102,7 +101,7 @@ public class FileUtil {
 			e.printStackTrace();
 		}
 		
-		String envPath = System.getenv("MIEX_RESOURCEPACK_USD_PREFIX");
+		String envPath = Environment.getEnv("MIEX_RESOURCEPACK_USD_PREFIX");
 		if(envPath != null)
 			resourcePackUSDPrefix = envPath;
 		
@@ -122,7 +121,7 @@ public class FileUtil {
 			e.printStackTrace();
 		}
 		
-		String envPath = System.getenv("MIEX_RESOURCEPACK_MTLX_PREFIX");
+		String envPath = Environment.getEnv("MIEX_RESOURCEPACK_MTLX_PREFIX");
 		if(envPath != null)
 			resourcePackMTLXPrefix = envPath;
 		
@@ -142,7 +141,7 @@ public class FileUtil {
 			e.printStackTrace();
 		}
 		
-		String envPath = System.getenv("MIEX_RESOURCEPACK_JSON_PREFIX");
+		String envPath = Environment.getEnv("MIEX_RESOURCEPACK_JSON_PREFIX");
 		if(envPath != null)
 			resourcePackJSONPrefix = envPath;
 		
@@ -156,7 +155,7 @@ public class FileUtil {
 	public static String getUSDCatExe() {
 		if(usdCatExe != null)
 			return usdCatExe;
-		String exe = System.getenv("MIEX_USDCAT_EXE");
+		String exe = Environment.getEnv("MIEX_USDCAT_EXE");
 		if(exe == null)
 			exe = "./usdcat/usdcat.exe";
 		if(!new File(exe).exists())
@@ -173,7 +172,7 @@ public class FileUtil {
 	public static String getLogFile() {
 		if(logFile != null)
 			return logFile;
-		String log = System.getenv("MIEX_LOG_FILE");
+		String log = Environment.getEnv("MIEX_LOG_FILE");
 		if(log == null)
 			log = "./log.txt";
 		logFile = log;
@@ -269,7 +268,7 @@ public class FileUtil {
 	
 	public static String getMinecraftRootDir() {
 		if(isWindows())
-			return System.getenv("APPDATA") + "/.minecraft";
+			return Environment.getEnv("APPDATA") + "/.minecraft";
 		else if(isMacOs())
 			return "~/Library/Application Support/minecraft";
 		else if (isLinux())
@@ -283,7 +282,7 @@ public class FileUtil {
 	
 	public static String getMinecraftBedrockRootDir() {
 		if(isWindows())
-			return System.getenv("LOCALAPPDATA") + "/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang";
+			return Environment.getEnv("LOCALAPPDATA") + "/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang";
 		// Return a placeholder value
 		// to avoid erroring out on 
 		// niche systems
@@ -296,7 +295,7 @@ public class FileUtil {
 			return multiMCRootDir;
 		multiMCRootDir = "";
 		
-		String envPath = System.getenv("MIEX_MULTIMC_ROOT_DIR");
+		String envPath = Environment.getEnv("MIEX_MULTIMC_ROOT_DIR");
 		if(envPath != null)
 			multiMCRootDir = envPath + "/";
 		
@@ -305,7 +304,7 @@ public class FileUtil {
 	
 	private static String getTechnicRootDir2() {
 		if(isWindows())
-			return System.getenv("APPDATA") + "/.technic/";
+			return Environment.getEnv("APPDATA") + "/.technic/";
 		else if(isMacOs())
 			return "~/Library/Application Support/technic/";
 		else if (isLinux())
@@ -323,7 +322,7 @@ public class FileUtil {
 			return technicRootDir;
 		technicRootDir = getTechnicRootDir2();
 		
-		String envPath = System.getenv("MIEX_TECHNIC_ROOT_DIR");
+		String envPath = Environment.getEnv("MIEX_TECHNIC_ROOT_DIR");
 		if(envPath != null)
 			technicRootDir = envPath + "/";
 		
@@ -332,7 +331,7 @@ public class FileUtil {
 	
 	private static String getModrinthRootDir2() {
 		if(isWindows())
-			return System.getenv("APPDATA") + "/com.modrinth.theseus/";
+			return Environment.getEnv("APPDATA") + "/com.modrinth.theseus/";
 		else if(isMacOs())
 			return "~/Library/Application Support/com.modrinth.theseus/";
 		else if (isLinux())
@@ -347,7 +346,7 @@ public class FileUtil {
 	private static String getModrinthRootDir3() {
 		// Modrinth changes the name of the root directory.
 		if(isWindows())
-			return System.getenv("APPDATA") + "/ModrinthApp/";
+			return Environment.getEnv("APPDATA") + "/ModrinthApp/";
 		else if(isMacOs())
 			return "~/Library/Application Support/ModrinthApp/";
 		else if (isLinux())
@@ -367,7 +366,7 @@ public class FileUtil {
 		if(!(new File(modrinthRootDir.substring(0, modrinthRootDir.length()-1)).exists()))
 			modrinthRootDir = getModrinthRootDir2();
 		
-		String envPath = System.getenv("MIEX_MODRINTH_ROOT_DIR");
+		String envPath = Environment.getEnv("MIEX_MODRINTH_ROOT_DIR");
 		if(envPath != null)
 			modrinthRootDir = envPath + "/";
 		
@@ -384,18 +383,21 @@ public class FileUtil {
 		if(versionJar.exists())
 			return versionJar;
 		
-		// In some cases, it might be in a sub folder with the version name
-		if(new File(versionFolder, versionName).exists())
-			versionFolder = new File(versionFolder, versionName);
-		
-		if(!versionFolder.exists() || !versionFolder.isDirectory())
-			return null;
-		
-		// If the jar doesn't exist, just pick the first jar file in the versions folder.
-		for(File f : versionFolder.listFiles()) {
-			if(f.getName().endsWith(".jar")) {
-				if(isValidJarFile(f))
-					return f;
+		// Iterate through all folders to find a valid jar file
+		return findValidJarFileInFolder(versionFolder);
+	}
+	
+	private static File findValidJarFileInFolder(File folder) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				File jarFile = findValidJarFileInFolder(f);
+				if(jarFile != null)
+					return jarFile;
+			}else if(f.isFile()) {
+				if(f.getName().endsWith(".jar")) {
+					if(isValidJarFile(f))
+						return f;
+				}
 			}
 		}
 		return null;

@@ -149,5 +149,18 @@ public class NbtTagList extends NbtTag{
 					result = 31 * result + data[i].hashCode();
 		return result;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof NbtTagList) {
+			if(((NbtTagList) obj).getSize() != getSize())
+				return false;
+			for(int i = 0; i < getSize(); ++i)
+				if(!((NbtTagList) obj).get(i).equals(get(i)))
+					return false;
+			return true;
+		}
+		return false;
+	}
 
 }

@@ -45,7 +45,7 @@ public class ConnectedTextures {
 	
 	public static class BlockStateConstraint{
 		
-		public Map<String, List<String>> checks;
+		public Map<String, List<String>> checks = new HashMap<String, List<String>>();
 		
 		@Override
 		public boolean equals(Object obj) {

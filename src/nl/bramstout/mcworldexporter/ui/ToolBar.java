@@ -469,68 +469,49 @@ public class ToolBar extends JPanel {
 
 		JPanel settingsPanel = new JPanel();
 		settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
-		settingsPanel.setMinimumSize(new Dimension(160, 140));
-		settingsPanel.setMaximumSize(new Dimension(240, 140));
-		settingsPanel.setPreferredSize(settingsPanel.getMinimumSize());
 		settingsPanel.add(new JLabel(" "));
 		settingsPanel.add(new JPanel());
 		runOptimiserCheckBox = new JCheckBox("Run Optimisers");
 		runOptimiserCheckBox.setSelected(Config.runOptimiser);
-		runOptimiserCheckBox.setPreferredSize(new Dimension(410, 24));
-		runOptimiserCheckBox.setMinimumSize(new Dimension(410, 24));
-		runOptimiserCheckBox.setMaximumSize(new Dimension(410, 24));
 		ToolTips.registerTooltip(runOptimiserCheckBox, ToolTips.RUN_OPTIMISERS);
 		settingsPanel.add(runOptimiserCheckBox);
-		runOptimiserCheckBox.setAlignmentX(1);
+		runOptimiserCheckBox.setAlignmentX(0);
 		
 		removeCavesCheckBox = new JCheckBox("Remove Caves");
 		removeCavesCheckBox.setSelected(Config.removeCaves);
-		removeCavesCheckBox.setPreferredSize(new Dimension(410, 24));
-		removeCavesCheckBox.setMinimumSize(new Dimension(410, 24));
-		removeCavesCheckBox.setMaximumSize(new Dimension(410, 24));
 		ToolTips.registerTooltip(removeCavesCheckBox, ToolTips.REMOVE_CAVES);
 		settingsPanel.add(removeCavesCheckBox);
-		removeCavesCheckBox.setAlignmentX(1);
+		removeCavesCheckBox.setAlignmentX(0);
 		
 		fillInCavesCheckBox = new JCheckBox("Fill In Caves");
 		fillInCavesCheckBox.setSelected(Config.fillInCaves);
-		fillInCavesCheckBox.setPreferredSize(new Dimension(394, 24));
-		fillInCavesCheckBox.setMinimumSize(new Dimension(394, 24));
-		fillInCavesCheckBox.setMaximumSize(new Dimension(394, 24));
 		fillInCavesCheckBox.setBorder(new EmptyBorder(0, 16, 0, 0));
 		ToolTips.registerTooltip(fillInCavesCheckBox, ToolTips.REMOVE_CAVES_FILL_IN);
 		settingsPanel.add(fillInCavesCheckBox);
-		fillInCavesCheckBox.setAlignmentX(1);
+		fillInCavesCheckBox.setAlignmentX(0);
 
 		exportIndividualBlocksCheckBox = new JCheckBox("Individual Blocks");
 		exportIndividualBlocksCheckBox.setSelected(Config.onlyIndividualBlocks);
-		exportIndividualBlocksCheckBox.setPreferredSize(new Dimension(410, 24));
-		exportIndividualBlocksCheckBox.setMinimumSize(new Dimension(410, 24));
-		exportIndividualBlocksCheckBox.setMaximumSize(new Dimension(410, 24));
 		ToolTips.registerTooltip(exportIndividualBlocksCheckBox, ToolTips.EXPORT_INDIVIDUAL_BLOCKS);
 		settingsPanel.add(exportIndividualBlocksCheckBox);
-		exportIndividualBlocksCheckBox.setAlignmentX(1);
+		exportIndividualBlocksCheckBox.setAlignmentX(0);
 		
 		JPanel chunkSizePanel = new JPanel();
 		chunkSizePanel.setLayout(new BoxLayout(chunkSizePanel, BoxLayout.X_AXIS));
-		chunkSizePanel.setPreferredSize(new Dimension(410, 20));
-		chunkSizePanel.setMinimumSize(chunkSizePanel.getPreferredSize());
-		chunkSizePanel.setMaximumSize(chunkSizePanel.getPreferredSize());
 		ToolTips.registerTooltip(chunkSizePanel, ToolTips.CHUNK_SIZE);
 		JLabel chunkSizeLabel = new JLabel("Chunk Size:");
-		chunkSizeLabel.setPreferredSize(new Dimension(96, 20));
-		chunkSizeLabel.setMinimumSize(chunkSizeLabel.getPreferredSize());
-		chunkSizeLabel.setMaximumSize(chunkSizeLabel.getPreferredSize());
+		chunkSizeLabel.setBorder(new EmptyBorder(0, 6, 0, 8));
 		chunkSizePanel.add(chunkSizeLabel);
 		chunkSizeSpinner = new JSpinner();
-		chunkSizeSpinner.setPreferredSize(new Dimension(48, 20));
 		chunkSizeSpinner.setValue(Config.chunkSize);
 		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMinimum(1);
 		((SpinnerNumberModel)(chunkSizeSpinner.getModel())).setMaximum(1024);
-		chunkSizeSpinner.setMinimumSize(chunkSizeSpinner.getPreferredSize());
-		chunkSizeSpinner.setMaximumSize(chunkSizeSpinner.getPreferredSize());
+		chunkSizeSpinner.setPreferredSize(new Dimension(48, 20));
+		chunkSizeSpinner.setMinimumSize(new Dimension(48, 20));
+		chunkSizeSpinner.setMaximumSize(new Dimension(48, 20));
 		chunkSizePanel.add(chunkSizeSpinner);
 		settingsPanel.add(chunkSizePanel);
+		chunkSizePanel.setAlignmentX(0);
 
 		settingsPanel.add(new JPanel());
 		add(settingsPanel);

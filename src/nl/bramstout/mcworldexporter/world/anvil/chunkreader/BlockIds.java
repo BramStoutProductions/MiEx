@@ -189,6 +189,12 @@ public class BlockIds {
 	
 	private static Map<Long, Integer> ID_CACHE = new HashMap<Long, Integer>();
 	
+	public static void clear() {
+		synchronized(ID_CACHE) {
+			ID_CACHE.clear();
+		}
+	}
+	
 	public static int getRuntimeIdForId(int id, int data, int dataVersion, BlockTranslatorManager blockTranslatorManager, 
 										Reference<char[]> charBuffer) {
 		long idKey = ((long) id) | (((long) data) << 32) | (((long) dataVersion) << 40);

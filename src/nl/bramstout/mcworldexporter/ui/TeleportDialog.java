@@ -34,8 +34,12 @@ package nl.bramstout.mcworldexporter.ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -59,14 +63,19 @@ public class TeleportDialog extends JDialog {
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	private RegionViewer regionViewer;
+	
 	public TeleportDialog() {
 		super(MCWorldExporter.getApp().getUI());
 		JPanel root = new JPanel();
-		root.setLayout(new BoxLayout(root, BoxLayout.X_AXIS));
+		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(16, 16, 16, 16));
 		add(root);
 		
-		
+		JPanel rootTop = new JPanel();
+		rootTop.setLayout(new BoxLayout(rootTop, BoxLayout.X_AXIS));
+		rootTop.setBorder(new EmptyBorder(0, 0, 16, 0));
+		root.add(rootTop);
 		
 		JPanel coordinatePanel = new JPanel();
 		coordinatePanel.setLayout(new BorderLayout(8,8));
@@ -80,7 +89,7 @@ public class TeleportDialog extends JDialog {
 		coordinatePanel.add(coordinateInput, BorderLayout.CENTER);
 		JButton coordinateTeleportButton = new JButton("Teleport");
 		coordinatePanel.add(coordinateTeleportButton, BorderLayout.SOUTH);
-		root.add(coordinatePanel);
+		rootTop.add(coordinatePanel);
 		coordinateTeleportButton.addActionListener(new ActionListener() {
 
 			@Override
@@ -122,10 +131,44 @@ public class TeleportDialog extends JDialog {
 			}
 		}
 		
-		root.add(playerPanel);
+		rootTop.add(playerPanel);
 		
+		regionViewer = new RegionViewer();
+		regionViewer.addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				Point coordinates = regionViewer.getCursorWorldLocation();
+				coordinateInput.setText(Integer.toString(coordinates.x) + "," + Integer.toString(coordinates.y));
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+
+			@Override
+			public void mouseExited(MouseEvent e) {}
+		});
+		regionViewer.addMouseMotionListener(new MouseMotionListener() {
+
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				Point coordinates = regionViewer.getCursorWorldLocation();
+				coordinateInput.setText(Integer.toString(coordinates.x) + "," + Integer.toString(coordinates.y));
+			}
+
+			@Override
+			public void mouseMoved(MouseEvent e) {}
+			
+		});
+		root.add(regionViewer);
 		
-		setSize(550, 300);
+		setSize(550, 600);
 		setTitle("Teleport");
 	}
 	

@@ -111,6 +111,7 @@ public class ToolTips {
 	public static String TOOL_EXTRACT_MOD_RESOURCE_PACK = "Extract the built-in resource packs from all mods in the selected mods folder. Useful for when you want to load in a modded world.";
 	public static String TOOL_CREATE_ATLASSES = "Opens up the Atlas Creator tool.";
 	public static String TOOL_GENERATE_PBR_TEXTURES = "Opens up the PBR Generator tool.";
+	public static String TOOL_ENVIRONMENT_SETTINGS = "Opens up the Environment Settings dialog to allow you to change MiEx's environment variables.";
 	
 	public static String PBR_GENERATOR_DIALOG_UTILITY_TEXTURES = "The suffixes of utility textures. These will be ignored by the PBR Generator.";
 	public static String PBR_GENERATOR_DIALOG_SAVE_TO = "The name of the resource pack that you want to save the PBR textures to. Will create it if it doesn't exist yet.";

@@ -39,6 +39,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
@@ -144,6 +145,20 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 					float maxX = to.get(0).getAsFloat();
 					float maxY = to.get(1).getAsFloat();
 					float maxZ = to.get(2).getAsFloat();
+					
+					if(Config.minCubeSize > 0.0f) {
+						float dx = maxX - minX;
+						if(Math.abs(dx) < Config.minCubeSize)
+							maxX = minX + Config.minCubeSize * Math.signum(dx);
+						
+						float dy = maxY - minY;
+						if(Math.abs(dy) < Config.minCubeSize)
+							maxY = minY + Config.minCubeSize * Math.signum(dy);
+						
+						float dz = maxZ - minZ;
+						if(Math.abs(dz) < Config.minCubeSize)
+							maxZ = minZ + Config.minCubeSize * Math.signum(dz);
+					}
 
 					boolean flatX = (maxX - minX) < 0.01f;
 					boolean flatY = (maxY - minY) < 0.01f;

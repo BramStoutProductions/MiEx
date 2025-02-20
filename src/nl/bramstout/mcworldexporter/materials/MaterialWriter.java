@@ -33,7 +33,12 @@ package nl.bramstout.mcworldexporter.materials;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
+import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.materials.Materials.MaterialTemplate;
 
 public abstract class MaterialWriter {
@@ -46,6 +51,73 @@ public abstract class MaterialWriter {
 	
 	public File getOutputFile() {
 		return outputFile;
+	}
+	
+	private static class MatKey{
+		
+		private String texture;
+		private Materials.MaterialTemplate template;
+		
+		public MatKey(String texture, Materials.MaterialTemplate template) {
+			this.texture = texture;
+			this.template = template;
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(texture, template);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof MatKey))
+				return false;
+			return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template.equals(template);
+		}
+		
+	}
+	
+	private static Map<MatKey, String> mats = new HashMap<MatKey, String>();
+	private static Map<String, Integer> matCounters = new HashMap<String, Integer>();
+	
+	public static void clearCounters() {
+		mats.clear();
+		matCounters.clear();
+	}
+	
+	public static String getMaterialName(String texture, Materials.MaterialTemplate template, boolean hasBiomeColor) {
+		MatKey matkey = new MatKey(texture, template);
+		String matName = mats.getOrDefault(matkey, null);
+		if(matName == null) {
+			synchronized(mats) {
+				matName = mats.getOrDefault(matkey, null);
+				if(matName != null)
+					return "MAT_" + matName;
+				
+				Integer counter = matCounters.getOrDefault(texture, null);
+				
+				if(counter == null) {
+					matCounters.put(texture, 1);
+					matName = Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME" : "");
+				}else {
+					matCounters.put(texture, counter+1);
+					matName = Util.makeSafeName(texture) + "_" + counter.toString() + (hasBiomeColor ? "_BIOME" : "");
+				}
+				
+				if(Config.maxMaterialNameLength > 0 && (matName.length()+4) >= Config.maxMaterialNameLength) {
+					int prefix = 4;
+					String hashStr = Integer.toHexString(matName.hashCode());
+					int hashChars = Math.min(hashStr.length(), Config.maxMaterialNameLength / 2);
+					int keepChars = Config.maxMaterialNameLength - prefix - hashChars;
+					
+					matName = matName.substring(matName.length()-keepChars) + hashStr.substring(0, hashChars);
+				}
+				
+				mats.put(matkey, matName);
+			}
+		}
+		
+		return "MAT_" + matName;
 	}
 	
 	public abstract void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor,

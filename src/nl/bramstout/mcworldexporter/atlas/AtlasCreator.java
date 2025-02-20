@@ -40,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -56,7 +55,6 @@ import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.image.ImageWriter;
-import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.pbr.PbrImage;
 import nl.bramstout.mcworldexporter.pbr.PbrImage.Boundary;
 import nl.bramstout.mcworldexporter.pbr.PbrImage.RGBA;
@@ -90,9 +88,8 @@ public class AtlasCreator {
 		BufferedImage img;
 		PbrImage pbrImg;
 		Set<String> textures;
-		boolean full;
-		int fullCounter;
 		int scale;
+		boolean lockedSize;
 		
 		public AtlasData() {
 			name = "";
@@ -101,9 +98,8 @@ public class AtlasCreator {
 			repeats = 4;
 			padding = 0;
 			textures = new HashSet<String>();
-			full = false;
-			fullCounter = 4;
 			scale = 1;
+			lockedSize = false;
 			img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
 			pbrImg = null;
 			// Fill it with black
@@ -142,6 +138,11 @@ public class AtlasCreator {
 		}
 		
 		public void scaleAtlas(int newScale) {
+			if(size * newScale > (16 * 1024)) {
+				newScale = ((16 * 1024)+(size-1)) / size;
+			}
+			if(newScale == scale)
+				return;
 			if(pbrImg != null) {
 				PbrImage newImg = new PbrImageRaster(size * newScale, size * newScale);
 				float scaleDiff = ((float) scale) / ((float) newScale);
@@ -201,9 +202,11 @@ public class AtlasCreator {
 						int intersectedX = (int) ((intersected.x / intersected.width) * ((float) size));
 						int intersectedY = (int) ((intersected.y / intersected.height) * ((float) size));
 						int intersectedWidth = (int) ((((float) size) / intersected.width) * 
-												(intersected.padding + this.padding + this.padding));
+												(intersected.padding + this.padding));
 						int intersectedHeight = (int) ((((float) size) / intersected.height) * 
-												(intersected.padding + this.padding + this.padding));
+												(intersected.padding + this.padding));
+						intersectedWidth += width * this.padding;
+						intersectedHeight += height * this.padding;
 						i = Math.max(i + 1, intersectedX + intersectedWidth);
 						minIntersectionY = Math.min(minIntersectionY, intersectedY + intersectedHeight);
 						//i += Math.max(((int) (((float) size) / intersected.width)) * (intersected.padding + this.padding), 1);
@@ -228,14 +231,9 @@ public class AtlasCreator {
 			
 			// We couldn't find a place, so let's increase the atlas size;
 			// But, we are going to put a maximum size of 4096 pixels.
+			if(lockedSize)
+				return false;
 			if(size >= Config.atlasMaxResolution) {
-				fullCounter--;
-				if(fullCounter <= 0) {
-					fullCounter = 0;
-					// If we couldn't place a texture x times,
-					// we consider this atlas full
-					full = true;
-				}
 				return false;
 			}
 			
@@ -386,16 +384,17 @@ public class AtlasCreator {
 	private static class AtlasKey{
 		
 		public String group;
-		public Materials.MaterialTemplate materialTemplate;
+		//public Materials.MaterialTemplate materialTemplate;
 		
-		public AtlasKey(String group, Materials.MaterialTemplate materialTemplate) {
+		public AtlasKey(String group){//, Materials.MaterialTemplate materialTemplate) {
 			this.group = group;
-			this.materialTemplate = materialTemplate;
+			//this.materialTemplate = materialTemplate;
 		}
 		
 		@Override
 		public int hashCode() {
-			return Objects.hash(group, materialTemplate);
+			//return Objects.hash(group, materialTemplate);
+			return group.hashCode();
 		}
 		
 		@Override
@@ -403,21 +402,22 @@ public class AtlasCreator {
 			if(!(obj instanceof AtlasKey))
 				return false;
 			AtlasKey other = (AtlasKey) obj;
-			return group.equals(other.group) && 
-					materialTemplate.equals(other.materialTemplate);
+			return group.equals(other.group);// && 
+					//materialTemplate.equals(other.materialTemplate);
 		}
 		
 	};
 	
 	private Map<AtlasKey, Set<String>> atlases;
-	private List<AtlasData> finalAtlases;
+	private Map<AtlasKey, List<AtlasData>> finalAtlases;
 	private Set<String> excludeFromAtlas;
-	private int atlasCounter;
+	private Set<String> usedAtlasNames;
 	
 	public void process() {
 		atlases = new HashMap<AtlasKey, Set<String>>();
-		finalAtlases = new ArrayList<AtlasData>();
+		finalAtlases = new HashMap<AtlasKey, List<AtlasData>>();
 		excludeFromAtlas = new HashSet<String>();
+		usedAtlasNames = new HashSet<String>();
 		File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePack);
 		if(!resourcePackFolder.exists())
 			resourcePackFolder.mkdirs();
@@ -445,8 +445,16 @@ public class AtlasCreator {
 						Atlas.AtlasItem item = new Atlas.AtlasItem(entry.getKey(), entry.getValue().getAsJsonObject())	;
 						
 						// Find the atlasData for it
+						AtlasKey atlasKey = new AtlasKey(item.name.contains(":item") ? "items" : "blocks");
+						
 						AtlasData atlas = null;
-						for(AtlasData atlasTmp : finalAtlases) {
+						
+						List<AtlasData> atlases2 = finalAtlases.getOrDefault(atlasKey, null);
+						if(atlases2 == null) {
+							atlases2 = new ArrayList<AtlasData>();
+							finalAtlases.put(atlasKey, atlases2);
+						}
+						for(AtlasData atlasTmp : atlases2) {
 							if(atlasTmp.name.equals(item.atlas)) {
 								atlas = atlasTmp;
 								break;
@@ -494,9 +502,11 @@ public class AtlasCreator {
 									}
 								}
 							}
-							finalAtlases.add(atlas);
+							atlases2.add(atlas);
+							usedAtlasNames.add(atlas.name);
 						}
 						
+						atlas.lockedSize = false;
 						try {
 							File texFile = ResourcePacks.getTexture(item.name);
 							if(texFile != null && texFile.exists()) {
@@ -512,6 +522,7 @@ public class AtlasCreator {
 						}catch(Exception ex) {
 							ex.printStackTrace();
 						}
+						atlas.lockedSize = true;
 					}catch(Exception ex) {
 						ex.printStackTrace();
 					}
@@ -563,7 +574,6 @@ public class AtlasCreator {
 		// We have processed all files and ordered them by template,
 		// now we need to add them into the actual atlasses.
 		String atlasPrefix = "miex:block/atlas_" + Integer.toHexString(resourcePack.hashCode()) + "_";
-		atlasCounter = 0;
 		float numAtlases = (float) atlases.size();
 		float counter = 0f;
 		for(Entry<AtlasKey, Set<String>> entry : atlases.entrySet()) {
@@ -576,10 +586,12 @@ public class AtlasCreator {
 				continue;
 			}
 			
-			AtlasData atlas = new AtlasData();
-			atlas.repeats = this.repeats;
-			atlas.padding = this.padding;
-			atlas.name = atlasPrefix + ++atlasCounter;
+			List<AtlasData> atlases2 = finalAtlases.getOrDefault(entry.getKey(), null);
+			if(atlases2 == null) {
+				atlases2 = new ArrayList<AtlasData>();
+				finalAtlases.put(entry.getKey(), atlases2);
+			}
+			int atlasStartIndex = 0;
 			
 			float numTextures = (float) entry.getValue().size();
 			float texCounter = 0f;
@@ -590,9 +602,21 @@ public class AtlasCreator {
 				if(excludeFromAtlas.contains(texture))
 					continue;
 				
+				int atlasIndex = atlasStartIndex;
+				boolean inAtlas = false;
+				for(int i = 0; i < atlases2.size(); ++i) {
+					if(atlases2.get(i).textures.contains(texture)) {
+						inAtlas = true;
+						break;
+					}
+				}
+				if(inAtlas)
+					continue;
+				
 				File texFile = ResourcePacks.getTexture(texture);
 				if(texFile == null || !texFile.exists())
 					continue;
+				
 				try {
 					BufferedImage img = null;
 					PbrImage pbrImg = null;
@@ -608,24 +632,41 @@ public class AtlasCreator {
 						height = img.getHeight();
 					}
 					
-					// Place it.
-					boolean success = atlas.place(texture, width, height, img, pbrImg);
-					
-					if(!success) {
+					boolean placed = false;
+					for(; atlasIndex < atlases2.size(); ++atlasIndex) {						
+						// Place it.
+						boolean success = atlases2.get(atlasIndex).place(texture, width, height, img, pbrImg);
+						if(success) {
+							atlasStartIndex = atlasIndex;
+							placed = true;
+							break;
+						}
+						
 						// It couldn't place it, so check if the atlas is full.
-						if(atlas.full) {
-							// The atlas is too full, so write it out
-							// and set up a new atlas.
-							finishUpAtlas(atlas, resourcePackFolder);
-							finalAtlases.add(atlas);
-							
-							atlas = new AtlasData();
-							atlas.repeats = this.repeats;
-							atlas.padding = this.padding;
-							atlas.name = atlasPrefix + ++atlasCounter;
-						}else {
+						if(atlases2.get(atlasIndex).items.size() < 4) {
 							// Texture was probably to big, so we exclude it
 							// from the atlases.
+							excludeFromAtlas.add(texture);
+							placed = true;
+						}
+					}
+					if(!placed) {
+						// It couldn't place the atlas, so add in another atlas.
+						AtlasData atlas = new AtlasData();
+						atlas.repeats = this.repeats;
+						atlas.padding = this.padding;
+						for(int i = 0; i < 10000; ++i) {
+							atlas.name = atlasPrefix + Integer.toString(i);
+							if(!usedAtlasNames.contains(atlas.name)) {
+								usedAtlasNames.add(atlas.name);
+								break;
+							}
+						}
+						atlases2.add(atlas);
+						
+						boolean success = atlas.place(texture, width, height, img, pbrImg);
+						if(!success) {
+							// Still couldn't place it in an empty atlas, so exclude it.
 							excludeFromAtlas.add(texture);
 						}
 					}
@@ -634,63 +675,70 @@ public class AtlasCreator {
 				}
 			}
 			
-			finishUpAtlas(atlas, resourcePackFolder);
-			finalAtlases.add(atlas);
-			
 			counter += 1f;
+		}
+		
+		int totalAtlases = 0;
+		for(Entry<AtlasKey, List<AtlasData>> entry : finalAtlases.entrySet()) {
+			for(AtlasData atlas : entry.getValue()) {
+				totalAtlases++;
+				finishUpAtlas(atlas, resourcePackFolder);
+			}
 		}
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.6f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Generating atlases: Making utility atlases");
-		float totalUtilityTextures = utilityTextures.size() * finalAtlases.size();
+		float totalUtilityTextures = utilityTextures.size() * totalAtlases;
 		
 		// Make the utility atlases
 		float counter2 = 0;
 		for(String utilitySuffix : utilityTextures) {
-			for(AtlasData atlas : finalAtlases) {
-				counter2 += 1f;
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.6f + (counter2 / totalUtilityTextures) * 0.25f);
-				AtlasData utilityAtlas = new AtlasData();
-				utilityAtlas.name = atlas.name + utilitySuffix;
-				utilityAtlas.repeats = atlas.repeats;
-				utilityAtlas.padding = atlas.padding;
-				utilityAtlas.size = atlas.size;
-				utilityAtlas.img = new BufferedImage(utilityAtlas.size, utilityAtlas.size, BufferedImage.TYPE_INT_ARGB);
-				// Fill it with transparency.
-				// Any block that doesn't have this utility texture will be transparent,
-				// so the alpha channel can be used as an optional mask in the material.
-				for(int j = 0; j < utilityAtlas.size; ++j)
-					for(int i = 0; i < utilityAtlas.size; ++i)
-						utilityAtlas.img.setRGB(i, j, 0x00000000);
-				
-				boolean written = false;
-				
-				for(Atlas.AtlasItem item : atlas.items) {
-					Atlas.AtlasItem utilityItem = new Atlas.AtlasItem(item);
-					utilityItem.name = utilityItem.name + utilitySuffix;
+			for(Entry<AtlasKey, List<AtlasData>> entry : finalAtlases.entrySet()) {
+				for(AtlasData atlas : entry.getValue()) {
+					counter2 += 1f;
+					MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.6f + (counter2 / totalUtilityTextures) * 0.25f);
+					AtlasData utilityAtlas = new AtlasData();
+					utilityAtlas.name = atlas.name + utilitySuffix;
+					utilityAtlas.repeats = atlas.repeats;
+					utilityAtlas.padding = atlas.padding;
+					utilityAtlas.size = atlas.size;
+					utilityAtlas.img = new BufferedImage(utilityAtlas.size, utilityAtlas.size, BufferedImage.TYPE_INT_ARGB);
+					// Fill it with transparency.
+					// Any block that doesn't have this utility texture will be transparent,
+					// so the alpha channel can be used as an optional mask in the material.
+					for(int j = 0; j < utilityAtlas.size; ++j)
+						for(int i = 0; i < utilityAtlas.size; ++i)
+							utilityAtlas.img.setRGB(i, j, 0x00000000);
 					
-					try {
-						File texFile = ResourcePacks.getTexture(utilityItem.name);
-						if(texFile != null && texFile.exists()) {
-							BufferedImage img = null;
-							PbrImage pbrImg = null;
-							if(texFile.getName().endsWith(".exr")) {
-								pbrImg = ImageReader.readPbrImage(texFile, false);
-							}else {
-								img = ImageReader.readImage(texFile);
+					boolean written = false;
+					
+					for(Atlas.AtlasItem item : atlas.items) {
+						Atlas.AtlasItem utilityItem = new Atlas.AtlasItem(item);
+						utilityItem.name = utilityItem.name + utilitySuffix;
+						
+						try {
+							File texFile = ResourcePacks.getTexture(utilityItem.name);
+							if(texFile != null && texFile.exists()) {
+								BufferedImage img = null;
+								PbrImage pbrImg = null;
+								if(texFile.getName().endsWith(".exr")) {
+									pbrImg = ImageReader.readPbrImage(texFile, false);
+								}else {
+									img = ImageReader.readImage(texFile);
+								}
+								if(img != null || pbrImg != null) {
+									utilityAtlas.addItem(utilityItem, img, pbrImg);
+									written = true;
+								}
 							}
-							if(img != null || pbrImg != null) {
-								utilityAtlas.addItem(utilityItem, img, pbrImg);
-								written = true;
-							}
+						}catch(Exception ex) {
+							ex.printStackTrace();
 						}
-					}catch(Exception ex) {
-						ex.printStackTrace();
 					}
+					
+					if(written)
+						finishUpAtlas(utilityAtlas, resourcePackFolder);
 				}
-				
-				if(written)
-					finishUpAtlas(utilityAtlas, resourcePackFolder);
 			}
 		}
 		
@@ -702,16 +750,18 @@ public class AtlasCreator {
 		for(String texture : excludeFromAtlas) {
 			root.add(texture, null);
 		}
-		for(AtlasData atlas : finalAtlases) {
-			for(Atlas.AtlasItem item : atlas.items) {
-				JsonObject obj = new JsonObject();
-				obj.addProperty("atlas", atlas.name);
-				obj.addProperty("x", Float.valueOf(item.x));
-				obj.addProperty("y", Float.valueOf(item.y));
-				obj.addProperty("width", Float.valueOf(item.width));
-				obj.addProperty("height", Float.valueOf(item.height));
-				obj.addProperty("padding", Integer.valueOf(item.padding));
-				root.add(item.name, obj);
+		for(Entry<AtlasKey, List<AtlasData>> entry : finalAtlases.entrySet()) {
+			for(AtlasData atlas : entry.getValue()) {
+				for(Atlas.AtlasItem item : atlas.items) {
+					JsonObject obj = new JsonObject();
+					obj.addProperty("atlas", atlas.name);
+					obj.addProperty("x", Float.valueOf(item.x));
+					obj.addProperty("y", Float.valueOf(item.y));
+					obj.addProperty("width", Float.valueOf(item.width));
+					obj.addProperty("height", Float.valueOf(item.height));
+					obj.addProperty("padding", Integer.valueOf(item.padding));
+					root.add(item.name, obj);
+				}
 			}
 		}
 		FileWriter writer = null;
@@ -813,8 +863,8 @@ public class AtlasCreator {
 			if(skip)
 				continue;
 			
-			Materials.MaterialTemplate template = Materials.getMaterial(resourceName, false, "");
-			AtlasKey atlasKey = new AtlasKey(group, template);
+			//Materials.MaterialTemplate template = Materials.getMaterial(resourceName, false, "");
+			AtlasKey atlasKey = new AtlasKey(group);//, template);
 			Set<String> atlas = atlases.get(atlasKey);
 			if(atlas == null) {
 				atlas = new HashSet<String>();

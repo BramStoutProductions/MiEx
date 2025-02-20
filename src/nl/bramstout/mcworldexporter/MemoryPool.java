@@ -66,11 +66,41 @@ public class MemoryPool<T extends Poolable> {
 			data = (T[]) Array.newInstance(type, PAGE_SIZE);
 		}
 		
+		/**
+		 * Goes through the data and deallocates instances not in use.
+		 */
+		public void freeMemory() {
+			int numAllocs = numAllocations.get();
+			if(numAllocs > (PAGE_SIZE / 2))
+				return; // If more than half of this page is used, skip this page.
+			
+			for(int i = 0; i < occupancy.length(); ++i) {
+				long occ = occupancy.get(i);
+				for(int j = 0; j < 64; ++j) {
+					boolean occupied = (occ & (1l << j)) != 0;
+					if(!occupied) {
+						// If this spot isn't occupied, then just set it to null.
+						// Because of Java's reference counting, if for some reason
+						// the item within it still got used, it'll remain in memory
+						// until that use is over.
+						// The occupancy bitfield is used to prevent to items from
+						// being put into the same spot, regardless of whether they
+						// are stored in the data array. The data array is purely
+						// to be able to re-use the instance if possible. Since we aren't
+						// modifying occupancy, this function can be called at any moment
+						// and won't cause any race conditions.
+						data[i * 64 + j] = null;
+					}
+				}
+			}
+		}
+		
 		public T alloc() {
 			int index = getFreeIndex();
 			if(index < 0)
 				return null;
-			numAllocations.addAndGet(1);
+			numAllocations.addAndGet(1); 
+			
 			T val = data[index];
 			if(val == null) {
 				try {
@@ -217,6 +247,19 @@ public class MemoryPool<T extends Poolable> {
 	@SuppressWarnings("unchecked")
 	public void free(Object val) {
 		free((T) val);
+	}
+	
+	/**
+	 * Goes through the data and deallocates instances not in use.
+	 */
+	public void freeMemory() {
+		Page<T> currentPage = page;
+		while(true) {
+			currentPage.freeMemory();
+			currentPage = currentPage.nextPage.get();
+			if(currentPage == null)
+				break;
+		}
 	}
 	
 }

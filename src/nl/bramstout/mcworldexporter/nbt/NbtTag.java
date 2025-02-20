@@ -95,6 +95,22 @@ public abstract class NbtTag extends Poolable{
 	private static final MemoryPool<NbtTagShort> POOL_SHORT = new MemoryPool<NbtTagShort>(NbtTagShort.class);
 	private static final MemoryPool<NbtTagString> POOL_STRING = new MemoryPool<NbtTagString>(NbtTagString.class);
 	
+	public static void freeMemoryFromPools() {
+		POOL_BYTE_ARRAY.freeMemory();
+		POOL_BYTE.freeMemory();
+		POOL_COMPOUND.freeMemory();
+		POOL_DOUBLE.freeMemory();
+		POOL_END.freeMemory();
+		POOL_FLOAT.freeMemory();
+		POOL_INT.freeMemory();
+		POOL_INT_ARRAY.freeMemory();
+		POOL_LIST.freeMemory();
+		POOL_LONG.freeMemory();
+		POOL_LONG_ARRAY.freeMemory();
+		POOL_SHORT.freeMemory();
+		POOL_STRING.freeMemory();
+	}
+	
 	private static MemoryPool<? extends NbtTag> getPool(byte tagId){
 		switch(tagId) {
 		case NbtTagByteArray.ID:

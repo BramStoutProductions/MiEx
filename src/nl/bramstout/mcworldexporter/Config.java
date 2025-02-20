@@ -105,6 +105,10 @@ public class Config {
 	public static boolean exportAmbientOcclusionAsDisplayOpacity;
 	public static boolean calculateCornerUVs;
 	public static String renderGamut;
+	public static int memoryPerThread;
+	public static boolean forceDoubleSidedOnEverything;
+	public static float minCubeSize;
+	public static int maxMaterialNameLength;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -370,6 +374,19 @@ public class Config {
 				
 				if(data.has("calculateCornerUVs"))
 					calculateCornerUVs = data.get("calculateCornerUVs").getAsBoolean();
+				
+				if(data.has("memoryPerThread"))
+					memoryPerThread = data.get("memoryPerThread").getAsInt();
+				
+				if(data.has("forceDoubleSidedOnEverything"))
+					forceDoubleSidedOnEverything = data.get("forceDoubleSidedOnEverything").getAsBoolean();
+				
+				if(data.has("minCubeSize"))
+					minCubeSize = data.get("minCubeSize").getAsFloat();
+				
+				if(data.has("maxMaterialNameLength"))
+					maxMaterialNameLength = data.get("maxMaterialNameLength").getAsInt();
+				
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}

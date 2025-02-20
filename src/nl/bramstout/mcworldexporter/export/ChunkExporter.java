@@ -37,8 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Future;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
@@ -46,8 +46,11 @@ import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
-import nl.bramstout.mcworldexporter.export.optimiser.FaceOptimiser;
-import nl.bramstout.mcworldexporter.export.optimiser.RaytracingOptimiser;
+import nl.bramstout.mcworldexporter.export.processors.FaceOptimiser;
+import nl.bramstout.mcworldexporter.export.processors.MeshProcessors;
+import nl.bramstout.mcworldexporter.export.processors.RaytracingOptimiser;
+import nl.bramstout.mcworldexporter.export.processors.WriteProcessor;
+import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
@@ -674,6 +677,64 @@ public class ChunkExporter {
 		res.normalise();
 	}
 	
+	private static class AtlasKey{
+		
+		public String atlasTexture;
+		public Materials.MaterialTemplate materialTemplate;
+		
+		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor) {
+			atlasTexture = item.atlas;
+			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, "");
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(atlasTexture, materialTemplate);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof AtlasKey))
+				return false;
+			return ((AtlasKey) obj).atlasTexture.equals(atlasTexture) && 
+					(((AtlasKey)obj).materialTemplate == materialTemplate ||
+					(((AtlasKey)obj).materialTemplate != null &&
+					((AtlasKey) obj).materialTemplate.equals(materialTemplate)));
+		}
+		
+	}
+	
+	private Map<String, String> atlasMappings = new HashMap<String, String>();
+	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
+	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
+	
+	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor) {
+		String meshName = atlasMappings.getOrDefault(originalTexture, null);
+		if(meshName != null)
+			return meshName;
+		
+		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor);
+		meshName = atlasMappings2.getOrDefault(key, null);
+		if(meshName != null) {
+			atlasMappings.put(originalTexture, meshName);
+			return meshName;
+		}
+		
+		Integer counter = atlasMeshCounters.getOrDefault(item.atlas, null);
+		if(counter == null) {
+			counter = Integer.valueOf(0);
+		}
+		atlasMeshCounters.put(item.atlas, counter + 1);
+		
+		meshName = item.atlas + "_" + counter.toString() + "_";
+		if(hasBiomeColor)
+			meshName += "BIOME";
+		
+		atlasMappings.put(originalTexture, meshName);
+		atlasMappings2.put(key, meshName);
+		return meshName;
+	}
+	
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
 			float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
 			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
@@ -745,6 +806,7 @@ public class ChunkExporter {
 			}
 		}
 		
+		String matTexture = texture;
 		String meshName = texture;
 		if(tint != null) {
 			meshName = meshName + "_BIOME";
@@ -763,10 +825,8 @@ public class ChunkExporter {
 		float lodYUVScale = lodNoUVScale ? 1.0f : lodYScale;
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
+			meshName = getMeshName(atlas, texture, tint != null);
 			texture = atlas.atlas;
-			meshName = texture;
-			if(tint != null)
-				meshName = meshName + "_BIOME";
 			// When using an atlas, we can't just scale up the UVs.
 			lodUVScale = Math.min(lodUVScale, (float) atlas.padding);
 			lodYUVScale = Math.min(lodYUVScale, (float) atlas.padding);
@@ -784,7 +844,7 @@ public class ChunkExporter {
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			Mesh mesh = new Mesh(meshName, texture, animatedTexture, doubleSided, 1024, 8);
+			Mesh mesh = new Mesh(meshName, texture, matTexture, animatedTexture, doubleSided, 1024, 8);
 			mesh.addFace(face, 
 					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
 					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint, ambientOcclusion, cornerData);
@@ -1368,65 +1428,89 @@ public class ChunkExporter {
 	}
 	
 	public void optimiseMeshes() {
-		List<Future<?>> futures = new ArrayList<Future<?>>();
-		
 		float threshold = (MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
-		RaytracingOptimiser raytracingOptimiser = new RaytracingOptimiser();
+		RaytracingOptimiser raytracingOptimiser = new RaytracingOptimiser(0.0f, null);
 		FaceOptimiser faceOptimiser = new FaceOptimiser();
 		
 		final Map<String, Mesh> optimisedMeshes = new HashMap<String, Mesh>();
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			final Mesh inMesh = mesh.getValue();
 			final String key = mesh.getKey();
-			Runnable workItem = new Runnable() {
-				public void run() {
-					Mesh newMesh = inMesh;
-					
-					if(Config.runRaytracingOptimiser)
-						newMesh = raytracingOptimiser.optimiseMesh(inMesh, threshold);
-					
-					if(Config.runFaceOptimiser) {
-						if(newMesh instanceof MeshGroup) {
-							MeshGroup newMeshGroup = (MeshGroup) newMesh;
-							for(int i = 0; i < newMeshGroup.getNumChildren(); ++i) {
-								//Mesh faceOptimsed = FaceOptimiser.optimise(newMeshGroup.getChildren().get(i));
-								//newMeshGroup.getChildren().set(i, faceOptimsed);
-								faceOptimiser.optimise(newMeshGroup.getChildren().get(i));
-							}
-						}else {
-							//newMesh = faceOptimiser.optimise(newMesh);
-							faceOptimiser.optimise(newMesh);
-						}
-					}
-					
-					synchronized(optimisedMeshes) {
-						optimisedMeshes.put(key, newMesh);
-					}
-					MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size());
-				}
-			};
 			
-			// If we are exporting out a bunch of chunks,
-			// then with the exporter working in parallel,
-			// if can stress the garbage collector too much.
-			// So, in those cases we run it directly on this thread
-			// rather than putting each mesh into a queue.
-			//if(Exporter.NUM_CHUNKS >= 16) {
-				workItem.run();
-			//}else {
-			//	futures.add(threadPool.submit(workItem));
-			//}
-		}
-		for(Future<?> future : futures) {
-			try {
-				future.get();
-			}catch(Exception ex) {
-				ex.printStackTrace();
+			Mesh newMesh = inMesh;
+			
+			if(Config.runRaytracingOptimiser)
+				newMesh = raytracingOptimiser.optimiseMesh(inMesh, threshold);
+			
+			if(Config.runFaceOptimiser) {
+				if(newMesh instanceof MeshGroup) {
+					MeshGroup newMeshGroup = (MeshGroup) newMesh;
+					for(int i = 0; i < newMeshGroup.getNumChildren(); ++i) {
+						//Mesh faceOptimsed = FaceOptimiser.optimise(newMeshGroup.getChildren().get(i));
+						//newMeshGroup.getChildren().set(i, faceOptimsed);
+						faceOptimiser.optimise(newMeshGroup.getChildren().get(i));
+					}
+				}else {
+					//newMesh = faceOptimiser.optimise(newMesh);
+					faceOptimiser.optimise(newMesh);
+				}
 			}
+			
+			synchronized(optimisedMeshes) {
+				optimisedMeshes.put(key, newMesh);
+			}
+			MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size());
 		}
 		meshes = optimisedMeshes;
+	}
+	
+	public void optimiseAndWriteMeshes(LargeDataOutputStream dos) throws Exception {
+		float threshold = (MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
+				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
+		
+		MeshProcessors processors = new MeshProcessors();
+		if(Config.runOptimiser) {
+			if(Config.runRaytracingOptimiser) {
+				RaytracingOptimiser raytracingOptimiser = new RaytracingOptimiser(threshold, dos);
+				processors.addProcessor(raytracingOptimiser);
+			}
+			if(Config.runFaceOptimiser) {
+				FaceOptimiser faceOptimiser = new FaceOptimiser();
+				processors.addProcessor(faceOptimiser);
+			}
+		}
+		
+		WriteProcessor writeProcessor = new WriteProcessor(dos);
+		processors.addProcessor(writeProcessor);
+		
+		dos.writeUTF(name);
+		dos.writeByte((MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
+				1 : 0); // Is foreground chunk
+		//dos.writeInt(meshes.size());
+		//dos.writeInt(meshes.size());
+		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
+			processors.process(mesh.getValue());
+
+			MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size());
+		}
+		dos.writeByte(0); // Array of meshes end with a 0
+		
+		// Pretty much all of the code assumes that a block is 16 units.
+		// In order to not break any of that, we do the scaling here.
+		float worldScale = Config.blockSizeInUnits / 16.0f;
+				
+		dos.writeInt(individualBlocks.size());
+		for(Entry<IndividualBlockId, FloatArray> blocks : individualBlocks.entrySet()) {
+			dos.writeInt(blocks.getKey().getBlockId());
+			dos.writeInt(blocks.getKey().getX());
+			dos.writeInt(blocks.getKey().getY());
+			dos.writeInt(blocks.getKey().getZ());
+			dos.writeInt(blocks.getValue().size()/3);
+			for(int i = 0; i < blocks.getValue().size(); ++i)
+				dos.writeFloat(blocks.getValue().get(i) * worldScale);
+		}
 	}
 
 }

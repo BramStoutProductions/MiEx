@@ -41,7 +41,9 @@ public class LauncherRegistry {
 	
 	private static List<Launcher> launchers = new ArrayList<Launcher>();
 	
-	static {
+	public static void initLaunchers() {
+		launchers.clear();
+		
 		File javaEditionRootDir = new File(FileUtil.getMinecraftRootDir());
 		if(javaEditionRootDir.exists() && javaEditionRootDir.isDirectory())
 			launchers.add(new LauncherJavaEdition(javaEditionRootDir));
@@ -61,6 +63,12 @@ public class LauncherRegistry {
 		File modrinthRootDir = new File(FileUtil.getModrinthRootDir());
 		if(modrinthRootDir.exists() && modrinthRootDir.isDirectory())
 			launchers.add(new LauncherModrinth(modrinthRootDir));
+		
+		for(String saveDirStr : FileUtil.getAdditionalSaveDirs()) {
+			LauncherSavesDirectory launcher = new LauncherSavesDirectory(saveDirStr);
+			if(launcher.isValid())
+				launchers.add(launcher);
+		}
 	}
 	
 	public static List<Launcher> getLaunchers(){

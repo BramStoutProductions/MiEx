@@ -77,11 +77,13 @@ public class ResourcePackManager extends JPanel {
 	private JMenuItem extractModResourcePackTool;
 	private JMenuItem createAtlassesTool;
 	private JMenuItem pbrGeneratorTool;
+	private JMenuItem environmentSettingsTool;
 	private AtlasCreatorDialog atlasCreator;
 	private ResourcePackExtractorDialog resourcePackExtractor;
 	private PbrGeneratorDialog pbrGenerator;
 	private ExampleResourcePackDownloader exampleResourcePackDownloader;
 	private SavePresetDialog savePresetDialog;
+	private EnvironmentSettingsDialog environmentSettings;
 	
 	public ResourcePackManager() {
 		super();
@@ -138,12 +140,15 @@ public class ResourcePackManager extends JPanel {
 		ToolTips.registerTooltip(createAtlassesTool, ToolTips.TOOL_CREATE_ATLASSES);
 		pbrGeneratorTool = toolsMenu.add("Generator PBR textures");
 		ToolTips.registerTooltip(pbrGeneratorTool, ToolTips.TOOL_GENERATE_PBR_TEXTURES);
+		environmentSettingsTool = toolsMenu.add("Edit Environment Settings");
+		ToolTips.registerTooltip(environmentSettingsTool, ToolTips.TOOL_ENVIRONMENT_SETTINGS);
 		
 		atlasCreator = new AtlasCreatorDialog();
 		resourcePackExtractor = new ResourcePackExtractorDialog();
 		pbrGenerator = new PbrGeneratorDialog();
 		exampleResourcePackDownloader = new ExampleResourcePackDownloader();
 		savePresetDialog = new SavePresetDialog();
+		environmentSettings = new EnvironmentSettingsDialog();
 		
 		resourcePackSelector.reset(true);
 		
@@ -348,6 +353,16 @@ public class ResourcePackManager extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				pbrGenerator.setVisible(true);
 				pbrGenerator.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+			}
+			
+		});
+		
+		environmentSettingsTool.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				environmentSettings.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				environmentSettings.setVisible(true);
 			}
 			
 		});

@@ -80,6 +80,9 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	private CameraTransform transformStart;
 	private ExportBounds selectionStart;
 	
+	private int cursorX;
+	private int cursorY;
+	
 	private Renderer2D renderer;
 	private Thread rendererThread;
 	private Timer animTimer;
@@ -193,6 +196,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		Point lodMaxPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getLodMaxX() + 1, 
 						MCWorldExporter.getApp().getExportBounds().getLodMaxZ() + 1), getWidth(), getHeight());
 		
+		Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("FG", g);
+		
 		int selectionWidth = selectionMaxPos.ix() - selectionMinPos.ix();
 		int selectionHeight = selectionMaxPos.iy() - selectionMinPos.iy();
 		int lodWidth = lodMaxPos.ix() - lodMinPos.ix();
@@ -298,7 +303,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 							int posX = (pixelMinPos.ix() + pixelMaxPos.ix()) / 2;
 							int posY = (pixelMinPos.iy() + pixelMaxPos.iy()) / 2;
 							
-							Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("FG", g);
+							
 							g.drawString("FG", posX - ((int) (stringBounds.getWidth() / 2)), posY + ((int) (stringBounds.getHeight() / 2)));
 						}
 					}
@@ -315,12 +320,34 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			g.drawRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
 		}
 		
+		Point cursorCoordinates = transform.toWorld(new Point(cursorX, cursorY), getWidth(), getHeight());
+		renderer.setHeightSampleCoordinates(cursorCoordinates.ix(), cursorCoordinates.iy());
+		String xCoord = Integer.toString(cursorCoordinates.ix());
+		String yCoord = renderer.getHeightSample() == -1024 ? "" : Integer.toString(renderer.getHeightSample());
+		String zCoord = Integer.toString(cursorCoordinates.iy());
+		int ySpacing = ((int) stringBounds.getHeight())+3;
+		int rightBounds = (int) g.getFontMetrics().getStringBounds("X: 0000000", g).getWidth() + 18;
+		
+		g.setColor(new Color(0, 0, 0, 192));
+		g.fillRect(0, getHeight() - ySpacing * 3 - 16, rightBounds + 18, ySpacing * 3 + 16);
+		
+		g.setColor(new Color(128, 192, 255));
+		g.drawString("X:", 18, getHeight() - ySpacing * 2 - 12);
+		g.drawString("Y:", 18, getHeight() - ySpacing * 1 - 12);
+		g.drawString("Z:", 18, getHeight() - ySpacing * 0 - 12);
+		stringBounds = g.getFontMetrics().getStringBounds(xCoord, g);
+		g.drawString(xCoord, rightBounds - ((int) stringBounds.getWidth()), getHeight() - ySpacing * 2 - 12);
+		stringBounds = g.getFontMetrics().getStringBounds(yCoord, g);
+		g.drawString(yCoord, rightBounds - ((int) stringBounds.getWidth()), getHeight() - ySpacing * 1 - 12);
+		stringBounds = g.getFontMetrics().getStringBounds(zCoord, g);
+		g.drawString(zCoord, rightBounds - ((int) stringBounds.getWidth()), getHeight() - ySpacing * 0 - 12);
+		
 		if(MCWorldExporter.getApp().getWorld().isPaused()) {
 			g.setColor(new Color(32, 32, 32, 150));
 			g.fillRect(g.getClipBounds().x, g.getClipBounds().y, g.getClipBounds().width, g.getClipBounds().height);
 			
 			g.setColor(new Color(180, 180, 180));
-			Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("World Loading Paused", g);
+			stringBounds = g.getFontMetrics().getStringBounds("World Loading Paused", g);
 			g.drawString("World Loading Paused", 
 					((int) g.getClipBounds().getCenterX()) - ((int) (stringBounds.getWidth() / 2)), 
 					((int) g.getClipBounds().getCenterY()) + ((int) (stringBounds.getHeight() / 2)));
@@ -330,6 +357,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	
 	@Override
 	public void mouseMoved(MouseEvent e) {
+		cursorX = e.getX();
+		cursorY = e.getY();
 		if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) {
 			this.setCursor(new Cursor(Cursor.HAND_CURSOR));
 			mouseGrabType = 0;
@@ -489,6 +518,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	
 	@Override
 	public void mouseDragged(MouseEvent e) {
+		cursorX = e.getX();
+		cursorY = e.getY();
 		if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks())
 			return;
 		

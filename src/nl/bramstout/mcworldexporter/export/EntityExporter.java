@@ -177,7 +177,7 @@ public class EntityExporter {
 					
 					Mesh mesh = meshes.getOrDefault(texture, null);
 					if(mesh == null) {
-						mesh = new Mesh(boneGroup.getName() + "_" + Util.makeSafeName(texture), texture, false, true, 32, 16);
+						mesh = new Mesh(boneGroup.getName() + "_" + Util.makeSafeName(texture), texture, texture, false, true, 32, 16);
 						meshes.put(texture, mesh);
 					}
 					mesh.addFace(face, 0, 0, 0, atlas, null, 0);

@@ -1605,7 +1605,19 @@ public class BuiltInBlockState extends BlockState{
 
 		@Override
 		public boolean equal(Value other) {
-			throw new RuntimeException("Unsuported operation");
+			if(other.impl instanceof ValueDict) {
+				if(((ValueDict) other.impl).value.size() != value.size())
+					return false;
+				for(Entry<String, Value> entry : value.entrySet()) {
+					Value val = ((ValueDict) other.impl).value.getOrDefault(entry.getKey(), null);
+					if(val == null)
+						return false;
+					if(!val.equal(entry.getValue()))
+						return false;
+				}
+				return true;
+			}
+			return false;
 		}
 
 		@Override
@@ -1690,7 +1702,12 @@ public class BuiltInBlockState extends BlockState{
 
 		@Override
 		public boolean equal(Value other) {
-			throw new RuntimeException("Unsuported operation");
+			if(other.impl instanceof ValueNbtCompound) {
+				if(value == null || ((ValueNbtCompound) other.impl).value == null)
+					return value == ((ValueNbtCompound) other.impl).value;
+				return value.equals(((ValueNbtCompound) other.impl).value);
+			}
+			return false;
 		}
 
 		@Override
@@ -1779,7 +1796,12 @@ public class BuiltInBlockState extends BlockState{
 
 		@Override
 		public boolean equal(Value other) {
-			throw new RuntimeException("Unsuported operation");
+			if(other.impl instanceof ValueNbtList) {
+				if(value == null || ((ValueNbtList) other.impl).value == null)
+					return value == ((ValueNbtList) other.impl).value;
+				return value.equals(((ValueNbtList) other.impl).value);
+			}
+			return false;
 		}
 
 		@Override
@@ -1889,7 +1911,7 @@ public class BuiltInBlockState extends BlockState{
 
 		@Override
 		public boolean equal(Value other) {
-			throw new RuntimeException("Unsuported operation");
+			return other.impl instanceof ValueThisBlock;
 		}
 
 		@Override

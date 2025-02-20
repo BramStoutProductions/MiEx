@@ -294,7 +294,15 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	
 	@Override
 	public ModelHandler getModelHandler(String name) {
-		File modelFile = getResource(name, "models", "assets", ".json");
+		File modelFile = getResource(name, "models", "assets", ".obj");
+		if(modelFile.exists()) {
+			try {
+				return new ModelHandlerObj(modelFile);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		modelFile = getResource(name, "models", "assets", ".json");
 		if(modelFile.exists()) {
 			try {
 				JsonObject data = Json.read(modelFile).getAsJsonObject();

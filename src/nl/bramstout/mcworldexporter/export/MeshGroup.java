@@ -40,7 +40,7 @@ public class MeshGroup extends Mesh{
 	private List<Mesh> children;
 	
 	public MeshGroup(String name) {
-		super(name, name, false, false, 0, 0);
+		super(name, name, name, false, false, 0, 0);
 		children = new ArrayList<Mesh>();
 	}
 	
@@ -64,10 +64,11 @@ public class MeshGroup extends Mesh{
 			dos.writeUTF(getExtraData());
 		else
 			dos.writeUTF("");
-		dos.writeInt(children.size());
+		//dos.writeInt(children.size());
 		for(Mesh child : children) {
 			child.write(dos);
 		}
+		dos.writeByte(0); // End list with empty type.
 	}
 	
 }

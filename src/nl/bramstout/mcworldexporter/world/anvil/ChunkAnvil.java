@@ -38,6 +38,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
@@ -65,6 +66,10 @@ public class ChunkAnvil extends Chunk {
 		this.entityDataOffset = entityDataOffset;
 		this.entityDataSize = entityDataSize;
 		this.mutex = new Object();
+	}
+	
+	public int getDataSize() {
+		return dataSize;
 	}
 
 	@Override
@@ -105,7 +110,7 @@ public class ChunkAnvil extends Chunk {
 			if (compressionType == 1)
 				is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else if (compressionType == 2)
-				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
+				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1), new Inflater(), 1024 * 16);
 			else
 				throw new Exception("Could not load chunk. Some chunks might not be loaded. Invalid compression type: " + compressionType);
 

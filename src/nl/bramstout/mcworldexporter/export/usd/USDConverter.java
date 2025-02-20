@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.gson.JsonArray;
@@ -77,11 +78,36 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class USDConverter extends Converter{
 
+	private static class MatKey{
+		
+		private String matTexture;
+		private boolean hasBiomeColor;
+		
+		public MatKey(String matTexture, boolean hasBiomeColor) {
+			this.matTexture = matTexture;
+			this.hasBiomeColor = hasBiomeColor;
+		}
+		
+		@Override
+		public int hashCode() {
+			return matTexture.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof MatKey))
+				return false;
+			return ((MatKey) obj).matTexture.equals(matTexture) && ((MatKey) obj).hasBiomeColor == hasBiomeColor;
+		}
+		
+	}
+	
 	private static class ChunkInfo{
 		String name = "";
 		boolean isFG = false;
 		Map<IndividualBlockId, List<Float>> instancers = new HashMap<IndividualBlockId, List<Float>>();
 		Set<Texture> usedTextures = new HashSet<Texture>();
+		Map<MatKey, Materials.MaterialTemplate> templates = new HashMap<MatKey, Materials.MaterialTemplate>();
 	}
 	
 	private static class IndividualBlockInfo{
@@ -93,23 +119,32 @@ public class USDConverter extends Converter{
 	}
 	private static class Texture{
 		String texture;
+		Materials.MaterialTemplate materialTemplate;
 		boolean hasBiomeColor;
 		
-		public Texture(String texture, boolean hasBiomeColor) {
+		public Texture(String texture, String matTexture, boolean hasBiomeColor, Map<MatKey, Materials.MaterialTemplate> templates) {
 			this.texture = texture;
+			MatKey matKey = new MatKey(matTexture, hasBiomeColor);
+			this.materialTemplate = templates.getOrDefault(matKey, null);
+			if(this.materialTemplate == null) {
+				this.materialTemplate = Materials.getMaterial(matTexture, hasBiomeColor, currentOutputDir.getAbsolutePath());
+				templates.put(matKey, materialTemplate);
+			}
 			this.hasBiomeColor = hasBiomeColor;
 		}
 		
 		@Override
 		public boolean equals(Object obj) {
 			if(obj instanceof Texture)
-				return ((Texture)obj).texture.equals(texture) && ((Texture)obj).hasBiomeColor == hasBiomeColor;
+				return ((Texture)obj).texture.equals(texture) && 
+						((Texture)obj).materialTemplate.equals(materialTemplate) && 
+						((Texture)obj).hasBiomeColor == hasBiomeColor;
 			return false;
 		}
 		
 		@Override
 		public int hashCode() {
-			return texture.hashCode();
+			return Objects.hash(texture, materialTemplate);
 		}
 	}
 	
@@ -124,7 +159,7 @@ public class USDConverter extends Converter{
 	private List<ChunkInfo> chunkInfosFG = new ArrayList<ChunkInfo>();
 	private List<ChunkInfo> chunkInfosBG = new ArrayList<ChunkInfo>();
 	private Object mutex = new Object();
-	private static ThreadPool threadPool = new ThreadPool(2048);
+	private static ThreadPool threadPool = new ThreadPool("USD_Converter", 2048);
 	public static File currentOutputDir = null;
 	
 	public USDConverter(File inputFile, File outputFile) throws IOException {
@@ -214,10 +249,10 @@ public class USDConverter extends Converter{
 		rootWriter.beginOver("materials");
 		rootWriter.beginChildren();
 		for(Texture tex : entityUsedTextures) {
-			rootWriter.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
-											(tex.hasBiomeColor ? "_BIOME" : ""), false);
-			rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + Util.makeSafeName(tex.texture) + 
-											(tex.hasBiomeColor ? "_BIOME" : "") + ">");
+			rootWriter.writeAttributeName("rel", 
+					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
+			rootWriter.writeAttributeValue("</world/materials/" + 
+					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor) + ">");
 		}
 		rootWriter.endChildren();
 		rootWriter.endOver();
@@ -230,6 +265,7 @@ public class USDConverter extends Converter{
 		for(int i = 0; i < numChunks; ++i)
 			chunkFilenames[i] = dis.readUTF();
 		
+		Map<MatKey, Materials.MaterialTemplate> templates = new HashMap<MatKey, Materials.MaterialTemplate>();
 		dis.skipBytes(invididualBlocksOffset - dis.getPosition());
 		int numBaseMeshes = dis.readInt();
 		if(numBaseMeshes > 0) {
@@ -255,7 +291,7 @@ public class USDConverter extends Converter{
 				
 				int numMeshes = dis.readInt();
 				for(int meshId = 0; meshId < numMeshes; ++meshId)
-					readMesh(dis, rootWriter, rootWriter, null, true, "/world/materials/", usedTextures);
+					readMesh(dis, rootWriter, rootWriter, null, true, "/world/materials/", usedTextures, templates);
 				
 				rootWriter.endChildren();
 				rootWriter.endClass();
@@ -324,7 +360,7 @@ public class USDConverter extends Converter{
 			materialWriter.writeSharedNodes("/materials");
 		
 		for(Texture texture : usedTextures) {
-			Materials.MaterialTemplate material = Materials.getMaterial(texture.texture, texture.hasBiomeColor, currentOutputDir.getCanonicalPath());
+			Materials.MaterialTemplate material = texture.materialTemplate;
 			if(material != null)
 				for(MaterialWriter materialWriter : materialWriters)
 					materialWriter.writeMaterial(material, texture.texture, texture.hasBiomeColor, 
@@ -513,10 +549,10 @@ public class USDConverter extends Converter{
 			rootWriter.beginOver("materials");
 			rootWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				rootWriter.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
-												(tex.hasBiomeColor ? "_BIOME" : ""), false);
-				rootWriter.writeAttributeValue("</world/materials/" + "MAT_" + Util.makeSafeName(tex.texture) + 
-												(tex.hasBiomeColor ? "_BIOME" : "") + ">");
+				rootWriter.writeAttributeName("rel", 
+						MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
+				rootWriter.writeAttributeValue("</world/materials/" + 
+						MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor) + ">");
 			}
 			rootWriter.endChildren();
 			rootWriter.endOver();
@@ -581,7 +617,7 @@ public class USDConverter extends Converter{
 				
 				boolean isFG = dis.readByte() > 0;
 				chunkInfo.isFG = isFG;
-				int numMeshes = dis.readInt();
+				//int numMeshes = dis.readInt();
 				
 				USDWriter chunkWriter = new USDWriter(new File(converter.chunksFolder, chunkName + ".usd"));
 				USDWriter chunkRenderWriter = new USDWriter(new File(converter.chunksFolder, chunkName + "_render.usd"));
@@ -606,8 +642,12 @@ public class USDConverter extends Converter{
 				chunkRenderWriter.beginChildren();
 				
 				
-				for(int meshId = 0; meshId < numMeshes; ++meshId) {
-					converter.readMesh(dis, chunkWriter, chunkRenderWriter, null, false, "/chunk/materials.", chunkInfo.usedTextures);
+				//for(int meshId = 0; meshId < numMeshes; ++meshId) {
+				while(true) {
+					boolean hasNext = converter.readMesh(dis, chunkWriter, chunkRenderWriter, 
+									null, false, "/chunk/materials.", chunkInfo.usedTextures, chunkInfo.templates);
+					if(!hasNext)
+						break;
 				}
 				
 				int numIndividualBlocks = dis.readInt();
@@ -649,18 +689,21 @@ public class USDConverter extends Converter{
 			chunkWriter.beginDef("Scope", "materials");
 			chunkWriter.beginChildren();
 			for(Texture tex : chunkInfo.usedTextures) {
-				chunkWriter.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
-												(tex.hasBiomeColor ? "_BIOME" : ""), false);
+				chunkWriter.writeAttributeName("rel", 
+						MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
 			}
 			chunkWriter.endChildren();
 			chunkWriter.endDef();
 		}
 	}
 	
-	private void readMesh(LargeDataInputStream dis, USDWriter writer, USDWriter renderWriter, Mesh proxyMesh, boolean noProxy, 
-							String materialsPrim, Set<Texture> usedTextures) throws IOException{
+	private boolean readMesh(LargeDataInputStream dis, USDWriter writer, USDWriter renderWriter, Mesh proxyMesh, boolean noProxy, 
+							String materialsPrim, Set<Texture> usedTextures, Map<MatKey, Materials.MaterialTemplate> templates) 
+									throws IOException{
 		byte meshType = dis.readByte();
-		if(meshType == 1) { // Mesh
+		if(meshType == 0) { // End of list
+			return false;
+		} else if(meshType == 1) { // Mesh
 			
 			String meshName = dis.readUTF();
 			if(meshName.equals(""))
@@ -669,6 +712,7 @@ public class USDConverter extends Converter{
 				meshName = Util.makeSafeName(meshName);
 			boolean doubleSided = dis.readInt() > 0;
 			String texture = dis.readUTF();
+			String matTexture = dis.readUTF();
 			String extraData = dis.readUTF();
 			int numVertices = dis.readInt();
 			int numUVs = dis.readInt();
@@ -690,7 +734,9 @@ public class USDConverter extends Converter{
 				texture = "./" + chunksFolder.getName() + "/banners/" + bannerTexName;
 			}
 			
-			usedTextures.add(new Texture(texture, numColors > 0));
+			Texture textureObj = new Texture(texture, matTexture, numColors > 0, templates);
+			
+			usedTextures.add(textureObj);
 			
 			float[] vertexData = new float[numVertices * 3];
 			float[] uvData = new float[numUVs * 2];
@@ -749,21 +795,23 @@ public class USDConverter extends Converter{
 			int[] vertexIndicesCounts = new int[numFaces];
 			Arrays.fill(vertexIndicesCounts, 4);
 			
-			writeMesh(writer, meshName, materialsPrim, texture, extraData, null, doubleSided, vertexData, faceIndexData, 
+			writeMesh(writer, meshName, materialsPrim, textureObj, extraData, null, doubleSided, vertexData, faceIndexData, 
 						vertexIndicesCounts, uvData, uvIndexData, cornerUVData, cornerUVIndexData, normalData, normalIndexData, 
 						aoData, aoIndexData, numColors, colorData, colorIndexData, proxyMesh == null ? "component" : "subcomponent");
 			
 			
 			if(proxyMesh != null) {
 				proxyMesh.setTexture(texture, false);
+				proxyMesh.setMatTexture(matTexture);
 				proxyMesh.setExtraData(extraData);
 				proxyMesh.setDoubleSided(doubleSided);
-				Mesh subMesh = new Mesh(meshName, texture, false, doubleSided, extraData, vertexData, uvData, cornerUVData, colorData, 
-						normalData, aoData, faceIndexData, vertexIndicesCounts, uvIndexData, cornerUVIndexData, colorIndexData, 
+				Mesh subMesh = new Mesh(meshName, texture, matTexture, false, doubleSided, extraData, vertexData, uvData, cornerUVData, 
+						colorData, normalData, aoData, faceIndexData, vertexIndicesCounts, uvIndexData, cornerUVIndexData, colorIndexData, 
 						normalIndexData, aoIndexData);
 				proxyMesh.appendMesh(subMesh);
 			}
 			
+			return true;
 		}else if(meshType == 2) { // Group
 			
 			String groupName = dis.readUTF();
@@ -774,7 +822,7 @@ public class USDConverter extends Converter{
 			
 			String extraData = dis.readUTF();
 			
-			int numChildren = dis.readInt();
+			//int numChildren = dis.readInt();
 			
 			
 			renderWriter.beginDef("Xform", groupName);
@@ -838,23 +886,26 @@ public class USDConverter extends Converter{
 			Mesh proxyMesh2 = proxyMesh;
 			if(!noProxy) {
 				if(proxyMesh == null) {
-					proxyMesh2 = new Mesh(groupName + "_proxy", "", false, false, 1024, 16);
+					proxyMesh2 = new Mesh(groupName + "_proxy", "", "", false, false, 1024, 16);
 				}
 				
 				renderWriter.writeAttributeName("token", "purpose", true);
 				renderWriter.writeAttributeValueString("render");
 			}
 			
-			for(int childId = 0; childId < numChildren; ++childId) {
-				readMesh(dis, renderWriter, renderWriter, 
-						proxyMesh2, noProxy, materialsPrim, usedTextures);
+			//for(int childId = 0; childId < numChildren; ++childId) {
+			while(true) {
+				boolean hasNext = readMesh(dis, renderWriter, renderWriter, 
+						proxyMesh2, noProxy, materialsPrim, usedTextures, templates);
+				if(!hasNext)
+					break;
 			}
 			
 			renderWriter.endChildren();
 			renderWriter.endDef();
 			
 			if(!noProxy) {
-				writeMesh(writer, proxyMesh2, materialsPrim, null, "component");
+				writeMesh(writer, proxyMesh2, materialsPrim, null, "component", templates);
 				
 				// If we do load in the render version of the chunk, then
 				// that will have the render purpose. This means that the
@@ -875,12 +926,14 @@ public class USDConverter extends Converter{
 				renderWriter.endOver();
 			}
 			
+			return true;
 		}else {
 			throw new IOException("Invalid mesh type");
 		}
 	}
 	
-	private void writeMesh(USDWriter writer, Mesh mesh, String materialsPrim, String purpose, String kind) throws IOException {
+	private void writeMesh(USDWriter writer, Mesh mesh, String materialsPrim, String purpose, String kind,
+							Map<MatKey, Materials.MaterialTemplate> templates) throws IOException {
 		int numUVs = mesh.getUs().size();
 		float[] uvData = new float[numUVs * 2];
 		for(int i = 0; i < numUVs; ++i) {
@@ -899,8 +952,10 @@ public class USDConverter extends Converter{
 		int[] vertexIndicesCounts = new int[numFaces];
 		Arrays.fill(vertexIndicesCounts, 4);
 		
-		writeMesh(writer, mesh.getName(), materialsPrim, mesh.getTexture(), mesh.getExtraData(), purpose, mesh.isDoubleSided(), 
-					Arrays.copyOf(mesh.getVertices().getData(), mesh.getVertices().size()), 
+		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), numColors > 0, templates);
+		
+		writeMesh(writer, mesh.getName(), materialsPrim, textureObj, mesh.getExtraData(), purpose, 
+					mesh.isDoubleSided(), Arrays.copyOf(mesh.getVertices().getData(), mesh.getVertices().size()), 
 					Arrays.copyOf(mesh.getFaceIndices().getData(), mesh.getFaceIndices().size()), 
 					vertexIndicesCounts, uvData, 
 					Arrays.copyOf(mesh.getUvIndices().getData(), mesh.getUvIndices().size()),
@@ -913,8 +968,8 @@ public class USDConverter extends Converter{
 					numColors, colorData, colorIndexData, kind);
 	}
 	
-	private void writeMesh(USDWriter writer, String meshName, String materialsPrim, String texture, String extraData, String purpose,
-							boolean doubleSided, float[] vertexData, int[] faceIndices,
+	private void writeMesh(USDWriter writer, String meshName, String materialsPrim, Texture texture, 
+							String extraData, String purpose, boolean doubleSided, float[] vertexData, int[] faceIndices,
 							int[] faceIndicesCounts, float[] uvData, int[] uvIndexData,
 							float[] cornerUVData, int[] cornerUVIndexData,
 							float[] normalData, int[] normalIndexData, float[] aoData, int[] aoIndexData, 
@@ -1009,7 +1064,7 @@ public class USDConverter extends Converter{
 			}
 			
 			if(Config.exportDisplayColor) {
-				Color blockColor = new Color(ResourcePacks.getDefaultColour(texture));
+				Color blockColor = new Color(ResourcePacks.getDefaultColour(texture.texture));
 				if(numColors > 0) {
 					// Add in biome colours
 					blockColor.mult(new Color(colorData[0], colorData[1], colorData[2]));
@@ -1043,8 +1098,8 @@ public class USDConverter extends Converter{
 		
 		
 		writer.writeAttributeName("rel", "material:binding", false);
-		writer.writeAttributeValue("<" + materialsPrim + "MAT_" + Util.makeSafeName(texture) + 
-				(numColors > 0 ? "_BIOME" : "")+ ">");
+		writer.writeAttributeValue("<" + materialsPrim + 
+				MaterialWriter.getMaterialName(texture.texture, texture.materialTemplate, texture.hasBiomeColor) + ">");
 		
 		writer.endChildren();
 		writer.endDef();
@@ -1226,6 +1281,7 @@ public class USDConverter extends Converter{
 	
 	private void convertEntities(LargeDataInputStream dis, File usdFile) throws IOException {
 		USDWriter writer = new USDWriter(usdFile);
+		Map<MatKey, Materials.MaterialTemplate> templates = new HashMap<MatKey, Materials.MaterialTemplate>();
 		
 		writer.beginMetaData();
 		writer.writeMetaDataString("defaultPrim", "entities");
@@ -1253,7 +1309,7 @@ public class USDConverter extends Converter{
 			
 			int numMeshes = dis.readInt();
 			for(int meshId = 0; meshId < numMeshes; ++meshId)
-				readMesh(dis, writer, writer, null, true, "/entities/materials.", entityUsedTextures);
+				readMesh(dis, writer, writer, null, true, "/entities/materials.", entityUsedTextures, templates);
 			
 			writer.endChildren();
 			writer.endClass();
@@ -1264,8 +1320,8 @@ public class USDConverter extends Converter{
 		writer.beginDef("Scope", "materials");
 		writer.beginChildren();
 		for(Texture tex : entityUsedTextures) {
-			writer.writeAttributeName("rel", "MAT_" + Util.makeSafeName(tex.texture) + 
-											(tex.hasBiomeColor ? "_BIOME" : ""), false);
+			writer.writeAttributeName("rel", 
+					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
 		}
 		writer.endChildren();
 		writer.endDef();
