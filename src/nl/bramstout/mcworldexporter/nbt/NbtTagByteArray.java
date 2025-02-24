@@ -98,6 +98,36 @@ public class NbtTagByteArray extends NbtTag{
 	}
 	
 	@Override
+	public byte asByte() {
+		return 0;
+	}
+	
+	@Override
+	public short asShort() {
+		return 0;
+	}
+	
+	@Override
+	public int asInt() {
+		return 0;
+	}
+	
+	@Override
+	public long asLong() {
+		return 0;
+	}
+	
+	@Override
+	public float asFloat() {
+		return 0;
+	}
+	
+	@Override
+	public double asDouble() {
+		return 0;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + Arrays.hashCode(data);

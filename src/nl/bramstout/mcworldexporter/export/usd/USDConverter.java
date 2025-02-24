@@ -135,10 +135,16 @@ public class USDConverter extends Converter{
 		
 		@Override
 		public boolean equals(Object obj) {
-			if(obj instanceof Texture)
+			if(obj instanceof Texture) {
+				if(((Texture) obj).materialTemplate == null) {
+					return ((Texture)obj).texture.equals(texture) && 
+							((Texture)obj).materialTemplate == materialTemplate && 
+							((Texture)obj).hasBiomeColor == hasBiomeColor;
+				}
 				return ((Texture)obj).texture.equals(texture) && 
 						((Texture)obj).materialTemplate.equals(materialTemplate) && 
 						((Texture)obj).hasBiomeColor == hasBiomeColor;
+			}
 			return false;
 		}
 		

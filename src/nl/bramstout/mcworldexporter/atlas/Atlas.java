@@ -142,6 +142,8 @@ public class Atlas {
 						try {
 							if(Config.bannedMaterials.contains(entry.getKey()))
 								continue;
+							if(Config.ignoreAtlas.contains(entry.getKey()))
+								continue;
 							// If it's null or an empty object, then that means that texture
 							// shouldn't be part of an atlas.
 							if(entry.getValue().isJsonNull() || entry.getValue().getAsJsonObject().isEmpty()) {

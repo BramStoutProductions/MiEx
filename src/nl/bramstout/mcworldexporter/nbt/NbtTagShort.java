@@ -93,6 +93,36 @@ public class NbtTagShort extends NbtTag{
 	}
 	
 	@Override
+	public byte asByte() {
+		return (byte) data;
+	}
+	
+	@Override
+	public short asShort() {
+		return (short) data;
+	}
+	
+	@Override
+	public int asInt() {
+		return (int) data;
+	}
+	
+	@Override
+	public long asLong() {
+		return (long) data;
+	}
+	
+	@Override
+	public float asFloat() {
+		return (float) data;
+	}
+	
+	@Override
+	public double asDouble() {
+		return (double) data;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + data;

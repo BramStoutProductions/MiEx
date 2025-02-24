@@ -329,9 +329,9 @@ public class EntityAI {
 		context.setVariableDict(entity.getVariables());
 		
 		float scale = 1f;
-		NbtTagFloat scaleTag = (NbtTagFloat) entity.getProperties().get("Scale");
+		NbtTag scaleTag = entity.getProperties().get("Scale");
 		if(scaleTag != null)
-			scale = scaleTag.getData();
+			scale = scaleTag.asFloat();
 		
 		float scaleX = scale;
 		float scaleY = scale;

@@ -95,6 +95,54 @@ public class NbtTagString extends NbtTag{
 	}
 	
 	@Override
+	public byte asByte() {
+		try {
+			return Byte.parseByte(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
+	public short asShort() {
+		try {
+			return Short.parseShort(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
+	public int asInt() {
+		try {
+			return Integer.parseInt(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
+	public long asLong() {
+		try {
+			return Long.parseLong(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
+	public float asFloat() {
+		try {
+			return Float.parseFloat(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
+	public double asDouble() {
+		try {
+			return Double.parseDouble(data);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + data.hashCode();

@@ -74,6 +74,7 @@ public class ConfigDefaults {
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
+	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean runOptimiser;
@@ -215,6 +216,8 @@ public class ConfigDefaults {
 		randomAnimationYOffset.addAll(Arrays.asList(
 				"fire", "soul_fire"));
 		lodNoUVScale.addAll(Arrays.asList());
+		ignoreAtlas.addAll(Arrays.asList(
+				"block/grass_block_side"));
 		
 		lodPriority.put("grass_block", 200);
 		lodPriority.put("dirt", 2);

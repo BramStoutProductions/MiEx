@@ -45,7 +45,6 @@ import javax.swing.JOptionPane;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
@@ -67,15 +66,15 @@ public class WorldAnvil extends World{
 				if(tag.get("Data") != null)
 					tag = (NbtTagCompound) tag.get("Data");
 				
-				NbtTagInt dataVersionTag = (NbtTagInt) tag.get("DataVersion");
+				NbtTag dataVersionTag = tag.get("DataVersion");
 				if(dataVersionTag != null)
-					this.worldVersion = dataVersionTag.getData();
+					this.worldVersion = dataVersionTag.asInt();
 				
 				NbtTagCompound versionTag = (NbtTagCompound) tag.get("Version");
 				if(versionTag != null) {
-					NbtTagInt idTag = (NbtTagInt) versionTag.get("Id");
+					NbtTag idTag = versionTag.get("Id");
 					if(idTag != null)
-						this.worldVersion = idTag.getData();
+						this.worldVersion = idTag.asInt();
 				}
 				root.free();
 			}catch(Exception ex) {

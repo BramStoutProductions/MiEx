@@ -41,9 +41,7 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.translation.BlockTranslation.BlockTranslatorManager;
 import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
@@ -294,7 +292,7 @@ public class ChunkBedrock extends Chunk{
 						for (int i = 0; i < paletteSize; ++i) {
 							if((blockVersionNumber & 1) == 0) {
 								NbtTag block = NbtTag.readFromStream(biomeDis);
-								int id = ((NbtTagByte) block).getData();
+								int id = block.asByte();
 								String biomeName = BedrockBiomes.getName(id);
 								biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
 								paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
@@ -348,9 +346,9 @@ public class ChunkBedrock extends Chunk{
 						continue;
 					}
 					blockEntityName = ((NbtTagString) tmpTag).getData();
-					blockEntityX = ((NbtTagInt) blockEntity.get("x")).getData();
-					blockEntityY = ((NbtTagInt) blockEntity.get("y")).getData();
-					blockEntityZ = ((NbtTagInt) blockEntity.get("z")).getData();
+					blockEntityX = blockEntity.get("x").asInt();
+					blockEntityY = blockEntity.get("y").asInt();
+					blockEntityZ = blockEntity.get("z").asInt();
 					blockEntityX -= chunkX * 16;
 					blockEntityZ -= chunkZ * 16;
 					// Make sure that the block entity is actually in the chunk.

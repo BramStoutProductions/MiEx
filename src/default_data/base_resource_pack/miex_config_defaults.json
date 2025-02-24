@@ -562,6 +562,9 @@
     "minecraft:fire",
     "minecraft:soul_fire"
   ],
+  "ignoreAtlas": [
+	"minecraft:block/grass_block_side"
+  ],
   "lodNoUVScale": [],
   "lodPriority": {
     "mangrove_leaves": 10,

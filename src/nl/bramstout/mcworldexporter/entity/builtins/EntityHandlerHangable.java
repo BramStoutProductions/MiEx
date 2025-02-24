@@ -33,9 +33,6 @@ package nl.bramstout.mcworldexporter.entity.builtins;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagDouble;
-import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
@@ -47,29 +44,22 @@ public abstract class EntityHandlerHangable extends EntityHandler{
 		NbtTag posTag = entity.getProperties().get("Pos");
 		if(posTag != null && posTag instanceof NbtTagList) {
 			NbtTagList posList = (NbtTagList) posTag;
-			NbtTag el0 = posList.get(0);
-			if(el0 instanceof NbtTagFloat) {
-				entity.setX(((NbtTagFloat) posList.get(0)).getData());
-				entity.setY(((NbtTagFloat) posList.get(1)).getData());
-				entity.setZ(((NbtTagFloat) posList.get(2)).getData());
-			}else if(el0 instanceof NbtTagDouble) {
-				entity.setX((float) ((NbtTagDouble) posList.get(0)).getData());
-				entity.setY((float) ((NbtTagDouble) posList.get(1)).getData());
-				entity.setZ((float) ((NbtTagDouble) posList.get(2)).getData());
-			}
+			entity.setX(posList.get(0).asFloat());
+			entity.setY(posList.get(1).asFloat());
+			entity.setZ(posList.get(2).asFloat());
 		}
 		if(entity.getProperties().get("TileX") != null) {
-			float blockX = ((NbtTagInt) entity.getProperties().get("TileX")).getData();
-			float blockY = ((NbtTagInt) entity.getProperties().get("TileY")).getData();
-			float blockZ = ((NbtTagInt) entity.getProperties().get("TileZ")).getData();
+			float blockX = entity.getProperties().get("TileX").asFloat();
+			float blockY = entity.getProperties().get("TileY").asFloat();
+			float blockZ = entity.getProperties().get("TileZ").asFloat();
 			entity.setX(blockX);
 			entity.setY(blockY);
 			entity.setZ(blockZ);
 		}
 		if(entity.getProperties().get("x") != null) {
-			float blockX = ((NbtTagInt) entity.getProperties().get("x")).getData();
-			float blockY = ((NbtTagInt) entity.getProperties().get("y")).getData();
-			float blockZ = ((NbtTagInt) entity.getProperties().get("z")).getData();
+			float blockX = entity.getProperties().get("x").asFloat();
+			float blockY = entity.getProperties().get("y").asFloat();
+			float blockZ = entity.getProperties().get("z").asFloat();
 			entity.setX(blockX);
 			entity.setY(blockY);
 			entity.setZ(blockZ);

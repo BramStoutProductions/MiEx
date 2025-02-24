@@ -33,7 +33,6 @@ package nl.bramstout.mcworldexporter.world.bedrock;
 
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
 import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.world.Player;
@@ -46,12 +45,12 @@ public class PlayerBedrock extends Player{
 		NbtTag posTag = data.get("Pos");
 		if(posTag != null && posTag instanceof NbtTagList) {
 			if(((NbtTagList) posTag).getSize() >= 3) {
-				NbtTagFloat xTag = (NbtTagFloat) ((NbtTagList)posTag).get(0);
-				NbtTagFloat yTag = (NbtTagFloat) ((NbtTagList)posTag).get(1);
-				NbtTagFloat zTag = (NbtTagFloat) ((NbtTagList)posTag).get(2);
-				this.x = xTag.getData();
-				this.y = yTag.getData();
-				this.z = zTag.getData();
+				NbtTag xTag = ((NbtTagList)posTag).get(0);
+				NbtTag yTag = ((NbtTagList)posTag).get(1);
+				NbtTag zTag = ((NbtTagList)posTag).get(2);
+				this.x = xTag.asFloat();
+				this.y = yTag.asFloat();
+				this.z = zTag.asFloat();
 			}
 		}
 	}

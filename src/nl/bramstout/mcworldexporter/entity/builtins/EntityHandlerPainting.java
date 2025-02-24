@@ -37,9 +37,7 @@ import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -81,13 +79,13 @@ public class EntityHandlerPainting extends EntityHandlerHangable{
 					if(assetIdTag != null)
 						motive = assetIdTag.getData();
 					
-					NbtTagInt widthTag = (NbtTagInt) dataTag.get("width");
+					NbtTag widthTag = dataTag.get("width");
 					if(widthTag != null)
-						width = widthTag.getData();
+						width = widthTag.asInt();
 					
-					NbtTagInt heightTag = (NbtTagInt) dataTag.get("height");
+					NbtTag heightTag = dataTag.get("height");
 					if(heightTag != null)
-						height = heightTag.getData();
+						height = heightTag.asInt();
 					
 					if(motive != null) {
 						variant = new PaintingVariant(motive, motive, width, height);
@@ -109,7 +107,7 @@ public class EntityHandlerPainting extends EntityHandlerHangable{
 			facingTag = entity.getProperties().get("Direction");
 		byte facingByte = 0;
 		if(facingTag != null)
-			facingByte = ((NbtTagByte) facingTag).getData();
+			facingByte = facingTag.asByte();
 		if(facingByte == 4)
 			facing = Direction.DOWN;
 		else if(facingByte == 5)

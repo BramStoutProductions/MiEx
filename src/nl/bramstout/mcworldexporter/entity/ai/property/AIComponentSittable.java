@@ -34,7 +34,7 @@ package nl.bramstout.mcworldexporter.entity.ai.property;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.ai.AIComponent;
 import nl.bramstout.mcworldexporter.entity.ai.EntityEvent;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 
 public class AIComponentSittable extends AIComponent{
 
@@ -57,9 +57,9 @@ public class AIComponentSittable extends AIComponent{
 	@Override
 	public boolean tick(Entity entity, float time, float deltaTime) {
 		byte sitting = 0;
-		NbtTagByte sittingTag = (NbtTagByte) entity.getProperties().get("Sitting");
+		NbtTag sittingTag = entity.getProperties().get("Sitting");
 		if(sittingTag != null) {
-			sitting = sittingTag.getData();
+			sitting = sittingTag.asByte();
 		}
 		
 		if(sitting != prevSitting) {
@@ -76,9 +76,9 @@ public class AIComponentSittable extends AIComponent{
 	@Override
 	public void disabledTick(Entity entity, float time, float deltaTime) {
 		byte sitting = 0;
-		NbtTagByte sittingTag = (NbtTagByte) entity.getProperties().get("Sitting");
+		NbtTag sittingTag = entity.getProperties().get("Sitting");
 		if(sittingTag != null) {
-			sitting = sittingTag.getData();
+			sitting = sittingTag.asByte();
 		}
 		
 		prevSitting = sitting;

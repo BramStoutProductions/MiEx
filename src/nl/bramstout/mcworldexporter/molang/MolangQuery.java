@@ -45,13 +45,8 @@ import nl.bramstout.mcworldexporter.molang.MolangValue.MolangDictionary;
 import nl.bramstout.mcworldexporter.molang.MolangValue.MolangFunction;
 import nl.bramstout.mcworldexporter.molang.MolangValue.MolangObject;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
-import nl.bramstout.mcworldexporter.nbt.NbtTagLong;
-import nl.bramstout.mcworldexporter.nbt.NbtTagShort;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
@@ -528,10 +523,10 @@ public class MolangQuery extends MolangObject{
 				if(inventoryTag != null) {
 					for(NbtTag tag : inventoryTag.getData()) {
 						NbtTagCompound inventoryTag2 = (NbtTagCompound) tag;
-						NbtTagByte slotTag = (NbtTagByte) inventoryTag2.get("Slot");
+						NbtTag slotTag = inventoryTag2.get("Slot");
 						if(slotTag == null)
 							continue;
-						if((((int) slotTag.getData()) - 27) != slotIndex && slotIndex >= 0)
+						if((((int) slotTag.asByte()) - 27) != slotIndex && slotIndex >= 0)
 							continue;
 						NbtTagString nameTag = (NbtTagString) inventoryTag2.get("Name");
 						if(nameTag != null && !nameTag.getData().isEmpty())
@@ -543,10 +538,10 @@ public class MolangQuery extends MolangObject{
 				if(inventoryTag != null) {
 					for(NbtTag tag : inventoryTag.getData()) {
 						NbtTagCompound inventoryTag2 = (NbtTagCompound) tag;
-						NbtTagByte slotTag = (NbtTagByte) inventoryTag2.get("Slot");
+						NbtTag slotTag = inventoryTag2.get("Slot");
 						if(slotTag == null)
 							continue;
-						if(((int) slotTag.getData()) != slotIndex && slotIndex >= 0)
+						if(((int) slotTag.asByte()) != slotIndex && slotIndex >= 0)
 							continue;
 						NbtTagString nameTag = (NbtTagString) inventoryTag2.get("Name");
 						if(nameTag != null && !nameTag.getData().isEmpty())
@@ -558,10 +553,10 @@ public class MolangQuery extends MolangObject{
 				if(inventoryTag != null) {
 					for(NbtTag tag : inventoryTag.getData()) {
 						NbtTagCompound inventoryTag2 = (NbtTagCompound) tag;
-						NbtTagByte slotTag = (NbtTagByte) inventoryTag2.get("Slot");
+						NbtTag slotTag = inventoryTag2.get("Slot");
 						if(slotTag == null)
 							continue;
-						if(((int) slotTag.getData()) != slotIndex && slotIndex >= 0)
+						if(((int) slotTag.asByte()) != slotIndex && slotIndex >= 0)
 							continue;
 						NbtTagString nameTag = (NbtTagString) inventoryTag2.get("Name");
 						if(nameTag != null && !nameTag.getData().isEmpty())
@@ -584,9 +579,9 @@ public class MolangQuery extends MolangObject{
 		public IsEating() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte isEatingTag = (NbtTagByte) properties.get("IsEating");
+			NbtTag isEatingTag = properties.get("IsEating");
 			if(isEatingTag != null)
-				return new MolangValue(isEatingTag.getData() > 0);
+				return new MolangValue(isEatingTag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -594,9 +589,9 @@ public class MolangQuery extends MolangObject{
 		public IsRoaring() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte isRoaringTag = (NbtTagByte) properties.get("IsRoaring");
+			NbtTag isRoaringTag = properties.get("IsRoaring");
 			if(isRoaringTag != null)
-				return new MolangValue(isRoaringTag.getData() > 0);
+				return new MolangValue(isRoaringTag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -610,9 +605,9 @@ public class MolangQuery extends MolangObject{
 					return new MolangValue(info.animation.getAnimHeadPitch().getKeyframeAtTime(info.globalTime).value);
 				}
 			}
-			NbtTagFloat pitchTag = (NbtTagFloat) properties.get("HeadPitch");
+			NbtTag pitchTag = properties.get("HeadPitch");
 			if(pitchTag != null)
-				return new MolangValue(pitchTag.getData());
+				return new MolangValue(pitchTag.asFloat());
 			return new MolangValue(0f);
 		}
 	}
@@ -626,9 +621,9 @@ public class MolangQuery extends MolangObject{
 					return new MolangValue(info.animation.getAnimHeadYaw().getKeyframeAtTime(info.globalTime).value);
 				}
 			}
-			NbtTagFloat yawTag = (NbtTagFloat) properties.get("HeadYaw");
+			NbtTag yawTag = properties.get("HeadYaw");
 			if(yawTag != null)
-				return new MolangValue(yawTag.getData());
+				return new MolangValue(yawTag.asFloat());
 			return new MolangValue(0f);
 		}
 	}
@@ -642,9 +637,9 @@ public class MolangQuery extends MolangObject{
 					return new MolangValue(info.animation.getAnimPitch().getKeyframeAtTime(info.globalTime).value);
 				}
 			}
-			NbtTagFloat pitchTag = (NbtTagFloat) properties.get("Pitch");
+			NbtTag pitchTag = properties.get("Pitch");
 			if(pitchTag != null)
-				return new MolangValue(pitchTag.getData());
+				return new MolangValue(pitchTag.asFloat());
 			return new MolangValue(0f);
 		}
 	}
@@ -658,9 +653,9 @@ public class MolangQuery extends MolangObject{
 					return new MolangValue(info.animation.getAnimYaw().getKeyframeAtTime(info.globalTime).value);
 				}
 			}
-			NbtTagFloat yawTag = (NbtTagFloat) properties.get("Yaw");
+			NbtTag yawTag = properties.get("Yaw");
 			if(yawTag != null)
-				return new MolangValue(yawTag.getData());
+				return new MolangValue(yawTag.asFloat());
 			return new MolangValue(0f);
 		}
 	}
@@ -680,9 +675,9 @@ public class MolangQuery extends MolangObject{
 			float dz = 0f;
 			NbtTagList motion = (NbtTagList) properties.get("Motion");
 			if(motion != null) {
-				dx = ((NbtTagFloat) motion.get(0)).getData();
-				dy = ((NbtTagFloat) motion.get(1)).getData();
-				dz = ((NbtTagFloat) motion.get(2)).getData();
+				dx = motion.get(0).asFloat();
+				dy = motion.get(1).asFloat();
+				dz = motion.get(2).asFloat();
 			}
 			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			if(length > 0.0000001f) {
@@ -702,9 +697,9 @@ public class MolangQuery extends MolangObject{
 		public AngerLevel() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte isAngryTag = (NbtTagByte) properties.get("IsAngry");
+			NbtTag isAngryTag = properties.get("IsAngry");
 			if(isAngryTag != null)
-				return new MolangValue((int) isAngryTag.getData());
+				return new MolangValue((int) isAngryTag.asByte());
 			return new MolangValue(0);
 		}
 	}
@@ -731,13 +726,13 @@ public class MolangQuery extends MolangObject{
 		public MolangValue eval(MolangContext context) {
 			float pitch = 0f;
 			float yaw = 0f;
-			NbtTagFloat pitchTag = (NbtTagFloat) properties.get("Pitch");
+			NbtTag pitchTag = properties.get("Pitch");
 			if(pitchTag != null)
-				pitch = pitchTag.getData();
+				pitch = pitchTag.asFloat();
 			
-			NbtTagFloat yawTag = (NbtTagFloat) properties.get("Yaw");
+			NbtTag yawTag = properties.get("Yaw");
 			if(yawTag != null)
-				yaw = yawTag.getData();
+				yaw = yawTag.asFloat();
 			
 			if(pitch <= 45f)
 				return new MolangValue(0);
@@ -762,9 +757,9 @@ public class MolangQuery extends MolangObject{
 		public MolangValue eval(MolangContext context) {
 			float yaw = 0f;
 			
-			NbtTagFloat yawTag = (NbtTagFloat) properties.get("Yaw");
+			NbtTag yawTag = properties.get("Yaw");
 			if(yawTag != null)
-				yaw = yawTag.getData();
+				yaw = yawTag.asFloat();
 			
 			yaw += 45f;
 			yaw /= 360f;
@@ -871,9 +866,9 @@ public class MolangQuery extends MolangObject{
 		public IsAlive() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("Dead");
+			NbtTag tag = properties.get("Dead");
 			if(tag != null)
-				return new MolangValue(tag.getData() <= 0);
+				return new MolangValue(tag.asByte() <= 0);
 			return new MolangValue(true);
 		}
 	}
@@ -881,9 +876,9 @@ public class MolangQuery extends MolangObject{
 		public IsAngry() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsAngry");
+			NbtTag tag = properties.get("IsAngry");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -891,9 +886,9 @@ public class MolangQuery extends MolangObject{
 		public IsBaby() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsBaby");
+			NbtTag tag = properties.get("IsBaby");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -901,9 +896,9 @@ public class MolangQuery extends MolangObject{
 		public IsChested() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("Chested");
+			NbtTag tag = properties.get("Chested");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -911,9 +906,9 @@ public class MolangQuery extends MolangObject{
 		public IsGliding() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsGliding");
+			NbtTag tag = properties.get("IsGliding");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -921,9 +916,9 @@ public class MolangQuery extends MolangObject{
 		public IsIllagerCaptain() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsIllagerCaptain");
+			NbtTag tag = properties.get("IsIllagerCaptain");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -969,9 +964,9 @@ public class MolangQuery extends MolangObject{
 			float dz = 0f;
 			NbtTagList motion = (NbtTagList) properties.get("Motion");
 			if(motion != null) {
-				dx = ((NbtTagFloat) motion.get(0)).getData();
-				dy = ((NbtTagFloat) motion.get(1)).getData();
-				dz = ((NbtTagFloat) motion.get(2)).getData();
+				dx = motion.get(0).asFloat();
+				dy = motion.get(1).asFloat();
+				dz = motion.get(2).asFloat();
 			}
 			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			return new MolangValue(length > 0.0001f);
@@ -981,9 +976,9 @@ public class MolangQuery extends MolangObject{
 		public IsOnFire() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagShort tag = (NbtTagShort) properties.get("Fire");
+			NbtTag tag = properties.get("Fire");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asShort() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -991,9 +986,9 @@ public class MolangQuery extends MolangObject{
 		public IsOnGround() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("OnGround");
+			NbtTag tag = properties.get("OnGround");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1008,9 +1003,9 @@ public class MolangQuery extends MolangObject{
 		public IsOrphaned() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsOrphaned");
+			NbtTag tag = properties.get("IsOrphaned");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1018,9 +1013,9 @@ public class MolangQuery extends MolangObject{
 		public IsSaddled() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("Saddled");
+			NbtTag tag = properties.get("Saddled");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1028,9 +1023,9 @@ public class MolangQuery extends MolangObject{
 		public IsScared() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsScared");
+			NbtTag tag = properties.get("IsScared");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1038,9 +1033,9 @@ public class MolangQuery extends MolangObject{
 		public IsSheared() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("Sheared");
+			NbtTag tag = properties.get("Sheared");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1048,9 +1043,9 @@ public class MolangQuery extends MolangObject{
 		public IsSitting() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("Sitting");
+			NbtTag tag = properties.get("Sitting");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1058,9 +1053,9 @@ public class MolangQuery extends MolangObject{
 		public IsStunned() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsStunned");
+			NbtTag tag = properties.get("IsStunned");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1068,9 +1063,9 @@ public class MolangQuery extends MolangObject{
 		public IsSwimming() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsSwimming");
+			NbtTag tag = properties.get("IsSwimming");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1078,9 +1073,9 @@ public class MolangQuery extends MolangObject{
 		public IsTamed() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsTamed");
+			NbtTag tag = properties.get("IsTamed");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1108,9 +1103,9 @@ public class MolangQuery extends MolangObject{
 		public MarkVariant() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagInt tag = (NbtTagInt) properties.get("MarkVariant");
+			NbtTag tag = properties.get("MarkVariant");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asInt());
 			return new MolangValue(0);
 		}
 	}
@@ -1125,9 +1120,9 @@ public class MolangQuery extends MolangObject{
 		public ModelScale() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagFloat tag = (NbtTagFloat) properties.get("Scale");
+			NbtTag tag = properties.get("Scale");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asFloat());
 			return new MolangValue(1f);
 		}
 	}
@@ -1141,20 +1136,20 @@ public class MolangQuery extends MolangObject{
 			 */
 			float movementSpeed = 0.1f;
 			float scale = 1f;
-			NbtTagFloat tag = (NbtTagFloat) properties.get("Scale");
+			NbtTag tag = properties.get("Scale");
 			if(tag != null)
-				scale = tag.getData();
-			NbtTagFloat movementSpeedTag = (NbtTagFloat) properties.get("MovementSpeed");
+				scale = tag.asFloat();
+			NbtTag movementSpeedTag = properties.get("MovementSpeed");
 			if(movementSpeedTag != null)
-				movementSpeed = movementSpeedTag.getData();
+				movementSpeed = movementSpeedTag.asFloat();
 			movementSpeed *= scale;
 			
 			float dx = 0f;
 			float dz = 0f;
 			NbtTagList motion = (NbtTagList) properties.get("Motion");
 			if(motion != null) {
-				dx = ((NbtTagFloat) motion.get(0)).getData();
-				dz = ((NbtTagFloat) motion.get(2)).getData();
+				dx = motion.get(0).asFloat();
+				dz = motion.get(2).asFloat();
 			}
 			float length = (float) Math.sqrt(dx * dx + dz * dz);
 			return new MolangValue(length / movementSpeed);
@@ -1164,9 +1159,9 @@ public class MolangQuery extends MolangObject{
 		public ModifiedDistanceMoved() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagFloat tag = (NbtTagFloat) properties.get("NormalisedDistanceMoved");
+			NbtTag tag = properties.get("NormalisedDistanceMoved");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asFloat());
 			return new MolangValue(1f);
 		}
 	}
@@ -1174,9 +1169,9 @@ public class MolangQuery extends MolangObject{
 		public DistanceMoved() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagFloat tag = (NbtTagFloat) properties.get("DistanceMoved");
+			NbtTag tag = properties.get("DistanceMoved");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asFloat());
 			return new MolangValue(1f);
 		}
 	}
@@ -1198,9 +1193,9 @@ public class MolangQuery extends MolangObject{
 		public OnFireTime() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagShort tag = (NbtTagShort) properties.get("Fire");
+			NbtTag tag = properties.get("Fire");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0 ? 1f : 0f);
+				return new MolangValue(tag.asShort() > 0 ? 1f : 0f);
 			return new MolangValue(0f);
 		}
 	}
@@ -1208,9 +1203,9 @@ public class MolangQuery extends MolangObject{
 		public OutOfControl() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("IsOutOfControl");
+			NbtTag tag = properties.get("IsOutOfControl");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1223,9 +1218,9 @@ public class MolangQuery extends MolangObject{
 			float dz = 0f;
 			NbtTagList motion = (NbtTagList) properties.get("Motion");
 			if(motion != null) {
-				dx = ((NbtTagFloat) motion.get(0)).getData() / 20f;
-				dy = ((NbtTagFloat) motion.get(1)).getData() / 20f;
-				dz = ((NbtTagFloat) motion.get(2)).getData() / 20f;
+				dx = motion.get(0).asFloat() / 20f;
+				dy = motion.get(1).asFloat() / 20f;
+				dz = motion.get(2).asFloat() / 20f;
 			}
 			
 			int axis = (int) context.getTempDict().getField("arg_0").asNumber(context);
@@ -1240,9 +1235,9 @@ public class MolangQuery extends MolangObject{
 		public ShowBottom() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("ShowBottom");
+			NbtTag tag = properties.get("ShowBottom");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1250,9 +1245,9 @@ public class MolangQuery extends MolangObject{
 		public SkinId() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagInt tag = (NbtTagInt) properties.get("SkinID");
+			NbtTag tag = properties.get("SkinID");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asInt());
 			return new MolangValue(0);
 		}
 	}
@@ -1260,9 +1255,9 @@ public class MolangQuery extends MolangObject{
 		public Variant() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagInt tag = (NbtTagInt) properties.get("Variant");
+			NbtTag tag = properties.get("Variant");
 			if(tag != null)
-				return new MolangValue(tag.getData());
+				return new MolangValue(tag.asInt());
 			return new MolangValue(0);
 		}
 	}
@@ -1273,7 +1268,7 @@ public class MolangQuery extends MolangObject{
 			float dy = 0f;
 			NbtTagList motion = (NbtTagList) properties.get("Motion");
 			if(motion != null) {
-				dy = ((NbtTagFloat) motion.get(1)).getData();
+				dy = motion.get(1).asFloat();
 			}
 			
 			return new MolangValue(dy);
@@ -1290,9 +1285,9 @@ public class MolangQuery extends MolangObject{
 		public CanClimb() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("CanClimb");
+			NbtTag tag = properties.get("CanClimb");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1300,9 +1295,9 @@ public class MolangQuery extends MolangObject{
 		public CanFly() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("CanFly");
+			NbtTag tag = properties.get("CanFly");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1310,9 +1305,9 @@ public class MolangQuery extends MolangObject{
 		public GroundSpeed() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagFloat tag = (NbtTagFloat) properties.get("MovementSpeed");
+			NbtTag tag = properties.get("MovementSpeed");
 			if(tag != null)
-				return new MolangValue(tag.getData() * 20f);
+				return new MolangValue(tag.asFloat() * 20f);
 			return new MolangValue(1f);
 		}
 	}
@@ -1320,9 +1315,9 @@ public class MolangQuery extends MolangObject{
 		public HasCollision() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("HasCollision");
+			NbtTag tag = properties.get("HasCollision");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1330,9 +1325,9 @@ public class MolangQuery extends MolangObject{
 		public HasGravity() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagByte tag = (NbtTagByte) properties.get("HasGravity");
+			NbtTag tag = properties.get("HasGravity");
 			if(tag != null)
-				return new MolangValue(tag.getData() > 0);
+				return new MolangValue(tag.asByte() > 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1340,9 +1335,9 @@ public class MolangQuery extends MolangObject{
 		public HasTarget() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("TargetID");
+			NbtTag tag = properties.get("TargetID");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1350,9 +1345,9 @@ public class MolangQuery extends MolangObject{
 		public IsCharging() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsCharged");
+			NbtTag tag = properties.get("IsCharged");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1360,9 +1355,9 @@ public class MolangQuery extends MolangObject{
 		public IsCroaking() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsCroaking");
+			NbtTag tag = properties.get("IsCroaking");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1370,9 +1365,9 @@ public class MolangQuery extends MolangObject{
 		public IsIgnited() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsFuseLit");
+			NbtTag tag = properties.get("IsFuseLit");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1381,17 +1376,17 @@ public class MolangQuery extends MolangObject{
 		@Override
 		public MolangValue eval(MolangContext context) {
 			float scale = 1f;
-			NbtTagFloat tag = (NbtTagFloat) properties.get("Scale");
+			NbtTag tag = properties.get("Scale");
 			if(tag != null)
-				scale = tag.getData();
+				scale = tag.asFloat();
 			float collisionBoxWidth = 0f;
 			float collisionBoxHeight = 0f;
-			tag = (NbtTagFloat) properties.get("CollisionBoxWidth");
+			tag = properties.get("CollisionBoxWidth");
 			if(tag != null)
-				collisionBoxWidth = tag.getData();
-			tag = (NbtTagFloat) properties.get("CollisionBoxHeight");
+				collisionBoxWidth = tag.asFloat();
+			tag = properties.get("CollisionBoxHeight");
 			if(tag != null)
-				collisionBoxHeight = tag.getData();
+				collisionBoxHeight = tag.asFloat();
 			
 			float minX = x - (collisionBoxWidth * scale) / 2f;
 			float minY = y;
@@ -1461,9 +1456,9 @@ public class MolangQuery extends MolangObject{
 		public IsJumping() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsJumping");
+			NbtTag tag = properties.get("IsJumping");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1471,9 +1466,9 @@ public class MolangQuery extends MolangObject{
 		public IsLayingDown() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsLayingDown");
+			NbtTag tag = properties.get("IsLayingDown");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1481,9 +1476,9 @@ public class MolangQuery extends MolangObject{
 		public IsLevitating() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("OnGround");
+			NbtTag tag = properties.get("OnGround");
 			if(tag != null)
-				return new MolangValue(tag.getData() == 0);
+				return new MolangValue(tag.asLong() == 0);
 			return new MolangValue(false);
 		}
 	}
@@ -1491,9 +1486,9 @@ public class MolangQuery extends MolangObject{
 		public IsStackable() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			NbtTagLong tag = (NbtTagLong) properties.get("IsStackable");
+			NbtTag tag = properties.get("IsStackable");
 			if(tag != null)
-				return new MolangValue(tag.getData() != 0);
+				return new MolangValue(tag.asLong() != 0);
 			return new MolangValue(false);
 		}
 	}

@@ -33,7 +33,7 @@ package nl.bramstout.mcworldexporter.entity.ai;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetEntity;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 
 public class AIComponentPeek extends AIComponent{
 
@@ -62,9 +62,9 @@ public class AIComponentPeek extends AIComponent{
 	@Override
 	public boolean tick(Entity entity, float time, float deltaTime) {
 		boolean peekState = false;
-		NbtTagByte isPeekingTag = (NbtTagByte) entity.getProperties().get("IsPeeking");
+		NbtTag isPeekingTag = entity.getProperties().get("IsPeeking");
 		if(isPeekingTag != null)
-			peekState = isPeekingTag.getData() > 0;
+			peekState = isPeekingTag.asByte() > 0;
 		
 		if(peekState != prevPeekState) {
 			prevPeekState = peekState;
@@ -83,9 +83,9 @@ public class AIComponentPeek extends AIComponent{
 				}
 				
 				peekState = false;
-				isPeekingTag = (NbtTagByte) target.getProperties().get("IsPeeking");
+				isPeekingTag = target.getProperties().get("IsPeeking");
 				if(isPeekingTag != null)
-					peekState = isPeekingTag.getData() > 0;
+					peekState = isPeekingTag.asByte() > 0;
 				
 				if(peekState != prevTargetPeekState) {
 					prevTargetPeekState = peekState;
@@ -104,9 +104,9 @@ public class AIComponentPeek extends AIComponent{
 	@Override
 	public void disabledTick(Entity entity, float time, float deltaTime) {
 		boolean peekState = false;
-		NbtTagByte isPeekingTag = (NbtTagByte) entity.getProperties().get("IsPeeking");
+		NbtTag isPeekingTag = entity.getProperties().get("IsPeeking");
 		if(isPeekingTag != null)
-			peekState = isPeekingTag.getData() > 0;
+			peekState = isPeekingTag.asByte() > 0;
 		prevPeekState = peekState;
 	}
 

@@ -57,11 +57,9 @@ import nl.bramstout.mcworldexporter.molang.MolangValue;
 import nl.bramstout.mcworldexporter.molang.MolangValue.MolangObject;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagDouble;
 import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
 import nl.bramstout.mcworldexporter.nbt.NbtTagIntArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
-import nl.bramstout.mcworldexporter.nbt.NbtTagLong;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.AnimationController;
 import nl.bramstout.mcworldexporter.resourcepack.AnimationController.AnimationState;
@@ -343,26 +341,20 @@ public class EntityHandlerBedrockEdition extends EntityHandler{
 		NbtTag posTag = entity.getProperties().get("Pos");
 		if(posTag != null && posTag instanceof NbtTagList) {
 			NbtTagList posList = (NbtTagList) posTag;
-			if(posList.get(0) instanceof NbtTagFloat) {
-				entity.setX(((NbtTagFloat) posList.get(0)).getData());
-				entity.setY(((NbtTagFloat) posList.get(1)).getData());
-				entity.setZ(((NbtTagFloat) posList.get(2)).getData());
-			}else if(posList.get(0) instanceof NbtTagDouble) {
-				entity.setX((float) ((NbtTagDouble) posList.get(0)).getData());
-				entity.setY((float) ((NbtTagDouble) posList.get(1)).getData());
-				entity.setZ((float) ((NbtTagDouble) posList.get(2)).getData());
-			}
+			entity.setX(posList.get(0).asFloat());
+			entity.setY(posList.get(1).asFloat());
+			entity.setZ(posList.get(2).asFloat());
 		}
 		
 		NbtTag rotationTag = entity.getProperties().get("Rotation");
 		if(rotationTag != null && rotationTag instanceof NbtTagList) {
 			NbtTagList rotationList = (NbtTagList) rotationTag;
-			entity.setYaw(((NbtTagFloat) rotationList.get(0)).getData());
-			entity.setPitch(((NbtTagFloat) rotationList.get(1)).getData());
+			entity.setYaw(rotationList.get(0).asFloat());
+			entity.setPitch(rotationList.get(1).asFloat());
 		}
-		NbtTagLong uniqueIdTag = (NbtTagLong) entity.getProperties().get("UniqueID");
+		NbtTag uniqueIdTag = entity.getProperties().get("UniqueID");
 		if(uniqueIdTag != null)
-			entity.setUniqueId(uniqueIdTag.getData());
+			entity.setUniqueId(uniqueIdTag.asLong());
 		NbtTagIntArray uuidTag = (NbtTagIntArray) entity.getProperties().get("UUID");
 		if(uuidTag != null) {
 			if(uuidTag.getData().length >= 4) {

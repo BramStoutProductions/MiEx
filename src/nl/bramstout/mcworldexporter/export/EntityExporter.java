@@ -322,6 +322,9 @@ public class EntityExporter {
 				
 				if(!MCWorldExporter.getApp().getExportBounds().isBlockInEnabledChunk(blockX, blockZ))
 					continue;
+				int worldHeight = MCWorldExporter.getApp().getWorld().getHeight(blockX, blockZ);
+				if((blockY - 32) > worldHeight)
+					continue; // We are fully up in the air.
 				
 				// Make sure that the block can be spawned in.
 				// So it's either air or water.
@@ -335,6 +338,8 @@ public class EntityExporter {
 				// Now if the block is air, we need to find a spot with a non-air block below it.
 				if(blockId == 0) {
 					int minY = Math.max(boundsMinY, blockY - 32);
+					// Clamp blockY to just above the height map.
+					blockY = Math.min(blockY, worldHeight + 2);
 					boolean found = false;
 					for(; blockY >= minY; --blockY) {
 						int blockIdBelow = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY - 1, blockZ);

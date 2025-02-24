@@ -49,7 +49,6 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
@@ -226,9 +225,9 @@ public class BlockStateSign extends BlockState{
 			frontGlowColor = GLOW_COLORS.getOrDefault(colorTag.getData(), frontGlowColor);
 			backGlowColor = frontGlowColor;
 		}
-		NbtTagByte glowingTextTag = (NbtTagByte) properties.get("GlowingText");
+		NbtTag glowingTextTag = properties.get("GlowingText");
 		if(glowingTextTag != null) {
-			frontGlowing = glowingTextTag.getData() > 0;
+			frontGlowing = glowingTextTag.asByte() > 0;
 			backGlowing = frontGlowing;
 		}
 		
@@ -255,9 +254,9 @@ public class BlockStateSign extends BlockState{
 				frontGlowColor = GLOW_COLORS.getOrDefault(colorTag.getData(), frontGlowColor);
 			}
 			
-			glowingTextTag = (NbtTagByte) frontText.get("has_glowing_text");
+			glowingTextTag = frontText.get("has_glowing_text");
 			if(glowingTextTag != null)
-				frontGlowing = glowingTextTag.getData() > 0;
+				frontGlowing = glowingTextTag.asByte() > 0;
 			
 			NbtTagList messages = (NbtTagList) frontText.get("messages");
 			if(messages != null) {
@@ -288,9 +287,9 @@ public class BlockStateSign extends BlockState{
 				backGlowColor = GLOW_COLORS.getOrDefault(colorTag.getData(), backGlowColor);
 			}
 			
-			glowingTextTag = (NbtTagByte) frontText.get("has_glowing_text");
+			glowingTextTag = frontText.get("has_glowing_text");
 			if(glowingTextTag != null)
-				backGlowing = glowingTextTag.getData() > 0;
+				backGlowing = glowingTextTag.asByte() > 0;
 			
 			NbtTagList messages = (NbtTagList) backText.get("messages");
 			if(messages != null) {

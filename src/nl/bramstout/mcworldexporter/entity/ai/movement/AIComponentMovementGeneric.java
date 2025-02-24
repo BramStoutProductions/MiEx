@@ -36,6 +36,7 @@ import nl.bramstout.mcworldexporter.entity.ai.AIComponent;
 import nl.bramstout.mcworldexporter.entity.ai.EntityMovementUtil;
 import nl.bramstout.mcworldexporter.entity.ai.EntityUtil;
 import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 
 public class AIComponentMovementGeneric extends AIComponent{
@@ -75,9 +76,9 @@ public class AIComponentMovementGeneric extends AIComponent{
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("IsSwimming", (byte) 0));
 			
 			boolean isFlying = false;
-			NbtTagByte isFlyingTag = (NbtTagByte) entity.getProperties().get("IsFlying");
+			NbtTag isFlyingTag = entity.getProperties().get("IsFlying");
 			if(isFlyingTag != null)
-				isFlying = isFlyingTag.getData() > 0;
+				isFlying = isFlyingTag.asByte() > 0;
 			
 			if(isFlying)
 				EntityMovementUtil.fly(entity, time, deltaTime, target, posX, posY, posZ, maxTurn);

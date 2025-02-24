@@ -39,7 +39,7 @@ import nl.bramstout.mcworldexporter.entity.ai.AIComponent;
 import nl.bramstout.mcworldexporter.entity.ai.EntityFilter;
 import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetPosition;
 import nl.bramstout.mcworldexporter.entity.ai.EntityUtil;
-import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 
 public class AIComponentBehaviourSwimWithEntity extends AIComponent{
 
@@ -115,8 +115,8 @@ public class AIComponentBehaviourSwimWithEntity extends AIComponent{
 				return true;
 			nextStateCheck = time + stateCheckInterval;
 			
-			NbtTagByte isSwimmingTag = (NbtTagByte) swimmingWith.getProperties().get("IsSwimming");
-			if(isSwimmingTag == null || isSwimmingTag.getData() <= 0) {
+			NbtTag isSwimmingTag = swimmingWith.getProperties().get("IsSwimming");
+			if(isSwimmingTag == null || isSwimmingTag.asByte() <= 0) {
 				if(EntityUtil.randomChance(entity, chanceToStop, deltaTime)) {
 					swimmingWith = null;
 					entity.getAI().target = null;
@@ -189,8 +189,8 @@ public class AIComponentBehaviourSwimWithEntity extends AIComponent{
 				if(!entityTypes.testFilter(entity2))
 					continue;
 				
-				NbtTagByte isSwimmingTag = (NbtTagByte) entity2.getProperties().get("IsSwimming");
-				if(isSwimmingTag == null || isSwimmingTag.getData() <= 0) {
+				NbtTag isSwimmingTag = entity2.getProperties().get("IsSwimming");
+				if(isSwimmingTag == null || isSwimmingTag.asByte() <= 0) {
 					continue;
 				}
 				

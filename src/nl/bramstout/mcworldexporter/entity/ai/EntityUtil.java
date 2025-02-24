@@ -41,7 +41,7 @@ import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
-import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
@@ -74,9 +74,9 @@ public class EntityUtil {
 		float maxZ = posZ;
 		if(entity.getAI() != null) {
 			float scale = 1f;
-			NbtTagFloat tag = (NbtTagFloat) entity.getProperties().get("Scale");
+			NbtTag tag = entity.getProperties().get("Scale");
 			if(tag != null)
-				scale = tag.getData();
+				scale = tag.asFloat();
 			
 			minX = posX - (entity.getAI().collisionBoxWidth * scale) / 2f;
 			minZ = posZ - (entity.getAI().collisionBoxWidth * scale) / 2f;
@@ -188,9 +188,9 @@ public class EntityUtil {
 		float maxZ = posZ;
 		if(entity.getAI() != null) {
 			float scale = 1f;
-			NbtTagFloat tag = (NbtTagFloat) entity.getProperties().get("Scale");
+			NbtTag tag = entity.getProperties().get("Scale");
 			if(tag != null)
-				scale = tag.getData();
+				scale = tag.asFloat();
 			
 			minX = posX - (entity.getAI().collisionBoxWidth * scale) / 2f;
 			minZ = posZ - (entity.getAI().collisionBoxWidth * scale) / 2f;

@@ -37,13 +37,12 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagIntArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.nbt.NbtTagLongArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
-import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.translation.BlockTranslation.BlockTranslatorManager;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
@@ -196,9 +195,9 @@ public class ChunkReader_2203_2528 extends ChunkReader{
 				if(keepPackedTag == null || keepPackedTag.getData() > 0)
 					continue;
 				blockEntityName = ((NbtTagString) blockEntity.get("id")).getData();
-				blockEntityX = ((NbtTagInt) blockEntity.get("x")).getData();
-				blockEntityY = ((NbtTagInt) blockEntity.get("y")).getData();
-				blockEntityZ = ((NbtTagInt) blockEntity.get("z")).getData();
+				blockEntityX = blockEntity.get("x").asInt();
+				blockEntityY = blockEntity.get("y").asInt();
+				blockEntityZ = blockEntity.get("z").asInt();
 				blockEntityX -= chunk.getChunkX() * 16;
 				blockEntityZ -= chunk.getChunkZ() * 16;
 				// Make sure that the block entity is actually in the chunk.

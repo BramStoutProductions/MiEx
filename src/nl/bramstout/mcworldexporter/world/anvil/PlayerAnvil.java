@@ -39,7 +39,6 @@ import java.util.zip.GZIPInputStream;
 
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagDouble;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.world.Player;
@@ -58,9 +57,9 @@ public class PlayerAnvil extends Player{
 				
 				NbtTag posTag = this.data.get("Pos");
 				if(posTag != null && posTag instanceof NbtTagList) {
-					x = ((NbtTagDouble)((NbtTagList)posTag).get(0)).getData();
-					y = ((NbtTagDouble)((NbtTagList)posTag).get(1)).getData();
-					z = ((NbtTagDouble)((NbtTagList)posTag).get(2)).getData();
+					x = ((NbtTagList)posTag).get(0).asDouble();
+					y = ((NbtTagList)posTag).get(1).asDouble();
+					z = ((NbtTagList)posTag).get(2).asDouble();
 				}else {
 					System.out.println("Could not get position for player " + this.name);
 				}

@@ -79,6 +79,18 @@ public abstract class NbtTag extends Poolable{
 	
 	public abstract String asString();
 	
+	public abstract byte asByte();
+	
+	public abstract short asShort();
+	
+	public abstract int asInt();
+	
+	public abstract long asLong();
+	
+	public abstract float asFloat();
+	
+	public abstract double asDouble();
+	
 	
 	
 	private static final MemoryPool<NbtTagByteArray> POOL_BYTE_ARRAY = new MemoryPool<NbtTagByteArray>(NbtTagByteArray.class);

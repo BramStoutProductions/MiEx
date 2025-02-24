@@ -33,8 +33,8 @@ package nl.bramstout.mcworldexporter.entity.ai.property;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.ai.AIComponent;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 
 public class AIComponentScaleByAge extends AIComponent{
 	
@@ -57,12 +57,12 @@ public class AIComponentScaleByAge extends AIComponent{
 		float babyAge = -1200 * 20;
 		float adultAge = 0f;
 		
-		NbtTagInt ageTag = (NbtTagInt) entity.getProperties().get("Age");
+		NbtTag ageTag = entity.getProperties().get("Age");
 		if(ageTag != null)
-			age = (float) ageTag.getData();
-		NbtTagFloat growUpDurationTag = (NbtTagFloat) entity.getProperties().get("GrowUpDuration");
+			age = (float) ageTag.asInt();
+		NbtTag growUpDurationTag = entity.getProperties().get("GrowUpDuration");
 		if(growUpDurationTag != null)
-			babyAge = growUpDurationTag.getData() * -20f;
+			babyAge = growUpDurationTag.asFloat() * -20f;
 		
 		float scale = startScale;
 		if(babyAge < adultAge) {

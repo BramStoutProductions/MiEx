@@ -76,6 +76,7 @@ public class Config {
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
+	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean removeCaves = false;
@@ -292,6 +293,8 @@ public class Config {
 				parseMap("lodPriority", data, lodPriority);
 				
 				parseList("lodNoUVScale", data, lodNoUVScale);
+				
+				parseList("ignoreAtlas", data, ignoreAtlas);
 				
 				if(data.has("runOptimiser"))
 					runOptimiser = data.get("runOptimiser").getAsBoolean();

@@ -199,6 +199,15 @@ public class BedrockMaterials {
 				}
 			}
 			
+			if(resImg == null) {
+				String texturesStr = "[";
+				for(String texture : textures)
+					texturesStr += texture + ",";
+				
+				System.out.println("Bedrock material has no layers: " + name + " with textures " + texturesStr + "]");
+				resImg = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
+			}
+			
 			try {
 				ImageIO.write(resImg, "PNG", imgFile);
 			}catch(Exception ex) {

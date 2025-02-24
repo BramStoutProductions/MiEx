@@ -41,7 +41,6 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
 import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
-import nl.bramstout.mcworldexporter.nbt.NbtTagLong;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 
 public class EntityHandlerItemFrame extends EntityHandlerHangable{
@@ -73,12 +72,12 @@ public class EntityHandlerItemFrame extends EntityHandlerHangable{
 			if(itemName.equals("minecraft:filled_map")) {
 				NbtTagCompound mapTag = (NbtTagCompound) ((NbtTagCompound) itemTag).get("tag");
 				if(mapTag != null) {
-					NbtTagInt mapTag2 = (NbtTagInt) mapTag.get("map");
+					NbtTag mapTag2 = mapTag.get("map");
 					if(mapTag2 != null)
-						mapId = mapTag2.getData();
-					NbtTagLong mapTag3 = (NbtTagLong) mapTag.get("map_uuid");
+						mapId = mapTag2.asInt();
+					NbtTag mapTag3 = mapTag.get("map_uuid");
 					if(mapTag3 != null) {
-						mapId = mapTag3.getData();
+						mapId = mapTag3.asLong();
 						isBedrock = true;
 					}
 				}

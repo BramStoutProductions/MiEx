@@ -39,7 +39,7 @@ import nl.bramstout.mcworldexporter.entity.ai.EntityUtil.CollisionResult;
 import nl.bramstout.mcworldexporter.entity.ai.pathfinding.PathFinder;
 import nl.bramstout.mcworldexporter.entity.ai.pathfinding.PathFinderHook;
 import nl.bramstout.mcworldexporter.entity.ai.pathfinding.PathNode;
-import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
@@ -239,9 +239,9 @@ public class AIComponentNavigation extends AIComponent implements PathFinderHook
 		if(!canJump) {
 			if(y > 0 && !block.hasLiquid()) {
 				float autoStepHeight = 0.5625f;
-				NbtTagFloat autoStepHeightTag = (NbtTagFloat) currentEntity.getProperties().get("AutoStepHeight");
+				NbtTag autoStepHeightTag = currentEntity.getProperties().get("AutoStepHeight");
 				if(autoStepHeightTag != null)
-					autoStepHeight = autoStepHeightTag.getData();
+					autoStepHeight = autoStepHeightTag.asFloat();
 				
 				if(y > autoStepHeight)
 					return -1f;

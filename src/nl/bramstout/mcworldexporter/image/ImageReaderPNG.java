@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.image;
 
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.File;
 
 import javax.imageio.ImageIO;
@@ -49,17 +50,33 @@ public class ImageReaderPNG extends ImageReader{
 				// are set as sRGB, but it needs to be interpreted as-is and not get
 				// converted to sRGB. So, we convert it to a normal RGB image.
 				BufferedImage img2 = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
-				byte[] pixelData = new byte[4];
-				for(int j = 0; j < img2.getHeight(); ++j) {
-					for(int i = 0; i < img2.getWidth(); ++i) {
-						img.getRaster().getDataElements(i, j, pixelData);
-						int val = ((int) pixelData[0]) & 0xFF;
-						int alpha = 0xFF;
-						if(img.getColorModel().hasAlpha()) {
-							alpha = ((int) pixelData[1]) & 0xFF;
+				if(img.getRaster().getDataBuffer().getDataType() == DataBuffer.TYPE_BYTE) {
+					byte[] pixelData = new byte[4];
+					for(int j = 0; j < img2.getHeight(); ++j) {
+						for(int i = 0; i < img2.getWidth(); ++i) {
+							img.getRaster().getDataElements(i, j, pixelData);
+							int val = ((int) pixelData[0]) & 0xFF;
+							int alpha = 0xFF;
+							if(img.getColorModel().hasAlpha()) {
+								alpha = ((int) pixelData[1]) & 0xFF;
+							}
+							int rgb = alpha << 24 | val << 16 | val << 8 | val;
+							img2.setRGB(i, j, rgb);
 						}
-						int rgb = alpha << 24 | val << 16 | val << 8 | val;
-						img2.setRGB(i, j, rgb);
+					}
+				}else if(img.getRaster().getDataBuffer().getDataType() == DataBuffer.TYPE_SHORT) {
+					short[] pixelData = new short[4];
+					for(int j = 0; j < img2.getHeight(); ++j) {
+						for(int i = 0; i < img2.getWidth(); ++i) {
+							img.getRaster().getDataElements(i, j, pixelData);
+							int val = (((int) pixelData[0]) >> 8) & 0xFF;
+							int alpha = 0xFF;
+							if(img.getColorModel().hasAlpha()) {
+								alpha = ((int) pixelData[1]) & 0xFF;
+							}
+							int rgb = alpha << 24 | val << 16 | val << 8 | val;
+							img2.setRGB(i, j, rgb);
+						}
 					}
 				}
 				img = img2;

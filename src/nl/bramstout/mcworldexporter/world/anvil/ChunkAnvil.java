@@ -45,7 +45,6 @@ import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.anvil.chunkreader.ChunkReader;
 import nl.bramstout.mcworldexporter.world.anvil.entityreader.EntityReader;
@@ -121,7 +120,7 @@ public class ChunkAnvil extends Chunk {
 			int dataVersion = 0;
 			NbtTag dataVersionTag = rootTag.get("DataVersion");
 			if (dataVersionTag != null && dataVersionTag.getId() == 3)
-				dataVersion = ((NbtTagInt) dataVersionTag).getData();
+				dataVersion = dataVersionTag.asInt();
 			
 			this.dataVersion = dataVersion;
 
@@ -180,7 +179,7 @@ public class ChunkAnvil extends Chunk {
 			int dataVersion = 0;
 			NbtTag dataVersionTag = rootTag.get("DataVersion");
 			if (dataVersionTag != null && dataVersionTag.getId() == 3)
-				dataVersion = ((NbtTagInt) dataVersionTag).getData();
+				dataVersion = dataVersionTag.asInt();
 
 			
 			EntityReader reader = EntityReader.getEntityReader(dataVersion);

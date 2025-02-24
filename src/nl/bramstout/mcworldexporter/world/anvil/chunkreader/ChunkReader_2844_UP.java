@@ -37,12 +37,11 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.nbt.NbtTagLongArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
-import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.translation.BlockTranslation.BlockTranslatorManager;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
@@ -68,7 +67,7 @@ public class ChunkReader_2844_UP extends ChunkReader{
 		Reference<char[]> charBuffer = new Reference<char[]>();
 		BlockTranslatorManager blockTranslatorManager = TranslationRegistry.BLOCK_JAVA.getTranslator(dataVersion);
 
-		chunk._setChunkSectionOffset(((NbtTagInt) rootTag.get("yPos")).getData());
+		chunk._setChunkSectionOffset(rootTag.get("yPos").asInt());
 
 		NbtTagList sections = (NbtTagList) rootTag.get("sections");
 		int maxSectionY = chunk._getChunkSectionOffset();
@@ -204,9 +203,9 @@ public class ChunkReader_2844_UP extends ChunkReader{
 				if(keepPackedTag == null || keepPackedTag.getData() > 0)
 					continue;
 				blockEntityName = ((NbtTagString) blockEntity.get("id")).getData();
-				blockEntityX = ((NbtTagInt) blockEntity.get("x")).getData();
-				blockEntityY = ((NbtTagInt) blockEntity.get("y")).getData();
-				blockEntityZ = ((NbtTagInt) blockEntity.get("z")).getData();
+				blockEntityX = blockEntity.get("x").asInt();
+				blockEntityY = blockEntity.get("y").asInt();
+				blockEntityZ = blockEntity.get("z").asInt();
 				blockEntityX -= chunk.getChunkX() * 16;
 				blockEntityZ -= chunk.getChunkZ() * 16;
 				// Make sure that the block entity is actually in the chunk.

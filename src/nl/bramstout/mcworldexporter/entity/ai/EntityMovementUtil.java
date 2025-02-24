@@ -45,9 +45,9 @@ public class EntityMovementUtil {
 	
 	public static void simulatePhysics(Entity entity, float time, float deltaTime, float posX, float posY, float posZ) {
 		float friction = 0.35f;
-		NbtTagFloat movementFrictionModifierTag = (NbtTagFloat) entity.getProperties().get("MovementFrictionModifier");
+		NbtTag movementFrictionModifierTag = entity.getProperties().get("MovementFrictionModifier");
 		if(movementFrictionModifierTag != null) {
-			friction *= movementFrictionModifierTag.getData();
+			friction *= movementFrictionModifierTag.asFloat();
 		}
 		friction = friction / (friction + 1f);
 		
@@ -68,14 +68,14 @@ public class EntityMovementUtil {
 		entity.getAI().jumpVy = 0f;
 		
 		boolean hasGravity = false;
-		NbtTagByte hasGravityTag = (NbtTagByte) entity.getProperties().get("HasGravity");
+		NbtTag hasGravityTag = entity.getProperties().get("HasGravity");
 		if(hasGravityTag != null)
-			hasGravity = hasGravityTag.getData() > 0;
+			hasGravity = hasGravityTag.asByte() > 0;
 			
 		boolean isSwimming = false;
-		NbtTagByte isSwimmingTag = (NbtTagByte) entity.getProperties().get("IsSwimming");
+		NbtTag isSwimmingTag = entity.getProperties().get("IsSwimming");
 		if(isSwimmingTag != null)
-			isSwimming = isSwimmingTag.getData() > 0;
+			isSwimming = isSwimmingTag.asByte() > 0;
 		
 		if(hasGravity && !isSwimming)
 			entity.getAI().vy -= 30f * deltaTime; // Gravity
@@ -85,9 +85,9 @@ public class EntityMovementUtil {
 		float dz = entity.getAI().vz * deltaTime;
 		
 		boolean hasCollision = false;
-		NbtTagByte hasCollisionTag = (NbtTagByte) entity.getProperties().get("HasCollision");
+		NbtTag hasCollisionTag = entity.getProperties().get("HasCollision");
 		if(hasCollisionTag != null)
-			hasCollision = hasCollisionTag.getData() > 0;
+			hasCollision = hasCollisionTag.asByte() > 0;
 		
 		if(hasCollision) {
 			solveCollisions(entity, time, deltaTime, posX, posY, posZ, dx, dy, dz);
@@ -240,45 +240,45 @@ public class EntityMovementUtil {
 	private static float getMovementSpeed(Entity entity) {
 		float movementSpeed = 0.1f;
 		float scale = 1f;
-		NbtTagFloat tag = (NbtTagFloat) entity.getProperties().get("Scale");
+		NbtTag tag = entity.getProperties().get("Scale");
 		if(tag != null)
-			scale = tag.getData();
-		NbtTagFloat movementSpeedTag = (NbtTagFloat) entity.getProperties().get("MovementSpeed");
+			scale = tag.asFloat();
+		NbtTag movementSpeedTag = entity.getProperties().get("MovementSpeed");
 		if(movementSpeedTag != null)
-			movementSpeed = movementSpeedTag.getData();
+			movementSpeed = movementSpeedTag.asFloat();
 		movementSpeed *= 20.0f; // Speed per second
 		return movementSpeed * scale;
 	}
 	
 	private static boolean shouldJump(Entity entity, float dy) {
 		float autoStepHeight = 0.5625f;
-		NbtTagFloat autoStepHeightTag = (NbtTagFloat) entity.getProperties().get("AutoStepHeight");
+		NbtTag autoStepHeightTag = entity.getProperties().get("AutoStepHeight");
 		if(autoStepHeightTag != null)
-			autoStepHeight = autoStepHeightTag.getData();
+			autoStepHeight = autoStepHeightTag.asFloat();
 		
 		boolean shouldJump = dy > autoStepHeight;
 		
 		boolean canJump = false;
-		NbtTagByte canJumpTag = (NbtTagByte) entity.getProperties().get("CanJump");
+		NbtTag canJumpTag = entity.getProperties().get("CanJump");
 		if(canJumpTag != null)
-			canJump = canJumpTag.getData() > 0;
+			canJump = canJumpTag.asByte() > 0;
 		
 		return shouldJump && canJump;
 	}
 	
 	private static float getJumpPower(Entity entity) {
 		float jumpPower = 0.42f;
-		NbtTagFloat jumpPowerTag = (NbtTagFloat) entity.getProperties().get("JumpPower");
+		NbtTag jumpPowerTag = entity.getProperties().get("JumpPower");
 		if(jumpPowerTag != null)
-			jumpPower = jumpPowerTag.getData();
+			jumpPower = jumpPowerTag.asFloat();
 		return jumpPower;
 	}
 	
 	public static boolean getOnGround(Entity entity) {
 		boolean isOnGround = false;
-		NbtTagByte onGroundTag = (NbtTagByte) entity.getProperties().get("OnGround");
+		NbtTag onGroundTag = entity.getProperties().get("OnGround");
 		if(onGroundTag != null)
-			isOnGround = onGroundTag.getData() > 0;
+			isOnGround = onGroundTag.asByte() > 0;
 		return isOnGround;
 	}
 	
@@ -355,9 +355,9 @@ public class EntityMovementUtil {
 		if(dy > 0f) {
 			// We need to fly, so compensate for gravity if we have it.
 			boolean hasGravity = false;
-			NbtTagByte hasGravityTag = (NbtTagByte) entity.getProperties().get("HasGravity");
+			NbtTag hasGravityTag = entity.getProperties().get("HasGravity");
 			if(hasGravityTag != null)
-				hasGravity = hasGravityTag.getData() > 0;
+				hasGravity = hasGravityTag.asByte() > 0;
 			
 			if(hasGravity) {
 				entity.getAI().jumpVy = 9.81f * deltaTime; // Cancels out gravity
@@ -393,9 +393,9 @@ public class EntityMovementUtil {
 		
 		// We need to glide, so compensate for gravity if we have it.
 		boolean hasGravity = false;
-		NbtTagByte hasGravityTag = (NbtTagByte) entity.getProperties().get("HasGravity");
+		NbtTag hasGravityTag = entity.getProperties().get("HasGravity");
 		if(hasGravityTag != null)
-			hasGravity = hasGravityTag.getData() > 0;
+			hasGravity = hasGravityTag.asByte() > 0;
 		
 		if(hasGravity) {
 			entity.getAI().jumpVy = 9.81f * deltaTime * 0.9f; // Partially cancels out gravity
@@ -433,9 +433,9 @@ public class EntityMovementUtil {
 		
 		// We need to hover, so compensate for gravity if we have it.
 		boolean hasGravity = false;
-		NbtTagByte hasGravityTag = (NbtTagByte) entity.getProperties().get("HasGravity");
+		NbtTag hasGravityTag = entity.getProperties().get("HasGravity");
 		if(hasGravityTag != null)
-			hasGravity = hasGravityTag.getData() > 0;
+			hasGravity = hasGravityTag.asByte() > 0;
 		
 		if(hasGravity) {
 			entity.getAI().jumpVy = 9.81f * deltaTime; // Cancels out gravity
@@ -461,9 +461,9 @@ public class EntityMovementUtil {
 		float jumpPower = getJumpPower(entity);
 		
 		boolean jump = false;
-		NbtTagByte canJumpTag = (NbtTagByte) entity.getProperties().get("CanJump");
+		NbtTag canJumpTag = entity.getProperties().get("CanJump");
 		if(canJumpTag != null)
-			jump = canJumpTag.getData() > 0;
+			jump = canJumpTag.asByte() > 0;
 		
 		boolean isOnGround = getOnGround(entity);
 		
