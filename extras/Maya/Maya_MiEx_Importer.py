@@ -28,10 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import maya.cmds as cmds
-from PySide2 import QtCore, QtWidgets, QtGui
+try:
+    from PySide6 import QtCore, QtWidgets, QtGui
+    from shiboken6 import wrapInstance
+except:
+    from PySide2 import QtCore, QtWidgets, QtGui
+    from shiboken2 import wrapInstance
 import os.path
 import maya.OpenMayaUI as omui
-from shiboken2 import wrapInstance
 from maya.api import OpenMaya
 import maya.mel
 import json
