@@ -1,0 +1,70 @@
+{
+    "blocks": [
+        "yuushya:showblock"
+    ],
+    "defaultTexture": "",
+    "handler": [
+        {
+            "condition": "thisBlock.state.Blocks != null",
+            "loopInit": "blockIndex = 0",
+            "loopCondition": "blockIndex < thisBlock.state.Blocks.length()",
+            "loopIncrement": "blockIndex += 1",
+            "children": [
+                {
+                    "variables": [
+                        "translateX = 0.0",
+                        "translateY = 0.0",
+                        "translateZ = 0.0",
+                        "rotateX = 0.0",
+                        "rotateY = 0.0",
+                        "rotateZ = 0.0",
+                        "scaleX = 1.0",
+                        "scaleY = 1.0",
+                        "scaleZ = 1.0"
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Blocks[blockIndex].ShowPos != null",
+                    "variables": [
+                        "translateX = thisBlock.state.Blocks[blockIndex].ShowPos[0]",
+                        "translateY = thisBlock.state.Blocks[blockIndex].ShowPos[1]",
+                        "translateZ = thisBlock.state.Blocks[blockIndex].ShowPos[2]"
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Blocks[blockIndex].ShowRotation != null",
+                    "variables": [
+                        "rotateX = thisBlock.state.Blocks[blockIndex].ShowRotation[0]",
+                        "rotateY = thisBlock.state.Blocks[blockIndex].ShowRotation[1]",
+                        "rotateZ = thisBlock.state.Blocks[blockIndex].ShowRotation[2]"
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Blocks[blockIndex].ShowScales != null",
+                    "variables": [
+                        "scaleX = thisBlock.state.Blocks[blockIndex].ShowScales[0]",
+                        "scaleY = thisBlock.state.Blocks[blockIndex].ShowScales[1]",
+                        "scaleZ = thisBlock.state.Blocks[blockIndex].ShowScales[2]"
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Blocks[blockIndex].isShown != false",
+                    "transform": {
+                        "translate": [ "translateX", "translateY", "translateZ" ],
+                        "rotate": [ "rotateX", "rotateY", "rotateZ" ],
+                        "scale": [ "scaleX", "scaleY", "scaleZ" ]
+                    },
+                    "generators": [
+                        {
+                            "type": "block",
+                            "args": {
+                                "name": "thisBlock.state.Blocks[blockIndex].BlockState.Name",
+                                "properties": "thisBlock.state.Blocks[blockIndex].BlockState.Properties"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
