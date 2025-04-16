@@ -1,0 +1,161 @@
+{
+    "entities": [
+        "minecraft:item_frame", "minecraft:frame",
+        "minecraft:ItemFrame", "minecraft:glow_item_frame",
+        "minecraft:glow_frame", "minecraft:GlowItemFrame"
+    ],
+    "rotX": "0.0",
+    "rotY": "0.0",
+    "handler": [
+        {
+            "variables": [
+                "isMap = thisEntity.state.Item != null ? ( ((thisEntity.state.Item.id == 'minecraft:filled_map') || (thisEntity.state.Item.Name == 'minecraft:filled_map')) ) : false",
+                "itemRotation = thisEntity.state.ItemRotation != null ? (Value.getType(thisEntity.state.ItemRotation) == 'float' ? thisEntity.state.ItemRotation : (thisEntity.state.ItemRotation * 45.0))",
+                "itemRotation = isMap ? (itemRotation * 2.0) : itemRotation",
+                "facing = thisEntity.state.Facing != null ? thisEntity.state.Facing : (thisEntity.state.facing != null ? thisEntity.state.facing : thisEntity.state.facing_direction)",
+                "facing = facing == 0 ? 'down' : (facing == 1 ? 'up' : (facing == 2 ? 'north' : (facing == 3 ? 'south' : (facing == 4 ? 'west' : (facing == 5 ? 'east' : facing)))))",
+                "rotX = 0.0",
+                "rotY = 0.0",
+
+                "rotX = facing == 'down' ? -90.0 : rotX",
+
+                "rotX = facing == 'up' ? 90.0 : rotX",
+
+                "rotY = facing == 'north' ? 180.0 : rotY",
+
+                "rotY = facing == 'east' ? 270.0 : rotY",
+
+                "rotY = facing == 'west' ? 90.0 : rotY"
+            ],
+            "textures": {
+                "back": "'minecraft:block/birch_planks'",
+                "front": "'minecraft:block/item_frame'"
+            }
+        },
+        {
+            "condition": "thisEntity.name.contains('glow')",
+            "textures": {
+                "front": "'minecraft:block/glow_item_frame'"
+            }
+        },
+        {
+            "transform": {
+                "translate": [ -8.0, 0.0, -8.0 ],
+                "rotate": [ "rotX", "rotY", 0.0 ]
+            },
+            "children": [
+                {
+                    "condition": "isMap != true",
+                    "elements": [
+                        {
+                            "from": [3, 3, 0],
+                            "to": [13, 13, 0.5],
+                            "faces": {
+                                "south": {
+                                    "uv": [3, 3, 13, 13],
+                                    "texture": "'#front'"
+                                },
+                                "north": {
+                                    "uv": [3, 3, 13, 13],
+                                    "texture": "'#front'"
+                                }
+                            }
+                        },
+                        {
+                            "from": [2, 2, 0],
+                            "to": [3, 14, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [13, 2, 0],
+                            "to": [14, 14, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [3, 13, 0],
+                            "to": [13, 14, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [3, 2, 0],
+                            "to": [13, 3, 1],
+                            "texture": "'#back'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "isMap == true",
+                    "elements": [
+                        {
+                            "from": [1, 1, 0],
+                            "to": [15, 15, 0.5],
+                            "faces": {
+                                "south": {
+                                    "uv": [1, 1, 15, 15],
+                                    "texture": "'#front'"
+                                },
+                                "north": {
+                                    "uv": [1, 1, 15, 15],
+                                    "texture": "'#front'"
+                                }
+                            }
+                        },
+                        {
+                            "from": [0, 0, 0],
+                            "to": [1, 16, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [15, 0, 0],
+                            "to": [16, 16, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [1, 15, 0],
+                            "to": [15, 16, 1],
+                            "texture": "'#back'"
+                        },
+                        {
+                            "from": [1, 0, 0],
+                            "to": [15, 1, 1],
+                            "texture": "'#back'"
+                        }
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Item != null && isMap != true",
+                    "transform": {
+                        "translate": [ 0.0, 0.0, -7.0 ],
+                        "rotate": [ 0.0, 0.0, "-itemRotation" ],
+                        "scale": [ 0.5, 0.5, 0.5 ]
+                    },
+                    "generators": [
+                        {
+                            "type": "item",
+                            "args": {
+                                "id": "thisEntity.state.Item.id",
+                                "properties": "thisEntity.state.Item",
+                                "displayContext": "'fixed'"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "condition": "thisBlock.state.Item != null && isMap == true",
+                    "transform": {
+                        "translate": [ 0.0, 0.0, -7.0 ],
+                        "rotate": [ 0.0, 0.0, "-itemRotation" ]
+                    },
+                    "generators": [
+                        {
+                            "type": "map",
+                            "args": {
+                                "properties": "thisEntity.state.Item"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

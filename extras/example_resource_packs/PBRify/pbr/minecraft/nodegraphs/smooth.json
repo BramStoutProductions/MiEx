@@ -1,0 +1,29 @@
+{
+    "priority": 1,
+    "selection": [
+        "minecraft:block/amethyst_block", "minecraft:block/amethyst_cluster", "minecraft:block/beacon",
+        "*glass*", "*copper*", "minecraft:block/diamond_block", "minecraft:block/emerald_block",
+        "minecraft:block/enchanting_table_bottom", "minecraft:block/enchanting_table_side",
+        "minecraft:block/enchanting_table_top", "minecraft:block/end_portal_frame_eye",
+        "minecraft:block/end_rod", "minecraft:block/frosted_ice_0", "minecraft:block/frosted_ice_1",
+        "minecraft:block/frosted_ice_2", "minecraft:block/frosted_ice_3", "minecraft:block/gold_block",
+        "*_glazed_*", "minecraft:block/iron_block", "minecraft:block/iron_door_bottom", 
+        "minecraft:block/iron_door_top", "minecraft:block/iron_trapdoor", "minecraft:block/large_amethyst_bud",
+        "minecraft:block/medium_amethyst_bud", "minecraft:block/nether_portal", "minecraft:block/obsidian",
+        "*polished*", "*quartz*", "minecraft:block/redstone_block", "minecraft:block/redstone_dust_dot",
+        "minecraft:block/redstone_dust_line0", "minecraft:block/redstone_dust_line1",
+        "minecraft:block/redstone_lamp", "minecraft:block/redstone_lamp_on", "minecraft:block/slime_block",
+        "minecraft:block/small_amethyst_bud", "minecraft:block/water_flow", "minecraft:block/water_still",
+        "minecraft:block/wet_sponge"
+    ],
+    "include": [ "base" ],
+    "nodes": {
+        "ROUGHNESS_BASE": {
+            "attributes": {
+                "outMin": [ 0.5, 0.5, 0.5, 1 ],
+                "outMax": [ 0.1, 0.1, 0.1, 1 ],
+                "gamma": [ 0.6, 0.6, 0.6, 1.0 ]
+            }
+        }
+    }
+}

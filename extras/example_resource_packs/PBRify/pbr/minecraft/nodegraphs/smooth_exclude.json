@@ -1,0 +1,7 @@
+{
+    "priority": 2,
+    "selection": [
+        "*weathered_copper*", "*oxidized_copper*", "*copper_ore"
+    ],
+    "include": [ "base" ]
+}

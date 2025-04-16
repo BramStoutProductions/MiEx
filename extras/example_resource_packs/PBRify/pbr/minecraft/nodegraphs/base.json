@@ -1,0 +1,240 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "outputs": [ "WRITE_ROUGHNESS", "WRITE_EMISSIVENESS", "WRITE_NORMAL", "WRITE_SPECULAR" ],
+    "nodes": {
+        "READ": {
+            "type": "Read",
+            "attributes": {
+                "imageName": "@texture@"
+            }
+        },
+        "GRAYSCALE": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "READ.output" },
+                "outR": "a.luminance",
+                "outG": "a.luminance",
+                "outB": "a.luminance",
+                "outA": "a.a"
+            }
+        },
+        "GRAYSCALE_NORM": {
+            "type": "NormaliseColor",
+            "attributes": {
+                "input": { "conn": "GRAYSCALE.output" }
+            }
+        },
+        "GRAYSCALE_NORM_ALPHA_FIX": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "GRAYSCALE_NORM.output" },
+                "b": { "conn": "GRAYSCALE.output" },
+                "outA": "b.a"
+            }
+        },
+        "GRAYSCALE_NORM_HALF": {
+            "type": "Blend",
+            "attributes": {
+                "bottom": { "conn": "GRAYSCALE.output" },
+                "top": { "conn": "GRAYSCALE_NORM_ALPHA_FIX.output" },
+                "factor": 0.5
+            }
+        },
+        "GRAYSCALE_NORM_HALF_MEDIAN": {
+            "type": "Blur",
+            "attributes": {
+                "input": { "conn": "GRAYSCALE_NORM_HALF.output" },
+                "radiusMode": "everything",
+                "kernel": "median"
+            }
+        },
+        "GRAYSCALE_DEV": {
+            "type": "Blur",
+            "attributes": {
+                "input": { "conn": "GRAYSCALE_NORM_HALF.output" },
+                "kernel": "standardDeviation"
+            }
+        },
+
+
+
+        "ROUGHNESS_BASE": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "GRAYSCALE_NORM_HALF.output" },
+                "outMin": [ 0.9, 0.9, 0.9, 1 ],
+                "outMax": [ 0.4, 0.4, 0.4, 1 ]
+            }
+        },
+        "ROUGHNESS_EXTRA_DETAIL": {
+            "type": "Composite",
+            "attributes": {
+                "bottom": { "conn": "ROUGHNESS_BASE" },
+                "top": { "conn": "GRAYSCALE_DEV" },
+                "blendMode": "add",
+                "factor": 1.0
+            }
+        },
+        "WRITE_ROUGHNESS": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "ROUGHNESS_EXTRA_DETAIL" },
+                "imageName": "@texture@_roughness"
+            }
+        },
+
+
+        "SPECULAR_BASE": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "GRAYSCALE_NORM_HALF.output" },
+                "outMin": [ 0.1, 0.1, 0.1, 1 ],
+                "outMax": [ 0.5, 0.5, 0.5, 1 ],
+                "gamma": [ 2.2, 2.2, 2.2, 1 ]
+            }
+        },
+        "WRITE_SPECULAR": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "SPECULAR_BASE" },
+                "imageName": "@texture@_specular"
+            }
+        },
+
+
+        "BUMP_BASE": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "GRAYSCALE_NORM_HALF" },
+                "b": { "conn": "GRAYSCALE_NORM_HALF_MEDIAN" },
+                "operator": "subtract"
+            }
+        },
+        "BUMP_POWER": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "BUMP_BASE" },
+                "b": { "conn": "BUMP_BASE" },
+                "operator": "multiply"
+            }
+        },
+        "BUMP_POWER_HALF": {
+            "type": "Blend",
+            "attributes": {
+                "bottom": { "conn": "BUMP_POWER" },
+                "top": { "conn": "BUMP_BASE" },
+                "factor": 0.5
+            }
+        },
+        "BUMP_ALPHA": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "BUMP_POWER" },
+                "outR": "a.a"
+            }
+        },
+        "BUMP_ALPHA_ZERO": {
+            "type": "Blend",
+            "attributes": {
+                "bottom": { "conn": "BUMP_POWER" },
+                "top": [ 0, 0, 0, 0 ],
+                "factor": { "conn": "BUMP_ALPHA" }
+            }
+        },
+        "BUMP_UPSCALE": {
+            "type": "Resize",
+            "attributes": {
+                "input": { "conn": "BUMP_ALPHA_ZERO" },
+                "scaleWidth": 8,
+                "scaleHeight": 8
+            }
+        },
+        "NORMAL_BASE": {
+            "type": "NormalFromBump",
+            "attributes": {
+                "input": { "conn": "BUMP_UPSCALE" },
+                "bumpHeightInUnits": 0.125
+            }
+        },
+        "WRITE_NORMAL": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "NORMAL_BASE" },
+                "imageName": "@texture@_normal"
+            }
+        },
+
+
+
+        "READ_EMISSION_MASK": {
+            "type": "Read",
+            "attributes": {
+                "imageName": "@texture@_emissionMask"
+            }
+        },
+        "EMISSION_MASK_MISSING": {
+            "type": "Condition",
+            "attributes": {
+                "a": { "conn": "READ_EMISSION_MASK" },
+                "b": [0,0,0,0],
+                "ifFalse": [0,0,0,0],
+                "ifTrue": [1,1,1,1],
+                "condition": "<"
+            }
+        },
+        "EMISSION_MASK_REMAP": {
+            "type": "Remap",
+            "attributes": {
+                "input": { "conn": "READ_EMISSION_MASK" },
+                "inMin": [ 0, 0, 0, 0 ],
+                "inMax": [ 0.5, 0.5, 0.5, 1 ],
+                "gamma": [ 2.0, 2.0, 2.0, 1.0 ]
+            }
+        },
+        "EMISSION_MASK_SHUFFLE": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "EMISSION_MASK_REMAP" },
+                "outA": "1"
+            }
+        },
+        "EMISSION_PREMULTIPLY": {
+            "type": "AlphaMode", 
+            "attributes": {
+                "input": { "conn": "READ" },
+                "conversion": "un-associated to associated"
+            }
+        },
+        "EMISSION_RGB_COLOR": {
+            "type": "Shuffle",
+            "attributes": {
+                "a": { "conn": "EMISSION_PREMULTIPLY" },
+                "outA": "1"
+            }
+        },
+        "EMISSION_APPLY_INVERSE_LUT": {
+            "type": "LUT",
+            "attributes": {
+                "input": { "conn": "EMISSION_RGB_COLOR" },
+                "lutPath": "srgb_aces_to_acescg"
+            }
+        },
+        "EMISSION_MASKED": {
+            "type": "Math",
+            "attributes": {
+                "a": { "conn": "EMISSION_APPLY_INVERSE_LUT" },
+                "b": { "conn": "EMISSION_MASK_SHUFFLE" },
+                "operator": "multiply"
+            }
+        },
+        "WRITE_EMISSIVENESS": {
+            "type": "Write",
+            "attributes": {
+                "input": { "conn": "EMISSION_MASKED" },
+                "imageName": "@texture@_emission.exr",
+                "isTemporary": { "conn": "EMISSION_MASK_MISSING" }
+            }
+        }
+    }
+}
