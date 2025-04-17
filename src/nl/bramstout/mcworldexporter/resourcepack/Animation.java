@@ -528,7 +528,7 @@ public class Animation {
 				if(overridePreviousAnimation)
 					value = bindPose.scaleX;
 				context.setGlobal("this", new MolangValue(value));
-				value += bone.scaleX.eval(state.animTime, context);
+				value *= bone.scaleX.eval(state.animTime, context);
 				entityAnim.getAnimScaleX().addKeyframe(new Keyframe(globalTime, value * weight + origValue * invWeight));
 			}
 			
@@ -541,7 +541,7 @@ public class Animation {
 				if(overridePreviousAnimation)
 					value = bindPose.scaleY;
 				context.setGlobal("this", new MolangValue(value));
-				value += bone.scaleY.eval(state.animTime, context);
+				value *= bone.scaleY.eval(state.animTime, context);
 				entityAnim.getAnimScaleY().addKeyframe(new Keyframe(globalTime, value * weight + origValue * invWeight));
 			}
 			
@@ -554,7 +554,7 @@ public class Animation {
 				if(overridePreviousAnimation)
 					value = bindPose.scaleZ;
 				context.setGlobal("this", new MolangValue(value));
-				value += bone.scaleZ.eval(state.animTime, context);
+				value *= bone.scaleZ.eval(state.animTime, context);
 				entityAnim.getAnimScaleZ().addKeyframe(new Keyframe(globalTime, value * weight + origValue * invWeight));
 			}
 		}

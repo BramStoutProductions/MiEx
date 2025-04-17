@@ -48,7 +48,7 @@ public class AIComponentBehaviourMoveTowardsTarget extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(entity.getAI().target == null)
 			return false;
 		if(!(entity.getAI().target instanceof EntityTargetEntity))

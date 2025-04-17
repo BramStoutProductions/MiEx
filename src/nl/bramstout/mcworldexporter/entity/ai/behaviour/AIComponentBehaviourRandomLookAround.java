@@ -69,7 +69,7 @@ public class AIComponentBehaviourRandomLookAround extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isLooking) {
 			if(time >= stopLooking) {
 				isLooking = false;
@@ -79,7 +79,7 @@ public class AIComponentBehaviourRandomLookAround extends AIComponent{
 			return true;
 		}
 		
-		if(!EntityUtil.randomChance(entity, probability, deltaTime)) {
+		if(!EntityUtil.randomChance(entity, probability, deltaTime) && !forceEnable) {
 			return false;
 		}
 		

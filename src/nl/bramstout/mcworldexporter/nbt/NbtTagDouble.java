@@ -123,6 +123,11 @@ public class NbtTagDouble extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return data >= 0.5;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + Double.hashCode(data);

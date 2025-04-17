@@ -730,14 +730,12 @@ public class USDConverter extends Converter{
 			
 			// Handle banners
 			if(texture.startsWith("banner:")) {
-				String bannerTexName = texture.substring("banner:".length());
-				File textureFolder = new File(chunksFolder, "banners");
+				String bannerTexName = texture.replace(':', '/');
 				try {
-					BannerTextureCreator.createBannerTexture(extraData, textureFolder, bannerTexName);
+					texture = BannerTextureCreator.createBannerTexture(extraData, bannerTexName);
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
-				texture = "./" + chunksFolder.getName() + "/banners/" + bannerTexName;
 			}
 			
 			Texture textureObj = new Texture(texture, matTexture, numColors > 0, templates);

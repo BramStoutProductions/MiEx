@@ -297,6 +297,8 @@ public class EntityExporter {
 					continue;
 				if(!enabledEntityExports.contains(entity.getId()))
 					continue;
+				if(entity.getUniqueId() == 0)
+					entity.setUniqueId(random.nextLong());
 				entity.setGlobalRandomSeed(globalSeed);
 				entities.add(entity);
 			}
@@ -418,6 +420,8 @@ public class EntityExporter {
 					
 					Entity entity = EntityRegistry.getEntity(spawn.name, properties);
 					if(entity != null) {
+						if(entity.getUniqueId() == 0)
+							entity.setUniqueId(random.nextLong());
 						entity.setGlobalRandomSeed(globalSeed);
 						entities.add(entity);
 						chunk.getEntities().add(entity);
@@ -610,8 +614,10 @@ public class EntityExporter {
 			float numInstances2 = (float) entry.getValue().size();
 			float counter2 = 0f;
 			for(EntityInstance entity : entry.getValue()) {
+				// -0.5 on X and Z because the world is offset by this as well, so that the bottom center of
+				// the center block is at (0,0,0)
 				entity.getEntity().getAnimation().getAnimPos3D().write(dos, 
-							-bounds.getOffsetX(), -bounds.getOffsetY(), -bounds.getOffsetZ(), 16f);
+							-bounds.getOffsetX() - 0.5f, -bounds.getOffsetY(), -bounds.getOffsetZ() - 0.5f, 16f);
 				entity.getEntity().getAnimation().getAnimRotation3D().write(dos, 0f, 0f, 0f, 1f);
 				entity.getEntity().getAnimation().getAnimScale3D().write(dos, 0f, 0f, 0f, 1f);
 				

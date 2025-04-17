@@ -277,8 +277,11 @@ public class RenderControllerBedrockEdition {
 	}
 	
 	public Map<String, String> getMaterials(MolangQuery query, MolangValue variablesDict, Map<String, MolangValue> globals, Random random){
-		if(this.materials.isEmpty())
-			return null;
+		if(this.materials.isEmpty()) {
+			Map<String, String> res = new HashMap<String, String>();
+			res.put("*", "Materials.default");
+			return res;
+		}
 		
 		MolangContext context = new MolangContext(query, random);
 		context.setVariableDict(variablesDict);

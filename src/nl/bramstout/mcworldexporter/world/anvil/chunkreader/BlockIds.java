@@ -50,6 +50,7 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.translation.BlockTranslation.BlockTranslatorManager;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class BlockIds {
 	
@@ -184,6 +185,8 @@ public class BlockIds {
 				continue;
 			return definitions[Math.min(Math.max(data, 0), 15)];
 		}
+		World.handleError(new RuntimeException("Could not find block name for id " + id + " and data " + data + " with data version " + dataVersion));
+		System.out.println("Could not find block name for id " + id + " and data " + data + " with data version " + dataVersion);
 		return AIR_BLOCK;
 	}
 	

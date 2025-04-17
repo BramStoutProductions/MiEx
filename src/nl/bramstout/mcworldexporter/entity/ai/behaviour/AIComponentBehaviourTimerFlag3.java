@@ -74,7 +74,7 @@ public class AIComponentBehaviourTimerFlag3 extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(time < endCooldown) {
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("TimerFlag3", ((byte) 0)));
 			return false;

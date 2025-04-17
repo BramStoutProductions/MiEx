@@ -53,7 +53,7 @@ public class AIComponentTypeFamily extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		NbtTag[] familyTags = new NbtTag[families.size()];
 		for(int i = 0; i < familyTags.length; ++i)
 			familyTags[i] = NbtTagString.newNonPooledInstance("", families.get(i));

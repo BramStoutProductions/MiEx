@@ -72,6 +72,8 @@ public abstract class MaterialWriter {
 		public boolean equals(Object obj) {
 			if(!(obj instanceof MatKey))
 				return false;
+			if(((MatKey) obj).template == null)
+				return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template == template;
 			return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template.equals(template);
 		}
 		

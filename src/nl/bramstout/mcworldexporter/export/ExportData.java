@@ -245,7 +245,7 @@ public class ExportData {
 			dos.writeUTF(str);
 	}
 	
-	public void apply() {
+	public void apply(boolean onlySettings) {
 		if(!(new File(world)).exists())
 			return;
 		//ResourcePack.setActiveResourcePacks(resourcePacks);
@@ -257,8 +257,10 @@ public class ExportData {
 		
 		BackgroundThread.waitUntilDoneWithBackgroundTasks();
 		
-		MCWorldExporter.getApp().setWorld(new File(world));
-		MCWorldExporter.getApp().getWorld().loadDimension(dimension);
+		if(!onlySettings) {
+			MCWorldExporter.getApp().setWorld(new File(world));
+			MCWorldExporter.getApp().getWorld().loadDimension(dimension);
+		}
 		
 		Config.chunkSize = chunkSize;
 		Config.runOptimiser = runOptimiser;

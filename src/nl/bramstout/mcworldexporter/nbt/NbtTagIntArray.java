@@ -129,6 +129,11 @@ public class NbtTagIntArray extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return false;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + Arrays.hashCode(data);

@@ -45,7 +45,7 @@ public class AIComponentJumpStatic extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("CanJump", (byte) 1));
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("JumpPower", jumpPower));
 		return true;

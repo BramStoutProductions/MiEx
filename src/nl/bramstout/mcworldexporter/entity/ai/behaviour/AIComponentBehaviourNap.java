@@ -80,7 +80,7 @@ public class AIComponentBehaviourNap extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isNapping) {
 			if(shouldWakeUp(entity, time)) {
 				isNapping = false;

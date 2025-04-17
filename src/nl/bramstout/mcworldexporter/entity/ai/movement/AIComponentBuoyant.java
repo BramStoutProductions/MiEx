@@ -57,7 +57,7 @@ public class AIComponentBuoyant extends AIComponent{
 	}
 
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("BuoyancyGravity", applyGravity ? ((byte) 1) : ((byte) 0)));
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("Buoyancy", baseBuoyancy));
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("BuoyancyBigWaveProbability", bigWaveProbability));

@@ -54,6 +54,7 @@ import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
+import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
@@ -730,6 +731,11 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 	@Override
 	public EntityAIHandler getEntityAIHandler(String name) {
 		return entityAIHandlers.getOrDefault(name, null);
+	}
+	
+	@Override
+	public ItemHandler getItemHandler(String name, NbtTagCompound data) {
+		return null;
 	}
 	
 	@Override

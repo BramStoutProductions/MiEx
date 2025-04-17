@@ -37,13 +37,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.export.GeneratedTextures;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 
 public class BannerTextureCreator {
@@ -146,14 +145,18 @@ public class BannerTextureCreator {
 		}
 	}
 	
-	public static void createBannerTexture(String data, File textureFolder, String name) throws Exception {
+	public static String createBannerTexture(String data, String name) throws Exception {
+		String texId = GeneratedTextures.getTextureId(name);
+		if(GeneratedTextures.textureExists(name))
+			return texId;
+		
 		JsonObject jsonData = JsonParser.parseString(data).getAsJsonObject();
 		File baseImgFile = ResourcePacks.getTexture(patternMap.get(""));
 		if(baseImgFile == null || !baseImgFile.exists())
-			return;
+			return texId;
 		BufferedImage baseImg = ImageReader.readImage(baseImgFile);
 		if(baseImg == null)
-			return;
+			return texId;
 		BufferedImage resImg = new BufferedImage(baseImg.getWidth(), baseImg.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		for(int j = 0; j < baseImg.getHeight(); j++)
 			for(int i = 0; i < baseImg.getWidth(); ++i)
@@ -175,9 +178,7 @@ public class BannerTextureCreator {
 			}
 		}
 		
-		if(!textureFolder.exists())
-			textureFolder.mkdirs();
-		ImageIO.write(resImg, "png", new File(textureFolder, name + ".png"));
+		return GeneratedTextures.writeTexture(name, resImg);
 	}
 	
 	private static void tint(BufferedImage img, Color tint) {

@@ -1,0 +1,42 @@
+{
+    "entities": [
+        "minecraft:painting"
+    ],
+    "rotX": "0.0",
+    "rotY": "0.0",
+    "handler": [
+        {
+            "variables": [
+                "facing = thisEntity.state.Facing != null ? thisEntity.state.Facing : (thisEntity.state.facing != null ? thisEntity.state.facing : (thisEntity.state.Dir != null ? thisEntity.state.Dir : thisEntity.state.Direction))",
+                "facing = facing == 0 ? 'south' : (facing == 1 ? 'west' : (facing == 2 ? 'north' : (facing == 3 ? 'south' : (facing == 4 ? 'west' : (facing == 5 ? 'east' : facing)))))",
+                "rotX = 0.0",
+                "rotY = 0.0",
+
+                "rotX = facing == 'down' ? -90.0 : rotX",
+
+                "rotX = facing == 'up' ? 90.0 : rotX",
+                "rotY = facing == 'up' ? 180.0 : rotY",
+
+                "rotY = facing == 'north' ? 180.0 : rotY",
+
+                "rotY = facing == 'east' ? 270.0 : rotY",
+
+                "rotY = facing == 'west' ? 90.0 : rotY"
+            ]
+        },
+        {
+            "transform": {
+                "translate": [ -8.0, 0.0, -8.0 ],
+                "rotate": [ "rotX", "rotY", 0.0 ]
+            },
+            "generators": [
+                {
+                    "type": "painting",
+                    "args": {
+                        "properties": "thisEntity.state"
+                    }
+                }
+            ]
+        }
+    ]
+}

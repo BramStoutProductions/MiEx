@@ -44,7 +44,7 @@ public class AIComponentSkinId extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagInt.newNonPooledInstance("SkinID", skinId));
 		return true;
 	}

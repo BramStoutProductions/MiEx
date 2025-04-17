@@ -97,6 +97,10 @@ public class Vector3f {
 		return new Vector3f(x / v, y / v, z / v);
 	}
 	
+	public float dot(Vector3f other) {
+		return x * other.x + y * other.y + z * other.z;
+	}
+	
 	public float length() {
 		return (float) Math.sqrt(x * x + y * y + z * z);
 	}

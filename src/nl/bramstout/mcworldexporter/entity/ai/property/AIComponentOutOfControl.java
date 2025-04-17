@@ -42,7 +42,7 @@ public class AIComponentOutOfControl extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("IsOutOfControl", (byte) 1));
 		return true;
 	}

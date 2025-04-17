@@ -107,7 +107,20 @@ public class EntityHandlerBedrockEdition extends EntityHandler{
 			if(description.has("textures")) {
 				JsonObject textures = description.getAsJsonObject("textures");
 				for(Entry<String, JsonElement> entry : textures.entrySet()) {
-					this.textures.put(entry.getKey(), entry.getValue().getAsString());
+					String tex = entry.getValue().getAsString();
+					String javaTex = TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(tex);
+					if(javaTex.equals(tex)) {
+						String[] tokens = tex.split("/");
+						javaTex = "minecraft:";
+						if(!tokens[0].equals("textures"))
+							javaTex = tokens[0] + ";minecraft:";
+						for(int i = 1; i < tokens.length; ++i) {
+							javaTex += tokens[i];
+							if(i < (tokens.length - 1))
+								javaTex += "/";
+						}
+					}
+					this.textures.put(entry.getKey(), javaTex);
 				}
 			}
 			if(description.has("materials")) {

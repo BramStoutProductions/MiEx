@@ -40,7 +40,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
-import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
@@ -90,8 +90,7 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 				// model based on the settings of the current model.
 				parentModel = parentModel.postConstruct(model);
 				
-				model.setItemFrameTransform(parentModel.getItemFrameTranslation(), parentModel.getItemFrameRotation(), 
-											parentModel.getItemFrameScale());
+				model.getDisplayTransforms().putAll(parentModel.getDisplayTransforms());
 				model.setExtraData(parentModel.getExtraData());
 				for (ModelFace face : parentModel.getFaces()) {
 					model.getFaces().add(face);
@@ -100,33 +99,35 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 		}
 		
 		if(data.has("display")) {
-			if(data.getAsJsonObject("display").has("fixed")) {
-				Vector3f translation = model.getItemFrameTranslation();
-				Vector3f rotation = model.getItemFrameRotation();
-				Vector3f scale = model.getItemFrameScale();
-				JsonObject transformData = data.getAsJsonObject("display").getAsJsonObject("fixed");
-				if(transformData.has("translation")) {
-					JsonArray translationData = transformData.getAsJsonArray("translation");
-					if(translationData.size() >= 3) {
-						translation = new Vector3f(translationData.get(0).getAsFloat(), translationData.get(1).getAsFloat(), 
-													translationData.get(2).getAsFloat());
+			for(Entry<String, JsonElement> entry : data.getAsJsonObject("display").entrySet()) {
+				Matrix matrix = new Matrix();
+				if(entry.getValue().isJsonObject()) {
+					matrix = Matrix.translate(-8f, -8f, -8f);
+					JsonObject transformData = entry.getValue().getAsJsonObject();
+					if(transformData.has("scale")) {
+						JsonArray scaleData = transformData.getAsJsonArray("scale");
+						if(scaleData.size() >= 3) {
+							matrix = Matrix.scale(scaleData.get(0).getAsFloat(), scaleData.get(1).getAsFloat(), 
+												scaleData.get(2).getAsFloat()).mult(matrix);
+						}
 					}
-				}
-				if(transformData.has("rotation")) {
-					JsonArray rotationData = transformData.getAsJsonArray("rotation");
-					if(rotationData.size() >= 3) {
-						rotation = new Vector3f(rotationData.get(0).getAsFloat(), rotationData.get(1).getAsFloat(), 
-												rotationData.get(2).getAsFloat());
+					if(transformData.has("rotation")) {
+						JsonArray rotationData = transformData.getAsJsonArray("rotation");
+						if(rotationData.size() >= 3) {
+							matrix = Matrix.rotate(rotationData.get(0).getAsFloat(), rotationData.get(1).getAsFloat(), 
+													rotationData.get(2).getAsFloat()).mult(matrix);
+						}
 					}
-				}
-				if(transformData.has("scale")) {
-					JsonArray scaleData = transformData.getAsJsonArray("scale");
-					if(scaleData.size() >= 3) {
-						scale = new Vector3f(scaleData.get(0).getAsFloat(), scaleData.get(1).getAsFloat(), 
-											scaleData.get(2).getAsFloat());
+					if(transformData.has("translation")) {
+						JsonArray translationData = transformData.getAsJsonArray("translation");
+						if(translationData.size() >= 3) {
+							matrix = Matrix.translate(translationData.get(0).getAsFloat(), translationData.get(1).getAsFloat(), 
+									translationData.get(2).getAsFloat()).mult(matrix);
+						}
 					}
+					matrix = Matrix.translate(8f, 8f, 8f).mult(matrix);
 				}
-				model.setItemFrameTransform(translation, rotation, scale);
+				model.getDisplayTransforms().put(entry.getKey(), matrix);
 			}
 		}
 

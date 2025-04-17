@@ -37,28 +37,63 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.expression.ExprContext;
+import nl.bramstout.mcworldexporter.expression.ExprValue;
+import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueDict;
+import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueNbtCompound;
+import nl.bramstout.mcworldexporter.expression.Expression;
+import nl.bramstout.mcworldexporter.model.BakedBlockState;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.Direction;
+import nl.bramstout.mcworldexporter.model.MapCreator;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
-import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.Context;
-import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.Expression;
-import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.Value;
-import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.ValueDict;
+import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
+import nl.bramstout.mcworldexporter.nbt.NbtTagByteArray;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagDouble;
+import nl.bramstout.mcworldexporter.nbt.NbtTagEnd;
+import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
+import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
+import nl.bramstout.mcworldexporter.nbt.NbtTagIntArray;
+import nl.bramstout.mcworldexporter.nbt.NbtTagList;
+import nl.bramstout.mcworldexporter.nbt.NbtTagLong;
+import nl.bramstout.mcworldexporter.nbt.NbtTagLongArray;
+import nl.bramstout.mcworldexporter.nbt.NbtTagShort;
+import nl.bramstout.mcworldexporter.nbt.NbtTagString;
+import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
+import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
+import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.text.TextMeshCreator;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.World;
 
 public abstract class BuiltInGenerator {
 
-	public abstract void eval(Context context, Map<String, Expression> arguments);
+	public abstract void eval(ExprContext context, Map<String, Expression> arguments);
 
 	private static Map<String, BuiltInGenerator> generatorRegistry = new HashMap<String, BuiltInGenerator>();
 	static {
+		generatorRegistry.put("model", new BuiltInGeneratorModel());
+		generatorRegistry.put("entity", new BuiltInGeneratorEntity());
+		generatorRegistry.put("block", new BuiltInGeneratorBlock());
+		generatorRegistry.put("item", new BuiltInGeneratorItem());
+		generatorRegistry.put("map", new BuiltInGeneratorMap());
+		generatorRegistry.put("painting", new BuiltInGeneratorPainting());
 		generatorRegistry.put("text", new BuiltInGeneratorText());
 		generatorRegistry.put("signText", new BuiltInGeneratorSignText());
 	}
@@ -67,11 +102,347 @@ public abstract class BuiltInGenerator {
 		return generatorRegistry.getOrDefault(type, null);
 	}
 
+	public static class BuiltInGeneratorModel extends BuiltInGenerator{
+
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String modelName = null;
+			boolean doubleSided = false;
+			List<Color> tints = new ArrayList<Color>();
+			
+			if(arguments.containsKey("model"))
+				modelName = arguments.get("model").eval(context).asString();
+			if(arguments.containsKey("doubleSided"))
+				doubleSided = arguments.get("doubleSided").eval(context).asBool();
+			if(arguments.containsKey("tints")) {
+				ExprValue tintsVal = arguments.get("tints").eval(context);
+				for(Entry<String, ExprValue> tint : tintsVal.getChildren().entrySet()) {
+					Color color = new Color(1f, 1f, 1f, 1f);
+					
+					Map<String, ExprValue> tintChildren = tint.getValue().getChildren();
+					if(tintChildren.isEmpty()) {
+						color = new Color((int) tint.getValue().asInt());
+					}else {
+						ExprValue r = tint.getValue().member("0");
+						ExprValue g = tint.getValue().member("0");
+						ExprValue b = tint.getValue().member("0");
+						color = new Color(r.asFloat(), g.asFloat(), b.asFloat());
+					}
+					
+					tints.add(color);
+				}
+			}
+			
+			if(modelName == null)
+				return;
+			
+			int modelId = ModelRegistry.getIdForName(modelName, doubleSided);
+			Model model = ModelRegistry.getModel(modelId);
+			if(model != null)
+				context.model.addModel(model, tints);
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorEntity extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String entityId = null;
+			NbtTagCompound properties = null;
+			
+			if(arguments.containsKey("id"))
+				entityId = arguments.get("id").eval(context).asString();
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			
+			EntityHandler handler = ResourcePacks.getEntityHandler(entityId);
+			
+			Entity entity = new Entity(entityId, properties, handler);
+			
+			Model model = handler.getModel(entity);
+			
+			context.model.addModel(model);
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorBlock extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String blockName = null;
+			NbtTagCompound properties = null;
+			int x = context.x;
+			int y = context.y;
+			int z = context.z;
+			
+			if(arguments.containsKey("name"))
+				blockName = arguments.get("name").eval(context).asString();
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			if(arguments.containsKey("x"))
+				x = (int) arguments.get("x").eval(context).asInt();
+			if(arguments.containsKey("y"))
+				y = (int) arguments.get("y").eval(context).asInt();
+			if(arguments.containsKey("z"))
+				z = (int) arguments.get("z").eval(context).asInt();
+			
+			Reference<char[]> charBuffer = new Reference<char[]>();
+			int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
+			
+			List<Model> models = new ArrayList<Model>();
+			state.getModels(x, y, z, models);
+			
+			for(Model model : models)
+				context.model.addModel(model);
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorItem extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String itemName = null;
+			String displayContext = "";
+			NbtTagCompound properties = null;
+			
+			if(arguments.containsKey("id"))
+				itemName = arguments.get("id").eval(context).asString();
+			
+			if(arguments.containsKey("displayContext"))
+				displayContext = arguments.get("displayContext").eval(context).asString();
+			
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			if(properties == null)
+				properties = NbtTagCompound.newNonPooledInstance("properties");
+			
+			ItemHandler itemHandler = ResourcePacks.getItemHandler(itemName, properties);
+			if(itemHandler == null)
+				return;
+			
+			Model model = itemHandler.getModel(itemName, properties, displayContext);
+			
+			if(model != null) {
+				model.applyTransformation(displayContext);
+				context.model.addModel(model);
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorMap extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			NbtTagCompound properties = null;
+			
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			if(properties == null)
+				properties = NbtTagCompound.newNonPooledInstance("properties");
+			
+			long mapId = -1;
+			boolean isBedrock = false;
+			
+			NbtTagCompound mapTag = (NbtTagCompound) properties.get("tag");
+			if(mapTag != null) {
+				NbtTag mapTag2 = mapTag.get("map");
+				if(mapTag2 != null)
+					mapId = mapTag2.asInt();
+				NbtTag mapTag3 = mapTag.get("map_uuid");
+				if(mapTag3 != null) {
+					mapId = mapTag3.asLong();
+					isBedrock = true;
+				}
+			}
+			NbtTagCompound componentsTag = (NbtTagCompound) properties.get("components");
+			if(componentsTag != null) {
+				NbtTag mapTag2 = componentsTag.get("minecraft:map_id");
+				if(mapTag2 != null) {
+					mapId = mapTag2.asLong();
+					isBedrock = false;
+				}
+			}
+			
+			Model model = null;
+			if(mapId >= 0)
+				model = MapCreator.createMapModel(mapId, isBedrock);
+			
+			if(model != null) {
+				context.model.addModel(model);
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorPainting extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			NbtTagCompound properties = null;
+			
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			if(properties == null)
+				properties = NbtTagCompound.newNonPooledInstance("properties");
+			
+			String motive = "";
+			PaintingVariant variant = null;
+			NbtTag motiveTag = properties.get("Motive");
+			if(motiveTag != null) {
+				motive = ((NbtTagString) motiveTag).getData();
+				if(!motive.contains(":"))
+					motive = "minecraft:" + motive;
+				variant = getVariant(motive);
+			}else {
+				motiveTag = properties.get("variant");
+				if(motiveTag != null) {
+					if(motiveTag instanceof NbtTagString) {
+						motive = ((NbtTagString) motiveTag).getData();
+						if(!motive.contains(":"))
+							motive = "minecraft:" + motive;
+						variant = getVariant(motive);
+					}else if(motiveTag instanceof NbtTagCompound) {
+						motive = null;
+						int width = 1;
+						int height = 1;
+						NbtTagCompound dataTag = (NbtTagCompound) motiveTag;
+						
+						NbtTagString assetIdTag = (NbtTagString) dataTag.get("asset_id");
+						if(assetIdTag != null)
+							motive = assetIdTag.getData();
+						
+						NbtTag widthTag = dataTag.get("width");
+						if(widthTag != null)
+							width = widthTag.asInt();
+						
+						NbtTag heightTag = dataTag.get("height");
+						if(heightTag != null)
+							height = heightTag.asInt();
+						
+						if(motive != null) {
+							variant = new PaintingVariant(motive, motive, width, height);
+						}else {
+							motive = "";
+						}
+					}
+				}
+			}
+			
+			if(variant == null) {
+				World.handleError(new RuntimeException("No painting variant found for " + motive));
+				return;
+			}
+			
+			Model model = new Model("painting", null, false);
+			model.addTexture("#back", "minecraft:painting/back");
+			model.addTexture("#front", variant.getAssetPath());
+			
+			float sizeX = variant.getWidth();
+			float sizeY = variant.getHeight();
+			float sizeZ = 1f;
+			float offsetX = getOffset((int) sizeX);
+			float offsetY = getOffset((int) sizeY);
+			float offsetZ = 0f;
+			sizeX *= 16f;
+			sizeY *= 16f;
+			offsetX *= 16f;
+			offsetY *= 16f;
+			
+			float[] minMaxPoints = new float[] {offsetX, offsetY, offsetZ, offsetX + sizeX, offsetY + sizeY, offsetZ + sizeZ};
+			
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 16.0f, 16.0f }, Direction.SOUTH, "#front");
+
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 16.0f, 16.0f }, Direction.NORTH, "#back");
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 16.0f, 1.0f }, Direction.UP, "#back");
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 16.0f, 1.0f }, Direction.DOWN, "#back");
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 1.0f, 16.0f }, Direction.EAST, "#back");
+			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 1.0f, 16.0f }, Direction.WEST, "#back");
+			
+			context.model.addModel(model);
+		}
+		
+		private int getOffset(int width) {
+			return -Math.max((width - 1) / 2, 0);
+		}
+		
+		private static class Size{
+			public float x;
+			public float y;
+			
+			public Size(float x, float y) {
+				this.x = x;
+				this.y = y;
+			}
+		}
+		
+		private PaintingVariant getVariant(String motif) {
+			PaintingVariant variant = ResourcePacks.getPaintingVariant(motif);
+			if(variant != null)
+				return variant;
+			Size size = paintingSizes.getOrDefault(motif, null);
+			if(size == null)
+				return null;
+			return new PaintingVariant(motif, motif, (int) size.x, (int) size.y);
+		}
+		
+		private static HashMap<String, Size> paintingSizes = new HashMap<String, Size>();
+		static {
+			paintingSizes.put("minecraft:alban", new Size(1,1));
+			paintingSizes.put("minecraft:aztec", new Size(1,1));
+			paintingSizes.put("minecraft:aztec2", new Size(1,1));
+			paintingSizes.put("minecraft:bomb", new Size(1,1));
+			paintingSizes.put("minecraft:kebab", new Size(1,1));
+			paintingSizes.put("minecraft:plant", new Size(1,1));
+			paintingSizes.put("minecraft:wasteland", new Size(1,1));
+			paintingSizes.put("minecraft:courbet", new Size(2,1));
+			paintingSizes.put("minecraft:pool", new Size(2,1));
+			paintingSizes.put("minecraft:sea", new Size(2,1));
+			paintingSizes.put("minecraft:creebet", new Size(2,1));
+			paintingSizes.put("minecraft:sunset", new Size(2,1));
+			paintingSizes.put("minecraft:graham", new Size(1,2));
+			paintingSizes.put("minecraft:wanderer", new Size(1,2));
+			paintingSizes.put("minecraft:bust", new Size(2,2));
+			paintingSizes.put("minecraft:match", new Size(2,2));
+			paintingSizes.put("minecraft:skull_and_roses", new Size(2,2));
+			paintingSizes.put("minecraft:stage", new Size(2,2));
+			paintingSizes.put("minecraft:void", new Size(2,2));
+			paintingSizes.put("minecraft:wither", new Size(2,2));
+			paintingSizes.put("minecraft:fighters", new Size(4,2));
+			paintingSizes.put("minecraft:donkey_kong", new Size(4,3));
+			paintingSizes.put("minecraft:skeleton", new Size(4,3));
+			paintingSizes.put("minecraft:burning_skull", new Size(4,4));
+			paintingSizes.put("minecraft:pigscene", new Size(4,4));
+			paintingSizes.put("minecraft:pointer", new Size(4,4));
+		}
+
+		
+	}
+	
 	public static class BuiltInGeneratorSignText extends BuiltInGenerator {
 
 		@Override
-		public void eval(Context context, Map<String, Expression> arguments) {
-			Value properties = null;
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			ExprValue properties = null;
 			float textOffsetX = 0f;
 			float textOffsetY = 0f;
 			float textOffsetZ = 0f;
@@ -148,8 +519,66 @@ public abstract class BuiltInGenerator {
 			GLOW_COLORS.put("red", new Color(0x660000));
 			GLOW_COLORS.put("black", new Color(0xF0EBCC));
 		}
+		
+		private static JsonElement nbtToJson(NbtTag tag) {
+			int size = 0;
+			switch(tag.getId()) {
+			case NbtTagByteArray.ID:
+				return new JsonPrimitive(0);
+			case NbtTagByte.ID:
+				return new JsonPrimitive(tag.asByte());
+			case NbtTagCompound.ID:
+				JsonObject object = new JsonObject();
+				NbtTagCompound nbtObject = (NbtTagCompound) tag;
+				size = nbtObject.getSize();
+				for(int i = 0; i < size; ++i) {
+					NbtTag childTag = nbtObject.get(i);
+					if(childTag == null)
+						continue;
+					JsonElement childEl = nbtToJson(childTag);
+					if(childEl == null)
+						continue;
+					object.add(childTag.getName(), childEl);
+				}
+				return object;
+			case NbtTagDouble.ID:
+				return new JsonPrimitive(tag.asDouble());
+			case NbtTagEnd.ID:
+				return new JsonPrimitive(0);
+			case NbtTagFloat.ID:
+				return new JsonPrimitive(tag.asFloat());
+			case NbtTagInt.ID:
+				return new JsonPrimitive(tag.asInt());
+			case NbtTagIntArray.ID:
+				return new JsonPrimitive(0);
+			case NbtTagList.ID:
+				JsonArray list = new JsonArray();
+				NbtTagList nbtList = (NbtTagList) tag;
+				size = nbtList.getSize();
+				for(int i = 0; i < size; ++i) {
+					NbtTag childTag = nbtList.get(i);
+					if(childTag == null)
+						continue;
+					JsonElement childEl = nbtToJson(childTag);
+					if(childEl == null)
+						continue;
+					list.add(childEl);
+				}
+				return list;
+			case NbtTagLong.ID:
+				return new JsonPrimitive(tag.asLong());
+			case NbtTagLongArray.ID:
+				return new JsonPrimitive(0);
+			case NbtTagShort.ID:
+				return new JsonPrimitive(tag.asShort());
+			case NbtTagString.ID:
+				return new JsonPrimitive(tag.asString());
+			default:
+				return null;
+			}
+		}
 
-		public static void handleText(Value properties, float textOffsetX, float textOffsetY,
+		public static void handleText(ExprValue properties, float textOffsetX, float textOffsetY,
 				float textOffsetZ, float textOffsetZBack, float textScale, float lineDistance, Font font, Model model) {
 			JsonElement frontText1 = null;
 			JsonElement frontText2 = null;
@@ -165,25 +594,25 @@ public abstract class BuiltInGenerator {
 			Color backGlowColor = new Color(0xF0EBCC);
 			boolean frontGlowing = false;
 			boolean backGlowing = false;
-			Value colorTag = properties.member("Color");
+			ExprValue colorTag = properties.member("Color");
 			if (colorTag != null && !colorTag.isNull()) {
 				frontColor = COLORS.getOrDefault(colorTag.asString(), frontColor);
 				backColor = frontColor;
 				frontGlowColor = GLOW_COLORS.getOrDefault(colorTag.asString(), frontGlowColor);
 				backGlowColor = frontGlowColor;
 			}
-			Value glowingTextTag = properties.member("GlowingText");
+			ExprValue glowingTextTag = properties.member("GlowingText");
 			if (glowingTextTag != null && !glowingTextTag.isNull()) {
 				frontGlowing = glowingTextTag.asInt() > 0;
 				backGlowing = frontGlowing;
 			}
 
 			// Java Format
-			Value text1 = properties.member("Text1");
+			ExprValue text1 = properties.member("Text1");
 			if (text1 != null && !text1.isNull()) {
-				Value text2 = properties.member("Text2");
-				Value text3 = properties.member("Text3");
-				Value text4 = properties.member("Text4");
+				ExprValue text2 = properties.member("Text2");
+				ExprValue text3 = properties.member("Text3");
+				ExprValue text4 = properties.member("Text4");
 
 				if (text1 != null && !text1.isNull())
 					frontText1 = new JsonPrimitive(text1.asString());
@@ -194,7 +623,7 @@ public abstract class BuiltInGenerator {
 				if (text4 != null && !text4.isNull())
 					frontText4 = new JsonPrimitive(text4.asString());
 			}
-			Value frontText = properties.member("front_text");
+			ExprValue frontText = properties.member("front_text");
 			if (frontText != null && !frontText.isNull()) {
 				colorTag = frontText.member("color");
 				if (colorTag != null && !colorTag.isNull()) {
@@ -206,12 +635,17 @@ public abstract class BuiltInGenerator {
 				if (glowingTextTag != null && !glowingTextTag.isNull())
 					frontGlowing = glowingTextTag.asInt() > 0;
 
-				Value messages = frontText.member("messages");
+					ExprValue messages = frontText.member("messages");
 				if (messages != null && !messages.isNull()) {
 					int i = 0;
-					for (Value tag : messages.getChildren().values()) {
+					for (ExprValue tag : messages.getChildren().values()) {
 						try {
-							JsonElement el = JsonParser.parseString(tag.asString());
+							JsonElement el = null;
+							if(tag.getImpl() instanceof ExprValueNbtCompound) {
+								el = nbtToJson(((ExprValueNbtCompound) tag.getImpl()).getNbt());
+							}else {
+								el = JsonParser.parseString(tag.asString());
+							}
 							if (i == 0)
 								frontText1 = el;
 							else if (i == 1)
@@ -227,7 +661,7 @@ public abstract class BuiltInGenerator {
 					}
 				}
 			}
-			Value backText = properties.member("back_text");
+			ExprValue backText = properties.member("back_text");
 			if (backText != null && !backText.isNull()) {
 				colorTag = backText.member("color");
 				if (colorTag != null && !colorTag.isNull()) {
@@ -239,12 +673,17 @@ public abstract class BuiltInGenerator {
 				if (glowingTextTag != null && !glowingTextTag.isNull())
 					backGlowing = glowingTextTag.asInt() > 0;
 
-				Value messages = backText.member("messages");
+					ExprValue messages = backText.member("messages");
 				if (messages != null && !messages.isNull()) {
 					int i = 0;
-					for (Value tag : messages.getChildren().values()) {
+					for (ExprValue tag : messages.getChildren().values()) {
 						try {
-							JsonElement el = JsonParser.parseString(tag.asString());
+							JsonElement el = null;
+							if(tag.getImpl() instanceof ExprValueNbtCompound) {
+								el = nbtToJson(((ExprValueNbtCompound) tag.getImpl()).getNbt());
+							}else {
+								el = JsonParser.parseString(tag.asString());
+							}
 							if (i == 0)
 								backText1 = el;
 							else if (i == 1)
@@ -278,7 +717,7 @@ public abstract class BuiltInGenerator {
 				if(glowingTextTag != null && !glowingTextTag.isNull())
 					frontGlowing = glowingTextTag.asInt() == 0;
 				
-				Value text = frontText.member("Text");
+				ExprValue text = frontText.member("Text");
 				if(text != null && !text.isNull()) {
 					String[] lines = text.asString().split("\n");
 					int i = 0;
@@ -317,7 +756,7 @@ public abstract class BuiltInGenerator {
 				if(glowingTextTag != null && !glowingTextTag.isNull())
 					backGlowing = glowingTextTag.asInt() == 0;
 				
-				Value text = backText.member("Text");
+				ExprValue text = backText.member("Text");
 				if(text != null && !text.isNull()) {
 					String[] lines = text.asString().split("\n");
 					int i = 0;
@@ -380,7 +819,7 @@ public abstract class BuiltInGenerator {
 	public static class BuiltInGeneratorText extends BuiltInGenerator {
 
 		@Override
-		public void eval(Context context, Map<String, Expression> arguments) {
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
 			JsonElement text = null;
 			Font font = null;
 			float textOffsetX = 0f;
@@ -418,12 +857,12 @@ public abstract class BuiltInGenerator {
 				rotY = arguments.get("textRotateY").eval(context).asFloat();
 
 			if (arguments.containsKey("color")) {
-				Value val = arguments.get("color").eval(context);
+				ExprValue val = arguments.get("color").eval(context);
 				defaultColor = parseColor(val);
 			}
 
 			if (arguments.containsKey("glowColor")) {
-				Value val = arguments.get("glowColor").eval(context);
+				ExprValue val = arguments.get("glowColor").eval(context);
 				glowColor = parseColor(val);
 			}
 
@@ -434,9 +873,9 @@ public abstract class BuiltInGenerator {
 					glowing, context.model);
 		}
 
-		private Color parseColor(Value val) {
-			if (val.getImpl() instanceof ValueDict) {
-				ValueDict valD = (ValueDict) val.getImpl();
+		private Color parseColor(ExprValue val) {
+			if (val.getImpl() instanceof ExprValueDict) {
+				ExprValueDict valD = (ExprValueDict) val.getImpl();
 				float r = 0f;
 				float g = 0f;
 				float b = 0f;

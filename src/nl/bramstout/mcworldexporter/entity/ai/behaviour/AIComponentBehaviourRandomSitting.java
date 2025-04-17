@@ -67,7 +67,7 @@ public class AIComponentBehaviourRandomSitting extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isSitting) {
 			if(time > stopTime) {
 				if(EntityUtil.randomChance(entity, stopChance, deltaTime)) {
@@ -86,7 +86,7 @@ public class AIComponentBehaviourRandomSitting extends AIComponent{
 			return false;
 		}
 		
-		if(!EntityUtil.randomChance(entity, startChance, deltaTime)) {
+		if(!EntityUtil.randomChance(entity, startChance, deltaTime) && !forceEnable) {
 			nextTry = time + cooldown;
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("Sitting", ((byte) 0)));
 			return false;

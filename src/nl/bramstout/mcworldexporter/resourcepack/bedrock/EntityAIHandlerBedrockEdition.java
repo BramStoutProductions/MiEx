@@ -902,7 +902,7 @@ public class EntityAIHandlerBedrockEdition extends EntityAIHandler{
 			return component;
 		}else if(name.equals("minecraft:movement")) {
 			AIComponentMovement component = new AIComponentMovement("minecraft:movement");
-			component.speed = getFloat(data, "value", 1f);
+			component.speed = getFloat(data, "value", 0.1f);
 			return component;
 		}else if(name.equals("minecraft:movement.amphibious")) {
 			AIComponentMovementAmphibious component = new AIComponentMovementAmphibious("minecraft:movement.amphibious");

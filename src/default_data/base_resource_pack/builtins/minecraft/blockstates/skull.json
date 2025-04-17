@@ -16,16 +16,16 @@
             "rotY = thisBlock.state.facing == 'west' ? 90.0 : rotY",
             "rotY = thisBlock.state.rotation != null ? (22.5 * thisBlock.state.rotation + 180.0) : rotY",
             "rotY = rotY >= 360.0 ? (rotY - 360.0) : rotY",
-            "texture = 'minecraft:entity/player/player'",
+            "texture = thisBlock.state.texture != null ? thisBlock.state.texture : 'minecraft:entity/player/player'",
             "texture = thisBlock.name.contains('wither_skeleton') ? 'minecraft:entity/skeleton/wither_skeleton' : texture",
             "texture = thisBlock.name.contains('skeleton') ? 'minecraft:entity/skeleton/skeleton' : texture",
             "texture = thisBlock.name.contains('zombie') ? 'minecraft:entity/zombie/zombie' : texture",
             "texture = thisBlock.name.contains('creeper') ? 'minecraft:entity/creeper/creeper' : texture",
-            "texture = thisBlock.name.contains('player') ? (thisBlock.state.ExtraType == null ? ( thisBlock.state.SkullOwner != null ? ( thisBlock.state.SkullOwner.Name != null ? ( 'minecraft:entity/player/' + thisBlock.state.SkullOwner.Name) : texture ) : texture ) : ( 'minecraft:entity/player/' + thisBlock.state.ExtraType)) : texture",
+            "texture = thisBlock.name.contains('player') ? (Textures.getTextureForPlayerProfile(thisBlock.state.profile)) : texture",
             "isSquareTexture = thisBlock.name.contains('player') || thisBlock.name.contains('zombie')"
         ],
         "textures": {
-            "texture": "'minecraft:entity/bed/' + color"
+            "texture": "texture"
         },
         "transform": {
             "rotate": [ 0.0, "rotY", 0.0 ]

@@ -53,6 +53,7 @@ import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
@@ -333,7 +334,7 @@ public class ResourcePacks {
 				return entityHandler;
 		}
 		
-		return EntityBuiltinsRegistry.builtins.getOrDefault(name, null);
+		return EntityBuiltinsRegistry.getBuiltInEntityHandler(name);
 	}
 	
 	public static EntityAIHandler getEntityAIHandler(String name) {
@@ -343,6 +344,17 @@ public class ResourcePacks {
 			EntityAIHandler entityAIHandler = pack.getEntityAIHandler(name);
 			if(entityAIHandler != null)
 				return entityAIHandler;
+		}
+		return null;
+	}
+	
+	public static ItemHandler getItemHandler(String name, NbtTagCompound data) {
+		ResourcePack pack = null;
+		for(int i = 0; i < activeResourcePacks.size(); ++i) {
+			pack = activeResourcePacks.get(i);
+			ItemHandler itemHandler = pack.getItemHandler(name, data);
+			if(itemHandler != null)
+				return itemHandler;
 		}
 		return null;
 	}

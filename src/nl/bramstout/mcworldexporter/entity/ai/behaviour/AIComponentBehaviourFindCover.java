@@ -53,7 +53,7 @@ public class AIComponentBehaviourFindCover extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(cooldownTicks > 0) {
 			cooldownTicks--;
 			return false;

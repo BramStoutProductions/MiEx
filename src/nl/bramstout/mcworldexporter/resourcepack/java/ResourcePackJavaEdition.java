@@ -48,12 +48,15 @@ import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.Pair;
 import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
+import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
@@ -321,6 +324,63 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	
 	@Override
 	public EntityAIHandler getEntityAIHandler(String name) {
+		return null;
+	}
+	
+	@Override
+	public ItemHandler getItemHandler(String name, NbtTagCompound data) {
+		// If item has the item_model component tag, then update it from that.
+		NbtTag componentsTag = data.get("components");
+		if(componentsTag != null && componentsTag instanceof NbtTagCompound) {
+			NbtTag itemModelTag = ((NbtTagCompound) componentsTag).get("minecraft:item_model");
+			if(itemModelTag != null) {
+				name = itemModelTag.asString();
+			}
+		}
+		
+		File itemHandlerFile = getResource(name, "items", "assets", ".json");
+		if(itemHandlerFile.exists()) {
+			try {
+				JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
+				return new ItemHandlerJavaEdition(jsonData);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		if(getName().equals("base_resource_pack")) {
+			// Fallback to handle it based on item models.
+			int sepIndex = name.indexOf(':');
+			String namespace = null;
+			if(sepIndex >= 0) {
+				namespace = name.substring(0, sepIndex);
+				name = name.substring(sepIndex+1);
+			}else {
+				namespace = "minecraft";
+			}
+
+			name = namespace + ":item/" + name;
+			itemHandlerFile = getResource(name, "models", "assets", ".json");
+			if(itemHandlerFile.exists()) {
+				try {
+					JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
+					return new ItemHandlerFallback(name, jsonData);
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}else {
+				name = name.replace(":item/", ":block/");
+				itemHandlerFile = getResource(name, "models", "assets", ".json");
+				if(itemHandlerFile.exists()) {
+					try {
+						JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
+						return new ItemHandlerFallback(name, jsonData);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}
 		return null;
 	}
 	

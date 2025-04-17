@@ -58,7 +58,7 @@ public class AIComponentBehaviourFollowMob extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		float posX = entity.getAnimation().getAnimPosX().getKeyframeAtTime(time).value;
 		float posY = entity.getAnimation().getAnimPosY().getKeyframeAtTime(time).value;
 		float posZ = entity.getAnimation().getAnimPosZ().getKeyframeAtTime(time).value;

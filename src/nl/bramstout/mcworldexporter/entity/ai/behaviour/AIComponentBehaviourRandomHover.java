@@ -75,7 +75,7 @@ public class AIComponentBehaviourRandomHover extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isFloating) {
 			if(entity.getAI().target == null) {
 				isFloating = false;
@@ -85,7 +85,7 @@ public class AIComponentBehaviourRandomHover extends AIComponent{
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("IsFlying", ((byte) 1)));
 			return true;
 		}
-		if(!EntityUtil.randomChance(entity, interval, deltaTime))
+		if(!EntityUtil.randomChance(entity, interval, deltaTime) && !forceEnable)
 			return false;
 		
 		float posX = entity.getAnimation().getAnimPosX().getKeyframeAtTime(time).value;

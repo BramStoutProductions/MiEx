@@ -60,7 +60,7 @@ public class AIComponentScheduler extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(time >= nextTick) {
 			if(nextTick != -1f) {
 				for(EntityEvent event : scheduledEvents)

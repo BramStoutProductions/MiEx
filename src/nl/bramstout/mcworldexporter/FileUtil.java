@@ -267,6 +267,10 @@ public class FileUtil {
 	}
 	
 	public static String getMinecraftRootDir() {
+		String envPath = Environment.getEnv("MIEX_MINECRAFT_ROOT_DIR");
+		if(envPath != null)
+			return envPath;
+		
 		if(isWindows())
 			return Environment.getEnv("APPDATA") + "/.minecraft";
 		else if(isMacOs())

@@ -74,7 +74,7 @@ public abstract class AIComponent {
 		return order;
 	}
 
-	public abstract boolean tick(Entity entity, float time, float deltaTime);
+	public abstract boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable);
 	
 	public abstract void disabledTick(Entity entity, float time, float deltaTime);
 	

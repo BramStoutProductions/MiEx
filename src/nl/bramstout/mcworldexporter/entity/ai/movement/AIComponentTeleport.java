@@ -91,7 +91,7 @@ public class AIComponentTeleport extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(randomTeleports) {
 			if(time >= nextRandomTeleport) {
 				if(nextRandomTeleport != -1f) {

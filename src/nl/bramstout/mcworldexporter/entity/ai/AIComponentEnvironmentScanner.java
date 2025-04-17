@@ -60,7 +60,7 @@ public class AIComponentEnvironmentScanner extends AIComponent{
 	}
 
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		for(SubSensor subSensor : subSensors) {
 			if(subSensor.filter.testFilter(entity)) {
 				// TODO: Implement target

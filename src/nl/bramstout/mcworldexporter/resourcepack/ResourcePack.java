@@ -40,6 +40,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public abstract class ResourcePack {
 	
@@ -137,6 +138,16 @@ public abstract class ResourcePack {
 	 * @return An EntityAIHandler instance for the entity, or null if this resource pack doesn't handle it.
 	 */
 	public abstract EntityAIHandler getEntityAIHandler(String name);
+	
+	/**
+	 * Returns an ItemHandler for the item with the given name.
+	 * If this resource pack does not handle this entity, it returns null.
+	 * 
+	 * @param name The resource identifier of the item.
+	 * @param data The Nbt data of the item.
+	 * @return An ItemHandler instance for the entity, or null if this resource pack doesn't handle it.
+	 */
+	public abstract ItemHandler getItemHandler(String name, NbtTagCompound data);
 	
 	public abstract Biome getBiome(String name, int id);
 	

@@ -50,8 +50,8 @@ public class LODCache {
 			cache = new int[NUM_CACHE_LEVELS][];
 			// We add some padding because the exporter also
 			// checks neighbour blocks for occlusion
-			this.minY = minY - 16;
-			this.height = height + 32;
+			this.minY = ((minY >> 4) << 4) - 16;
+			this.height = (((height + 15) >> 4) << 4) + 32;
 		}
 		
 		public boolean get(int cx, int cy, int cz, int lodSize, int lodSizeY, int[] out) {

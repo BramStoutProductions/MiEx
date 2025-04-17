@@ -37,6 +37,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -83,6 +84,7 @@ public class ToolBar extends JPanel {
 
 	private JButton loadWorldButton;
 	private JButton loadWorldFromExportButton;
+	private JButton loadSettingsFromExportButton;
 	private JToggleButton pauseLoadingButton;
 	private JComboBox<String> dimensionChooser;
 
@@ -120,6 +122,7 @@ public class ToolBar extends JPanel {
 	private JButton entityButton;
 
 	private JButton exportButton;
+	private JButton reexportButton;
 	
 	private File exportLastDirectory;
 	
@@ -152,7 +155,7 @@ public class ToolBar extends JPanel {
 
 		JPanel worldPanel = new JPanel();
 		worldPanel.setLayout(new BoxLayout(worldPanel, BoxLayout.Y_AXIS));
-		worldPanel.setMinimumSize(new Dimension(300, 140));
+		worldPanel.setMinimumSize(new Dimension(320, 140));
 		worldPanel.setMaximumSize(worldPanel.getMinimumSize());
 		worldPanel.setPreferredSize(worldPanel.getMinimumSize());
 		JLabel worldPanelLabel = new JLabel("World");
@@ -168,7 +171,7 @@ public class ToolBar extends JPanel {
 		worldCtrlPanel.add(loadButtonsPanel);
 		
 		loadWorldButton = new JButton("Load");
-		loadWorldButton.setPreferredSize(new Dimension(130, 24));
+		loadWorldButton.setPreferredSize(new Dimension(150, 24));
 		loadWorldButton.setMinimumSize(loadWorldButton.getPreferredSize());
 		loadWorldButton.setMaximumSize(loadWorldButton.getPreferredSize());
 		loadWorldButton.setToolTipText("Load in a Minecraft world.");
@@ -182,21 +185,36 @@ public class ToolBar extends JPanel {
 		loadButtonsPanel.add(loadButtonsPadding);
 		
 		loadWorldFromExportButton = new JButton("Load From Export");
-		loadWorldFromExportButton.setPreferredSize(new Dimension(130, 24));
+		loadWorldFromExportButton.setPreferredSize(new Dimension(150, 24));
 		loadWorldFromExportButton.setMinimumSize(loadWorldFromExportButton.getPreferredSize());
 		loadWorldFromExportButton.setMaximumSize(loadWorldFromExportButton.getPreferredSize());
 		ToolTips.registerTooltip(loadWorldFromExportButton, ToolTips.LOAD_WORLD_FROM_EXPORT);
 		loadButtonsPanel.add(loadWorldFromExportButton);
 		
 		JPanel loadButtonsPadding2 = new JPanel();
-		loadButtonsPadding2.setPreferredSize(new Dimension(10, 8));
-		loadButtonsPadding2.setMinimumSize(new Dimension(10, 8));
-		loadButtonsPadding2.setMaximumSize(new Dimension(10, 8));
+		loadButtonsPadding2.setPreferredSize(new Dimension(10, 4));
+		loadButtonsPadding2.setMinimumSize(new Dimension(10, 4));
+		loadButtonsPadding2.setMaximumSize(new Dimension(10, 4));
 		loadButtonsPadding2.setBorder(new EmptyBorder(0,0,0,0));
 		loadButtonsPanel.add(loadButtonsPadding2);
 		
+		loadSettingsFromExportButton = new JButton("Load Settings From Export");
+		loadSettingsFromExportButton.setMargin(new Insets(0, 3, 0, 3));
+		loadSettingsFromExportButton.setPreferredSize(new Dimension(150, 24));
+		loadSettingsFromExportButton.setMinimumSize(loadSettingsFromExportButton.getPreferredSize());
+		loadSettingsFromExportButton.setMaximumSize(loadSettingsFromExportButton.getPreferredSize());
+		ToolTips.registerTooltip(loadSettingsFromExportButton, ToolTips.LOAD_SETTINGS_FROM_EXPORT);
+		loadButtonsPanel.add(loadSettingsFromExportButton);
+		
+		JPanel loadButtonsPadding3 = new JPanel();
+		loadButtonsPadding3.setPreferredSize(new Dimension(10, 8));
+		loadButtonsPadding3.setMinimumSize(new Dimension(10, 8));
+		loadButtonsPadding3.setMaximumSize(new Dimension(10, 8));
+		loadButtonsPadding3.setBorder(new EmptyBorder(0,0,0,0));
+		loadButtonsPanel.add(loadButtonsPadding3);
+		
 		pauseLoadingButton = new JToggleButton("Pause Loading");
-		pauseLoadingButton.setPreferredSize(new Dimension(130, 24));
+		pauseLoadingButton.setPreferredSize(new Dimension(150, 24));
 		pauseLoadingButton.setMinimumSize(pauseLoadingButton.getPreferredSize());
 		pauseLoadingButton.setMaximumSize(pauseLoadingButton.getPreferredSize());
 		ToolTips.registerTooltip(pauseLoadingButton, ToolTips.PAUSE_LOADING);
@@ -569,6 +587,13 @@ public class ToolBar extends JPanel {
 		exportButton.setMaximumSize(exportButton.getPreferredSize());
 		ToolTips.registerTooltip(exportButton, ToolTips.EXPORT);
 		exportPanel.add(exportButton);
+		reexportButton = new JButton("Re-export");
+		reexportButton.setPreferredSize(new Dimension(84, 40));
+		reexportButton.setMinimumSize(reexportButton.getPreferredSize());
+		reexportButton.setMaximumSize(reexportButton.getPreferredSize());
+		reexportButton.setVisible(false);
+		ToolTips.registerTooltip(reexportButton, ToolTips.REEXPORT);
+		exportPanel.add(reexportButton);
 		exportPanel.add(new JPanel());
 		add(exportPanel);
 
@@ -622,8 +647,52 @@ public class ToolBar extends JPanel {
 					Converter converter = Converter.getConverter(tokens[tokens.length-1], null, null);
 					
 					ExportData exportData = converter.getExportData(file);
-					if(exportData != null)
-						exportData.apply();
+					if(exportData != null) {
+						MCWorldExporter.getApp().setLastExportFileOpened(file);
+						exportData.apply(false);
+					}
+				}
+			}
+
+		});
+		
+		loadSettingsFromExportButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setApproveButtonText("Load");
+				chooser.setDialogTitle("Load Settings From Export");
+				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				if(exportLastDirectory == null || !exportLastDirectory.exists())
+					exportLastDirectory = new File(FileUtil.getHomeDir());
+				chooser.setCurrentDirectory(exportLastDirectory);
+				FileFilter defaultFilter = null;
+				for(String extension : Converter.getExtensions()) {
+					FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
+					chooser.addChoosableFileFilter(filter);
+					if(defaultFilter == null)
+						defaultFilter = filter;
+				}
+				chooser.setFileFilter(defaultFilter);
+				chooser.setAcceptAllFileFilterUsed(false);
+				int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
+				if (result == JFileChooser.APPROVE_OPTION) {
+					File file = chooser.getSelectedFile();
+					FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+					if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
+						file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+					
+					exportLastDirectory = file.getParentFile();
+					
+					String[] tokens = file.getName().split("\\.");
+					
+					Converter converter = Converter.getConverter(tokens[tokens.length-1], null, null);
+					
+					ExportData exportData = converter.getExportData(file);
+					if(exportData != null) {
+						exportData.apply(true);
+					}
 				}
 			}
 
@@ -966,6 +1035,61 @@ public class ToolBar extends JPanel {
 			}
 
 		});
+		
+		reexportButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Config.runOptimiser = runOptimiserCheckBox.isSelected();
+				Config.removeCaves = removeCavesCheckBox.isSelected();
+				Config.fillInCaves = Config.removeCaves && fillInCavesCheckBox.isSelected();
+				Config.onlyIndividualBlocks = exportIndividualBlocksCheckBox.isSelected();
+				if(MCWorldExporter.getApp().getLastExportFileOpened() != null) {
+					File file = MCWorldExporter.getApp().getLastExportFileOpened();
+					
+					try {
+						exportLastDirectory = file.getParentFile();
+						
+						Exporter.export(file);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}else {
+					JFileChooser chooser = new JFileChooser();
+					chooser.setApproveButtonText("Export");
+					chooser.setDialogTitle("Export World");
+					chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+					if(exportLastDirectory == null || !exportLastDirectory.exists())
+						exportLastDirectory = new File(FileUtil.getHomeDir());
+					chooser.setCurrentDirectory(exportLastDirectory);
+					FileFilter defaultFilter = null;
+					for(String extension : Converter.getExtensions()) {
+						FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
+						chooser.addChoosableFileFilter(filter);
+						if(defaultFilter == null)
+							defaultFilter = filter;
+					}
+					chooser.setFileFilter(defaultFilter);
+					chooser.setAcceptAllFileFilterUsed(false);
+					int result = chooser.showSaveDialog(MCWorldExporter.getApp().getUI());
+					if (result == JFileChooser.APPROVE_OPTION) {
+						try {
+							File file = chooser.getSelectedFile();
+							FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+							if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
+								file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+							
+							exportLastDirectory = file.getParentFile();
+							
+							Exporter.export(file);
+						} catch (Exception e1) {
+							e1.printStackTrace();
+						}
+					}
+				}
+			}
+
+		});
 	}
 	
 	private int prevCenterX;
@@ -1119,6 +1243,18 @@ public class ToolBar extends JPanel {
 		}
 		
 		prevWorld = MCWorldExporter.getApp().getWorld();
+		
+		if(MCWorldExporter.getApp().getLastExportFileOpened() == null) {
+			reexportButton.setVisible(false);
+			exportButton.setPreferredSize(new Dimension(84, 84));
+			exportButton.setMinimumSize(exportButton.getPreferredSize());
+			exportButton.setMaximumSize(exportButton.getPreferredSize());
+		}else {
+			reexportButton.setVisible(true);
+			exportButton.setPreferredSize(new Dimension(84, 40));
+			exportButton.setMinimumSize(exportButton.getPreferredSize());
+			exportButton.setMaximumSize(exportButton.getPreferredSize());
+		}
 	}
 
 	public boolean isEditingFGChunks() {

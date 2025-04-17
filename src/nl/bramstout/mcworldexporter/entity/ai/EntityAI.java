@@ -232,18 +232,18 @@ public class EntityAI {
 		
 		// First handle normal components, then behaviour, then navigation, and lastly movement
 		for(AIComponent component : normalComponents)
-			component.tick(entity, time, deltaTime);
+			component.tick(entity, time, deltaTime, false);
 		
 		if(!behaviourComponents.isEmpty())
 			handleBehaviourComponents(behaviourComponents, time, deltaTime);
 		
 		// Just grab the first navigation component if we have one
 		if(!navigationComponents.isEmpty())
-			navigationComponents.get(0).tick(entity, time, deltaTime);
+			navigationComponents.get(0).tick(entity, time, deltaTime, false);
 		
 		// Just grab the first movement component if we have one
 		if(!movementComponents.isEmpty())
-			movementComponents.get(0).tick(entity, time, deltaTime);
+			movementComponents.get(0).tick(entity, time, deltaTime, false);
 		
 		float posX = entity.getAnimation().getAnimPosX().getKeyframeAtTime(time).value;
 		float posY = entity.getAnimation().getAnimPosY().getKeyframeAtTime(time).value;
@@ -382,7 +382,7 @@ public class EntityAI {
 						// We already have a current behaviour, so give it the disabledTick
 						currentBehaviourComponent.disabledTick(entity, time, deltaTime);
 					}else {
-						if(currentBehaviourComponent.tick(entity, time, deltaTime)) {
+						if(currentBehaviourComponent.tick(entity, time, deltaTime, false)) {
 							// It still wants to be the current behaviour component.
 							hasCurrentBehaviourComponent = true;
 						}
@@ -399,12 +399,42 @@ public class EntityAI {
 					// We already have a current behaviour, so give it the disabledTick
 					component.disabledTick(entity, time, deltaTime);
 				}else {
-					if(component.tick(entity, time, deltaTime)) {
+					if(component.tick(entity, time, deltaTime, false)) {
 						// This component should now become the current behaviour component
 						currentBehaviourComponent = component;
 						hasCurrentBehaviourComponent = true;
 					}
 				}
+			}
+		}
+		
+		if(currentBehaviourComponent == null || !hasCurrentBehaviourComponent) {
+			// Make sure that there is always an active behaviour component.
+			// So loop through the components again but then with forceEnable set to true
+			// to make it more likely to pick a component.
+			for(int tries = 0; tries < 3; ++tries) {
+				for(int priority = minPriority; priority <= maxPriority; ++priority) {
+					// Loop through components with this priority
+					for(AIComponent component : components) {
+						if(component.getPriority() != priority || component == currentBehaviourComponent)
+							continue;
+						
+						if(hasCurrentBehaviourComponent) {
+							// We already have a current behaviour, so give it the disabledTick
+							component.disabledTick(entity, time, deltaTime);
+						}else {
+							if(entity.getRandom().nextBoolean()) {
+								if(component.tick(entity, time, deltaTime, true)) {
+									// This component should now become the current behaviour component
+									currentBehaviourComponent = component;
+									hasCurrentBehaviourComponent = true;
+								}
+							}
+						}
+					}
+				}
+				if(currentBehaviourComponent != null || hasCurrentBehaviourComponent)
+					break;
 			}
 		}
 	}

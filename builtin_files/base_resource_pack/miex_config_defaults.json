@@ -600,6 +600,7 @@
   "calculateAmbientOcclusion": false,
   "exportAmbientOcclusionAsDisplayOpacity": false,
   "calculateCornerUVs": false,
+  "subdivideModelsForCorners": false,
   "renderGamut": "ACEScg",
   "exportDisplayColor": true,
   "memoryPerThread": 1024,

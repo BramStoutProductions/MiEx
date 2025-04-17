@@ -47,7 +47,7 @@ public class AIComponentBodyRotationBlocked extends AIComponent{
 	}
 
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(Float.isNaN(lockedYaw) || Float.isNaN(lockedPitch)) {
 			lockedYaw = entity.getAnimation().getAnimYaw().getKeyframeAtTime(time).value;
 			lockedPitch = entity.getAnimation().getAnimPitch().getKeyframeAtTime(time).value;

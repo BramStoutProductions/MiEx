@@ -86,7 +86,7 @@ public class AIComponentBehaviourRandomLookAroundAndSit extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isLooking) {
 			if(looksLeft <= 0) {
 				isLooking = false;
@@ -125,7 +125,7 @@ public class AIComponentBehaviourRandomLookAroundAndSit extends AIComponent{
 			return false;
 		}
 		
-		if(!EntityUtil.randomChance(entity, probability, deltaTime)) {
+		if(!EntityUtil.randomChance(entity, probability, deltaTime) && !forceEnable) {
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("Sitting", ((byte) 0)));
 			nextTry = time + cooldown;
 			return false;

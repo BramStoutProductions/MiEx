@@ -39,14 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.imageio.ImageIO;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
-import nl.bramstout.mcworldexporter.export.Exporter;
+import nl.bramstout.mcworldexporter.export.GeneratedTextures;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -146,16 +144,18 @@ public class BedrockMaterials {
 				}
 			}
 			
-			File exportDir = Exporter.currentExportFile.getParentFile();
-			File chunksFolder = new File(exportDir, Exporter.currentExportFile.getName().replace(".usd", "_chunks"));
-			File imgDir = new File(chunksFolder, "images");
-			imgDir.mkdirs();
+			//File exportDir = Exporter.currentExportFile.getParentFile();
+			//File chunksFolder = new File(exportDir, Exporter.currentExportFile.getName().replace(".usd", "_chunks"));
+			//File imgDir = new File(chunksFolder, "images");
+			//imgDir.mkdirs();
 			
-			String imgName = "img_" + Integer.toHexString(textures.hashCode()) + Integer.toHexString(tints.hashCode()) + 
+			String imgName = "entity/img_" + Integer.toHexString(textures.hashCode()) + Integer.toHexString(tints.hashCode()) + 
 										Integer.toHexString(layers.hashCode());
-			File imgFile = new File(imgDir, imgName + ".png");
-			if(imgFile.exists())
-				return "./" + chunksFolder.getName() + "/" + imgDir.getName() + "/" + imgName;
+			//File imgFile = new File(imgDir, imgName + ".png");
+			//if(imgFile.exists())
+			//	return "./" + chunksFolder.getName() + "/" + imgDir.getName() + "/" + imgName;
+			if(GeneratedTextures.textureExists(imgName))
+				return GeneratedTextures.getTextureId(imgName);
 			
 			BufferedImage resImg = null;
 			for(int i = 0; i < textures.size(); ++i) {
@@ -163,8 +163,8 @@ public class BedrockMaterials {
 				
 				String texture = textures.get(i);
 				File file = ResourcePacks.getTexture(texture);
-				if(file == null)
-					file = new File(exportDir, texture);
+				//if(file == null)
+				//	file = new File(exportDir, texture);
 				if(!file.exists())
 					continue;
 				
@@ -181,7 +181,7 @@ public class BedrockMaterials {
 				if(tintIndex < 0)
 					tintIndex = Math.min(i, tints != null ? (tints.size() - 1) : -1);
 				if(tintIndex >= 0)
-					tint = tints.get(i);
+					tint = tints.get(tintIndex);
 				
 				switch(layer.getBlendMode()) {
 				case OVERLAY:
@@ -208,14 +208,15 @@ public class BedrockMaterials {
 				resImg = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
 			}
 			
-			try {
-				ImageIO.write(resImg, "PNG", imgFile);
-			}catch(Exception ex) {
-				ex.printStackTrace();
-				return "";
-			}
+			//try {
+			//	ImageIO.write(resImg, "PNG", imgFile);
+			//}catch(Exception ex) {
+			//	ex.printStackTrace();
+			//	return "";
+			//}
 			
-			return "./" + chunksFolder.getName() + "/" + imgDir.getName() + "/" + imgName;
+			//return "./" + chunksFolder.getName() + "/" + imgDir.getName() + "/" + imgName;
+			return GeneratedTextures.writeTexture(imgName, resImg);
 		}
 		
 		private static void compositeOverlay(BufferedImage bg, BufferedImage fg) {

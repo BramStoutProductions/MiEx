@@ -42,6 +42,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.export.GeneratedTextures;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
@@ -77,6 +78,7 @@ public class MCWorldExporter {
 	
 	
 	private World world;
+	private File lastExportFileOpened;
 	private MainWindow ui;
 	private ExportBounds exportBounds;
 	private List<String> fgChunks;
@@ -86,6 +88,7 @@ public class MCWorldExporter {
 		LauncherRegistry.initLaunchers();
 		
 		world = null;
+		lastExportFileOpened = null;
 		exportBounds = new ExportBounds();
 		fgChunks = new ArrayList<String>();
 		ui = new MainWindow();
@@ -196,6 +199,14 @@ public class MCWorldExporter {
 	public void setFGChunks(List<String> fgChunks) {
 		this.fgChunks = fgChunks;
 	}
+	
+	public File getLastExportFileOpened() {
+		return lastExportFileOpened;
+	}
+	
+	public void setLastExportFileOpened(File lastExportFileOpened) {
+		this.lastExportFileOpened = lastExportFileOpened;
+	}
 
 	
 	
@@ -251,6 +262,21 @@ public class MCWorldExporter {
 			String offlineModeEnvVar = Environment.getEnv("MIEX_OFFLINE_MODE");
 			if(offlineModeEnvVar != null) {
 				offlineMode = offlineModeEnvVar.toLowerCase().startsWith("t") || offlineModeEnvVar.startsWith("1");
+			}
+		}catch(Exception ex) {}
+		
+		try {
+			String storeGenTexturesInExportEnvVar = Environment.getEnv("MIEX_STORE_GEN_TEX_IN_EXPORT");
+			if(storeGenTexturesInExportEnvVar != null) {
+				GeneratedTextures.storeGeneratedTexturesInExport = storeGenTexturesInExportEnvVar.toLowerCase().startsWith("t") || 
+						storeGenTexturesInExportEnvVar.startsWith("1");
+			}
+		}catch(Exception ex) {}
+		
+		try {
+			String genTexRPNameEnvVar = Environment.getEnv("MIEX_GEN_TEX_RP_NAME");
+			if(genTexRPNameEnvVar != null) {
+				GeneratedTextures.generatedTexturesResourcePackName = genTexRPNameEnvVar;
 			}
 		}catch(Exception ex) {}
 		
@@ -318,6 +344,12 @@ public class MCWorldExporter {
 				}
 				else if(args[i].equalsIgnoreCase("-githubRepo")) {
 					GitHubRepository = args[i+1];
+				}
+				else if(args[i].equalsIgnoreCase("-storeGenTexInExport")) {
+					GeneratedTextures.storeGeneratedTexturesInExport = true;
+				}
+				else if(args[i].equalsIgnoreCase("-genTexRpName")) {
+					GeneratedTextures.generatedTexturesResourcePackName = args[i+1];
 				}
 				else if(args[i].equalsIgnoreCase("-output")) {
 					forceOutputPath = args[i+1];

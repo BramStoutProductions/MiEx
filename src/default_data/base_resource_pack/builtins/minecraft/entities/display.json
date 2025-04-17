@@ -1,0 +1,183 @@
+{
+    "entities": [
+        "minecraft:block_display", "minecraft:item_display"
+    ],
+    "handler": [
+        {
+            "variables": [
+                "translateX = 0.0",
+                "translateY = 0.0",
+                "translateZ = 0.0",
+                "leftQuatX = 0.0",
+                "leftQuatY = 0.0",
+                "leftQuatZ = 0.0",
+                "leftQuatW = 0.0",
+                "leftAAX = 0.0",
+                "leftAAY = 0.0",
+                "leftAAZ = 0.0",
+                "leftAAA = 0.0",
+                "scaleX = 1.0",
+                "scaleY = 1.0",
+                "scaleZ = 1.0",
+                "rightQuatX = 0.0",
+                "rightQuatY = 0.0",
+                "rightQuatZ = 0.0",
+                "rightQuatW = 0.0",
+                "rightAAX = 0.0",
+                "rightAAY = 0.0",
+                "rightAAZ = 0.0",
+                "rightAAA = 0.0"
+            ]
+        },
+        {
+            "condition": "Value.getType(thisEntity.state.transformation) == 'dict'",
+            "children": [
+                {
+                    "condition": "thisEntity.state.transformation.translation != null",
+                    "variables": [
+                        "translateX = thisEntity.state.transformation.translation[0] * 16.0",
+                        "translateY = thisEntity.state.transformation.translation[1] * 16.0",
+                        "translateZ = thisEntity.state.transformation.translation[2] * 16.0"
+                    ]
+                },
+                {
+                    "condition": "thisEntity.state.transformation.scale != null",
+                    "variables": [
+                        "scaleX = thisEntity.state.transformation.scale[0]",
+                        "scaleY = thisEntity.state.transformation.scale[1]",
+                        "scaleZ = thisEntity.state.transformation.scale[2]"
+                    ]
+                },
+                {
+                    "condition": "thisEntity.state.transformation.left_rotation != null",
+                    "children": [
+                        {
+                            "condition": "Value.getType(thisEntity.state.transformation.left_rotation) == 'dict'",
+                            "variables": [
+                                "leftAAX = thisEntity.state.transformation.left_rotation.axis[0]",
+                                "leftAAY = thisEntity.state.transformation.left_rotation.axis[1]",
+                                "leftAAZ = thisEntity.state.transformation.left_rotation.axis[2]",
+                                "leftAAA = thisEntity.state.transformation.left_rotation.angle"
+                            ]
+                        },
+                        {
+                            "condition": "Value.getType(thisEntity.state.transformation.left_rotation) == 'list'",
+                            "variables": [
+                                "leftQuatX = thisEntity.state.transformation.left_rotation[0]",
+                                "leftQuatY = thisEntity.state.transformation.left_rotation[1]",
+                                "leftQuatZ = thisEntity.state.transformation.left_rotation[2]",
+                                "leftQuatW = thisEntity.state.transformation.left_rotation[3]"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "condition": "thisEntity.state.transformation.right_rotation != null",
+                    "children": [
+                        {
+                            "condition": "Value.getType(thisEntity.state.transformation.right_rotation) == 'dict'",
+                            "variables": [
+                                "rightAAX = thisEntity.state.transformation.right_rotation.axis[0]",
+                                "rightAAY = thisEntity.state.transformation.right_rotation.axis[1]",
+                                "rightAAZ = thisEntity.state.transformation.right_rotation.axis[2]",
+                                "rightAAA = thisEntity.state.transformation.right_rotation.angle"
+                            ]
+                        },
+                        {
+                            "condition": "Value.getType(thisEntity.state.transformation.right_rotation) == 'list'",
+                            "variables": [
+                                "rightQuatX = thisEntity.state.transformation.right_rotation[0]",
+                                "rightQuatY = thisEntity.state.transformation.right_rotation[1]",
+                                "rightQuatZ = thisEntity.state.transformation.right_rotation[2]",
+                                "rightQuatW = thisEntity.state.transformation.right_rotation[3]"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "children": [
+                {
+                    "transform": {
+                        "translate": [ "translateX", "translateY", "translateZ" ]
+                    },
+                    "children": [
+                        {
+                            "transform": {
+                                "quaternion": [ "leftQuatX", "leftQuatY", "leftQuatZ", "leftQuatW" ],
+                                "axisAngle": [ "leftAAX", "leftAAY", "leftAAZ", "leftAAA" ],
+                                "pivot": [ 0.0, 0.0, 0.0 ]
+                            },
+                            "children": [
+                                {
+                                    "transform": {
+                                        "scale": [ "scaleX", "scaleY", "scaleZ" ],
+                                        "pivot": [ 0.0, 0.0, 0.0 ]
+                                    },
+                                    "children": [
+                                        {
+                                            "transform": {
+                                                "quaternion": [ "rightQuatX", "rightQuatY", "rightQuatZ", "rightQuatW" ],
+                                                "axisAngle": [ "rightAAX", "rightAAY", "rightAAZ", "rightAAA" ],
+                                                "pivot": [ 0.0, 0.0, 0.0 ]
+                                            },
+                                            "children": [
+                                                {
+                                                    "condition": "thisEntity.state.item != null",
+                                                    "transform": {
+                                                        "translate": [ -8.0, -8.0, -8.0 ]
+                                                    },
+                                                    "variables": [
+                                                        "displayContext = thisEntity.state.item_display != null ? thisEntity.state.item_display : 'none'"
+                                                    ],
+                                                    "generators": [
+                                                        {
+                                                            "type": "item",
+                                                            "args": {
+                                                                "id": "thisEntity.state.item.id",
+                                                                "properties": "thisEntity.state.item",
+                                                                "displayContext": "displayContext"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "condition": "thisEntity.state.block_state != null",
+                                                    "generators": [
+                                                        {
+                                                            "type": "block",
+                                                            "args": {
+                                                                "name": "thisEntity.state.block_state.Name",
+                                                                "properties": "thisEntity.state.block_state.Properties"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "condition": "thisEntity.state.Passengers != null",
+                                                    "loopInit": "passengerI = 0",
+                                                    "loopCondition": "passengerI < thisEntity.state.Passengers.length()",
+                                                    "loopIncrement": "passengerI += 1",
+                                                    "generators": [
+                                                        {
+                                                            "type": "entity",
+                                                            "args": {
+                                                                "id": "thisEntity.state.Passengers[passengerI].id",
+                                                                "properties": "thisEntity.state.Passengers[passengerI]"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

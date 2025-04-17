@@ -40,7 +40,6 @@ import org.iq80.leveldb.DB;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByteArray;
@@ -53,7 +52,6 @@ public class MapCreator {
 	
 	public static Model createMapModel(long mapId, boolean isBedrock) {
 		Model model = new Model("map", null, false);
-		model.setItemFrameTransform(new Vector3f(0f, 0f, 0f), new Vector3f(0f, 0f, 0f), new Vector3f(2f, 2f, 2f));
 
 		RGB[] colorIds = new RGB[128 * 128];
 

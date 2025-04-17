@@ -55,7 +55,7 @@ public class AIComponentBehaviourLayDown extends AIComponent{
 	}
 
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isLayingDown) {
 			if(EntityUtil.randomChance(entity, stopInterval, deltaTime)) {
 				isLayingDown = false;
@@ -64,7 +64,7 @@ public class AIComponentBehaviourLayDown extends AIComponent{
 			}
 			return true;
 		}
-		if(EntityUtil.randomChance(entity, interval, deltaTime)) {
+		if(EntityUtil.randomChance(entity, interval, deltaTime) || forceEnable) {
 			isLayingDown = true;
 			entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("IsLayingDown", (byte) 1));
 			return true;

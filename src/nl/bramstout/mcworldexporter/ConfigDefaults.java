@@ -99,6 +99,7 @@ public class ConfigDefaults {
 	public static boolean calculateAmbientOcclusion;
 	public static boolean exportAmbientOcclusionAsDisplayOpacity;
 	public static boolean calculateCornerUVs;
+	public static boolean subdivideModelsForCorners;
 	public static String renderGamut;
 	public static int memoryPerThread;
 	public static boolean forceDoubleSidedOnEverything;
@@ -253,6 +254,7 @@ public class ConfigDefaults {
 		calculateAmbientOcclusion = false;
 		exportAmbientOcclusionAsDisplayOpacity = false;
 		calculateCornerUVs = false;
+		subdivideModelsForCorners = false;
 		renderGamut = "ACEScg";
 		memoryPerThread = 1024;
 		forceDoubleSidedOnEverything = false;

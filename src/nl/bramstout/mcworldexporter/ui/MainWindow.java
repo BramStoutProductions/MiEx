@@ -43,6 +43,7 @@ import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
 import javax.swing.border.EmptyBorder;
 
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.ReleaseChecker;
 
 public class MainWindow extends JFrame{
@@ -137,7 +138,11 @@ public class MainWindow extends JFrame{
 	}
 	
 	public void setTitle(String title) {
-		super.setTitle("MiEx " + ReleaseChecker.CURRENT_VERSION + " | " + title);
+		title = "MiEx " + ReleaseChecker.CURRENT_VERSION + " | " + title;
+		if(MCWorldExporter.getApp().getLastExportFileOpened() != null) {
+			title += " | Loaded from " + MCWorldExporter.getApp().getLastExportFileOpened().getName();
+		}
+		super.setTitle(title);
 	}
 	
 	public void update() {

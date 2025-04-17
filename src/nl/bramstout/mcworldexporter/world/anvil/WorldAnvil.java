@@ -229,6 +229,9 @@ public class WorldAnvil extends World{
 			tmpRegions.add(new RegionAnvil(this, f, x, z));
 		}
 		
+		if(tmpRegions.size() == 0)
+			return;
+		
 		regionsStride = regionMaxX - regionMinX + 1;
 		regions = new Region[(regionMaxZ - regionMinZ + 1) * regionsStride];
 		

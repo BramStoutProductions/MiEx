@@ -57,6 +57,7 @@ import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.Occlusion;
+import nl.bramstout.mcworldexporter.model.Subdivider;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
@@ -149,14 +150,16 @@ public class ChunkExporter {
 		
 		int lodSize = getLodSize(x, z);
 		int lodYSize = getLodYSize(x, z);
+		int lodLevel = Integer.numberOfTrailingZeros(lodSize);
+		int lodYLevel = Integer.numberOfTrailingZeros(lodYSize);
 		
 		// Make the bounds align to the lodSize
-		minX = ((minX + x * 16) / lodSize) * lodSize - x * 16;
-		minY = (minY / lodYSize) * lodYSize;
-		minZ = ((minZ + z * 16) / lodSize) * lodSize - z * 16;
-		maxX = ((maxX + x * 16) / lodSize) * lodSize - x * 16;
-		maxY = (maxY / lodYSize) * lodYSize;
-		maxZ = ((maxZ + z * 16) / lodSize) * lodSize - z * 16;
+		minX = (((minX + x * 16) >> lodLevel) << lodLevel) - x * 16;
+		minY = (minY >> lodYLevel) << lodYLevel;
+		minZ = (((minZ + z * 16) >> lodLevel) << lodLevel) - z * 16;
+		maxX = (((maxX + x * 16) >> lodLevel) << lodLevel) - x * 16;
+		maxY = (maxY >> lodYLevel) << lodYLevel;
+		maxZ = (((maxZ + z * 16) >> lodLevel) << lodLevel) - z * 16;
 		
 		int bx = 0;
 		int by = 0;
@@ -302,6 +305,21 @@ public class ChunkExporter {
 		models.clear();
 		state.getModels(blockId[1], blockId[2], blockId[3], models);
 		
+		if(Config.subdivideModelsForCorners) {
+			/**
+			 * If we want to calculate corner UVs for something like edge highlights,
+			 * then you can end up with situations like a slab next to a full block,
+			 * where the slab's side will be occluded and no corner added in, but
+			 * the full block's side won't be occluded (since it's only partially
+			 * occluded) and thus would get a corner added. That corner looks correct
+			 * for half of the full block's, but not for the half where the slab is.
+			 * There shouldn't be a corner where the slab is touching the full blocks.
+			 * 
+			 * So, we need to subdivide those faces to solve this.
+			 */
+			Subdivider.subdivideModelForOcclusion(models, occlusion);
+		}
+		
 		occlusionHandler.calculateCornerDataForModel(models, state, occlusion, detailedOcclusionFaces);
 		
 		Model model;
@@ -380,8 +398,8 @@ public class ChunkExporter {
 	}
 	
 	private Chunk getPrefetchedChunk(int chunkX, int chunkZ) {
-		int x = chunkX - (prefetchedChunkWorldX/16);
-		int z = chunkZ - (prefetchedChunkWorldZ/16);
+		int x = chunkX - (prefetchedChunkWorldX >> 4);
+		int z = chunkZ - (prefetchedChunkWorldZ >> 4);
 		if(x < 0 || x > 2 || z < 0 || z > 2) {
 			try {
 				return world.getChunk(chunkX, chunkZ);
@@ -394,12 +412,8 @@ public class ChunkExporter {
 	}
 	
 	private Chunk getPrefetchedChunkForBlockPos(int blockX, int blockZ) {
-		if (blockX < 0)
-			blockX -= 15;
-		if (blockZ < 0)
-			blockZ -= 15;
-		blockX /= 16;
-		blockZ /= 16;
+		blockX >>= 4;
+		blockZ >>= 4;
 		return getPrefetchedChunk(blockX, blockZ);
 	}
 	
@@ -563,11 +577,13 @@ public class ChunkExporter {
 		
 		int sampleLodSize = getLodSize(chunk.getChunkX(), chunk.getChunkZ());
 		int sampleLodYSize = getLodYSize(chunk.getChunkX(), chunk.getChunkZ());
+		int sampleLodLevel = Integer.numberOfTrailingZeros(sampleLodSize);
+		int sampleLodYLevel = Integer.numberOfTrailingZeros(sampleLodYSize);
 		if(sampleLodSize >= lodSize) {
 			getLODBlockId(chunk, 
-					(cx / sampleLodSize) * sampleLodSize, 
-					(cy / sampleLodYSize) * sampleLodYSize, 
-					(cz / sampleLodSize) * sampleLodSize, 
+					(cx >> sampleLodLevel) << sampleLodLevel, 
+					(cy >> sampleLodYLevel) << sampleLodYLevel, 
+					(cz >> sampleLodLevel) << sampleLodLevel, 
 					sampleLodSize, sampleLodYSize, out);
 		}else {
 			out[0] = -2;

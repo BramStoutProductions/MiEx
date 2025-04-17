@@ -146,6 +146,7 @@ public class WorldBrowser extends JDialog {
 	
 	private void openWorld(File worldFolder) {
 		setVisible(false);
+		MCWorldExporter.getApp().setLastExportFileOpened(null);
 		MCWorldExporter.getApp().setWorld(worldFolder);
 	}
 	

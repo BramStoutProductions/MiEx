@@ -63,6 +63,15 @@ public class ImageWriterPNG extends ImageWriter{
 			ex.printStackTrace();
 		}
 	}
+	
+	@Override
+	public void write(File file, BufferedImage img) {
+		try {
+			ImageIO.write(img, "PNG", file);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	}
 
 	@Override
 	public boolean supportsImage(File file) {

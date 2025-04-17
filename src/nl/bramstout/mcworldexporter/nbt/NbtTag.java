@@ -91,6 +91,8 @@ public abstract class NbtTag extends Poolable{
 	
 	public abstract double asDouble();
 	
+	public abstract boolean asBoolean();
+	
 	
 	
 	private static final MemoryPool<NbtTagByteArray> POOL_BYTE_ARRAY = new MemoryPool<NbtTagByteArray>(NbtTagByteArray.class);

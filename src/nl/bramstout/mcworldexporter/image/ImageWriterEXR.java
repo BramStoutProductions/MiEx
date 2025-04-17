@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.image;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,6 +42,7 @@ import nl.bramstout.mcworldexporter.image.EXRWriter.LineOrder;
 import nl.bramstout.mcworldexporter.pbr.PbrImage;
 import nl.bramstout.mcworldexporter.pbr.PbrImage.Boundary;
 import nl.bramstout.mcworldexporter.pbr.PbrImage.RGBA;
+import nl.bramstout.mcworldexporter.pbr.PbrImageRaster;
 
 public class ImageWriterEXR extends ImageWriter{
 
@@ -112,6 +114,12 @@ public class ImageWriterEXR extends ImageWriter{
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
+	}
+	
+	@Override
+	public void write(File file, BufferedImage img) {
+		PbrImage img2 = new PbrImageRaster(img, true);
+		write(file, img2);
 	}
 
 	@Override

@@ -60,7 +60,7 @@ public class AIComponentBehaviourRandomStroll extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isStrolling) {
 			if(entity.getAI().target == null) {
 				isStrolling = false;
@@ -69,7 +69,7 @@ public class AIComponentBehaviourRandomStroll extends AIComponent{
 			return true;
 		}
 		
-		if(!EntityUtil.randomChance(entity, interval, deltaTime))
+		if(!EntityUtil.randomChance(entity, interval, deltaTime) && !forceEnable)
 			return false;
 		
 		float posX = entity.getAnimation().getAnimPosX().getKeyframeAtTime(time).value;

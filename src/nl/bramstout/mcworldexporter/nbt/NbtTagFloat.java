@@ -123,6 +123,11 @@ public class NbtTagFloat extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return data >= 0.5f;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + Float.hashCode(data);

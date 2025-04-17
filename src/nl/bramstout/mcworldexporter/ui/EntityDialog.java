@@ -215,6 +215,8 @@ public class EntityDialog extends JDialog{
 				entityNamesSet.add("minecraft:item_frame");
 				entityNamesSet.add("minecraft:glow_item_frame");
 				entityNamesSet.add("minecraft:painting");
+				entityNamesSet.add("minecraft:block_display");
+				entityNamesSet.add("minecraft:item_display");
 				
 				if(MCWorldExporter.getApp().getWorld() != null) {
 					List<List<Entity>> entities = MCWorldExporter.getApp().getWorld().getEntitiesInRegion(
@@ -322,7 +324,8 @@ public class EntityDialog extends JDialog{
 		spawnRules.setItemsPreserveSelection(spawnerNames);
 		
 		if(!noDefaultSelection)
-			exportEntities.setSelection(Arrays.asList("minecraft:item_frame", "minecraft:glow_item_frame", "minecraft:painting"));
+			exportEntities.setSelection(Arrays.asList("minecraft:item_frame", "minecraft:glow_item_frame", 
+					"minecraft:painting", "minecraft:block_display", "minecraft:item_display"));
 		noDefaultSelection = true;
 	}
 	

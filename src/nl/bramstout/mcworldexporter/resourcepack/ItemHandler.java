@@ -29,46 +29,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package nl.bramstout.mcworldexporter.entity.builtins;
+package nl.bramstout.mcworldexporter.resourcepack;
 
-import nl.bramstout.mcworldexporter.entity.Entity;
-import nl.bramstout.mcworldexporter.nbt.NbtTag;
-import nl.bramstout.mcworldexporter.nbt.NbtTagList;
-import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
-import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
+import nl.bramstout.mcworldexporter.model.Model;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
-public abstract class EntityHandlerHangable extends EntityHandler{
-
-	@Override
-	public void setup(Entity entity) {
-		NbtTag posTag = entity.getProperties().get("Pos");
-		if(posTag != null && posTag instanceof NbtTagList) {
-			NbtTagList posList = (NbtTagList) posTag;
-			entity.setX(posList.get(0).asFloat());
-			entity.setY(posList.get(1).asFloat());
-			entity.setZ(posList.get(2).asFloat());
-		}
-		if(entity.getProperties().get("TileX") != null) {
-			float blockX = entity.getProperties().get("TileX").asFloat();
-			float blockY = entity.getProperties().get("TileY").asFloat();
-			float blockZ = entity.getProperties().get("TileZ").asFloat();
-			entity.setX(blockX);
-			entity.setY(blockY);
-			entity.setZ(blockZ);
-		}
-		if(entity.getProperties().get("x") != null) {
-			float blockX = entity.getProperties().get("x").asFloat();
-			float blockY = entity.getProperties().get("y").asFloat();
-			float blockZ = entity.getProperties().get("z").asFloat();
-			entity.setX(blockX);
-			entity.setY(blockY);
-			entity.setZ(blockZ);
-		}
-	}
-
-	@Override
-	public EntityAIHandler getAIHandler(Entity entity) {
-		return null;
-	}
-
+public abstract class ItemHandler {
+	
+	public static String DISP_CONTEXT_NONE = "none";
+	public static String DISP_CONTEXT_THIRDPERSON_LEFTHAND = "thirdperson_lefthand";
+	public static String DISP_CONTEXT_THIRDPERSON_RIGHTHAND = "thirdperson_righthand";
+	public static String DISP_CONTEXT_FIRSTPERSON_LEFTHAND = "firstperson_lefthand";
+	public static String DISP_CONTEXT_FIRSTPERSON_RIGHTHAND = "firstperson_righthand";
+	public static String DISP_CONTEXT_HEAD = "head";
+	public static String DISP_CONTEXT_GUI = "gui";
+	public static String DISP_CONTEXT_GROUND = "ground";
+	public static String DISP_CONTEXT_FIXED = "fixed";
+	
+	public abstract Model getModel(String name, NbtTagCompound data, String displayContext);
+	
 }

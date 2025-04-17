@@ -117,6 +117,28 @@ public class Matrix {
 		return scale(scaling.x, scaling.y, scaling.z);
 	}
 	
+	public static Matrix quaternion(float i, float j, float k, float r) {
+		float s = 1f / (i * i + j * j + k * k + r * r);
+		return new Matrix(new float[] {
+			1f - 2f * s * (j * j + k * k), 		 2f * s * (i * j - k * r), 		 2f * s * (i * k + j * r), 0f,
+				 2f * s * (i * j + k * r), 	1f - 2f * s * (i * i + k * k),		 2f * s * (j * k - i * r), 0f,
+				 2f * s * (i * k - j * r),		 2f * s * (j * k + i * r),	1f - 2f * s * (i * i + j * j), 0f,
+			0f, 0f, 0f, 1f
+		});
+	}
+	
+	public static Matrix axisAngle(float x, float y, float z, float a) {
+		float cosR = (float) Math.cos(a);
+		float sinR = (float) Math.sin(a);
+		float RcosR = 1f - cosR;
+		return new Matrix(new float[] {
+			x * x * RcosR + cosR,		x * y * RcosR - z * sinR,		x * z * RcosR + y * sinR, 0f,
+			x * y * RcosR + z * sinR,	y * y * RcosR + cosR,			y * z * RcosR - z * sinR, 0f,
+			x * z * RcosR - y * sinR, 	y * z * RcosR + z * sinR,		z * z * RcosR + cosR, 0f,
+			0f, 0f, 0f, 1f
+		});
+	}
+	
 	public static Matrix rotateX(float angle) {
 		float cosR = (float) Math.cos(Math.toRadians(angle));
 		float sinR = (float) Math.sin(Math.toRadians(angle));

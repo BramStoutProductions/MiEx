@@ -85,6 +85,11 @@ public class NbtTagEnd extends NbtTag{
 	public double asDouble() {
 		return 0;
 	}
+	
+	@Override
+	public boolean asBoolean() {
+		return false;
+	}
 
 	@Override
 	protected void read(DataInput dis) throws Exception {}

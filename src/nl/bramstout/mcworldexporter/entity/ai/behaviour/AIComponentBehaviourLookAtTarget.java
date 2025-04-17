@@ -72,7 +72,7 @@ public class AIComponentBehaviourLookAtTarget extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isLooking) {
 			if(entity.getAI().target == null) {
 				isLooking = false;
@@ -86,7 +86,7 @@ public class AIComponentBehaviourLookAtTarget extends AIComponent{
 			return true;
 		}
 		
-		if(Math.random() > probability) {
+		if(Math.random() > probability && !forceEnable) {
 			return false; // Not going to look at another entity this tick
 		}
 		

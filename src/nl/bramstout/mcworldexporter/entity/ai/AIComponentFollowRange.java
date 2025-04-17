@@ -44,7 +44,7 @@ public class AIComponentFollowRange extends AIComponent{
 	}
 
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("FollowRangeRadius", radius));
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("FollowRangeMaxDistance", maxDistance));
 		return true;

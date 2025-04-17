@@ -46,7 +46,7 @@ public class AIComponentMovementRail extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		/*if(entity.getAI().path == null) {
 			EntityMovementUtil.simulateRailPhysics(entity, time, deltaTime);
 			lastTargetNodeIndex = -1;

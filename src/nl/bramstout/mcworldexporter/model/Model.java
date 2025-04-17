@@ -41,8 +41,9 @@ import java.util.Map.Entry;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.math.Matrix;
-import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
 public class Model {
@@ -55,9 +56,7 @@ public class Model {
 	protected String extraData;
 	protected boolean doubleSided;
 	protected String defaultTexture;
-	protected Vector3f itemFrameTranslation;
-	protected Vector3f itemFrameRotation;
-	protected Vector3f itemFrameScale;
+	protected Map<String, Matrix> displayTransforms;
 
 	protected Map<String, String> textures;
 	protected List<ModelFace> faces;
@@ -74,9 +73,7 @@ public class Model {
 		this.occludes = other.occludes;
 		this.extraData = other.extraData;
 		this.defaultTexture = other.defaultTexture;
-		this.itemFrameTranslation = new Vector3f(other.itemFrameTranslation);
-		this.itemFrameRotation = new Vector3f(other.itemFrameRotation);
-		this.itemFrameScale = new Vector3f(other.itemFrameScale);
+		this.displayTransforms = new HashMap<String, Matrix>(other.displayTransforms);
 		for (int i = 0; i < other.faces.size(); ++i) {
 			this.faces.add(new ModelFace(other.faces.get(i)));
 		}
@@ -120,9 +117,7 @@ public class Model {
 		this.extraData = "";
 		this.doubleSided = doubleSided;
 		this.defaultTexture = null;
-		this.itemFrameTranslation = new Vector3f(0f, 0f, 0f);
-		this.itemFrameRotation = new Vector3f(0f, 0f, 0f);
-		this.itemFrameScale = new Vector3f(0.25f, 0.25f, 0.25f);
+		this.displayTransforms = new HashMap<String, Matrix>();
 
 		this.id = ModelRegistry.getNextId(this);
 
@@ -229,16 +224,8 @@ public class Model {
 		return extraData;
 	}
 	
-	public Vector3f getItemFrameTranslation() {
-		return itemFrameTranslation;
-	}
-	
-	public Vector3f getItemFrameRotation() {
-		return itemFrameRotation;
-	}
-	
-	public Vector3f getItemFrameScale() {
-		return itemFrameScale;
+	public Map<String, Matrix> getDisplayTransforms(){
+		return displayTransforms;
 	}
 
 	public float[] getBoundingBox() {
@@ -255,12 +242,6 @@ public class Model {
 			}
 		}
 		return res;
-	}
-	
-	public void setItemFrameTransform(Vector3f translation, Vector3f rotation, Vector3f scale) {
-		this.itemFrameTranslation = translation;
-		this.itemFrameRotation = rotation;
-		this.itemFrameScale = scale;
 	}
 	
 	/**
@@ -282,9 +263,20 @@ public class Model {
 	}
 	
 	public void applyItemFrameTransformation() {
-		scale(itemFrameScale.x, itemFrameScale.y, itemFrameScale.z);
-		translate(itemFrameTranslation.x, itemFrameTranslation.y, itemFrameTranslation.z);
-		rotate(itemFrameRotation.x, itemFrameRotation.y, itemFrameRotation.z);
+		Matrix fixedMatrix = displayTransforms.getOrDefault(ItemHandler.DISP_CONTEXT_FIXED, null);
+		if(fixedMatrix != null) {
+			transform(fixedMatrix);
+		}
+	}
+	
+	public void applyTransformation(String displayContext) {
+		Matrix matrix = displayTransforms.getOrDefault(displayContext, null);
+		if(matrix != null)
+			transform(matrix);
+	}
+	
+	public boolean hasDisplayTransformation(String displayContext) {
+		return displayTransforms.containsKey(displayContext);
 	}
 	
 	public void transform(Matrix transformationMatrix) {
@@ -369,6 +361,28 @@ public class Model {
 			ModelFace copy = new ModelFace(face);
 			if(face.getTexture().startsWith("#")) {
 				copy.setTexture(texPrefix + face.getTexture().substring(1));
+			}
+			faces.add(copy);
+		}
+	}
+	
+	public void addModel(Model other, List<Color> tints) {
+		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
+		for(Entry<String, String> entry : other.getTextures().entrySet()) {
+			String tex = entry.getValue();
+			if(tex.startsWith("#"))
+				tex = texPrefix + tex.substring(1);
+			textures.put(texPrefix + entry.getKey().substring(1), tex);
+		}
+		for(ModelFace face : other.getFaces()) {
+			ModelFace copy = new ModelFace(face);
+			if(face.getTexture().startsWith("#")) {
+				copy.setTexture(texPrefix + face.getTexture().substring(1));
+			}
+			if(copy.getTintIndex() >= 0 && copy.getTintIndex() < tints.size()) {
+				Color color = tints.get(face.getTintIndex());
+				copy.setFaceColour(color.getR(), color.getG(), color.getB());
+				copy.setTintIndex(-1);
 			}
 			faces.add(copy);
 		}

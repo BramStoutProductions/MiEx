@@ -67,7 +67,7 @@ public class EntityUtil {
 	
 	public static boolean standingOnSolidBlock(Entity entity, float posX, float posY, float posZ) {
 		float minX = posX;
-		float minY = posY;
+		float minY = posY - 0.01f;
 		float minZ = posZ;
 		float maxX = posX;
 		float maxY = posY;

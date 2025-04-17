@@ -47,7 +47,7 @@ public class AIComponentWaterMovement extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		entity.getProperties().addElement(NbtTagFloat.newNonPooledInstance("WaterMovementDragFactor", dragFactor));
 		return true;
 	}

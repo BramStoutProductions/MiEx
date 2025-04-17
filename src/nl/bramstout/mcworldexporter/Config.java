@@ -41,6 +41,7 @@ import java.util.Map.Entry;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.entity.builtins.EntityBuiltinsRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -105,6 +106,7 @@ public class Config {
 	public static boolean calculateAmbientOcclusion;
 	public static boolean exportAmbientOcclusionAsDisplayOpacity;
 	public static boolean calculateCornerUVs;
+	public static boolean subdivideModelsForCorners;
 	public static String renderGamut;
 	public static int memoryPerThread;
 	public static boolean forceDoubleSidedOnEverything;
@@ -378,6 +380,9 @@ public class Config {
 				if(data.has("calculateCornerUVs"))
 					calculateCornerUVs = data.get("calculateCornerUVs").getAsBoolean();
 				
+				if(data.has("subdivideModelsForCorners"))
+					subdivideModelsForCorners = data.get("subdivideModelsForCorners").getAsBoolean();
+				
 				if(data.has("memoryPerThread"))
 					memoryPerThread = data.get("memoryPerThread").getAsInt();
 				
@@ -397,6 +402,7 @@ public class Config {
 		
 		transparentOcclusion.addAll(ResourcePackBedrockEdition.transparentBlocks);
 		BuiltInBlockStateRegistry.load();
+		EntityBuiltinsRegistry.load();
 	}
 	
 }

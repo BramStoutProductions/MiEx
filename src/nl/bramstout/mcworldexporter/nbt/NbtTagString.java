@@ -143,6 +143,11 @@ public class NbtTagString extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return !(data.startsWith("f") || data.startsWith("F") || data.startsWith("0"));
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + data.hashCode();

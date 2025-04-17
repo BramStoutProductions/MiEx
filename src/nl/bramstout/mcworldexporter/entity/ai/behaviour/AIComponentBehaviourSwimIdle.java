@@ -56,7 +56,7 @@ public class AIComponentBehaviourSwimIdle extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(isIdling) {
 			if(time >= stopIdling) {
 				isIdling = false;
@@ -71,7 +71,7 @@ public class AIComponentBehaviourSwimIdle extends AIComponent{
 		if(!EntityUtil.isInLiquid(entity, posX, posY, posZ))
 			return false;
 		
-		if(EntityUtil.randomChance(entity, successRate, deltaTime)) {
+		if(EntityUtil.randomChance(entity, successRate, deltaTime) && !forceEnable) {
 			isIdling = true;
 			stopIdling = time + idleTime;
 			return true;

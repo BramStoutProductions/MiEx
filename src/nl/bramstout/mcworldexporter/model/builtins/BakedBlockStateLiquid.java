@@ -73,6 +73,12 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		int level02 = getLevel(x-1, y, z+1);
 		int level12 = getLevel(x  , y, z+1);
 		int level22 = getLevel(x+1, y, z+1);
+		int isWaterLogged = 0;
+		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		Block currentBlock = BlockRegistry.getBlock(currentBlockId);
+		if(!currentBlock.isLiquid() || currentBlock.isWaterlogged()) {
+			isWaterLogged = 1;
+		}
 		
 		int blockBelow = 0;
 		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
@@ -90,7 +96,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		long l02 = level02 + 2;
 		long l12 = level12 + 2;
 		long l22 = level22 + 2;
-		long bb = blockBelow;
+		long bb = blockBelow + (isWaterLogged << 1);
 		
 		long key = (l00 & 0b1111L) | 
 					((l10 & 0b1111L) << 4) |
@@ -110,7 +116,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 				if(model == null) {
 					model = generateModel(level00, level10, level20,
 										level01, level11, level21,
-										level02, level12, level22, blockBelow);
+										level02, level12, level22, 
+										blockBelow, isWaterLogged);
 					modelCache.put(key, model);
 				}
 			}
@@ -120,7 +127,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	
 	private Model generateModel(int level00, int level10, int level20, 
 								int level01, int level11, int level21,
-								int level02, int level12, int level22, int blockBelow) {
+								int level02, int level12, int level22, 
+								int blockBelow, int isWaterLogged) {
 		Model model = new Model(getName(), null, true);
 		
 		model.addTexture("#still", stillTexture);
@@ -208,9 +216,15 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			northFace.getPoints()[3*3+1] = cheight10;
 			northFace.getUVs()[2*2+1] = cheight00 * 0.5f + 4.0f;
 			northFace.getUVs()[3*2+1] = cheight10 * 0.5f + 4.0f;
-			// Move the face a tiny bit outwards in case there happens
-			// to be a block
-			northFace.translate(0, 0, -0.01f);
+			if(isWaterLogged == 0) {
+				// Move the face a tiny bit outwards in case there happens
+				// to be a block
+				northFace.translate(0, 0, -0.01f);
+			}else {
+				// Move the face a tiny bit inwards to make the water not
+				// show up where it shouldn't be.
+				northFace.translate(0, 0, 0.01f);
+			}
 		}
 		
 		if(height12 <= 0f) {
@@ -219,9 +233,15 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			southFace.getPoints()[3*3+1] = cheight01;
 			southFace.getUVs()[2*2+1] = cheight11 * 0.5f + 4.0f;
 			southFace.getUVs()[3*2+1] = cheight01 * 0.5f + 4.0f;
-			// Move the face a tiny bit outwards in case there happens
-			// to be a block
-			southFace.translate(0, 0, 0.01f);
+			if(isWaterLogged == 0) {
+				// Move the face a tiny bit outwards in case there happens
+				// to be a block
+				southFace.translate(0, 0, 0.01f);
+			}else {
+				// Move the face a tiny bit inwards to make the water not
+				// show up where it shouldn't be.
+				southFace.translate(0, 0, -0.01f);
+			}
 		}
 		
 		if(height01 <= 0f) {
@@ -230,9 +250,15 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			westFace.getPoints()[3*3+1] = cheight00;
 			westFace.getUVs()[2*2+1] = cheight01 * 0.5f + 4.0f;
 			westFace.getUVs()[3*2+1] = cheight00 * 0.5f + 4.0f;
-			// Move the face a tiny bit outwards in case there happens
-			// to be a block
-			westFace.translate(-0.01f, 0, 0);
+			if(isWaterLogged == 0) {
+				// Move the face a tiny bit outwards in case there happens
+				// to be a block
+				westFace.translate(-0.01f, 0, 0);
+			}else {
+				// Move the face a tiny bit inwards to make the water not
+				// show up where it shouldn't be.
+				westFace.translate(0.01f, 0, 0);
+			}
 		}
 		
 		if(height21 <= 0f) {
@@ -241,9 +267,15 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			eastFace.getPoints()[3*3+1] = cheight11;
 			eastFace.getUVs()[2*2+1] = cheight10 * 0.5f + 4.0f;
 			eastFace.getUVs()[3*2+1] = cheight11 * 0.5f + 4.0f;
-			// Move the face a tiny bit outwards in case there happens
-			// to be a block
-			eastFace.translate(0.01f, 0, 0);
+			if(isWaterLogged == 0) {
+				// Move the face a tiny bit outwards in case there happens
+				// to be a block
+				eastFace.translate(0.01f, 0, 0);
+			}else {
+				// Move the face a tiny bit inwards to make the water not
+				// show up where it shouldn't be.
+				eastFace.translate(-0.01f, 0, 0);
+			}
 		}
 		
 		return model;

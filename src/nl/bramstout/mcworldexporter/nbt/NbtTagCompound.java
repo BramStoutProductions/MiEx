@@ -457,6 +457,11 @@ public class NbtTagCompound extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return false;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		int numItems = getSize();

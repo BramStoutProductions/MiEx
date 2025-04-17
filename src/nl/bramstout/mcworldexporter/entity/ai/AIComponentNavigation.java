@@ -143,7 +143,7 @@ public class AIComponentNavigation extends AIComponent implements PathFinderHook
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		currentEntity = entity;
 		for(AIComponentGroup grp : entity.getAI().getActiveComponentGroups()) {
 			for(AIComponent comp : grp.getComponents()) {

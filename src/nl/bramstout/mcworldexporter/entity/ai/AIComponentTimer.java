@@ -77,7 +77,7 @@ public class AIComponentTimer extends AIComponent{
 	}
 	
 	@Override
-	public boolean tick(Entity entity, float time, float deltaTime) {
+	public boolean tick(Entity entity, float time, float deltaTime, boolean forceEnable) {
 		if(time >= nextTimerTick) {
 			if(nextTimerTick != -1f) {
 				timerDoneEvent.fireEvent(entity);

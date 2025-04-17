@@ -117,13 +117,5 @@ public class ModelRegistry {
 			missingModels.clear();
 		}
 	}
-
-	public static int getIdForItemName(String name) {
-		String idName = name;
-		if(!name.contains(":"))
-			idName = "minecraft:" + name;
-		String[] tokens = idName.split(":");
-		return getIdForName(tokens[0] + ":item/" + tokens[1], false);
-	}
 	
 }

@@ -123,6 +123,11 @@ public class NbtTagLong extends NbtTag{
 	}
 	
 	@Override
+	public boolean asBoolean() {
+		return data > 0;
+	}
+	
+	@Override
 	public int hashCode() {
 		int result = name.hashCode();
 		result = 31 * result + Long.hashCode(data);

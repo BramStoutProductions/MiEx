@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.image;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 import nl.bramstout.mcworldexporter.pbr.PbrImage;
@@ -38,6 +39,7 @@ import nl.bramstout.mcworldexporter.pbr.PbrImage;
 public abstract class ImageWriter {
 	
 	public abstract void write(File file, PbrImage img);
+	public abstract void write(File file, BufferedImage img);
 	
 	public abstract boolean supportsImage(File file);
 	
@@ -53,6 +55,21 @@ public abstract class ImageWriter {
 	 * @return A BufferedImage with the image data or null.
 	 */
 	public static void writeImage(File file, PbrImage img) {
+		for(ImageWriter writer : writers) {
+			if(writer.supportsImage(file)) {
+				writer.write(file, img);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Reads in the image pointed to by file.
+	 * If it can't read the image, it returns null.
+	 * @param file The image file to read.
+	 * @return A BufferedImage with the image data or null.
+	 */
+	public static void writeImage(File file, BufferedImage img) {
 		for(ImageWriter writer : writers) {
 			if(writer.supportsImage(file)) {
 				writer.write(file, img);

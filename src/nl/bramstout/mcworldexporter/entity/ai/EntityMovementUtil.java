@@ -500,8 +500,36 @@ public class EntityMovementUtil {
 		
 		targetPos = targetPos.divide(totalWeight);
 		
-		Vector3f distance = targetPos.subtract(new Vector3f(posX, posY, posZ));
-		if(distance.length() < 0.5f)
+		// Get the forward vector to the next path.
+		PathNode pathA = null;
+		PathNode pathB = null;
+		if(targetNodeIndex < (entity.getAI().path.getSize() - 1)) {
+			pathA = entity.getAI().path.getNode(targetNodeIndex);
+			pathB = entity.getAI().path.getNode(targetNodeIndex + 1);
+		}else if(targetNodeIndex > 0){
+			pathA = entity.getAI().path.getNode(targetNodeIndex - 1);
+			pathB = entity.getAI().path.getNode(targetNodeIndex);
+		}else {
+			pathA = entity.getAI().path.getNode(targetNodeIndex);
+			pathB = entity.getAI().path.getNode(targetNodeIndex);
+		}
+		Vector3f forwardDir = new Vector3f(
+				pathB.getX() - pathA.getX(),
+				pathB.getY() - pathA.getY(),
+				pathB.getZ() - pathA.getZ()
+				);
+		
+		Vector3f targetDir = targetPos.subtract(new Vector3f(posX, posY, posZ));
+		
+		float movementSpeed = getMovementSpeed(entity);
+		
+		// Check if the entity has passed by the target.
+		// forwardDir is the direction in which the path is flowing.
+		// targetDir is the direction from where the entity currently
+		// is to the current section of the path being moved towards.
+		// If the dot product is negative, it means that the current
+		// section of the path is behind the entity on the path.
+		if(targetDir.dot(forwardDir) < -0.01f || targetDir.length() < 0.25f * movementSpeed)
 			return null; // Reached the end.
 		
 		return targetPos;

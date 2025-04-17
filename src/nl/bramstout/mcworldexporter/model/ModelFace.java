@@ -335,12 +335,12 @@ public class ModelFace {
 		}
 	}
 	
-	private void calculateOcclusion(float[] minMaxPoints) {
+	public void calculateOcclusion(float[] minMaxPoints) {
 		occludes = 0;
 		occludedBy = 0;
 		switch (direction) {
 		case DOWN:
-			if (Math.abs(minMaxPoints[1]) < 0.01f) {
+			if (Math.abs(minMaxPoints[1]) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
 						minMaxPoints[5]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
@@ -348,7 +348,7 @@ public class ModelFace {
 			}
 			break;
 		case UP:
-			if (Math.abs(minMaxPoints[4] - 16.0f) < 0.01f) {
+			if (Math.abs(minMaxPoints[4] - 16.0f) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
 						minMaxPoints[5]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
@@ -356,7 +356,7 @@ public class ModelFace {
 			}
 			break;
 		case NORTH:
-			if (Math.abs(minMaxPoints[2]) < 0.01f) {
+			if (Math.abs(minMaxPoints[2]) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
@@ -364,7 +364,7 @@ public class ModelFace {
 			}
 			break;
 		case SOUTH:
-			if (Math.abs(minMaxPoints[5] - 16.0f) < 0.01f) {
+			if (Math.abs(minMaxPoints[5] - 16.0f) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
@@ -372,7 +372,7 @@ public class ModelFace {
 			}
 			break;
 		case WEST:
-			if (Math.abs(minMaxPoints[0]) < 0.01f) {
+			if (Math.abs(minMaxPoints[0]) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
@@ -380,7 +380,7 @@ public class ModelFace {
 			}
 			break;
 		case EAST:
-			if (Math.abs(minMaxPoints[3] - 16.0f) < 0.01f) {
+			if (Math.abs(minMaxPoints[3] - 16.0f) < 0.02f) {
 				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
 						minMaxPoints[4]) << (direction.id * 4);
 				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
