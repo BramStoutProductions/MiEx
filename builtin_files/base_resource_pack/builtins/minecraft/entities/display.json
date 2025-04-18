@@ -126,7 +126,8 @@
                                                 {
                                                     "condition": "thisEntity.state.item != null",
                                                     "transform": {
-                                                        "translate": [ -8.0, -8.0, -8.0 ]
+                                                        "translate": [ -8.0, -8.0, -8.0 ],
+                                                        "rotate": [ 0.0, 180.0, 0.0 ]
                                                     },
                                                     "variables": [
                                                         "displayContext = thisEntity.state.item_display != null ? thisEntity.state.item_display : 'none'"
