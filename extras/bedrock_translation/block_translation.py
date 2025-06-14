@@ -39,7 +39,7 @@ import json
 import os
 import os.path
 
-MINECRAFT_DATA_DIR = "W:/OneDrive/Documenten/_SOFTWARE_/MCWorldExporter/minecraft-data"
+MINECRAFT_DATA_DIR = "C:/Users/me/OneDrive/Documenten/_SOFTWARE_/MCWorldExporter/minecraft-data"
 
 MINECRAFT_DATA_BEDROCK_DIR = MINECRAFT_DATA_DIR + "/data/bedrock"
 
@@ -214,6 +214,10 @@ def run():
                     bedrockDef.state.pop("update_bit")
                 if "persistent_bit" in bedrockDef.state:
                     bedrockDef.state.pop("persistent_bit")
+            elif bedrockDef.name == "minecraft:chest" or bedrockDef.name == "minecraft:trapped_chest":
+                # Chests by default are set to the type "right", but should be "single"
+                if "type" in javaDef.state:
+                    javaDef.state["type"] = "single"
 
     # Now we need to write the mapping file out into a json file
     translations : dict = {}
