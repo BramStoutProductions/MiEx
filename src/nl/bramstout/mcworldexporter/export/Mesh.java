@@ -1565,5 +1565,86 @@ public class Mesh {
 			colorSetNames = new HashSet<String>();
 		colorSetNames.add(name);
 	}
+	
+	public void validateSubsets() {
+		// If this mesh isn't using any subsets, no need to do anything.
+		if(getNumSubsets() == 0)
+			return;
+		
+		// Let's make sure that every face is in exactly one subset.
+		int[] subsetIdsProxy = new int[faceCounts.size()];
+		Arrays.fill(subsetIdsProxy, -1);
+		int[] subsetIdsRender = new int[faceCounts.size()];
+		Arrays.fill(subsetIdsRender, -1);
+		boolean hasProxySubsets = false;
+		boolean hasRenderSubsets = false;
+		int numSubsets = getNumSubsets();
+		for(int i = 0; i < numSubsets; ++i) {
+			MeshSubset subset = getSubset(i);
+			int numFaces = subset.getFaceIndices().size();
+			for(int j = 0; j < numFaces; ++j) {
+				int faceIndex = subset.getFaceIndices().get(j);
+				if(subset.getPurpose() == MeshPurpose.PROXY || subset.getPurpose() == MeshPurpose.UNDEFINED) {
+					if(subsetIdsProxy[faceIndex] != -1) {
+						System.out.println("Face assigned to multiple subsets: " + faceIndex);
+					}else {
+						subsetIdsProxy[faceIndex] = i;
+					}
+					hasProxySubsets = true;
+				}
+				if(subset.getPurpose() == MeshPurpose.RENDER || subset.getPurpose() == MeshPurpose.UNDEFINED) {
+					if(subsetIdsRender[faceIndex] != -1) {
+						System.out.println("Face assigned to multiple subsets: " + faceIndex);
+					}else {
+						subsetIdsRender[faceIndex] = i;
+					}
+					hasRenderSubsets = true;
+				}
+			}
+			subset.getFaceIndices().clear();
+		}
+		MeshSubset leftOverSubset = null;
+		MeshSubset leftOverSubsetProxy = null;
+		MeshSubset leftOverSubsetRender = null;
+		for(int i = 0; i < subsetIdsProxy.length; ++i) {
+			int subsetIdProxy = subsetIdsProxy[i];
+			int subsetIdRender = subsetIdsRender[i];
+			if((subsetIdProxy == -1 && hasProxySubsets) || (subsetIdRender == -1 && hasRenderSubsets)) {
+				System.out.println("Face not assigned to subset: " + i);
+				if((subsetIdProxy == -1 && hasProxySubsets) && (subsetIdRender == -1 && hasRenderSubsets)) {
+					if(leftOverSubset == null) {
+						leftOverSubset = new MeshSubset("subset00", texture, matTexture, animatedTexture, MeshPurpose.UNDEFINED, false, 0);
+						addSubset(leftOverSubset);
+					}
+					leftOverSubset.getFaceIndices().add(i);
+				}else if(subsetIdProxy == -1 && hasProxySubsets) {
+					if(leftOverSubsetProxy == null) {
+						leftOverSubsetProxy = new MeshSubset("subset00_proxy", texture, matTexture, animatedTexture, MeshPurpose.PROXY, false, 0);
+						addSubset(leftOverSubsetProxy);
+					}
+					leftOverSubsetProxy.getFaceIndices().add(i);
+					
+					if(hasRenderSubsets)
+						getSubset(subsetIdRender).getFaceIndices().add(i);
+				}else if(subsetIdRender == -1 && hasRenderSubsets) {
+					if(leftOverSubsetRender == null) {
+						leftOverSubsetRender = new MeshSubset("subset00_render", texture, matTexture, animatedTexture, MeshPurpose.RENDER, false, 0);
+						addSubset(leftOverSubsetRender);
+					}
+					leftOverSubsetRender.getFaceIndices().add(i);
+
+					if(hasProxySubsets)
+						getSubset(subsetIdProxy).getFaceIndices().add(i);
+				}else {
+					throw new RuntimeException("Unreachable code");
+				}
+			}else {
+				if(hasProxySubsets)
+					getSubset(subsetIdProxy).getFaceIndices().add(i);
+				if(hasRenderSubsets)
+					getSubset(subsetIdRender).getFaceIndices().add(i);
+			}
+		}
+	}
 
 }

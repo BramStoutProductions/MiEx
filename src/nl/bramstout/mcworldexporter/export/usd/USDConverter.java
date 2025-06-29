@@ -813,6 +813,7 @@ public class USDConverter extends Converter{
 	private static void writeMesh(Mesh mesh, USDWriter writer, MeshPurpose purpose,
 									Set<Texture> usedTextures, Map<MatKey, MaterialTemplate> templates,
 									Kind kind, String materialsPrim) throws IOException{
+		mesh.validateSubsets();
 		String meshName = mesh.getName();
 		if(meshName == "")
 			meshName = "mesh";
@@ -984,11 +985,16 @@ public class USDConverter extends Converter{
 			}
 		}
 		
-		writeMeshSubsets(writer, mesh, purpose, usedTextures, materialsPrim, templates);
+		if(mesh.getNumSubsets() > 0) {
+			writer.writeAttributeName("token", "subsetFamily:materialBind:familyType", true);
+			writer.writeAttributeValueString("partition");
+		}
 		
 		writer.writeAttributeName("rel", "material:binding", false);
 		writer.writeAttributeValue("<" + materialsPrim + 
 				MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor) + ">");
+		
+		writeMeshSubsets(writer, mesh, purpose, usedTextures, materialsPrim, templates);
 		
 		writer.endChildren();
 		writer.endDef();
@@ -1021,6 +1027,7 @@ public class USDConverter extends Converter{
 				if(subset.getMatTexture() != null) {
 					writer.beginMetaData();
 					writer.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
+					writer.writeMetaData("customData", "{\ndictionary Maya = {\nbool generated = 1\n}\n}");
 					writer.endMetaData();
 				}
 				writer.beginChildren();
