@@ -216,6 +216,8 @@ public abstract class NbtTag extends Poolable{
 			name = dis.readUTF();
 		
 		NbtTag tag = newTag(type, name);
+		if(tag == null)
+			return null;
 		try {
 			tag.read(dis);
 		}catch(Exception ex) {

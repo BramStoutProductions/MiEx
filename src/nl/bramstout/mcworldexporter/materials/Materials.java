@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -292,7 +293,7 @@ public class Materials {
 			return null;
 		}
 		
-		public boolean evaluateCondition(String texture, boolean hasBiomeColor, String currentWorkingDirectory) {
+		public boolean evaluateCondition(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
 			for(String condition : this.condition.split("&&")) {
 				boolean invert = false;
 				if(condition.startsWith("!")) {
@@ -306,6 +307,29 @@ public class Materials {
 						continue;
 					}else {
 						if(!hasBiomeColor)
+							return false;
+						continue;
+					}
+				}
+				if(condition.startsWith("@color.")) {
+					String colorSetName = condition.substring("@color.".length());
+					int endIndex = colorSetName.indexOf('@');
+					if(endIndex >= 0)
+						colorSetName = colorSetName.substring(0, endIndex);
+					if(colorSetName.equals("ao")) {
+						colorSetName = "CdAO";
+					}
+					
+					boolean hasColorSet = false;
+					if(colorSets != null)
+						hasColorSet = colorSets.contains(colorSetName);
+					
+					if(invert) {
+						if(hasColorSet)
+							return false;
+						continue;
+					}else {
+						if(!hasColorSet)
 							return false;
 						continue;
 					}
@@ -467,12 +491,12 @@ public class Materials {
 			return false;
 		}
 		
-		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, String currentWorkingDirectory) {
+		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
 			MaterialTemplate material = new MaterialTemplate(name, 0);
 			material.shadingGroup = shadingGroup;
 			material.networks.add(new MaterialNetwork());
 			for(MaterialNetwork network : networks) {
-				if(!network.evaluateCondition(texture, hasBiomeColor, currentWorkingDirectory))
+				if(!network.evaluateCondition(texture, hasBiomeColor, colorSets, currentWorkingDirectory))
 					continue;
 				try {
 					material.networks.get(0).override(network, true);
@@ -496,7 +520,7 @@ public class Materials {
 	private static List<List<MaterialTemplate>> templates = null;
 	public static MaterialNetwork sharedNodes = new MaterialNetwork();
 	
-	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, String currentWorkingDirectory) {
+	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
 		if(templates == null)
 			reload();
 		
@@ -517,7 +541,7 @@ public class Materials {
 							currentTemplate = template;
 				}
 				if(currentTemplate != null)
-					return currentTemplate.flatten(texture, hasBiomeColor, currentWorkingDirectory);
+					return currentTemplate.flatten(texture, hasBiomeColor, colorSets, currentWorkingDirectory);
 			}
 		}catch(Exception ex) {
 			System.out.println("Failed to get material for texture " + texture);
@@ -814,10 +838,20 @@ public class Materials {
 			int frameTime = animData.getFrames()[frameIndex*2 + 1];
 			float frameTimeF = ((float) frameTime) * frameTimeMultiplier;
 			
+			// We both inverse the frameId and negate the value.
+			// In most cases, offsetting the UVs will move the UVs
+			// in the opposite direction. So we need to negate the
+			// value to compensate, but frame 0 in mcmeta is at the
+			// top of the texture, while (0,0) is at the bottom left
+			// of the UVs, so we need to reverse frameId to compensate
+			// for that.
+			frameId = animData.getFrameCount() - frameId - 1;
 			if(args.getOrDefault("reverse", "false").equals("true"))
 				frameId = animData.getFrameCount() - frameId - 1;
 			
-			float value = (float) frameId;
+			float value = (float) -frameId;
+			if(args.getOrDefault("negative", "false").equals("true"))
+				value = -value;
 			if(args.getOrDefault("normalised", "true").equals("true"))
 				value /= ((float) animData.getFrameCount());
 			if(args.getOrDefault("powerof2", "false").equals("true"))

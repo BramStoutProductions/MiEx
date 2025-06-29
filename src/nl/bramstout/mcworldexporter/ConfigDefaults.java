@@ -79,7 +79,8 @@ public class ConfigDefaults {
 	
 	public static boolean runOptimiser;
 	public static boolean runRaytracingOptimiser;
-	public static boolean runFaceOptimiser ;
+	public static boolean runFaceOptimiser;
+	public static boolean raytracingOptimiserUseMeshSubsets;
 	public static float fgFullnessThreshold;
 	public static float bgFullnessThreshold;
 	public static int chunkSize;
@@ -105,6 +106,7 @@ public class ConfigDefaults {
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
+	public static boolean useGeometerySubsets;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -235,6 +237,7 @@ public class ConfigDefaults {
 		runOptimiser = true;
 		runRaytracingOptimiser = true;
 		runFaceOptimiser = true;
+		raytracingOptimiserUseMeshSubsets = true;
 		fgFullnessThreshold = 0.15f;
 		bgFullnessThreshold = 0.01f;
 		chunkSize = 16;
@@ -260,6 +263,7 @@ public class ConfigDefaults {
 		forceDoubleSidedOnEverything = false;
 		minCubeSize = -1.0f;
 		maxMaterialNameLength = -1;
+		useGeometerySubsets = false;
 	}
 	
 	public static void loadDefaults() {

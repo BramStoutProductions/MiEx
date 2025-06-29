@@ -47,7 +47,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
-import nl.bramstout.mcworldexporter.export.usd.USDConverter;
+import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.materials.Materials.MaterialNetwork;
@@ -374,7 +374,7 @@ public class JsonMaterialWriter extends MaterialWriter {
 	
 	private String getAssetPathForTexture(String texture) {
 		try {
-			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
+			File file = Materials.getTextureFile(texture, Exporter.currentExportFile.getParentFile().getCanonicalPath());
 			if(file == null || !file.exists()) {
 				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
@@ -384,7 +384,7 @@ public class JsonMaterialWriter extends MaterialWriter {
 			if(!resourcePathDir.endsWith("/"))
 				resourcePathDir = resourcePathDir + "/";
 			
-			String outputDir = USDConverter.currentOutputDir.getCanonicalPath().replace('\\', '/');
+			String outputDir = Exporter.currentExportFile.getParentFile().getCanonicalPath().replace('\\', '/');
 			if(!outputDir.endsWith("/"))
 				outputDir = outputDir + "/";
 			

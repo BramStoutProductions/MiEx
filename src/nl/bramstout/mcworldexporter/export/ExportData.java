@@ -54,6 +54,7 @@ public class ExportData {
 	public int exportMaxX;
 	public int exportMaxY;
 	public int exportMaxZ;
+	public int exportOffsetY;
 	public boolean hasLOD;
 	public int lodCenterX;
 	public int lodCenterZ;
@@ -101,6 +102,7 @@ public class ExportData {
 		data.exportMaxX = MCWorldExporter.getApp().getExportBounds().getMaxX();
 		data.exportMaxY = MCWorldExporter.getApp().getExportBounds().getMaxY();
 		data.exportMaxZ = MCWorldExporter.getApp().getExportBounds().getMaxZ();
+		data.exportOffsetY = MCWorldExporter.getApp().getExportBounds().getOffsetY();
 		data.hasLOD = MCWorldExporter.getApp().getExportBounds().hasLod();
 		data.lodCenterX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
 		data.lodCenterZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
@@ -146,6 +148,7 @@ public class ExportData {
 		data.exportMaxX = dis.readInt();
 		data.exportMaxY = dis.readInt();
 		data.exportMaxZ = dis.readInt();
+		data.exportOffsetY = dis.readInt();
 		data.hasLOD = dis.readBoolean();
 		data.lodCenterX = dis.readInt();
 		data.lodCenterZ = dis.readInt();
@@ -206,6 +209,7 @@ public class ExportData {
 		dos.writeInt(exportMaxX);
 		dos.writeInt(exportMaxY);
 		dos.writeInt(exportMaxZ);
+		dos.writeInt(exportOffsetY);
 		dos.writeBoolean(hasLOD);
 		dos.writeInt(lodCenterX);
 		dos.writeInt(lodCenterZ);
@@ -270,6 +274,7 @@ public class ExportData {
 		MCWorldExporter.getApp().getUI().update();
 		
 		MCWorldExporter.getApp().getExportBounds().set(exportMinX, exportMinY, exportMinZ, exportMaxX, exportMaxY, exportMaxZ);
+		MCWorldExporter.getApp().getExportBounds().setOffsetY(exportOffsetY);
 		MCWorldExporter.getApp().getExportBounds().disableLod();
 		if(hasLOD) {
 			MCWorldExporter.getApp().getExportBounds().enableLod();

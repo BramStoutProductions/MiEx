@@ -43,6 +43,7 @@ import java.util.zip.GZIPInputStream;
 import javax.swing.JOptionPane;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.export.IndexCache;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
@@ -104,6 +105,7 @@ public class WorldAnvil extends World{
 			}
 		}
 		regions = null;
+		regionsIndices = null;
 	}
 	
 	@Override
@@ -207,6 +209,7 @@ public class WorldAnvil extends World{
 		File[] files = regionFolder.listFiles();
 		if(files.length <= 0) {
 			regions = null;
+			regionsIndices = null;
 			return;
 		}
 		
@@ -231,14 +234,25 @@ public class WorldAnvil extends World{
 		
 		if(tmpRegions.size() == 0)
 			return;
-		
-		regionsStride = regionMaxX - regionMinX + 1;
-		regions = new Region[(regionMaxZ - regionMinZ + 1) * regionsStride];
-		
-		for(Region r : tmpRegions) {
-			int id = (r.getZCoordinate() - regionMinZ) * regionsStride + 
-						(r.getXCoordinate() - regionMinX);
-			regions[id] = r;
+		if((regionMaxX - regionMinX) > 500 || (regionMaxZ - regionMinZ) > 500) {
+			regions = new Region[tmpRegions.size()];
+			regionsIndices = new IndexCache();
+			int i = 0;
+			for(Region r : tmpRegions) {
+				long lid = ((long) r.getXCoordinate()) << 32 | (((long) r.getZCoordinate()) & 0xFFFFFFFFL);
+				regionsIndices.put(lid, i);
+				regions[i] = r;
+				i++;
+			}
+		}else{
+			regionsStride = regionMaxX - regionMinX + 1;
+			regions = new Region[(regionMaxZ - regionMinZ + 1) * regionsStride];
+			
+			for(Region r : tmpRegions) {
+				int id = (r.getZCoordinate() - regionMinZ) * regionsStride + 
+							(r.getXCoordinate() - regionMinX);
+				regions[id] = r;
+			}
 		}
 	}
 

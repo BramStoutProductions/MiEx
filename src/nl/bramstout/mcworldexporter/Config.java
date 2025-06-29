@@ -86,6 +86,7 @@ public class Config {
 	public static boolean runOptimiser;
 	public static boolean runRaytracingOptimiser;
 	public static boolean runFaceOptimiser;
+	public static boolean raytracingOptimiserUseMeshSubsets;
 	public static float fgFullnessThreshold;
 	public static float bgFullnessThreshold;
 	public static int chunkSize;
@@ -112,6 +113,7 @@ public class Config {
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
+	public static boolean useGeometerySubsets;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -307,6 +309,9 @@ public class Config {
 				if(data.has("runFaceOptimiser"))
 					runFaceOptimiser = data.get("runFaceOptimiser").getAsBoolean();
 				
+				if(data.has("raytracingOptimiserUseMeshSubsets"))
+					raytracingOptimiserUseMeshSubsets = data.get("raytracingOptimiserUseMeshSubsets").getAsBoolean();
+				
 				if(data.has("fgFullnessThreshold"))
 					fgFullnessThreshold = data.get("fgFullnessThreshold").getAsFloat();
 	
@@ -394,6 +399,9 @@ public class Config {
 				
 				if(data.has("maxMaterialNameLength"))
 					maxMaterialNameLength = data.get("maxMaterialNameLength").getAsInt();
+				
+				if(data.has("useGeometerySubsets"))
+					useGeometerySubsets = data.get("useGeometerySubsets").getAsBoolean();
 				
 			}catch(Exception ex) {
 				ex.printStackTrace();

@@ -292,11 +292,14 @@ public class ChunkBedrock extends Chunk{
 						for (int i = 0; i < paletteSize; ++i) {
 							if((blockVersionNumber & 1) == 0) {
 								NbtTag block = NbtTag.readFromStream(biomeDis);
-								int id = block.asByte();
+								int id = 0;
+								if(block != null)
+									id = block.asByte();
 								String biomeName = BedrockBiomes.getName(id);
 								biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
 								paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
-								block.free();
+								if(block != null)
+									block.free();
 							}else {
 								int id = biomeDis.readInt();
 								String biomeName = BedrockBiomes.getName(id);

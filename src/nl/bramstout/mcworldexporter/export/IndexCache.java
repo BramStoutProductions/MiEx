@@ -35,206 +35,172 @@ import java.util.Arrays;
 
 public class IndexCache {
 	
-	private static class Node{
+	private static class LeafNode{
 		
-		private static final int maxSize = 256;
-		private static final int maxDepth = 24;
+		long[] keys;
+		int[] values;
+		int size;
+		int maxSize;
 		
-		private int[] indices;
-		private long[] hashes;
-		private int hashesSize;
-		private Node node0;
-		private Node node1;
-		private Node node2;
-		private Node node3;
-		private long splitHash01;
-		private long splitHash12;
-		private long splitHash23;
-		private int depth;
-		
-		public Node(int initialCapacity, int depth) {
-			indices = new int[initialCapacity];
-			hashes = new long[initialCapacity];
-			hashesSize = 0;
-			node0 = null;
-			node1 = null;
-			node2 = null;
-			node3 = null;
-			splitHash01 = 0;
-			splitHash12 = 0;
-			splitHash23 = 0;
-			this.depth = depth;
+		public LeafNode(int initialCapacity, int maxSize) {
+			keys = new long[initialCapacity];
+			values = new int[initialCapacity];
+			size = 0;
+			this.maxSize = maxSize;
 		}
 		
-		public void clear() {
-			if(indices == null)
-				indices = new int[64];
-			if(hashes == null)
-				hashes = new long[64];
-			hashesSize = 0;
-			node0 = null;
-			node1 = null;
-			node2 = null;
-			node3 = null;
-			splitHash01 = 0;
-			splitHash12 = 0;
-			splitHash23 = 0;
-		}
-		
-		private int getIndex(long hash) {
+		private int getIndex(long key, boolean getInsertIndex) {
 			int left = 0;
-			int right = hashesSize - 1;
+			int right = size - 1;
 			int middle = 0;
 			int index = -1;
 			while(left <= right) {
 				middle = (left + right) >>> 1;
-				if(hashes[middle] < hash)
+				if(keys[middle] < key)
 					left = middle + 1;
-				else if(hashes[middle] > hash)
+				else if(keys[middle] > key)
 					right = middle - 1;
 				else {
 					index = middle;
 					break;
 				}
 			}
+			if(getInsertIndex) {
+				index = middle;
+				if(size > 0 && key > keys[middle])
+					index++;
+			}
 			return index;
 		}
 		
-		private int getInsertIndex(long hash) {
-			int left = 0;
-			int right = hashesSize - 1;
-			int middle = 0;
-			while(left <= right) {
-				middle = (left + right) >>> 1;
-				if(hashes[middle] < hash)
-					left = middle + 1;
-				else if(hashes[middle] > hash)
-					right = middle - 1;
-				else {
-					break;
-				}
-			}
-			if(hashesSize > 0 && hash > hashes[middle])
-				middle++;
-			return middle;
-		}
-		
-		public int getOrDefault(long hash, int defaultValue) {
-			if(node0 != null) {
-				if(hash < splitHash01)
-					return node0.getOrDefault(hash, defaultValue);
-				else if(hash < splitHash12)
-					return node1.getOrDefault(hash, defaultValue);
-				else if(hash < splitHash23)
-					return node2.getOrDefault(hash, defaultValue);
-				else
-					return node3.getOrDefault(hash, defaultValue);
-			}
-			// This is a leaf node, so do a binary search through hashes
-			int index = getIndex(hash);
+		public int getOrDefault(long key, int defaultValue) {
+			int index = getIndex(key, false);
 			if(index < 0)
 				return defaultValue;
-			
-			return indices[index];
+			return values[index];
 		}
 		
-		public void put(long hash, int index) {
-			if(node0 == null && hashesSize >= maxSize && depth < maxDepth) {
-				split();
+		public boolean put(long key, int value) {
+			int index = getIndex(key, true);
+			
+			if(index < size && keys[index] == key) {
+				// Matches an already existing item, so update it.
+				values[index] = value;
+				return true;
 			}
-			if(node0 != null) {
-				if(hash < splitHash01)
-					node0.put(hash, index);
-				else if(hash < splitHash12)
-					node1.put(hash, index);
-				else if(hash < splitHash23)
-					node2.put(hash, index);
-				else
-					node3.put(hash, index);
-				return;
+			if(size == maxSize)
+				return false;
+			
+			// We need to insert it.
+			if(size == keys.length) {
+				// We are at capacity, so increase the size.
+				keys = Arrays.copyOf(keys, keys.length * 2);
+				values = Arrays.copyOf(values, values.length * 2);
 			}
 			
-			int insertIndex = getInsertIndex(hash);
-			if(insertIndex < hashesSize) {
-				if(hashes[insertIndex] == hash) {
-					// Add it to the existing hash
-					indices[insertIndex] = index;
-					return;
-				}
+			// First move over all keys.
+			for(int i = size; i > index; i--) {
+				keys[i] = keys[i-1];
+				values[i] = values[i-1];
 			}
-			// We need to insert it
-			if(hashesSize == hashes.length) {
-				// We're already at capacity, so increase our lists
-				indices = Arrays.copyOf(indices, indices.length * 2);
-				hashes = Arrays.copyOf(hashes, hashes.length * 2);
-			}
-			
-			// First move all values insertIndex and after up.
-			for(int i = hashesSize - 1; i >= insertIndex; --i) {
-				indices[i + 1] = indices[i];
-				hashes[i + 1] = hashes[i];
-			}
-			
-			// Now we insert out new values
-			hashes[insertIndex] = hash;
-			indices[insertIndex] = index;
-			hashesSize++;
+			keys[index] = key;
+			values[index] = value;
+			size++;
+			return true;
 		}
 		
-		private void split() {
-			int middleIndex = hashesSize >>> 1;
-			int middleLeftIndex = hashesSize >>> 2;
-			int middleRightIndex = middleIndex + middleLeftIndex;
-			node0 = new Node(middleLeftIndex, depth + 1);
-			node1 = new Node(middleIndex - middleLeftIndex, depth + 1);
-			node2 = new Node(middleRightIndex - middleIndex, depth + 1);
-			node3 = new Node(hashesSize - middleRightIndex, depth + 1);
-			splitHash01 = hashes[middleLeftIndex];
-			splitHash12 = hashes[middleIndex];
-			splitHash23 = hashes[middleRightIndex];
-			for(int i = 0; i < middleLeftIndex; ++i) {
-				node0.hashes[i] = hashes[i];
-				node0.indices[i] = indices[i];
-				node0.hashesSize = middleLeftIndex;
+		public void split(LeafNode otherNode) {
+			int origSize = size;
+			size = size / 2;
+			otherNode.size = origSize - size;
+			if(otherNode.size > otherNode.keys.length) {
+				otherNode.keys = new long[otherNode.size];
+				otherNode.values = new int[otherNode.size];
 			}
-			for(int i = middleLeftIndex; i < middleIndex; ++i) {
-				node1.hashes[i - middleLeftIndex] = hashes[i];
-				node1.indices[i - middleLeftIndex] = indices[i];
-				node1.hashesSize = middleIndex - middleLeftIndex;
+			for(int i = 0; i < otherNode.size; ++i) {
+				otherNode.keys[i] = keys[i + size];
+				otherNode.values[i] = values[i + size];
 			}
-			for(int i = middleIndex; i < middleRightIndex; ++i) {
-				node2.hashes[i - middleIndex] = hashes[i];
-				node2.indices[i - middleIndex] = indices[i];
-				node2.hashesSize = middleRightIndex - middleIndex;
-			}
-			for(int i = middleRightIndex; i < hashesSize; ++i) {
-				node3.hashes[i - middleRightIndex] = hashes[i];
-				node3.indices[i - middleRightIndex] = indices[i];
-				node3.hashesSize = hashesSize - middleRightIndex;
-			}
-			hashes = null;
-			indices = null;
-			hashesSize = 0;
 		}
 		
 	}
 	
-	private Node rootNode;
+	private LeafNode[] leafNodes;
+	private long[] keys;
+	private int numNodes;
+	private int maxSize;
+	private int initialCapacity;
 	
 	public IndexCache() {
-		rootNode = new Node(64, 0);
+		maxSize = 128;
+		initialCapacity = 32;
+		leafNodes = new LeafNode[16];
+		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
+		keys = new long[16];
+		keys[0] = 0;
+		numNodes = 1;
+	}
+	
+	private int getIndex(long key) {
+		int left = 0;
+		int right = numNodes - 1;
+		int middle = 0;
+		while(left <= right) {
+			middle = (left + right) >>> 1;
+			if(keys[middle] < key)
+				left = middle + 1;
+			else if(keys[middle] > key)
+				right = middle - 1;
+			else
+				break;
+		}
+		if(keys[middle] > key && middle > 0)
+			middle -= 1;
+		return middle;
 	}
 	
 	public int getOrDefault(long key, int defaultValue) {
-		return rootNode.getOrDefault(key, defaultValue);
+		int index = getIndex(key);
+		return leafNodes[index].getOrDefault(key, defaultValue);
 	}
 	
 	public void put(long key, int value) {
-		rootNode.put(key, value);
+		int index = getIndex(key);
+		boolean success = leafNodes[index].put(key, value);
+		if(!success) {
+			// Leaf node has hit max size, so split it.
+			if(numNodes == leafNodes.length) {
+				// Hit max capacity, so increase that.
+				leafNodes = Arrays.copyOf(leafNodes, leafNodes.length * 2);
+				keys = Arrays.copyOf(keys, keys.length * 2);
+				maxSize = (maxSize * 3) / 2;
+				for(int i = 0; i < numNodes; ++i)
+					leafNodes[i].maxSize = maxSize;
+			}
+			
+			// Move over the elements to make space.
+			for(int i = numNodes-1; i > index; --i) {
+				leafNodes[i+1] = leafNodes[i];
+				keys[i+1] = keys[i];
+			}
+			leafNodes[index+1] = new LeafNode(maxSize, maxSize);
+			leafNodes[index].split(leafNodes[index+1]);
+			keys[index] = leafNodes[index].keys[0];
+			keys[index+1] = leafNodes[index+1].keys[0];
+			numNodes++;
+		}else {
+			keys[index] = leafNodes[index].keys[0];
+		}
 	}
 	
 	public void clear() {
-		rootNode.clear();
+		maxSize = 128;
+		initialCapacity = 32;
+		leafNodes = new LeafNode[16];
+		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
+		keys = new long[16];
+		keys[0] = 0;
+		numNodes = 1;
 	}
 	
 }

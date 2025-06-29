@@ -53,7 +53,7 @@ public abstract class MaterialWriter {
 		return outputFile;
 	}
 	
-	private static class MatKey{
+	public static class MatKey{
 		
 		private String texture;
 		private Materials.MaterialTemplate template;

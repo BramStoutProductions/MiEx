@@ -80,7 +80,7 @@ public class ModelHandlerObj extends ModelHandler{
 					for(int i = 0; i < tokens.length; ++i) {
 						if(tokens[i].length() <= 0)
 							continue;
-						if(Character.isDigit(tokens[i].codePointAt(0))) {
+						if(Character.isDigit(tokens[i].codePointAt(0)) || tokens[i].codePointAt(0) == '-') {
 							float val = Float.parseFloat(tokens[i]);
 							if(j == 0)
 								x = val;
@@ -104,7 +104,7 @@ public class ModelHandlerObj extends ModelHandler{
 					for(int i = 0; i < tokens.length; ++i) {
 						if(tokens[i].length() <= 0)
 							continue;
-						if(Character.isDigit(tokens[i].codePointAt(0))) {
+						if(Character.isDigit(tokens[i].codePointAt(0)) || tokens[i].codePointAt(0) == '-') {
 							float val = Float.parseFloat(tokens[i]);
 							if(j == 0)
 								u = val;

@@ -374,7 +374,7 @@ public class USDMaterialWriter extends MaterialWriter{
 	
 	private String getAssetPathForTexture(String texture) {
 		try {
-			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
+			File file = Materials.getTextureFile(texture, Exporter.currentExportFile.getParentFile().getCanonicalPath());
 			if(file == null || !file.exists()) {
 				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
@@ -385,7 +385,7 @@ public class USDMaterialWriter extends MaterialWriter{
 			if(!resourcePathDir.endsWith("/"))
 				resourcePathDir = resourcePathDir + "/";
 			
-			String outputDir = USDConverter.currentOutputDir.getCanonicalPath().replace('\\', '/');
+			String outputDir = Exporter.currentExportFile.getParentFile().getCanonicalPath().replace('\\', '/');
 			if(!outputDir.endsWith("/"))
 				outputDir = outputDir + "/";
 			

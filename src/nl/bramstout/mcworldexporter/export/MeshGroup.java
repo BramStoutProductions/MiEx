@@ -39,9 +39,15 @@ public class MeshGroup extends Mesh{
 
 	private List<Mesh> children;
 	
-	public MeshGroup(String name) {
-		super(name, name, name, false, false, 0, 0);
+	public MeshGroup(String name, MeshPurpose purpose) {
+		super(name, purpose, name, name, false, false, 0, 0);
 		children = new ArrayList<Mesh>();
+	}
+	
+	public MeshGroup(LargeDataInputStream dis) throws IOException{
+		super();
+		children = new ArrayList<Mesh>();
+		read(dis);
 	}
 	
 	public void addMesh(Mesh mesh) {
@@ -57,18 +63,48 @@ public class MeshGroup extends Mesh{
 	}
 	
 	@Override
+	public boolean hasPurpose(MeshPurpose purpose) {
+		if(getPurpose() == purpose)
+			return true;
+		for(Mesh child : children)
+			if(child.hasPurpose(purpose))
+				return true;
+		return false;
+	}
+	
+	@Override
 	public void write(LargeDataOutputStream dos) throws IOException {
 		dos.writeByte(2); // Mesh type : Group
 		dos.writeUTF(getName());
+		dos.writeInt(getPurpose().id);
 		if(getExtraData() != null)
 			dos.writeUTF(getExtraData());
 		else
 			dos.writeUTF("");
-		//dos.writeInt(children.size());
 		for(Mesh child : children) {
 			child.write(dos);
 		}
 		dos.writeByte(0); // End list with empty type.
+	}
+	
+	public void read(LargeDataInputStream dis) throws IOException{
+		setName(dis.readUTF());
+		setPurpose(MeshPurpose.fromId(dis.readInt()));
+		String extraData = dis.readUTF();
+		if(extraData != "")
+			setExtraData(extraData);
+		while(true) {
+			byte childType = dis.readByte();
+			if(childType == 0) {
+				break;
+			}else if(childType == 1) {
+				Mesh child = new Mesh(dis);
+				children.add(child);
+			}else if(childType == 2) {
+				Mesh child = new MeshGroup(dis);
+				children.add(child);
+			}
+		}
 	}
 	
 }

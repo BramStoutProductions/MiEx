@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -58,9 +59,9 @@ public class USDWriter {
 		this.outFile = file;
 		this.usdaFile = new File(file.getPath() + "a");
 		if(FileUtil.hasUSDCat())
-			fw = new BufferedWriter(new FileWriter(usdaFile));
+			fw = new BufferedWriter(new FileWriter(usdaFile, Charset.forName("UTF-8")));
 		else
-			fw = new BufferedWriter(new FileWriter(outFile));
+			fw = new BufferedWriter(new FileWriter(outFile, Charset.forName("UTF-8")));
 		indent = 0;
 		wroteChildren = false;
 		usdCatProcess = null;
@@ -387,11 +388,15 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValueFloatArray(float[] value) throws IOException{
+		writeAttributeValueFloatArray(value, value.length);
+	}
+	
+	public void writeAttributeValueFloatArray(float[] value, int count) throws IOException{
 		fw.write(" = [");
-		for(int i = 0; i < value.length - 1; ++i)
+		for(int i = 0; i < count - 1; ++i)
 			fw.write(value[i] + ",");
-		if(value.length > 0)
-			fw.write(value[value.length - 1] + "");
+		if(count > 0)
+			fw.write(value[count - 1] + "");
 		fw.write("]");
 	}
 	
@@ -405,8 +410,12 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValuePoint3fArray(float[] value) throws IOException{
+		writeAttributeValuePoint3fArray(value, value.length);
+	}
+	
+	public void writeAttributeValuePoint3fArray(float[] value, int size) throws IOException{
 		fw.write(" = [");
-		int num = value.length - 3;
+		int num = size - 3;
 		for(int i = 0; i <= num; i += 3) {
 			fw.write("(");
 			fw.write(Float.toString(value[i]));
@@ -423,11 +432,24 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValuePoint2fArray(float[] value) throws IOException{
+		writeAttributeValuePoint2fArray(value, value.length);
+	}
+	
+	public void writeAttributeValuePoint2fArray(float[] value, int size) throws IOException{
 		fw.write(" = [");
-		for(int i = 0; i < value.length - 2; i += 2)
+		for(int i = 0; i < size - 2; i += 2)
 			fw.write("(" + value[i] + "," + value[i+1] + "),");
-		if(value.length > 1)
-			fw.write("(" + value[value.length - 2] + "," + value[value.length - 1] + ")");
+		if(size > 1)
+			fw.write("(" + value[size - 2] + "," + value[size - 1] + ")");
+		fw.write("]");
+	}
+	
+	public void writeAttributeValuePoint2fArray(float[] valueX, float[] valueY, int size) throws IOException{
+		fw.write(" = [");
+		for(int i = 0; i < size - 1; i++)
+			fw.write("(" + valueX[i] + "," + valueY[i] + "),");
+		if(size > 0)
+			fw.write("(" + valueX[size - 1] + "," + valueY[size - 1] + ")");
 		fw.write("]");
 	}
 	

@@ -35,8 +35,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.BiomeCombined;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class BiomeRegistry {
@@ -44,6 +46,7 @@ public class BiomeRegistry {
 	private static List<Biome> registeredBiomes = new ArrayList<Biome>();
 	private static Map<String, Integer> nameToId = new HashMap<String, Integer>();
 	private static Object mutex = new Object();
+	public static List<String> missingBiomes = new ArrayList<String>();
 	
 	public static int getIdForName(String name) {
 		if(!name.contains(":"))
@@ -63,13 +66,33 @@ public class BiomeRegistry {
 	}
 	
 	private static Biome getBiomeFromName(String name, int id) {
-		return ResourcePacks.getBiome(name, id);
+		BiomeCombined biome = (BiomeCombined) ResourcePacks.getBiome(name, id);
+		if(biome.getSubBiomes().isEmpty()) {
+			synchronized(missingBiomes) {
+				missingBiomes.add(name);
+			}
+		}
+		return biome;
 	}
 
 	public static void recalculateTints() {
 		synchronized(mutex) {
-			for(Biome biome : registeredBiomes)
-				biome.calculateTints();
+			for(int i = 0; i < registeredBiomes.size(); ++i) {
+				Biome oldBiome = registeredBiomes.get(i);
+				if(oldBiome != null)
+					registeredBiomes.set(i, getBiomeFromName(oldBiome.getName(), i));
+				else {
+					// Old biome that didn't exist before. Let's go through nameToId to find the original
+					// name and see if now it does exist.
+					for(Entry<String, Integer> entry : nameToId.entrySet()) {
+						if(entry.getValue().intValue() == i) {
+							// Found the original name.
+							registeredBiomes.set(i, getBiomeFromName(entry.getKey(), i));
+							break;
+						}
+					}
+				}
+			}
 		}
 	}
 	

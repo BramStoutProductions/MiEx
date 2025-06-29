@@ -32,7 +32,11 @@
 package nl.bramstout.mcworldexporter.export;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
@@ -44,6 +48,7 @@ import nl.bramstout.mcworldexporter.model.Occlusion;
 public class Mesh {
 	
 	private String name;
+	private MeshPurpose purpose;
 	private String texture;
 	private String matTexture;
 	private boolean animatedTexture;
@@ -52,30 +57,38 @@ public class Mesh {
 	private FloatArray us;
 	private FloatArray vs;
 	private FloatArray cornerUVs;
-	private FloatArray colors;
+	//private FloatArray colors;
 	private FloatArray normals;
-	private FloatArray ao;
+	//private FloatArray ao;
 	private IntArray faceIndices;
 	private IntArray faceCounts;
 	private IntArray uvIndices;
 	private IntArray cornerUVIndices;
-	private IntArray colorIndices;
+	//private IntArray colorIndices;
 	private IntArray normalIndices;
-	private IntArray aoIndices;
+	//private IntArray aoIndices;
 	private FloatArray faceCenters;
 	private boolean doubleSided;
 	private boolean hasColors;
+	private boolean hasAO;
 	private IndexCache vertexCache;
 	private FaceCache faceCache;
 	//private IndexCache normalCache;
+	private VertexColorSet colors;
+	private VertexColorSet ao;
+	private List<VertexColorSet> additionalColorSets;
+	private Set<String> colorSetNames;
+	private List<MeshSubset> subsets;
+	private Set<String> subsetNames;
 	
 	public Mesh() {
-		this("", "", "", false, false, 6, 4);
+		this("", MeshPurpose.UNDEFINED, "", "", false, false, 6, 4);
 	}
 	
-	public Mesh(String name, String texture, String matTexture, boolean animatedTexture, 
+	public Mesh(String name, MeshPurpose purpose, String texture, String matTexture, boolean animatedTexture, 
 				boolean doubleSided, int largeCapacity, int smallCapacity) {
 		this.name = name;
+		this.purpose = purpose;
 		this.texture = texture;
 		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
@@ -84,26 +97,35 @@ public class Mesh {
 		this.us = new FloatArray(smallCapacity);
 		this.vs = new FloatArray(smallCapacity);
 		this.cornerUVs = new FloatArray(smallCapacity*2);
-		this.colors = null;
+		//this.colors = null;
 		this.normals = new FloatArray(smallCapacity*3);
-		this.ao = new FloatArray(smallCapacity);
+		//this.ao = new FloatArray(smallCapacity);
 		this.faceIndices = new IntArray(largeCapacity*4);
 		this.faceCounts = new IntArray(largeCapacity);
 		this.uvIndices = new IntArray(largeCapacity*4);
 		this.cornerUVIndices = new IntArray(largeCapacity*4);
-		this.colorIndices = null;
+		//this.colorIndices = null;
 		this.normalIndices = new IntArray(largeCapacity*4);
-		this.aoIndices = new IntArray(largeCapacity*4);
+		//this.aoIndices = new IntArray(largeCapacity*4);
 		this.faceCenters = new FloatArray(largeCapacity*4);
 		this.doubleSided = doubleSided;
 		this.vertexCache = new IndexCache();
 		this.hasColors = false;
+		this.hasAO = false;
 		this.faceCache = new FaceCache();
 		//this.normalCache = new IndexCache();
+		this.colors = null;
+		this.ao = null;
+		this.additionalColorSets = null;
+		this.colorSetNames = null;
+		this.subsets = null;
+		this.subsetNames = null;
 	}
 	
-	public void reset(String name, String texture, String matTexture, boolean animatedTexture, boolean doubleSided) {
+	public void reset(String name, MeshPurpose purpose, String texture, String matTexture, 
+						boolean animatedTexture, boolean doubleSided) {
 		this.name = name;
+		this.purpose = purpose;
 		this.texture = texture;
 		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
@@ -112,26 +134,39 @@ public class Mesh {
 		this.us.clear();
 		this.vs.clear();
 		this.cornerUVs.clear();
-		if(this.colors != null)
-			this.colors.clear();
+		//if(this.colors != null)
+		//	this.colors.clear();
 		this.normals.clear();
-		this.ao.clear();
+		//this.ao.clear();
 		this.faceIndices.clear();
 		this.faceCounts.clear();
 		this.uvIndices.clear();
 		this.cornerUVIndices.clear();
-		if(this.colorIndices != null)
-			this.colorIndices.clear();
+		//if(this.colorIndices != null)
+		//	this.colorIndices.clear();
 		this.normalIndices.clear();
-		this.aoIndices.clear();
+		//this.aoIndices.clear();
 		this.faceCenters.clear();
 		this.doubleSided = doubleSided;
 		this.vertexCache.clear();
 		this.hasColors = false;
+		this.hasAO = false;
 		this.faceCache.clear();
+		if(this.colors != null)
+			this.colors.clear();
+		if(this.ao != null)
+			this.ao.clear();
+		if(this.additionalColorSets != null)
+			this.additionalColorSets.clear();
+		if(this.colorSetNames != null)
+			this.colorSetNames.clear();
+		if(this.subsets != null)
+			this.subsets.clear();
+		if(this.subsetNames != null)
+			this.subsetNames.clear();
 	}
 	
-	public Mesh(String name, String texture, String matTexture, boolean animatedTexture, boolean doubleSided, String extraData, 
+	/*public Mesh(String name, String texture, String matTexture, boolean animatedTexture, boolean doubleSided, String extraData, 
 				float[] vertices, float[] uvs, float[] cornerUVs, float[] colors, float[] normals, float[] ao, int[] faceIndices,
 				int[] faceCounts, int[] uvIndices, int[] cornerUVIndices, int[] colorIndices, int[] normalIndices,
 				int[] aoIndices) {
@@ -186,7 +221,7 @@ public class Mesh {
 			this.faceCenters.add((this.vertices.get(v0*3+2) + this.vertices.get(v2*3+2)) / 2f);
 			this.faceCenters.add(1f);
 		}
-	}
+	}*/
 	
 	private long packVertexId(long x, long y, long z) {
 		return  (((x >> 0)  & 7) << 61) | (((y >> 0)  & 7) << 58) | (((z >> 0)  & 7) << 55) | 
@@ -232,7 +267,7 @@ public class Mesh {
 			}
 		}
 		
-		int colorIndex = -2;
+		/*int colorIndex = -2;
 		if(hasColors) {
 			colorIndex = -1;
 			float[] colorData = colors.getData();
@@ -245,9 +280,9 @@ public class Mesh {
 					break;
 				}
 			}
-		}
+		}*/
 		
-		int aoIndex = -1;
+		/*int aoIndex = -1;
 		float[] aoData = this.ao.getData();
 		int aoSize = this.ao.size();
 		for(int i = 0; i < aoSize; ++i) {
@@ -255,7 +290,7 @@ public class Mesh {
 				aoIndex = i;
 				break;
 			}
-		}
+		}*/
 		
 		if(vertexIndex == -1) {
 			vertexIndex = vertices.size() / 3;
@@ -277,17 +312,24 @@ public class Mesh {
 			cornerUVs.add(cornerV);
 		}
 		
-		if(colorIndex == -1) {
+		/*if(colorIndex == -1) {
 			colorIndex = colors.size() / 3;
 			colors.add(r);
 			colors.add(g);
 			colors.add(b);
-		}
+		}*/
 		
-		if(aoIndex == -1) {
+		/*if(aoIndex == -1) {
 			aoIndex = this.ao.size();
 			this.ao.add(ao);
-		}
+		}*/
+		
+		int colorIndex = -2;
+		if(hasColors)
+			colorIndex = colors.addValue(r, g, b);
+		int aoIndex = -2;
+		if(hasAO)
+			aoIndex = this.ao.addValue(ao);
 		
 		out[0] = vertexIndex;
 		out[1] = uvIndex;
@@ -310,9 +352,12 @@ public class Mesh {
 		uvIndices.add(v0[1]);
 		
 		if(v0[2] >= 0)
-			colorIndices.add(v0[2]);
+			this.colors.addIndex(v0[2]);
+			//colorIndices.add(v0[2]);
 		
-		aoIndices.add(v0[3]);
+		//aoIndices.add(v0[3]);
+		if(v0[3] >= 0)
+			this.ao.addIndex(v0[3]);
 		
 		cornerUVIndices.add(v0[4]);
 	}
@@ -340,8 +385,9 @@ public class Mesh {
 			1.0f, 1.0f, 1.0f
 	};
 	
-	public void addFace(ModelFace face, float bx, float by, float bz, Atlas.AtlasItem atlas, Color tint, int cornerData) {
-		addFace(face, bx, by, bz, 0f, 0f, 0f, 0f, 1.0f, 1.0f, 1.0f, 1.0f, atlas, tint, 0, cornerData);
+	public void addFace(ModelFace face, float bx, float by, float bz, Atlas.AtlasItem atlas, 
+						Color tint, int cornerData, VertexColorSet.VertexColorFace[] vertexColors) {
+		addFace(face, bx, by, bz, 0f, 0f, 0f, 0f, 1.0f, 1.0f, 1.0f, 1.0f, atlas, tint, 0, cornerData, vertexColors);
 	}
 	
 	private float[] normalData = new float[3];
@@ -352,7 +398,7 @@ public class Mesh {
 	private int[] v3Data = new int[5];
 	public void addFace(ModelFace face, float bx, float by, float bz, float additionalX, float additionalY, float additionalZ,
 			float uvOffsetY, float scale, float yScale, float uvScale, float yuvScale, Atlas.AtlasItem atlas, Color tint,
-			long ambientOcclusion, int cornerData) {
+			long ambientOcclusion, int cornerData, VertexColorSet.VertexColorFace[] vertexColors) {
 		float ox = bx * 16.0f + additionalX;
 		float oy = by * 16.0f + additionalY;
 		float oz = bz * 16.0f + additionalZ;
@@ -362,16 +408,19 @@ public class Mesh {
 		if(colors != null || tint != null){
 			if(!hasColors) {
 				if(this.colors == null) {
-					this.colors = new FloatArray();
-					this.colorIndices = new IntArray();
+					//this.colors = new FloatArray();
+					//this.colorIndices = new IntArray();
+					this.colors = new VertexColorSet("Cd", 3, this.faceIndices.size() + 3);
+					registerColorSetName(this.colors.getName());
 				}
 				// If there is already data in here, then we need to fill in for every face so far.
 				if(this.faceIndices.size() > 0) {
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
+					int whiteIndex = this.colors.addValue(1.0f, 1.0f, 1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
 					for(int i = 0; i < this.faceIndices.size(); ++i)
-						this.colorIndices.add(0);
+						this.colors.addIndex(whiteIndex);
 				}
 				hasColors = true;
 			}
@@ -415,10 +464,29 @@ public class Mesh {
 			}
 		}
 		
-		float ao0 = getAOForPoint(points[0], points[1], points[2], ambientOcclusion, face.getDirection());
-		float ao1 = getAOForPoint(points[3], points[4], points[5], ambientOcclusion, face.getDirection());
-		float ao2 = getAOForPoint(points[6], points[7], points[8], ambientOcclusion, face.getDirection());
-		float ao3 = getAOForPoint(points[9], points[10], points[11], ambientOcclusion, face.getDirection());
+		float ao0 = 1.0f;
+		float ao1 = 1.0f;
+		float ao2 = 1.0f;
+		float ao3 = 1.0f;
+		if(Config.calculateAmbientOcclusion) {
+			ao0 = getAOForPoint(points[0], points[1], points[2], ambientOcclusion, face.getDirection());
+			ao1 = getAOForPoint(points[3], points[4], points[5], ambientOcclusion, face.getDirection());
+			ao2 = getAOForPoint(points[6], points[7], points[8], ambientOcclusion, face.getDirection());
+			ao3 = getAOForPoint(points[9], points[10], points[11], ambientOcclusion, face.getDirection());
+			if(!hasAO) {
+				if(this.ao == null) {
+					this.ao = new VertexColorSet("CdAO", 1, this.faceIndices.size() + 3);
+					registerColorSetName(this.ao.getName());
+				}
+				// If there is already data in here, then we need to fill in for every face so far.
+				if(this.faceIndices.size() > 0) {
+					int whiteIndex = this.ao.addValue(1.0f);
+					for(int i = 0; i < this.faceIndices.size(); ++i)
+						this.ao.addIndex(whiteIndex);
+				}
+				hasAO = true;
+			}
+		}
 		
 		Occlusion.getCornerUVsForIndex(cornerData, cornerUVData);
 		
@@ -480,6 +548,56 @@ public class Mesh {
 		
 		if(face.isDoubleSided())
 			doubleSided = true;
+		
+		if(vertexColors != null) {
+			for(VertexColorSet.VertexColorFace vertexColorFace : vertexColors) {
+				VertexColorSet thisColorSet = getAdditionalColorSet(vertexColorFace.name);
+				if(thisColorSet == null) {
+					thisColorSet = new VertexColorSet(vertexColorFace.name, vertexColorFace.componentCount, faceIndices.size());
+					if(getAdditionalColorSets() == null)
+						this.additionalColorSets = new ArrayList<VertexColorSet>();
+					getAdditionalColorSets().add(thisColorSet);
+					registerColorSetName(thisColorSet.getName());
+					
+					_vertexColor[0] = 1.0f;
+					_vertexColor[1] = 1.0f;
+					_vertexColor[2] = 1.0f;
+					_vertexColor[3] = 1.0f;
+					int whiteIndex = thisColorSet.addValue(_vertexColor);
+					for(int i = 0; i < (faceIndices.size()-4); ++i) {
+						thisColorSet.addIndex(whiteIndex);
+					}
+				}
+				
+				thisColorSet.addFace(vertexColorFace);
+			}
+		}
+		if(getAdditionalColorSets() != null) {
+			// Make sure to also add indices for any color sets
+			// that are in this mesh but not the parent mesh.
+			for(VertexColorSet thisColorSet : getAdditionalColorSets()) {
+				boolean isHandled = false;
+				if(vertexColors != null) {
+					for(VertexColorSet.VertexColorFace vertexColorFace : vertexColors) {
+						if(vertexColorFace.name.equals(thisColorSet.getName())) {
+							isHandled = true;
+							break;
+						}
+					}
+				}
+				if(isHandled)
+					continue;
+				
+				_vertexColor[0] = 1.0f;
+				_vertexColor[1] = 1.0f;
+				_vertexColor[2] = 1.0f;
+				_vertexColor[3] = 1.0f;
+				int whiteIndex = thisColorSet.addValue(_vertexColor);
+				for(int i = 0; i < 4; ++i) {
+					thisColorSet.addIndex(whiteIndex);
+				}
+			}
+		}
 	}
 	
 	private float getAOForPoint(float x, float y, float z, long ao, Direction dir) {
@@ -574,10 +692,14 @@ public class Mesh {
 			out[2] = 1.0f;
 			return;
 		}
-		int colorId = colorIndices.get(faceIndex * 4 + vertexIndex);
-		out[0] = colors.get(colorId * 3 + 0);
-		out[1] = colors.get(colorId * 3 + 1);
-		out[2] = colors.get(colorId * 3 + 2);
+		//int colorId = colorIndices.get(faceIndex * 4 + vertexIndex);
+		//out[0] = colors.get(colorId * 3 + 0);
+		//out[1] = colors.get(colorId * 3 + 1);
+		//out[2] = colors.get(colorId * 3 + 2);
+		int colorId = colors.getIndex(faceIndex * 4 + vertexIndex);
+		out[0] = colors.getR(colorId);
+		out[1] = colors.getG(colorId);
+		out[2] = colors.getB(colorId);
 	}
 	
 	public void getNormal(int faceIndex, int vertexIndex, float[] out) {
@@ -588,8 +710,12 @@ public class Mesh {
 	}
 	
 	public float getAO(int faceIndex, int vertexIndex) {
-		int aoId = aoIndices.get(faceIndex * 4 + vertexIndex);
-		return ao.get(aoId);
+		if(!hasAO)
+			return 1.0f;
+		//int aoId = aoIndices.get(faceIndex * 4 + vertexIndex);
+		//return ao.get(aoId);
+		int aoId = ao.getIndex(faceIndex * 4 + vertexIndex);
+		return ao.getR(aoId);
 	}
 	
 	private float[] _v0 = new float[3];
@@ -609,7 +735,8 @@ public class Mesh {
 	private float[] _color2 = new float[3];
 	private float[] _color3 = new float[3];
 	private float[] _normal = new float[3];
-	public void addFaceFromMesh(Mesh mesh, int index) {
+	private float[] _vertexColor = new float[4];
+	public void addFaceFromMesh(Mesh mesh, int index, MeshSubset faceSubset, boolean useSubsets) {
 		mesh.getVertex(index, 0, _v0);
 		mesh.getVertex(index, 1, _v1);
 		mesh.getVertex(index, 2, _v2);
@@ -637,18 +764,36 @@ public class Mesh {
 		if(mesh.hasColors) {
 			if(!hasColors) {
 				if(this.colors == null) {
-					this.colors = new FloatArray();
-					this.colorIndices = new IntArray();
+					//this.colors = new FloatArray();
+					//this.colorIndices = new IntArray();
+					this.colors = new VertexColorSet("Cd", 3, this.faceIndices.size() + 3);
+					registerColorSetName(this.colors.getName());
 				}
 				// If there is already data in here, then we need to fill in for every face so far.
 				if(this.faceIndices.size() > 0) {
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					int whiteIndex = this.colors.addValue(1.0f, 1.0f, 1.0f);
 					for(int i = 0; i < this.faceIndices.size(); ++i)
-						this.colorIndices.add(0);
+						this.colors.addIndex(whiteIndex);
 				}
 				hasColors = true;
+			}
+		}
+		if(mesh.hasAO) {
+			if(!hasAO) {
+				if(this.ao == null) {
+					this.ao = new VertexColorSet("CdAO", 1, this.faceIndices.size() + 3);
+					registerColorSetName(this.ao.getName());
+				}
+				// If there is already data in here, then we need to fill in for every face so far.
+				if(this.faceIndices.size() > 0) {
+					int whiteIndex = this.ao.addValue(1.0f);
+					for(int i = 0; i < this.faceIndices.size(); ++i)
+						this.ao.addIndex(whiteIndex);
+				}
+				hasAO = true;
 			}
 		}
 		
@@ -698,46 +843,191 @@ public class Mesh {
 		faceCenters.add(mesh.getFaceCenters().get(index * 4 + 1));
 		faceCenters.add(mesh.getFaceCenters().get(index * 4 + 2));
 		faceCenters.add(mesh.getFaceCenters().get(index * 4 + 3));
+		
+		if(mesh.getAdditionalColorSets() != null) {
+			for(VertexColorSet colorSet : mesh.getAdditionalColorSets()) {
+				VertexColorSet thisColorSet = getAdditionalColorSet(colorSet.getName());
+				if(thisColorSet == null) {
+					thisColorSet = new VertexColorSet(colorSet.getName(), colorSet.getComponentCount(), faceIndices.size());
+					if(getAdditionalColorSets() == null)
+						this.additionalColorSets = new ArrayList<VertexColorSet>();
+					getAdditionalColorSets().add(thisColorSet);
+					registerColorSetName(thisColorSet.getName());
+					
+					_vertexColor[0] = 1.0f;
+					_vertexColor[1] = 1.0f;
+					_vertexColor[2] = 1.0f;
+					_vertexColor[3] = 1.0f;
+					int whiteIndex = thisColorSet.addValue(_vertexColor);
+					for(int i = 0; i < (faceIndices.size()-4); ++i) {
+						thisColorSet.addIndex(whiteIndex);
+					}
+				}
+				if(thisColorSet.getComponentCount() < colorSet.getComponentCount()) {
+					thisColorSet.expandComponentCount(colorSet.getComponentCount());
+				}
+				
+				for(int vertexId = 0; vertexId < 4; ++vertexId) {
+					int vcIndex = colorSet.getIndex(index * 4 + vertexId);
+					colorSet.get(vcIndex, _vertexColor);
+					int vcIndex2 = thisColorSet.addValue(_vertexColor);
+					thisColorSet.addIndex(vcIndex2);
+				}
+			}
+		}
+		if(getAdditionalColorSets() != null) {
+			// Make sure to also add indices for any color sets
+			// that are in this mesh but not the parent mesh.
+			for(VertexColorSet thisColorSet : getAdditionalColorSets()) {
+				if(mesh.getAdditionalColorSet(thisColorSet.getName()) != null)
+					continue;
+				_vertexColor[0] = 1.0f;
+				_vertexColor[1] = 1.0f;
+				_vertexColor[2] = 1.0f;
+				_vertexColor[3] = 1.0f;
+				int whiteIndex = thisColorSet.addValue(_vertexColor);
+				for(int i = 0; i < 4; ++i) {
+					thisColorSet.addIndex(whiteIndex);
+				}
+			}
+		}
+		
+		if(faceSubset != null || useSubsets) {
+			String subsetName = "section_0";
+			String texture = mesh.getTexture();
+			String matTexture = mesh.getMatTexture();
+			boolean isAnimated = mesh.hasAnimatedTexture();
+			boolean isUnique = false;
+			MeshPurpose purpose = MeshPurpose.UNDEFINED;
+			long uniqueId = 0;
+			if(faceSubset != null) {
+				subsetName = faceSubset.getName();
+				isUnique = faceSubset.isUnique();
+				purpose = faceSubset.getPurpose();
+				uniqueId = faceSubset.getUniqueId();
+				if(faceSubset.getTexture() != null && faceSubset.getMatTexture() != null) {
+					texture = faceSubset.getTexture();
+					matTexture = faceSubset.getMatTexture();
+					isAnimated = faceSubset.isAnimatedTexture();
+				}
+			}
+			if(purpose == MeshPurpose.RENDER && this.purpose == MeshPurpose.PROXY)
+				purpose = MeshPurpose.UNDEFINED;
+			
+			// This face was part of a subset,
+			// so we need to find an appropriate subset.
+			MeshSubset subset = null;
+			if(subsets != null) {
+				for(MeshSubset subset2 : subsets) {
+					if(subset2.isUnique() == isUnique && (!subset2.isUnique() || subset2.getUniqueId() == uniqueId) && 
+							subset2.getTexture().equals(texture) && subset2.getMatTexture().equals(matTexture) && 
+							subset2.isAnimatedTexture() == isAnimated &&
+							subset2.getPurpose() == purpose) {
+						subset = subset2;
+						break;
+					}
+				}
+			}
+			if(subset == null) {
+				subset = new MeshSubset(subsetName, texture, matTexture, isAnimated, purpose, isUnique, uniqueId);
+				addSubset(subset);
+			}
+			// Add the index of this face to the subset.
+			subset.getFaceIndices().add(faceCounts.size()-1);
+			
+			if(purpose == MeshPurpose.RENDER && this.purpose != MeshPurpose.RENDER && (!matTexture.equals(this.getMatTexture()) || useSubsets)) {
+				// The subset is just for the render purpose, but we do need to use subsets for this face
+				// and we are missing the subset for the proxy purpose. So add that in.
+				purpose = MeshPurpose.PROXY;
+				isUnique = false;
+				uniqueId = 0;
+				
+				subset = null;
+				if(subsets != null) {
+					for(MeshSubset subset2 : subsets) {
+						if(subset2.isUnique() == isUnique && (!subset2.isUnique() || subset2.getUniqueId() == uniqueId) && 
+								subset2.getTexture().equals(texture) && subset2.getMatTexture().equals(matTexture) && 
+								subset2.isAnimatedTexture() == isAnimated &&
+								subset2.getPurpose() == purpose) {
+							subset = subset2;
+							break;
+						}
+					}
+				}
+				if(subset == null) {
+					subset = new MeshSubset(subsetName, texture, matTexture, isAnimated, purpose, isUnique, uniqueId);
+					addSubset(subset);
+				}
+				// Add the index of this face to the subset.
+				subset.getFaceIndices().add(faceCounts.size()-1);
+			}
+		}
 	}
 	
-	public void addFace(float[] vertices, float[] us, float[] vs, float[] cornerUVs, float[] normal, float[] color, float[] ao) {
+	public void addFace(float[] vertices, float[] us, float[] vs, float[] cornerUVs, 
+					float[] normal, float[] color, float[] ao, VertexColorSet.VertexColorFace[] vertexColors) {
 		if(color != null) {
 			if(!hasColors) {
 				if(this.colors == null) {
-					this.colors = new FloatArray();
-					this.colorIndices = new IntArray();
+					//this.colors = new FloatArray();
+					//this.colorIndices = new IntArray();
+					this.colors = new VertexColorSet("Cd", 3, this.faceIndices.size() + 3);
+					registerColorSetName(this.colors.getName());
 				}
 				// If there is already data in here, then we need to fill in for every face so far.
 				if(this.faceIndices.size() > 0) {
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
-					this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					//this.colors.add(1.0f);
+					int whiteIndex = this.colors.addValue(1.0f, 1.0f, 1.0f);
 					for(int i = 0; i < this.faceIndices.size(); ++i)
-						this.colorIndices.add(0);
+						this.colors.addIndex(whiteIndex);
 				}
 				hasColors = true;
 			}
 		}
-		
-		if(color != null) {
-			addPoint(vertices[0], vertices[1], vertices[2],   us[0], vs[0], cornerUVs[0], cornerUVs[1], 
-						color[0], color[1], color[2], ao[0], v0Data);
-			addPoint(vertices[3], vertices[4], vertices[5],   us[1], vs[1], cornerUVs[2], cornerUVs[3],
-						color[0], color[1], color[2], ao[1], v1Data);
-			addPoint(vertices[6], vertices[7], vertices[8],   us[2], vs[2], cornerUVs[4], cornerUVs[5],
-						color[0], color[1], color[2], ao[2], v2Data);
-			addPoint(vertices[9], vertices[10], vertices[11], us[3], vs[3], cornerUVs[6], cornerUVs[7],
-						color[0], color[1], color[2], ao[3], v3Data);
-		}else {
-			addPoint(vertices[0], vertices[1], vertices[2],   us[0], vs[0], cornerUVs[0], cornerUVs[1],
-						1f, 1f, 1f, ao[0], v0Data);
-			addPoint(vertices[3], vertices[4], vertices[5],   us[1], vs[1], cornerUVs[2], cornerUVs[3],
-						1f, 1f, 1f, ao[1], v1Data);
-			addPoint(vertices[6], vertices[7], vertices[8],   us[2], vs[2], cornerUVs[4], cornerUVs[5],
-						1f, 1f, 1f, ao[2], v2Data);
-			addPoint(vertices[9], vertices[10], vertices[11], us[3], vs[3], cornerUVs[6], cornerUVs[7],
-						1f, 1f, 1f, ao[3], v3Data);
+		if(ao != null) {
+			if(!hasAO) {
+				if(this.ao == null) {
+					this.ao = new VertexColorSet("CdAO", 1, this.faceIndices.size() + 3);
+					registerColorSetName(this.ao.getName());
+				}
+				// If there is already data in here, then we need to fill in for every face so far.
+				if(this.faceIndices.size() > 0) {
+					int whiteIndex = this.ao.addValue(1.0f);
+					for(int i = 0; i < this.faceIndices.size(); ++i)
+						this.ao.addIndex(whiteIndex);
+				}
+				hasAO = true;
+			}
 		}
+		float cr = 1f;
+		float cg = 1f;
+		float cb = 1f;
+		float ao1 = 1f;
+		float ao2 = 1f;
+		float ao3 = 1f;
+		float ao4 = 1f;
+		if(color != null) {
+			cr = color[0];
+			cg = color[1];
+			cb = color[2];
+		}
+		if(ao != null) {
+			ao1 = ao[0];
+			ao2 = ao[1];
+			ao3 = ao[2];
+			ao4 = ao[3];
+		}
+		
+		addPoint(vertices[0], vertices[1], vertices[2],   us[0], vs[0], cornerUVs[0], cornerUVs[1], 
+					cr, cg, cb, ao1, v0Data);
+		addPoint(vertices[3], vertices[4], vertices[5],   us[1], vs[1], cornerUVs[2], cornerUVs[3],
+					cr, cg, cb, ao2, v1Data);
+		addPoint(vertices[6], vertices[7], vertices[8],   us[2], vs[2], cornerUVs[4], cornerUVs[5],
+					cr, cg, cb, ao3, v2Data);
+		addPoint(vertices[9], vertices[10], vertices[11], us[3], vs[3], cornerUVs[6], cornerUVs[7],
+					cr, cg, cb, ao4, v3Data);
 		
 		if(v0Data[0] == v1Data[0] || v0Data[0] == v2Data[0] || v0Data[0] == v3Data[0] ||
 				v1Data[0] == v2Data[0] || v1Data[0] == v3Data[0] || v2Data[0] == v3Data[0]) {
@@ -776,12 +1066,87 @@ public class Mesh {
 		faceCenters.add((vertices[1] + vertices[7]) / 2f);
 		faceCenters.add((vertices[2] + vertices[8]) / 2f);
 		faceCenters.add(1f);
+		
+		if(vertexColors != null) {
+			for(VertexColorSet.VertexColorFace vertexColorFace : vertexColors) {
+				VertexColorSet thisColorSet = getAdditionalColorSet(vertexColorFace.name);
+				if(thisColorSet == null) {
+					thisColorSet = new VertexColorSet(vertexColorFace.name, vertexColorFace.componentCount, faceIndices.size());
+					if(getAdditionalColorSets() == null)
+						this.additionalColorSets = new ArrayList<VertexColorSet>();
+					getAdditionalColorSets().add(thisColorSet);
+					registerColorSetName(thisColorSet.getName());
+					
+					_vertexColor[0] = 1.0f;
+					_vertexColor[1] = 1.0f;
+					_vertexColor[2] = 1.0f;
+					_vertexColor[3] = 1.0f;
+					int whiteIndex = thisColorSet.addValue(_vertexColor);
+					for(int i = 0; i < (faceIndices.size()-4); ++i) {
+						thisColorSet.addIndex(whiteIndex);
+					}
+				}
+				
+				thisColorSet.addFace(vertexColorFace);
+			}
+		}
+		if(getAdditionalColorSets() != null) {
+			// Make sure to also add indices for any color sets
+			// that are in this mesh but not the parent mesh.
+			for(VertexColorSet thisColorSet : getAdditionalColorSets()) {
+				boolean isHandled = false;
+				if(vertexColors != null) {
+					for(VertexColorSet.VertexColorFace vertexColorFace : vertexColors) {
+						if(vertexColorFace.name.equals(thisColorSet.getName())) {
+							isHandled = true;
+							break;
+						}
+					}
+				}
+				if(isHandled)
+					continue;
+				
+				_vertexColor[0] = 1.0f;
+				_vertexColor[1] = 1.0f;
+				_vertexColor[2] = 1.0f;
+				_vertexColor[3] = 1.0f;
+				int whiteIndex = thisColorSet.addValue(_vertexColor);
+				for(int i = 0; i < 4; ++i) {
+					thisColorSet.addIndex(whiteIndex);
+				}
+			}
+		}
 	}
 	
-	public void appendMesh(Mesh mesh) {
+	public void appendMesh(Mesh mesh, boolean useSubsets) {
+		int[] subsetIds = mesh.generateSubsetIds();
 		for(int i = 0; i < (mesh.faceIndices.size()/4); ++i) {
-			addFaceFromMesh(mesh, i);
+			MeshSubset subset = null;
+			if(subsetIds != null) {
+				int subsetId = subsetIds[i];
+				if(subsetId >= 0)
+					subset = mesh.getSubset(subsetId);
+			}
+			addFaceFromMesh(mesh, i, subset, getNumSubsets() > 0 || mesh.getNumSubsets() > 0 || useSubsets);
 		}
+	}
+	
+	public int[] generateSubsetIds() {
+		int[] subsetIds = null;
+		if(getNumSubsets() > 0) {
+			// Mesh has subsets, so go through the list
+			// and keep track of which subset each face is a part of.
+			subsetIds = new int[getFaceIndices().size()/4];
+			Arrays.fill(subsetIds, -1);
+			int subsetId = 0;
+			for(MeshSubset subset : getSubsets()) {
+				for(int i = 0; i < subset.getFaceIndices().size(); ++i) {
+					subsetIds[subset.getFaceIndices().get(i)] = subsetId;
+				}
+				subsetId++;
+			}
+		}
+		return subsetIds;
 	}
 	
 	public void setExtraData(String extraData) {
@@ -811,8 +1176,16 @@ public class Mesh {
 	public boolean hasColors() {
 		return hasColors;
 	}
+	
+	public boolean hasAO() {
+		return hasAO;
+	}
 
-	public FloatArray getColors() {
+	/*public FloatArray getColors() {
+		return colors;
+	}*/
+	
+	public VertexColorSet getColors() {
 		return colors;
 	}
 	
@@ -820,7 +1193,11 @@ public class Mesh {
 		return normals;
 	}
 	
-	public FloatArray getAO() {
+	/*public FloatArray getAO() {
+		return ao;
+	}*/
+	
+	public VertexColorSet getAO() {
 		return ao;
 	}
 
@@ -840,43 +1217,101 @@ public class Mesh {
 		return cornerUVIndices;
 	}
 
-	public IntArray getColorIndices() {
+	/*public IntArray getColorIndices() {
 		return colorIndices;
-	}
+	}*/
 	
 	public IntArray getNormalIndices() {
 		return normalIndices;
 	}
 	
-	public IntArray getAOIndices() {
+	/*public IntArray getAOIndices() {
 		return aoIndices;
-	}
+	}*/
 
 	public FloatArray getFaceCenters() {
 		return faceCenters;
+	}
+	
+	public List<VertexColorSet> getAdditionalColorSets(){
+		return this.additionalColorSets;
+	}
+	
+	public VertexColorSet getAdditionalColorSet(String name) {
+		if(this.additionalColorSets == null)
+			return null;
+		for(VertexColorSet colorSet : this.additionalColorSets)
+			if(colorSet.getName().equals(name))
+				return colorSet;
+		return null;
+	}
+	
+	public List<MeshSubset> getSubsets(){
+		return subsets;
+	}
+	
+	public int getNumSubsets() {
+		if(subsets == null)
+			return 0;
+		return subsets.size();
+	}
+	
+	public MeshSubset getSubset(int index) {
+		if(subsets == null)
+			return null;
+		if(index < 0 || index >= subsets.size())
+			return null;
+		return subsets.get(index);
+	}
+	
+	public void addSubset(MeshSubset subset) {
+		if(subsets == null)
+			subsets = new ArrayList<MeshSubset>();
+		if(subsetNames == null)
+			subsetNames = new HashSet<String>();
+		
+		// Make sure that the name is unique
+		String origName = subset.getName();
+		for(int i = 1; i < 1000000; ++i) {
+			boolean nameCollision = subsetNames.contains(subset.getName());
+			if(!nameCollision)
+				break;
+			subset.setName(origName + "_" + i);
+		}
+		subsets.add(subset);
+		subsetNames.add(subset.getName());
+	}
+	
+	public void setSubsets(ArrayList<MeshSubset> subsets) {
+		this.subsets = subsets;
+		this.subsetNames = new HashSet<String>();
+		for(MeshSubset subset : this.subsets)
+			this.subsetNames.add(subset.getName());
 	}
 
 	public void write(LargeDataOutputStream dos) throws IOException {
 		dos.writeByte(1); // Mesh type : Mesh
 		dos.writeUTF(name);
 		dos.writeInt(doubleSided ? 1 : 0);
+		dos.writeInt(purpose.id);
 		dos.writeUTF(texture);
 		dos.writeUTF(matTexture);
+		dos.writeInt(animatedTexture ? 1 : 0);
 		dos.writeUTF(extraData);
 		dos.writeInt(vertices.size() / 3); // num vertices
 		dos.writeInt(us.size()); // num UVs
 		if(Config.calculateCornerUVs)
-			dos.writeInt(cornerUVs.size()/2); // nul corner UVs
+			dos.writeInt(cornerUVs.size()/2); // num corner UVs
 		else
 			dos.writeInt(0);
 		dos.writeInt(normals.size() / 3); // num normals
-		dos.writeInt(ao.size()); // num AO
+		//dos.writeInt(ao.size()); // num AO
 		dos.writeInt(faceIndices.size() / 4); // num faces
-		if(!hasColors) {
-			dos.writeInt(0); // No vertex colours
-		}else {
-			dos.writeInt(colors.size() / 3); // Vertex colours
-		}
+		//if(!hasColors) {
+		//	dos.writeInt(0); // No vertex colours
+		//}else {
+		//	dos.writeInt(colors.size() / 3); // Vertex colours
+		//}
 		
 		// Pretty much all of the code assumes that a block is 16 units.
 		// In order to not break any of that, we do the scaling here.
@@ -899,17 +1334,17 @@ public class Mesh {
 		for(i = 0; i < normals.size(); ++i)
 			dos.writeFloat(normals.get(i));
 		// AO data
-		for(i = 0; i < ao.size(); ++i)
-			dos.writeFloat(ao.get(i));
+		//for(i = 0; i < ao.size(); ++i)
+		//	dos.writeFloat(ao.get(i));
 		// color data
-		if(hasColors) {
+		/*if(hasColors) {
 			if(Config.vertexColorGamma != 1f)
 				for(i = 0; i < colors.size(); ++i)
 					dos.writeFloat((float) Math.pow(colors.get(i), Config.vertexColorGamma));
 			else
 				for(i = 0; i < colors.size(); ++i)
 					dos.writeFloat(colors.get(i));
-		}
+		}*/
 		// face index data
 		for(i = 0; i < faceIndices.size(); ++i)
 			dos.writeInt(faceIndices.get(i));
@@ -924,11 +1359,144 @@ public class Mesh {
 		for(i = 0; i < normalIndices.size(); ++i)
 			dos.writeInt(normalIndices.get(i));
 		// AO index data
-		for(i = 0; i < aoIndices.size(); ++i)
+		/*for(i = 0; i < aoIndices.size(); ++i)
 			dos.writeInt(aoIndices.get(i));
 		if(hasColors) {
 			for(i = 0; i < colorIndices.size(); ++i)
 				dos.writeInt(colorIndices.get(i));
+		}*/
+		// Write vertex color sets
+		int numColorSets = 0;
+		if(hasColors)
+			numColorSets += 1;
+		if(hasAO)
+			numColorSets += 1;
+		if(additionalColorSets != null)
+			numColorSets += additionalColorSets.size();
+		dos.writeInt(numColorSets);
+		if(hasColors)
+			colors.write(dos);
+		if(hasAO)
+			ao.write(dos);
+		if(additionalColorSets != null)
+			for(VertexColorSet colorSet : additionalColorSets)
+				colorSet.write(dos);
+		
+		// Write mesh subsets
+		if(subsets == null) {
+			dos.writeInt(0);
+		}else {
+			dos.writeInt(subsets.size());
+			for(MeshSubset subset : subsets)
+				subset.write(dos);
+		}
+	}
+	
+	public Mesh(LargeDataInputStream dis) throws IOException{
+		this.name = dis.readUTF();
+		this.doubleSided = dis.readInt() > 0;
+		this.purpose = MeshPurpose.fromId(dis.readInt());
+		this.texture = dis.readUTF();
+		this.matTexture = dis.readUTF();
+		this.animatedTexture = dis.readInt() > 0;
+		this.extraData = dis.readUTF();
+		int numVertices = dis.readInt();
+		int numUVs = dis.readInt();
+		int numCornerUVs = dis.readInt();
+		int numNormals = dis.readInt();
+		int numFaces = dis.readInt();
+		
+		float[] vertices = new float[numVertices*3];
+		for(int i = 0; i < numVertices; ++i) {
+			vertices[i*3] = dis.readFloat();
+			vertices[i*3+1] = dis.readFloat();
+			vertices[i*3+2] = dis.readFloat();
+		}
+		this.vertices = new FloatArray(vertices);
+		
+		float[] us = new float[numUVs];
+		for(int i = 0; i < numUVs; ++i)
+			us[i] = dis.readFloat();
+		this.us = new FloatArray(us);
+		float[] vs = new float[numUVs];
+		for(int i = 0; i < numUVs; ++i)
+			vs[i] = dis.readFloat();
+		this.vs = new FloatArray(vs);
+		
+		if(numCornerUVs > 0) {
+			float[] cornerUVs = new float[numCornerUVs*2];
+			for(int i = 0; i < cornerUVs.length; ++i)
+				cornerUVs[i] = dis.readFloat();
+			this.cornerUVs = new FloatArray(cornerUVs);
+		}else {
+			this.cornerUVs = new FloatArray(2);
+		}
+		
+		float[] normals = new float[numNormals*3];
+		for(int i = 0; i < normals.length; ++i)
+			normals[i] = dis.readFloat();
+		this.normals = new FloatArray(normals);
+		
+		int[] faceIndices = new int[numFaces * 4];
+		for(int i = 0; i < faceIndices.length; ++i)
+			faceIndices[i] = dis.readInt();
+		this.faceIndices = new IntArray(faceIndices);
+		
+		int[] faceCounts = new int[numFaces];
+		Arrays.fill(faceCounts, 4);
+		this.faceCounts = new IntArray(faceCounts);
+		
+		int[] uvIndices = new int[numFaces * 4];
+		for(int i = 0; i < uvIndices.length; ++i)
+			uvIndices[i] = dis.readInt();
+		this.uvIndices = new IntArray(uvIndices);
+		
+		if(numCornerUVs > 0) {
+			int[] cornerUVIndices = new int[numFaces * 4];
+			for(int i = 0; i < cornerUVIndices.length; ++i)
+				cornerUVIndices[i] = dis.readInt();
+			this.cornerUVIndices = new IntArray(cornerUVIndices);
+		}else {
+			this.cornerUVIndices = new IntArray(2);
+		}
+		
+		int[] normalIndices = new int[numFaces * 4];
+		for(int i = 0; i < normalIndices.length; ++i)
+			normalIndices[i] = dis.readInt();
+		this.normalIndices = new IntArray(normalIndices);
+		
+		int numColorSets = dis.readInt();
+		for(int i = 0; i < numColorSets; ++i) {
+			VertexColorSet colorSet = new VertexColorSet(dis);
+			if(colorSet.getName().equals("Cd")) {
+				this.colors = colorSet;
+				this.hasColors = true;
+				registerColorSetName(this.colors.getName());
+			}else if(colorSet.getName().equals("CdAO")) {
+				this.ao = colorSet;
+				this.hasAO = true;
+				registerColorSetName(this.ao.getName());
+			}else {
+				if(this.additionalColorSets == null)
+					this.additionalColorSets = new ArrayList<VertexColorSet>();
+				this.additionalColorSets.add(colorSet);
+				registerColorSetName(colorSet.getName());
+			}
+		}
+		
+		this.faceCenters = new FloatArray(4);
+		this.vertexCache = new IndexCache();
+		this.faceCache = new FaceCache();
+		
+		int numSubsets = dis.readInt();
+		if(numSubsets > 0) {
+			this.subsets = new ArrayList<MeshSubset>();
+			this.subsetNames = new HashSet<String>();
+			for(int i = 0; i < numSubsets; ++i) {
+				MeshSubset subset = new MeshSubset(dis);
+				this.subsets.add(subset);
+				this.subsetNames.add(subset.getName());
+			}
 		}
 	}
 	
@@ -939,7 +1507,26 @@ public class Mesh {
 	public void setName(String name) {
 		this.name = name;
 	}
+	
+	public MeshPurpose getPurpose() {
+		return purpose;
+	}
+	
+	public void setPurpose(MeshPurpose purpose) {
+		this.purpose = purpose;
+	}
 
+	public boolean hasPurpose(MeshPurpose purpose) {
+		if(this.purpose == purpose)
+			return true;
+		if(subsets != null) {
+			for(MeshSubset subset : subsets)
+				if(subset.getPurpose() == purpose)
+					return true;
+		}
+		return false;
+	}
+	
 	public String getTexture() {
 		return texture;
 	}
@@ -967,6 +1554,16 @@ public class Mesh {
 	
 	public void setDoubleSided(boolean doubleSided) {
 		this.doubleSided = doubleSided;
+	}
+	
+	public Set<String> getColorSetNames(){
+		return colorSetNames;
+	}
+	
+	protected void registerColorSetName(String name) {
+		if(colorSetNames == null)
+			colorSetNames = new HashSet<String>();
+		colorSetNames.add(name);
 	}
 
 }

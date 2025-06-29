@@ -31,13 +31,20 @@
 
 package nl.bramstout.mcworldexporter.export.processors;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Poolable;
 import nl.bramstout.mcworldexporter.SingleThreadedMemoryPool;
 import nl.bramstout.mcworldexporter.export.LargeDataOutputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
 import nl.bramstout.mcworldexporter.export.MeshGroup;
+import nl.bramstout.mcworldexporter.export.MeshPurpose;
+import nl.bramstout.mcworldexporter.export.MeshSubset;
+import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMergerMode;
+import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.WriteCapturer;
 
 /**
  * This optimiser splits meshes up into smaller meshes,
@@ -358,7 +365,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 	
 	private Stack<BVHNode> stack = new Stack<BVHNode>();
 	
-	private void addPrimsToMesh(Mesh origMesh, Mesh outMesh, BVHNode node) {
+	private void addPrimsToMesh(Mesh origMesh, Mesh outMesh, BVHNode node, int[] subsetIds) {
 		stack.clear();
 		stack.add(node);
 		
@@ -369,26 +376,90 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 				stack.add(node.right);
 			}else {
 				for(int i = 0; i < node.primsCount; ++i) {
-					outMesh.addFaceFromMesh(origMesh, node.prims[node.primsOffset + i]);
+					int faceIndex = node.prims[node.primsOffset + i];
+					MeshSubset subset = null;
+					if(subsetIds != null) {
+						int subsetId = subsetIds[faceIndex];
+						if(subsetId >= 0)
+							subset = origMesh.getSubset(subsetId);
+					}
+					outMesh.addFaceFromMesh(origMesh, faceIndex, subset, false);
 				}
 			}
 		}
 	}
 	
-	private Mesh newMesh(Mesh origMesh, BVHNode node, int meshCounter) {
-		Mesh mesh = new Mesh(origMesh.getName() + meshCounter, origMesh.getTexture(), origMesh.getMatTexture(), 
-							origMesh.hasAnimatedTexture(), origMesh.isDoubleSided(), 128, 8);
+	private void addPrimsToSubset(Mesh mesh, List<MeshSubset> subsets, int meshCounter, 
+									int[] subsetIds, BVHNode node) {
+		stack.clear();
+		stack.add(node);
+		
+		while(!stack.empty()) {
+			node = stack.pop();
+			if(node.left != null) {
+				stack.add(node.left);
+				stack.add(node.right);
+			}else {
+				for(int i = 0; i < node.primsCount; ++i) {
+					int faceIndex = node.prims[node.primsOffset + i];
+					int subsetId = -1;
+					if(subsetIds != null)
+						subsetId = subsetIds[faceIndex];
+					int actualSubsetId = subsetId < 0 ? 0 : subsetId;
+					
+					if(actualSubsetId >= subsets.size()) {
+						for(int j = subsets.size(); j <= actualSubsetId; ++j)
+							subsets.add(null);
+					}
+					
+					MeshSubset subset = subsets.get(actualSubsetId);
+					if(subset == null) {
+						long uniqueId = Integer.toUnsignedLong(mesh.hashCode()) << 32 | Integer.toUnsignedLong(meshCounter);
+						if(subsetId < 0) {
+							// No subset to copy from.
+							subset = new MeshSubset("section_" + meshCounter, null, null, false, MeshPurpose.RENDER, true, uniqueId);
+							subsets.set(actualSubsetId, subset);
+						}else {
+							// Subset to copy from.
+							MeshSubset origSubset = mesh.getSubset(subsetId);
+							subset = new MeshSubset(origSubset.getName() + "_" + meshCounter,
+													origSubset.getTexture(), origSubset.getMatTexture(),
+													origSubset.isAnimatedTexture(), MeshPurpose.RENDER, true, uniqueId);
+							subsets.set(actualSubsetId, subset);
+						}
+					}
+					subset.getFaceIndices().add(faceIndex);
+				}
+			}
+		}
+	}
+	
+	private Mesh newMesh(Mesh origMesh, BVHNode node, int meshCounter, int[] subsetIds) {
+		Mesh mesh = new Mesh(origMesh.getName() + meshCounter, MeshPurpose.RENDER, origMesh.getTexture(), 
+							origMesh.getMatTexture(), origMesh.hasAnimatedTexture(), origMesh.isDoubleSided(), 128, 8);
 		mesh.setExtraData(origMesh.getExtraData());
-		addPrimsToMesh(origMesh, mesh, node);
+		addPrimsToMesh(origMesh, mesh, node, subsetIds);
 		return mesh;
+	}
+	
+	private List<MeshSubset> newSubsets = new ArrayList<MeshSubset>();
+	
+	private void newSubset(Mesh mesh, BVHNode node, int meshCounter, int[] subsetIds, List<MeshSubset> subsets) {
+		newSubsets.clear();
+		addPrimsToSubset(mesh, newSubsets, meshCounter, subsetIds, node);
+		for(MeshSubset subset : newSubsets)
+			if(subset != null)
+				subsets.add(subset);
 	}
 	
 	public Mesh optimiseMesh(Mesh mesh, float fullnessThreshold) {
 		if(fullnessThreshold <= 0f)
 			return mesh;
+		int[] subsetIds = mesh.generateSubsetIds();
+		
 		fullnessThreshold = Math.min(fullnessThreshold, 0.99f);
 		BVH bvh = buildBVH(mesh);
-		MeshGroup outMesh = new MeshGroup(mesh.getName());
+		MeshGroup outMesh = new MeshGroup(mesh.getName(), MeshPurpose.RENDER);
 		int meshCounter = 0;
 		
 		Stack<BVHNode> stack = new Stack<BVHNode>();
@@ -398,7 +469,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 		while(!stack.empty()) {
 			currentNode = stack.pop();
 			if(currentNode.getFullness() >= fullnessThreshold) {
-				outMesh.addMesh(newMesh(mesh, currentNode, ++meshCounter));
+				outMesh.addMesh(newMesh(mesh, currentNode, ++meshCounter, subsetIds));
 			}else {
 				stack.add(currentNode.left);
 				stack.add(currentNode.right);
@@ -420,28 +491,78 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 		fullnessThreshold = Math.min(fullnessThreshold, 0.99f);
 		BVH bvh = buildBVH(mesh);
 		int meshCounter = 0;
+		int[] subsetIds = mesh.generateSubsetIds();
 		
-		dos.writeByte(2); // Mesh type : Group
-		dos.writeUTF(mesh.getName());
-		dos.writeUTF(""); // No extra data to write out.
-		//dos.writeInt(1);
-		
-		Stack<BVHNode> stack = new Stack<BVHNode>();
-		stack.add(bvh.root);
-		
-		BVHNode currentNode = null;
-		while(!stack.empty()) {
-			currentNode = stack.pop();
-			if(currentNode.getFullness() >= fullnessThreshold) {
-				manager.processNext(newMesh(mesh, currentNode, ++meshCounter), this);
-			}else {
-				stack.add(currentNode.left);
-				stack.add(currentNode.right);
+		if(Config.raytracingOptimiserUseMeshSubsets) {
+			// Write out a single mesh with geometry subsets.
+			
+			// The mesh could already make use of subsets,
+			// so we want to then separate those subsets, if needed.
+			ArrayList<MeshSubset> subsets = new ArrayList<MeshSubset>();
+			
+			Stack<BVHNode> stack = new Stack<BVHNode>();
+			stack.add(bvh.root);
+			
+			BVHNode currentNode = null;
+			while(!stack.empty()) {
+				currentNode = stack.pop();
+				if(currentNode.getFullness() >= fullnessThreshold) {
+					newSubset(mesh, currentNode, ++meshCounter, subsetIds, subsets);
+				}else {
+					stack.add(currentNode.left);
+					stack.add(currentNode.right);
+				}
 			}
+			bvh.free(nodePool);
+			mesh.setSubsets(subsets);
+			
+			manager.processNext(mesh, this);
+		}else {
+			// Write out a group with individual meshes.
+			
+			// We want to capture all meshes written out, so that we can combine
+			// them into a proxy mesh and write it out.
+			int writeCapturerId = manager.registerWriteCapturer();
+			
+			int meshMergerId = manager.beginMeshMerger(MeshMergerMode.DISABLED);
+			
+			dos.writeByte(2); // Mesh type : Group
+			dos.writeUTF(mesh.getName() + "_Render");
+			dos.writeInt(MeshPurpose.RENDER.id);
+			dos.writeUTF(""); // No extra data to write out.
+			//dos.writeInt(1);
+			
+			Stack<BVHNode> stack = new Stack<BVHNode>();
+			stack.add(bvh.root);
+			
+			BVHNode currentNode = null;
+			while(!stack.empty()) {
+				currentNode = stack.pop();
+				if(currentNode.getFullness() >= fullnessThreshold) {
+					manager.processNext(newMesh(mesh, currentNode, ++meshCounter, subsetIds), this);
+				}else {
+					stack.add(currentNode.left);
+					stack.add(currentNode.right);
+				}
+			}
+			bvh.free(nodePool);
+			
+			dos.writeByte(0); // End array with empty type.
+			
+			manager.endMeshMerger(meshMergerId);
+			
+			
+			// Now combine all meshes into a proxy mesh.
+			WriteCapturer capturer = manager.getWriteCapturer(writeCapturerId);
+			Mesh proxyMesh = new Mesh(mesh.getName(), MeshPurpose.PROXY, mesh.getTexture(), 
+										mesh.getMatTexture(), mesh.hasAnimatedTexture(), mesh.isDoubleSided(),
+										mesh.getVertices().size()/3, mesh.getUs().size());
+			for(Mesh mesh2 : capturer.meshes) {
+				mesh2.appendMesh(mesh2, false);
+			}
+			manager.getDefaultWriteProcessor().process(proxyMesh, manager);
+			manager.unregisterWriteCapturer(writeCapturerId);
 		}
-		bvh.free(nodePool);
-		
-		dos.writeByte(0); // End array with empty type.
 	}
 
 }

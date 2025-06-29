@@ -59,8 +59,8 @@ public class ChunkReader_2844_UP extends ChunkReader{
 		if(statusTag != null)
 			status = statusTag.getData();
 		if (!status.contains("full")) {
-			chunk._setBlocks(new int[1][]);
-			chunk._setBiomes(new int[1][]);
+			//chunk._setBlocks(new int[1][]);
+			//chunk._setBiomes(new int[1][]);
 			return;
 		}
 		

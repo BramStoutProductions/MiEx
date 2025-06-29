@@ -132,16 +132,19 @@ public class RegionViewer extends JPanel{
 		xOffset = regionMinX;
 		yOffset = regionMinZ;
 		
-		for(int regionZ = regionMinZ; regionZ <= regionMaxZ; ++regionZ) {
-			for(int regionX = regionMinX; regionX <= regionMaxX; ++regionX) {
-				Region region = world.getRegion(regionX << 5, regionZ << 5);
+		//for(int regionZ = regionMinZ; regionZ <= regionMaxZ; ++regionZ) {
+		//	for(int regionX = regionMinX; regionX <= regionMaxX; ++regionX) {
+			for(Region region : world.getRegions()) {
+				//Region region = world.getRegion(regionX * 32, regionZ * 32);
 				if(region == null)
 					continue;
+				int regionX = region.getXCoordinate();
+				int regionZ = region.getZCoordinate();
 				
 				for(int chunkZ = 0; chunkZ < 32; ++chunkZ) {
 					for(int chunkX = 0; chunkX < 32; ++chunkX) {
 						try {
-							Chunk chunk = region.getChunk((regionX << 5) + chunkX, (regionZ << 5) + chunkZ);
+							Chunk chunk = region.getChunk((regionX * 32) + chunkX, (regionZ * 32) + chunkZ);
 							if(chunk == null)
 								continue;
 							
@@ -163,7 +166,7 @@ public class RegionViewer extends JPanel{
 					}
 				}
 			}
-		}
+		//}
 	}
 	
 	@Override

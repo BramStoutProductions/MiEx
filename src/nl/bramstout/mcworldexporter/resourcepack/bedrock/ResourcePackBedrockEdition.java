@@ -145,6 +145,21 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		return false;
 	}
 
+	private List<File> listFilesRecursively(File folder){
+		List<File> files = new ArrayList<File>();
+		listFilesRecursively(folder, files);
+		return files;
+	}
+	
+	private void listFilesRecursively(File folder, List<File> files) {
+		for(File f : folder.listFiles()) {
+			if(f.isFile())
+				files.add(f);
+			else if(f.isDirectory())
+				listFilesRecursively(f, files);
+		}
+	}
+	
 	@Override
 	public void load() {
 		biomes.clear();
@@ -292,7 +307,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File biomesFolder = new File(getFolder(), "biomes");
 		if(biomesFolder.exists() && biomesFolder.isDirectory()) {
-			for(File f : biomesFolder.listFiles()) {
+			for(File f : listFilesRecursively(biomesFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -424,7 +439,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File blocksFolder = new File(getFolder(), "blocks");
 		if(blocksFolder.exists() && blocksFolder.isDirectory()) {
-			for(File f : blocksFolder.listFiles()) {
+			for(File f : listFilesRecursively(blocksFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -473,7 +488,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File renderControllersFolder = new File(getFolder(), "render_controllers");
 		if(renderControllersFolder.exists() && renderControllersFolder.isDirectory()) {
-			for(File f : renderControllersFolder.listFiles()) {
+			for(File f : listFilesRecursively(renderControllersFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -492,7 +507,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File animationsFolder = new File(getFolder(), "animations");
 		if(animationsFolder.exists() && animationsFolder.isDirectory()) {
-			for(File f : animationsFolder.listFiles()) {
+			for(File f : listFilesRecursively(animationsFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -511,7 +526,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File animationControllersFolder = new File(getFolder(), "animation_controllers");
 		if(animationControllersFolder.exists() && animationControllersFolder.isDirectory()) {
-			for(File f : animationControllersFolder.listFiles()) {
+			for(File f : listFilesRecursively(animationControllersFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -531,7 +546,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File clientEntitiesFolder = new File(getFolder(), "entity");
 		if(clientEntitiesFolder.exists() && clientEntitiesFolder.isDirectory()) {
-			for(File f : clientEntitiesFolder.listFiles()) {
+			for(File f : listFilesRecursively(clientEntitiesFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -566,7 +581,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File entitiesFolder = new File(getFolder(), "entities");
 		if(entitiesFolder.exists() && entitiesFolder.isDirectory()) {
-			for(File f : entitiesFolder.listFiles()) {
+			for(File f : listFilesRecursively(entitiesFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -594,7 +609,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		
 		File spawnRulesFolder = new File(getFolder(), "spawn_rules");
 		if(spawnRulesFolder.exists() && spawnRulesFolder.isDirectory()) {
-			for(File f : spawnRulesFolder.listFiles()) {
+			for(File f : listFilesRecursively(spawnRulesFolder)) {
 				if(f.isFile() && f.getName().endsWith(".json")) {
 					try {
 						JsonObject data = Json.read(f).getAsJsonObject();
@@ -697,7 +712,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 			return file;
 		
 		List<String> paths = terrain_textures.getOrDefault(name, null);
-		if(paths != null) {
+		if(paths != null && paths.size() > 0) {
 			path = paths.get(0);
 			file = new File(getFolder(), path + extension);
 			if(file.exists())

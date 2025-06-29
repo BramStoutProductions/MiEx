@@ -348,36 +348,43 @@ public class ResourcePackJavaEdition extends ResourcePack{
 			}
 		}
 		
-		if(getName().equals("base_resource_pack")) {
-			// Fallback to handle it based on item models.
-			int sepIndex = name.indexOf(':');
-			String namespace = null;
-			if(sepIndex >= 0) {
-				namespace = name.substring(0, sepIndex);
-				name = name.substring(sepIndex+1);
-			}else {
-				namespace = "minecraft";
-			}
+		// Fallback to handle it based on item models.
+		int sepIndex = name.indexOf(':');
+		String namespace = null;
+		if(sepIndex >= 0) {
+			namespace = name.substring(0, sepIndex);
+			name = name.substring(sepIndex+1);
+		}else {
+			namespace = "minecraft";
+		}
 
-			name = namespace + ":item/" + name;
+		name = namespace + ":item/" + name;
+		itemHandlerFile = getResource(name, "models", "assets", ".json");
+		if(itemHandlerFile.exists()) {
+			try {
+				JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
+				// If this model file has overrides, then see it as an item handler.
+				// Otherwise, we'll return null in the hopes that another resource pack
+				// provides an item handler. If this is the base resource pack, then
+				// that means that no other resource pack has specified an item handler
+				// so we'll fall back to one based on this model file.
+				if(jsonData.has("overrides") || getName().equals("base_resource_pack")) {
+					return new ItemHandlerFallback(name, jsonData);
+				}
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}else {
+			name = name.replace(":item/", ":block/");
 			itemHandlerFile = getResource(name, "models", "assets", ".json");
 			if(itemHandlerFile.exists()) {
 				try {
 					JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
-					return new ItemHandlerFallback(name, jsonData);
+					if(jsonData.has("overrides") || getName().equals("base_resource_pack")) {
+						return new ItemHandlerFallback(name, jsonData);
+					}
 				}catch(Exception ex) {
 					ex.printStackTrace();
-				}
-			}else {
-				name = name.replace(":item/", ":block/");
-				itemHandlerFile = getResource(name, "models", "assets", ".json");
-				if(itemHandlerFile.exists()) {
-					try {
-						JsonObject jsonData = Json.read(itemHandlerFile).getAsJsonObject();
-						return new ItemHandlerFallback(name, jsonData);
-					}catch(Exception ex) {
-						ex.printStackTrace();
-					}
 				}
 			}
 		}

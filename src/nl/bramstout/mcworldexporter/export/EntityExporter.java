@@ -148,7 +148,7 @@ public class EntityExporter {
 		}
 		
 		public MeshGroup getPrototypeMesh() {
-			MeshGroup root = new MeshGroup(name);
+			MeshGroup root = new MeshGroup(name, MeshPurpose.UNDEFINED);
 			
 			for(ModelBone bone : prototypeModel.getBones()) {
 				if(bone.getParent() == null)
@@ -159,7 +159,7 @@ public class EntityExporter {
 		}
 		
 		private MeshGroup convertBone(ModelBone bone) {
-			MeshGroup boneGroup = new MeshGroup(Util.makeSafeName(bone.getName()));
+			MeshGroup boneGroup = new MeshGroup(Util.makeSafeName(bone.getName()), MeshPurpose.UNDEFINED);
 			
 			if(bone.faceIds.size() > 0) {
 				Map<String, Mesh> meshes = new HashMap<String, Mesh>();
@@ -177,10 +177,11 @@ public class EntityExporter {
 					
 					Mesh mesh = meshes.getOrDefault(texture, null);
 					if(mesh == null) {
-						mesh = new Mesh(boneGroup.getName() + "_" + Util.makeSafeName(texture), texture, texture, false, true, 32, 16);
+						mesh = new Mesh(boneGroup.getName() + "_" + Util.makeSafeName(texture), MeshPurpose.UNDEFINED,
+										texture, texture, false, true, 32, 16);
 						meshes.put(texture, mesh);
 					}
-					mesh.addFace(face, 0, 0, 0, atlas, null, 0);
+					mesh.addFace(face, 0, 0, 0, atlas, null, 0, null);
 				}
 				for(Mesh mesh : meshes.values())
 					boneGroup.addMesh(mesh);

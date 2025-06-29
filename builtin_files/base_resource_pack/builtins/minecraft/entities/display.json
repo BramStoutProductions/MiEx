@@ -154,27 +154,27 @@
                                                             }
                                                         }
                                                     ]
-                                                },
-                                                {
-                                                    "condition": "thisEntity.state.Passengers != null",
-                                                    "loopInit": "passengerI = 0",
-                                                    "loopCondition": "passengerI < thisEntity.state.Passengers.length()",
-                                                    "loopIncrement": "passengerI += 1",
-                                                    "generators": [
-                                                        {
-                                                            "type": "entity",
-                                                            "args": {
-                                                                "id": "thisEntity.state.Passengers[passengerI].id",
-                                                                "properties": "thisEntity.state.Passengers[passengerI]"
-                                                            }
-                                                        }
-                                                    ]
                                                 }
                                             ]
                                         }
                                     ]
                                 }
                             ]
+                        }
+                    ]
+                },
+                {
+                    "condition": "thisEntity.state.Passengers != null",
+                    "loopInit": "passengerI = 0",
+                    "loopCondition": "passengerI < thisEntity.state.Passengers.length()",
+                    "loopIncrement": "passengerI += 1",
+                    "generators": [
+                        {
+                            "type": "entity",
+                            "args": {
+                                "id": "thisEntity.state.Passengers[passengerI].id",
+                                "properties": "thisEntity.state.Passengers[passengerI]"
+                            }
                         }
                     ]
                 }

@@ -42,7 +42,7 @@ import java.util.Set;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
-import nl.bramstout.mcworldexporter.export.usd.USDConverter;
+import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.export.usd.USDWriter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
@@ -434,7 +434,7 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 	
 	private String getAssetPathForTexture(String texture) {
 		try {
-			File file = Materials.getTextureFile(texture, USDConverter.currentOutputDir.getCanonicalPath());
+			File file = Materials.getTextureFile(texture, Exporter.currentExportFile.getParentFile().getCanonicalPath());
 			if(file == null || !file.exists()) {
 				World.handleError(new RuntimeException("Missing texture " + texture));
 				return texture;
@@ -444,7 +444,7 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 			if(!resourcePathDir.endsWith("/"))
 				resourcePathDir = resourcePathDir + "/";
 			
-			String outputDir = USDConverter.currentOutputDir.getCanonicalPath().replace('\\', '/');
+			String outputDir = Exporter.currentExportFile.getParentFile().getCanonicalPath().replace('\\', '/');
 			if(!outputDir.endsWith("/"))
 				outputDir = outputDir + "/";
 			

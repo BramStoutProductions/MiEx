@@ -94,6 +94,8 @@ public class Exporter {
 			throw new RuntimeException("No valid world loaded.");
 		}
 		
+		MCWorldExporter.getApp().getUI().getEntityDialog().load();
+		
 		String extensionTokens[] = usdFile.getName().split("\\.");
 		String extension = extensionTokens[extensionTokens.length-1];
 		
@@ -254,11 +256,12 @@ public class Exporter {
 					
 					Mesh mesh = meshes.get(matTexture);
 					if(mesh == null) {
-						mesh = new Mesh(matTexture, texture, matTexture, false, model.isDoubleSided(), 32, 8);
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
+						mesh = new Mesh(matTexture, MeshPurpose.UNDEFINED, texture, matTexture, 
+										false, model.isDoubleSided(), 32, 8);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData, null);
 						meshes.put(matTexture, mesh);
 					}else {
-						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData);
+						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData, null);
 					}
 					mesh.setExtraData(model.getExtraData());
 					
@@ -308,6 +311,12 @@ public class Exporter {
 			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
 			for(String blockName : BlockStateRegistry.missingBlockStates) {
 				System.out.println("Missing blockstate: " + blockName);
+			}
+		}
+		if(BlockStateRegistry.missingBlockStates.size() > 0) {
+			message = "World exported, but some biomes may be missing. Check the log for more information.";
+			for(String biomeName : BiomeRegistry.missingBiomes) {
+				System.out.println("Missing biome: " + biomeName);
 			}
 		}
 		

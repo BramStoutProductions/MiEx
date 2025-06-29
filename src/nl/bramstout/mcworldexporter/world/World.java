@@ -43,6 +43,7 @@ import javax.swing.SwingUtilities;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.export.IndexCache;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 
 public abstract class World {
@@ -51,6 +52,7 @@ public abstract class World {
 	protected List<String> dimensions;
 	protected String currentDimension;
 	protected Region[] regions;
+	protected IndexCache regionsIndices;
 	protected int regionMinX;
 	protected int regionMinZ;
 	protected int regionMaxX;
@@ -67,6 +69,7 @@ public abstract class World {
 		players = new ArrayList<Player>();
 		currentDimension = "";
 		regions = null;
+		regionsIndices = null;
 		blockConnectionsTranslation = null;
 		worldVersion = 0;
 		paused = false;
@@ -155,8 +158,14 @@ public abstract class World {
 		
 		if(chunkX < regionMinX || chunkZ < regionMinZ || chunkX > regionMaxX || chunkZ > regionMaxZ)
 			return null;
-
-		int id = (chunkZ - regionMinZ) * regionsStride + (chunkX - regionMinX);
+		
+		int id = 0;
+		if(regionsIndices != null) {
+			long lid = ((long) chunkX) << 32 | (((long) chunkZ) & 0xFFFFFFFFL);
+			id = regionsIndices.getOrDefault(lid, -1);
+		}else {
+			id = (chunkZ - regionMinZ) * regionsStride + (chunkX - regionMinX);
+		}
 
 		if(id < 0 || id >= regions.length)
 			return null;
@@ -325,6 +334,10 @@ public abstract class World {
 	
 	public int getRegionMaxZ() {
 		return regionMaxZ;
+	}
+	
+	public Region[] getRegions() {
+		return regions;
 	}
 	
 	public BlockConnectionsTranslation getBlockConnectionsTranslation() {

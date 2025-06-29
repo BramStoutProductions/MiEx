@@ -38,6 +38,8 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.atlas.Atlas.AtlasItem;
 import nl.bramstout.mcworldexporter.export.Mesh;
+import nl.bramstout.mcworldexporter.export.MeshSubset;
+import nl.bramstout.mcworldexporter.export.VertexColorSet;
 
 /**
  * This optimiser tries to combine faces into larger faces.
@@ -54,46 +56,67 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	}
 	
 	public void optimise(Mesh inMesh) {
-		/*MCMeta mcmeta = ResourcePacks.getMCMeta(inMesh.getTexture());
-		if(mcmeta != null) {
-			// Don't optimise the faces of animated materials.
-			if(mcmeta.isAnimate() || mcmeta.isInterpolate())
-				return;
-				//return inMesh;
-		}*/
-		if(inMesh.hasAnimatedTexture()) {
+		if(inMesh.getNumSubsets() == 0 && inMesh.hasAnimatedTexture()) {
 			// Don't optimise the faces of animated materials.
 			return;
+		}else if(inMesh.getNumSubsets() > 0) {
+			boolean isAllAnimated = true;
+			for(int i = 0; i < inMesh.getNumSubsets(); ++i) {
+				if(!inMesh.getSubset(i).isAnimatedTexture()) {
+					isAllAnimated = false;
+					break;
+				}
+			}
+			if(isAllAnimated)
+				return;
 		}
 		
 		CombinedFace combinedFace = new CombinedFace();
 		
 		// Go bottom and top
-		//Mesh outMesh = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
-		tempMesh1.reset(inMesh.getName(), inMesh.getTexture(), inMesh.getMatTexture(), 
+		tempMesh1.reset(inMesh.getName(), inMesh.getPurpose(), inMesh.getTexture(), inMesh.getMatTexture(), 
 						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
 		tempMesh1.setExtraData(inMesh.getExtraData());
 		
 		boolean[] processedFaces = new boolean[inMesh.getFaceIndices().size()/4];
-		getFacesPerVertex(inMesh);
-		process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, combinedFace);
+		if(inMesh.getNumSubsets() == 0) {
+			getFacesPerVertex(inMesh, null);
+			process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, null, combinedFace);
+		}else {
+			for(MeshSubset subset : inMesh.getSubsets()) {
+				if((subset.getMatTexture() != null && subset.isAnimatedTexture()) || 
+						(subset.getMatTexture() == null && inMesh.hasAnimatedTexture())) {
+					addFacesInSubset(inMesh, tempMesh1, subset);
+				}else {
+					getFacesPerVertex(inMesh, subset);
+					process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, subset, combinedFace);
+				}
+			}
+		}
 		
 		// Go left and right
-		//Mesh outMesh2 = new Mesh(inMesh.getName(), inMesh.getTexture(), inMesh.isDoubleSided());
-		//outMesh2.setExtraData(inMesh.getExtraData());
-		
-		inMesh.reset(inMesh.getName(), inMesh.getTexture(), inMesh.getMatTexture(), 
+		Arrays.fill(processedFaces, false);
+		inMesh.reset(inMesh.getName(), inMesh.getPurpose(), inMesh.getTexture(), inMesh.getMatTexture(), 
 						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
 		inMesh.setExtraData(tempMesh1.getExtraData());
 		
-		processedFaces = new boolean[tempMesh1.getFaceIndices().size()/4];
-		getFacesPerVertex(tempMesh1);
-		process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, combinedFace);
-		
-		//return outMesh2;
+		if(tempMesh1.getNumSubsets() == 0) {
+			getFacesPerVertex(tempMesh1, null);
+			process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, null, combinedFace);
+		}else {
+			for(MeshSubset subset : tempMesh1.getSubsets()) {
+				if((subset.getMatTexture() != null && subset.isAnimatedTexture()) || 
+						(subset.getMatTexture() == null && inMesh.hasAnimatedTexture())) {
+					addFacesInSubset(tempMesh1, inMesh, subset);
+				}else {
+					getFacesPerVertex(tempMesh1, subset);
+					process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, subset, combinedFace);
+				}
+			}
+		}
 	}
 	
-	private void getFacesPerVertex(Mesh mesh){
+	private void getFacesPerVertex(Mesh mesh, MeshSubset subset){
 		int facesPerVertexSize = mesh.getVertices().size() / 3;
 		if(facesPerVertex == null || facesPerVertex.length < facesPerVertexSize)
 			facesPerVertex = new int[facesPerVertexSize][];
@@ -106,23 +129,69 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			}
 		}
 		
-		for(int faceIndex = 0; faceIndex < mesh.getFaceIndices().size()/4; ++faceIndex) {
-			for(int i = 0; i < 4; ++i) {
-				int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
-				
-				if(facesPerVertex[vertexId] == null) {
-					facesPerVertex[vertexId] = new int[5];
-					facesPerVertex[vertexId][0] = 0;
+		if(subset == null) {
+			for(int faceIndex = 0; faceIndex < mesh.getFaceIndices().size()/4; ++faceIndex) {
+				for(int i = 0; i < 4; ++i) {
+					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
+					
+					if(facesPerVertex[vertexId] == null) {
+						facesPerVertex[vertexId] = new int[5];
+						facesPerVertex[vertexId][0] = 0;
+					}
+					int arrayLength = facesPerVertex[vertexId][0];
+					if((arrayLength+1) >= facesPerVertex[vertexId].length) {
+						// We hit the limit of the array, so increase the size.
+						facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+					}
+					arrayLength += 1;
+					facesPerVertex[vertexId][arrayLength] = faceIndex;
+					facesPerVertex[vertexId][0] = arrayLength;
 				}
-				int arrayLength = facesPerVertex[vertexId][0];
-				if((arrayLength+1) >= facesPerVertex[vertexId].length) {
-					// We hit the limit of the array, so increase the size.
-					facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
-				}
-				arrayLength += 1;
-				facesPerVertex[vertexId][arrayLength] = faceIndex;
-				facesPerVertex[vertexId][0] = arrayLength;
 			}
+		}else {
+			for(int faceIndexI = 0; faceIndexI < subset.getFaceIndices().size(); ++faceIndexI) {
+				int faceIndex = subset.getFaceIndices().get(faceIndexI);
+				for(int i = 0; i < 4; ++i) {
+					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
+					
+					if(facesPerVertex[vertexId] == null) {
+						facesPerVertex[vertexId] = new int[5];
+						facesPerVertex[vertexId][0] = 0;
+					}
+					int arrayLength = facesPerVertex[vertexId][0];
+					if((arrayLength+1) >= facesPerVertex[vertexId].length) {
+						// We hit the limit of the array, so increase the size.
+						facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+					}
+					arrayLength += 1;
+					facesPerVertex[vertexId][arrayLength] = faceIndex;
+					facesPerVertex[vertexId][0] = arrayLength;
+				}
+			}
+		}
+	}
+	
+	private void addFacesInSubset(Mesh srcMesh, Mesh dstMesh, MeshSubset subset) {
+		MeshSubset dstSubset = null;
+		if(dstMesh.getNumSubsets() > 0) {
+			for(MeshSubset subset2 : dstMesh.getSubsets()) {
+				if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
+						subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
+						subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
+					dstSubset = subset2;
+					break;
+				}
+			}
+		}
+		if(dstSubset == null) {
+			dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
+					subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+			dstMesh.addSubset(dstSubset);
+		}
+		for(int i = 0; i < subset.getFaceIndices().size(); ++i) {
+			int faceIndex = subset.getFaceIndices().get(i);
+			dstMesh.addFaceFromMesh(srcMesh, faceIndex, null, false);
+			dstSubset.getFaceIndices().add(dstMesh.getFaceCounts().size()-1);
 		}
 	}
 	
@@ -131,21 +200,33 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		float[] vertices;
 		float[] us;
 		float[] vs;
+		float[] initialUs;
+		float[] initialVs;
 		float[] cornerUVs;
 		float[] normals;
 		float[] colors;
 		boolean hasColors;
 		float[] ao;
+		boolean hasAO;
+		VertexColorSet.VertexColorFace[] vertexColors;
+		int[] faceIndices;
+		int faceIndicesSize;
 		
 		public CombinedFace() {
 			vertices = new float[3*4];
 			us = new float[4];
 			vs = new float[4];
+			initialUs = new float[4];
+			initialVs = new float[4];
 			cornerUVs = new float[8];
 			normals = new float[3];
 			colors = new float[3];
 			hasColors = false;
 			ao = new float[4];
+			hasAO = false;
+			vertexColors = null;
+			faceIndices = new int[32];
+			faceIndicesSize = 0;
 		}
 		
 		public void setup(Mesh mesh, int face) {
@@ -158,13 +239,15 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				int uvIndex = mesh.getUvIndices().get(face * 4 + edgeId);
 				us[edgeId] = mesh.getUs().get(uvIndex);
 				vs[edgeId] = mesh.getVs().get(uvIndex);
+				initialUs[edgeId] = mesh.getUs().get(uvIndex);
+				initialVs[edgeId] = mesh.getVs().get(uvIndex);
 				
 				int cornerUVIndex = mesh.getCornerUVIndices().get(face * 4 + edgeId);
 				cornerUVs[edgeId * 2] = mesh.getCornerUVs().get(cornerUVIndex * 2);
 				cornerUVs[edgeId * 2 + 1] = mesh.getCornerUVs().get(cornerUVIndex * 2 + 1);
 				
-				int aoIndex = mesh.getAOIndices().get(face * 4 + edgeId);
-				ao[edgeId] = mesh.getAO().get(aoIndex);
+				//int aoIndex = mesh.getAOIndices().get(face * 4 + edgeId);
+				//ao[edgeId] = mesh.getAO().get(aoIndex);
 			}
 			int normalIndex = mesh.getNormalIndices().get(face*4);
 			normals[0] = mesh.getNormals().get(normalIndex*3);
@@ -174,11 +257,42 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			hasColors = false;
 			if(mesh.hasColors()) {
 				hasColors = true;
-				int colorIndex = mesh.getColorIndices().get(face*4);
-				colors[0] = mesh.getColors().get(colorIndex*3);
-				colors[1] = mesh.getColors().get(colorIndex*3+1);
-				colors[2] = mesh.getColors().get(colorIndex*3+2);
+				//int colorIndex = mesh.getColorIndices().get(face*4);
+				//colors[0] = mesh.getColors().get(colorIndex*3);
+				//colors[1] = mesh.getColors().get(colorIndex*3+1);
+				//colors[2] = mesh.getColors().get(colorIndex*3+2);
+				int colorIndex = mesh.getColors().getIndex(face*4);
+				colors[0] = mesh.getColors().getR(colorIndex);
+				colors[1] = mesh.getColors().getG(colorIndex);
+				colors[2] = mesh.getColors().getB(colorIndex);
 			}
+			hasAO = false;
+			if(mesh.hasAO()) {
+				hasAO = true;
+				for(int edgeId = 0; edgeId < 4; ++edgeId) {
+					int aoIndex = mesh.getAO().getIndex(face * 4 + edgeId);
+					ao[edgeId] = mesh.getAO().getR(aoIndex);
+				}
+			}
+			int numVertexColors = 0;
+			if(mesh.getAdditionalColorSets() != null)
+				numVertexColors = mesh.getAdditionalColorSets().size();
+			
+			if(vertexColors == null && numVertexColors > 0) {
+				vertexColors = new VertexColorSet.VertexColorFace[numVertexColors];
+			}else if(vertexColors != null && numVertexColors != vertexColors.length) {
+				vertexColors = new VertexColorSet.VertexColorFace[numVertexColors];
+			}else if(numVertexColors == 0) {
+				vertexColors = null;
+			}
+			for(int i = 0; i < numVertexColors; ++i) {
+				if(vertexColors[i] == null)
+					vertexColors[i] = new VertexColorSet.VertexColorFace();
+				mesh.getAdditionalColorSets().get(i).getFace(face, vertexColors[i]);
+			}
+			
+			faceIndices[0] = face;
+			faceIndicesSize = 1;
 		}
 		
 		public void extend(int edgeId, Mesh mesh, int includeFace, int includeEdge, 
@@ -237,18 +351,40 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				vs[vert1] = currentAtlasItem.vToLocal(vs[vert1] - offsetV) + offsetV;
 				vs[vert2] = currentAtlasItem.vToLocal(vs[vert2] - offsetV) + offsetV;
 			}
+			
+			if(faceIndicesSize == faceIndices.length)
+				faceIndices = Arrays.copyOf(faceIndices, faceIndices.length * 2);
+			faceIndices[faceIndicesSize] = includeFace;
+			faceIndicesSize++;
+		}
+		
+		public boolean isValid() {
+			// In some cases the UVs could get messed up, so then the face isn't valid anymore.
+			if((us[0] == us[1] && vs[0] == vs[1]) || (us[0] == us[2] && vs[0] == vs[2]) || 
+					(us[0] == us[3] && vs[0] == vs[3]) || (us[1] == us[2] && vs[1] == vs[2]) || 
+					(us[1] == us[3] && vs[1] == vs[3]) || (us[2] == us[3] && vs[2] == vs[3]))
+				return false;
+			return true;
 		}
 		
 	}
 	
 	private void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[][] facesPerVertex, 
-								int edgeId, CombinedFace combinedFace) {
+								int edgeId, MeshSubset subset, CombinedFace combinedFace) {
 		// Get the atlas items if this mesh uses an atlas.
 		// If this mesh doesn't use an atlas, then Atlas.getItems()
 		// will return null.
 		List<AtlasItem> atlas = Atlas.getItems(inMesh.getTexture());
 		
-		for(int faceIndex = 0; faceIndex < inMesh.getFaceIndices().size()/4; ++faceIndex) {
+		int numFaces = inMesh.getFaceIndices().size() / 4;
+		if(subset != null)
+			numFaces = subset.getFaceIndices().size();
+		
+		for(int faceIndexI = 0; faceIndexI < numFaces; ++faceIndexI) {
+			int faceIndex = faceIndexI;
+			if(subset != null)
+				faceIndex = subset.getFaceIndices().get(faceIndexI);
+			
 			if(processedFaces[faceIndex])
 				continue; // We have already processed this face, so skip.
 			
@@ -270,10 +406,12 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				}
 			}
 			
-			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, edgeId, combinedFace, atlas, currentAtlasItem);
+			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, edgeId, 
+						combinedFace, atlas, currentAtlasItem);
 			
 			// Also go the other direction.
-			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, (edgeId+2) % 4, combinedFace, atlas, currentAtlasItem);
+			processFace(inMesh, processedFaces, facesPerVertex, faceIndex, (edgeId+2) % 4, 
+						combinedFace, atlas, currentAtlasItem);
 			
 			if(currentAtlasItem != null) {
 				// Transform the UVs back into atlas space from local space,
@@ -284,15 +422,65 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				}
 			}
 			
-			if(processedFaces[faceIndex])
+			if(processedFaces[faceIndex] && combinedFace.isValid()) {
 				outMesh.addFace(combinedFace.vertices, combinedFace.us, combinedFace.vs, combinedFace.cornerUVs, combinedFace.normals, 
-						combinedFace.hasColors ? combinedFace.colors : null, combinedFace.ao);
+						combinedFace.hasColors ? combinedFace.colors : null, 
+						combinedFace.hasAO ? combinedFace.ao : null, combinedFace.vertexColors);
+				
+				if(subset != null) {
+					MeshSubset dstSubset = null;
+					if(outMesh.getNumSubsets() > 0) {
+						for(MeshSubset subset2 : outMesh.getSubsets()) {
+							if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
+									subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
+									subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
+								dstSubset = subset2;
+								break;
+							}
+						}
+					}
+					if(dstSubset == null) {
+						dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
+								subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+						outMesh.addSubset(dstSubset);
+					}
+					dstSubset.getFaceIndices().add(outMesh.getFaceCounts().size() - 1);
+				}
+			}else if(processedFaces[faceIndex]) {
+				// We processed this face, but combinedFace isn't valid, so we want to reset
+				// the processed flags on all faces put into the combinedFace.
+				for(int i = 0; i < combinedFace.faceIndicesSize; ++i)
+					processedFaces[combinedFace.faceIndices[i]] = false;
+			}
 		}
 		// Add in any faces that we weren't able to combine
-		for(int faceIndex = 0; faceIndex < inMesh.getFaceIndices().size()/4; ++faceIndex) {
+		for(int faceIndexI = 0; faceIndexI < numFaces; ++faceIndexI) {
+			int faceIndex = faceIndexI;
+			if(subset != null)
+				faceIndex = subset.getFaceIndices().get(faceIndexI);
 			if(processedFaces[faceIndex])
 				continue;
-			outMesh.addFaceFromMesh(inMesh, faceIndex);
+			outMesh.addFaceFromMesh(inMesh, faceIndex, null, false);
+			
+			if(subset != null) {
+				MeshSubset dstSubset = null;
+				if(outMesh.getNumSubsets() > 0) {
+					for(MeshSubset subset2 : outMesh.getSubsets()) {
+						if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
+								subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
+								subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
+							dstSubset = subset2;
+							break;
+						}
+					}
+				}
+				if(dstSubset == null) {
+					dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
+							subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+					outMesh.addSubset(dstSubset);
+				}
+				dstSubset.getFaceIndices().add(outMesh.getFaceCounts().size() - 1);
+			}
 		}
 	}
 	
@@ -333,7 +521,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			float normalZ = inMesh.getNormals().get(normalId*3+2);
 			int colorId = 0;
 			if(inMesh.hasColors())
-				colorId = inMesh.getColorIndices().get(faceIndex*4);
+				colorId = inMesh.getColors().getIndex(faceIndex * 4);
 			
 			int uvIndex1 = inMesh.getUvIndices().get(faceIndex * 4 + edgeId);
 			float u1 = inMesh.getUs().get(uvIndex1);
@@ -360,14 +548,20 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			int cornerUVIndex = inMesh.getCornerUVIndices().get(faceIndex * 4 + edgeId);
 			
-			int aoIndex0 = inMesh.getAOIndices().get(faceIndex * 4 + edgeId);
-			float ao0 = inMesh.getAO().get(aoIndex0);
-			int aoIndex1 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+1)%4));
-			float ao1 = inMesh.getAO().get(aoIndex1);
-			int aoIndex2 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+2)%4));
-			float ao2 = inMesh.getAO().get(aoIndex2);
-			int aoIndex3 = inMesh.getAOIndices().get(faceIndex * 4 + ((edgeId+3)%4));
-			float ao3 = inMesh.getAO().get(aoIndex3);
+			float ao0 = 1.0f;
+			float ao1 = 1.0f;
+			float ao2 = 1.0f;
+			float ao3 = 1.0f;
+			if(inMesh.hasAO()) {
+				int aoIndex0 = inMesh.getAO().getIndex(faceIndex * 4 + edgeId);
+				ao0 = inMesh.getAO().getR(aoIndex0);
+				int aoIndex1 = inMesh.getAO().getIndex(faceIndex * 4 + ((edgeId+1)%4));
+				ao1 = inMesh.getAO().getR(aoIndex1);
+				int aoIndex2 = inMesh.getAO().getIndex(faceIndex * 4 + ((edgeId+2)%4));
+				ao2 = inMesh.getAO().getR(aoIndex2);
+				int aoIndex3 = inMesh.getAO().getIndex(faceIndex * 4 + ((edgeId+3)%4));
+				ao3 = inMesh.getAO().getR(aoIndex3);
+			}
 			
 			boolean addedFace = false;
 			
@@ -383,15 +577,13 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				float normalX2 = inMesh.getNormals().get(normalId2*3);
 				float normalY2 = inMesh.getNormals().get(normalId2*3+1);
 				float normalZ2 = inMesh.getNormals().get(normalId2*3+2);
-				//if(normalId2 != normalId)
-				//	continue; // Normals don't match
 				if(Math.abs(normalX - normalX2) > 0.01f || Math.abs(normalY - normalY2) > 0.01f ||
 						Math.abs(normalZ - normalZ2) > 0.01f)
 					continue; // Normals don't match
 				
 				int colorId2 = 0;
 				if(inMesh.hasColors())
-					colorId2 = inMesh.getColorIndices().get(faceIndex2*4);
+					colorId2 = inMesh.getColors().getIndex(faceIndex2*4);
 				if(colorId2 != colorId)
 					continue; // Colours don't match.
 				
@@ -443,10 +635,6 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 					v2_dY /= vdLength2;
 					v2_dZ /= vdLength2;
 				}
-				
-				//float dot = vdX * v2_dX + vdY * v2_dY + vdZ * v2_dZ;
-				//if(dot < 0.5f)
-				//	continue;
 				
 				// It needs to use the same corner data.
 				if(Config.calculateCornerUVs) {
@@ -551,16 +739,24 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				}
 				
 				// Make sure that AO matches.
-				int aoIndex2_0 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+2)%4));
-				float ao2_0 = inMesh.getAO().get(aoIndex2_0);
-				int aoIndex2_1 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+3)%4));
-				float ao2_1 = inMesh.getAO().get(aoIndex2_1);
-				int aoIndex2_2 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+0)%4));
-				float ao2_2 = inMesh.getAO().get(aoIndex2_2);
-				int aoIndex2_3 = inMesh.getAOIndices().get(faceIndex2 * 4 + ((edgeId2+1)%4));
-				float ao2_3 = inMesh.getAO().get(aoIndex2_3);
+				float ao2_0 = 1.0f;
+				float ao2_1 = 1.0f;
+				float ao2_2 = 1.0f;
+				float ao2_3 = 1.0f;
+				if(inMesh.hasAO()) {
+					int aoIndex2_0 = inMesh.getAO().getIndex(faceIndex2 * 4 + ((edgeId2+2)%4));
+					ao2_0 = inMesh.getAO().getR(aoIndex2_0);
+					int aoIndex2_1 = inMesh.getAO().getIndex(faceIndex2 * 4 + ((edgeId2+3)%4));
+					ao2_1 = inMesh.getAO().getR(aoIndex2_1);
+					int aoIndex2_2 = inMesh.getAO().getIndex(faceIndex2 * 4 + ((edgeId2+0)%4));
+					ao2_2 = inMesh.getAO().getR(aoIndex2_2);
+					int aoIndex2_3 = inMesh.getAO().getIndex(faceIndex2 * 4 + ((edgeId2+1)%4));
+					ao2_3 = inMesh.getAO().getR(aoIndex2_3);
+				}
 				if(ao0 != ao2_0 || ao1 != ao2_1 || ao2 != ao2_2 || ao3 != ao2_3)
 					continue;
+				
+				// TODO: Check against additionalColorSets
 				
 				// Everything matches, so let's include this face.
 				

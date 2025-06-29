@@ -31,63 +31,26 @@
 
 package nl.bramstout.mcworldexporter.export;
 
-import java.util.Arrays;
+public enum MeshPurpose {
+	
+	UNDEFINED(0), PROXY(1), RENDER(2);
+	
+	public int id;
+	
+	MeshPurpose(int id){
+		this.id = id;
+	}
+	
+	public static MeshPurpose fromId(int id) {
+		switch(id) {
+		case 0:
+			return UNDEFINED;
+		case 1:
+			return PROXY;
+		case 2:
+			return RENDER;
+		}
+		return UNDEFINED;
+	}
 
-public class IntArray {
-
-private static final int INIT_SIZE = 64;
-	
-	private int[] data;
-	private int size;
-	
-	public IntArray() {
-		this(INIT_SIZE);
-		this.size = 0;
-	}
-	
-	public IntArray(int capacity) {
-		data = new int[capacity];
-		this.size = 0;
-	}
-	
-	public IntArray(int[] data) {
-		this.data = data;
-		this.size = data.length;
-	}
-	
-	public void set(int index, int value) {
-		if(index >= data.length) {
-			this.data = Arrays.copyOf(this.data, Math.max(this.data.length * 2, index + 1));
-		} 
-		this.data[index] = value;
-		this.size = index >= this.size ? (index + 1) : this.size;
-	}
-	
-	public void reserve(int capacity) {
-		if(data.length >= capacity)
-			return;
-		data = Arrays.copyOf(this.data, capacity);
-	}
-	
-	public void add(int value) {
-		set(this.size, value);
-	}
-	
-	public int get(int index) {
-		return this.data[index];
-	}
-	
-	public int[] getData() {
-		return this.data;
-	}
-	
-	public int size() {
-		return this.size;
-	}
-	
-	public void clear() {
-		this.size = 0;
-		//Arrays.fill(data, 0);
-	}
-	
 }

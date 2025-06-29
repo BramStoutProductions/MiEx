@@ -274,9 +274,9 @@ public class FileUtil {
 		if(isWindows())
 			return Environment.getEnv("APPDATA") + "/.minecraft";
 		else if(isMacOs())
-			return "~/Library/Application Support/minecraft";
+			return System.getenv("HOME") + "/Library/Application Support/minecraft";
 		else if (isLinux())
-			return "~/.config/.minecraft";
+			return System.getenv("HOME") + "/.minecraft";
 
 		// Return a placeholder value
 		// to avoid erroring out on 

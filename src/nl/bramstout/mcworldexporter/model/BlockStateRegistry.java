@@ -42,6 +42,7 @@ import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -188,6 +189,9 @@ public class BlockStateRegistry {
 		}
 		synchronized(missingBlockStates) {
 			missingBlockStates.clear();
+		}
+		synchronized(BiomeRegistry.missingBiomes) {
+			BiomeRegistry.missingBiomes.clear();
 		}
 	}
 	

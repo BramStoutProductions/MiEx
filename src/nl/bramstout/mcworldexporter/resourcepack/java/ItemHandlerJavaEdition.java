@@ -188,8 +188,18 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		@Override
 		public Color getTint(NbtTagCompound data) {
 			NbtTag components = data.get("components");
-			if(components == null || !(components instanceof NbtTagCompound))
-				return defaultColor;
+			if(components == null || !(components instanceof NbtTagCompound)) {
+				NbtTag tags = data.get("tag");
+				if(tags == null || !(tags instanceof NbtTagCompound))
+					return defaultColor;
+				NbtTag display = ((NbtTagCompound) tags).get("display");
+				if(display == null || !(display instanceof NbtTagCompound))
+					return defaultColor;
+				NbtTag color = ((NbtTagCompound) display).get("color");
+				if(color == null)
+					return defaultColor;
+				return parseColor(color, true);
+			}
 			NbtTag dyedColorComponent = ((NbtTagCompound) components).get("minecraft:dyed_color");
 			if(dyedColorComponent != null) {
 				if(dyedColorComponent instanceof NbtTagCompound)
@@ -1042,11 +1052,22 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		@Override
 		public float getValue(NbtTagCompound data, String displayContext) {
 			NbtTag components = data.get("components");
-			if(components == null || !(components instanceof NbtTagCompound))
-				return Float.NaN;
+			if(components == null || !(components instanceof NbtTagCompound)) {
+				NbtTag tags = data.get("tag");
+				if(tags == null || !(tags instanceof NbtTagCompound))
+					return Float.NaN;
+				NbtTag customModelData = ((NbtTagCompound)components).get("CustomModelData");
+				if(customModelData == null || !(customModelData instanceof NbtTagInt))
+					return Float.NaN;
+				return ((NbtTagInt) customModelData).asFloat();
+			}
 			
 			NbtTag customModelData = ((NbtTagCompound)components).get("minecraft:custom_model_data");
-			if(customModelData == null || !(customModelData instanceof NbtTagCompound))
+			if(customModelData == null)
+				return Float.NaN;
+			if(customModelData instanceof NbtTagInt)
+				return customModelData.asFloat();
+			if(!(customModelData instanceof NbtTagCompound))
 				return Float.NaN;
 			
 			NbtTag floatsArray = ((NbtTagCompound) customModelData).get("floats");

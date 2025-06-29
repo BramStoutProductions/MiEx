@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.export.processors.FaceOptimiser;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors;
+import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMergerMode;
 import nl.bramstout.mcworldexporter.export.processors.RaytracingOptimiser;
 import nl.bramstout.mcworldexporter.export.processors.WriteProcessor;
 import nl.bramstout.mcworldexporter.materials.Materials;
@@ -81,7 +82,7 @@ public class ChunkExporter {
 	private Map<String, Mesh> meshes;
 	private Map<IndividualBlockId, FloatArray> individualBlocks;
 	private String name;
-	private LODCache lodCache;
+	//private LODCache lodCache;
 	private CaveCache caveCache;
 	private Reference<char[]> charBuffer;
 
@@ -98,7 +99,7 @@ public class ChunkExporter {
 		this.meshes = new HashMap<String, Mesh>();
 		this.individualBlocks = new HashMap<IndividualBlockId, FloatArray>();
 		this.name = name;
-		this.lodCache = new LODCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
+		//this.lodCache = new LODCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
 		this.caveCache = null;
 		if(Config.fillInCaves)
 			this.caveCache = new CaveCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
@@ -452,7 +453,7 @@ public class ChunkExporter {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
 		if (chunk != null)
 			return lodSampleBlockId(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16);
-		return 0;
+		return -1;
 	}
 	
 	/** 
@@ -471,8 +472,8 @@ public class ChunkExporter {
 		}
 		
 		// First check the cache, otherwise calculate it.
-		if(lodCache.get(chunk, cx, cy, cz, lodSize, lodYSize, out))
-			return;
+		//if(lodCache.get(chunk, cx, cy, cz, lodSize, lodYSize, out))
+		//	return;
 		
 		
 		int numBlocks = lodSize*lodSize*lodYSize;
@@ -497,6 +498,13 @@ public class ChunkExporter {
 			for(int z = cz; z < cz + lodSize; z += stepXZ) {
 				for(int x = cx; x < cx + lodSize; x += stepXZ) {
 					blockId = lodSampleBlockId(chunk, x, y, z);
+					if(blockId < 0) {
+						out[0] = -1;
+						out[1] = 0;
+						out[2] = 0;
+						out[3] = 0;
+						return;
+					}
 					allowed = true;
 					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ);
 					if(state.isAir())
@@ -558,7 +566,7 @@ public class ChunkExporter {
 		out[3] = mostCommonZ;
 		
 		// Update the LOD cache
-		lodCache.set(chunk, cx, cy, cz, lodSize, lodYSize, mostCommonBlockId, mostCommonX, mostCommonY, mostCommonZ);
+		//lodCache.set(chunk, cx, cy, cz, lodSize, lodYSize, mostCommonBlockId, mostCommonX, mostCommonY, mostCommonZ);
 	}
 	
 	private void getLODBlockIdOcclusion(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize, Direction direction, int[] out) {
@@ -618,7 +626,19 @@ public class ChunkExporter {
 							return;
 						}
 						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3]);
-						if(state.isTransparentOcclusion() || state.isLeavesOcclusion()) {
+						if(state.isTransparentOcclusion() || state.isLeavesOcclusion() || state.isAir()) {
+							return;
+						}
+						long occludes = state.getOccludes();
+						occludes >>= direction.getOpposite().id * 4;
+						occludes &= 0b1111;
+						if(occludes != 0b1111) {
+							// This block doesn't fully occlude this side,
+							// therefore it shouldn't occlude the block.
+							out[0] = 0;
+							out[1] = 0;
+							out[2] = 0;
+							out[3] = 0;
 							return;
 						}
 					}
@@ -698,9 +718,9 @@ public class ChunkExporter {
 		public String atlasTexture;
 		public Materials.MaterialTemplate materialTemplate;
 		
-		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor) {
+		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, Set<String> colorSets) {
 			atlasTexture = item.atlas;
-			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, "");
+			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, colorSets, "");
 		}
 		
 		@Override
@@ -729,7 +749,7 @@ public class ChunkExporter {
 		if(meshName != null)
 			return meshName;
 		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor);
+		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, null);
 		meshName = atlasMappings2.getOrDefault(key, null);
 		if(meshName != null) {
 			atlasMappings.put(originalTexture, meshName);
@@ -850,23 +870,26 @@ public class ChunkExporter {
 		// Scale the Y uv's on the top and bottom faces like normal.
 		if(face.getDirection() == Direction.UP || face.getDirection() == Direction.DOWN)
 			lodYUVScale = lodUVScale;
-		if(meshes.containsKey(meshName)) {
-			meshes.get(meshName).addFace(face, 
-					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
-					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint, ambientOcclusion, cornerData);
-		}else {
+		
+		// TODO: Run code for additionalColorSets
+		VertexColorSet.VertexColorFace[] vertexColors = null;
+		
+		Mesh mesh = meshes.getOrDefault(meshName, null);
+		if(mesh == null) {
 			boolean animatedTexture = false;
 			MCMeta mcmeta = ResourcePacks.getMCMeta(texture);
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			Mesh mesh = new Mesh(meshName, texture, matTexture, animatedTexture, doubleSided, 1024, 8);
-			mesh.addFace(face, 
-					bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
-					ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, tint, ambientOcclusion, cornerData);
+			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 1024, 8);
 			mesh.setExtraData(extraData);
 			meshes.put(meshName, mesh);
 		}
+		
+		mesh.addFace(face, 
+				bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
+				ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, 
+				tint, ambientOcclusion, cornerData, vertexColors);
 	}
 	
 	private int[] OCCLUSION_BLOCK_ID = new int[4];
@@ -1139,52 +1162,62 @@ public class ChunkExporter {
 		return ao;
 	}
 	
-	private long getOcclusion(Chunk chunk, int cx, int cy, int cz, BakedBlockState currentState, 
-								List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
-		long occlusion = 0;
+	private long getOcclusionFromDirection(int wx, int wy, int wz, Direction dir, BakedBlockState currentState,
+											List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
+		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
+		if (chunk != null && !chunk.hasLoadError()) {
+			return getOcclusionFromDirection(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, 
+									dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);
+		}
+		// No chunk, so return that it's occluded. This gets rid of the side of the world.
+		return 0b1111L;
+	}
+	
+	private long getOcclusionFromDirection(Chunk chunk, int bx, int by, int bz, Direction dir, BakedBlockState currentState,
+										List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
+		if(bx < 0 || bx >= 16 || bz < 0 || bz >= 16) {
+			return getOcclusionFromDirection(bx + chunk.getChunkX() * 16, by, bz + chunk.getChunkZ() * 16, dir, 
+					currentState, detailedOcclusionFaces, lodSize, lodYSize);
+		}
 		
-		if(currentState.isDetailedOcclusion())
-			detailedOcclusionFaces.clear();
+		int sampleLodSize = getLodSize(chunk.getChunkX(), chunk.getChunkZ());
+		int sampleLodYSize = getLodYSize(chunk.getChunkX(), chunk.getChunkZ());
+		int sampleLodLevel = Integer.numberOfTrailingZeros(sampleLodSize);
+		int sampleLodYLevel = Integer.numberOfTrailingZeros(sampleLodYSize);
+		int lodLevel = Integer.numberOfTrailingZeros(lodSize);
+		int lodYLevel = Integer.numberOfTrailingZeros(lodYSize);
 		
-		int bx = 0;
-		int by = 0;
-		int bz = 0;
-		long occludes = 0;
-		BakedBlockState state = null;
-		for(Direction dir : Direction.CACHED_VALUES) {
-			bx = cx + dir.x * lodSize;
-			by = cy + dir.y * lodYSize;
-			bz = cz + dir.z * lodSize;
-			getLODBlockIdOcclusion(chunk, bx, by, bz, lodSize, lodYSize, dir, OCCLUSION_BLOCK_ID);
+		if(lodSize == sampleLodSize) {
+			getLODBlockId(chunk, 
+					(bx >> sampleLodLevel) << sampleLodLevel, 
+					(by >> sampleLodYLevel) << sampleLodYLevel, 
+					(bz >> sampleLodLevel) << sampleLodLevel, 
+					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+			
 			if(OCCLUSION_BLOCK_ID[0] < 0) {
 				// If the block id is less than 0, that means
 				// that there was no chunk, so let's say that it does
 				// occlude. This gets rid of the side of the world.
-				occludes = 0b1111;
-				
-				occludes <<= dir.id * 4;
-				occlusion |= occludes;
-				continue;
+				return 0b1111L;
 			}
-			state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-															OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
 			
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+
 			// Transparent blocks don't occlude non-transparent blocks
 			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
-				continue;
+				return 0;
 			// Leaves blocks don't occlude non-leaves and non-transparent blocks
 			if(state.isLeavesOcclusion() && !currentState.isLeavesOcclusion() && !currentState.isTransparentOcclusion())
-				continue;
+				return 0;
 			// If both sides are leaves blocks, then only one side kept.
 			if(state.isLeavesOcclusion() && currentState.isLeavesOcclusion()) {
 				// Safe out that we have another leaf here.
 				// Used by the corner algorithm.
-				occlusion |= 0b1 << (dir.id + 32);
-				
 				if(!state.isDoubleSided())
-					continue;
+					return 0b1L << 32;
 				else if(dir == Direction.DOWN || dir == Direction.SOUTH || dir == Direction.WEST)
-					continue;
+					return 0b1L << 32;
 			}
 			
 			if(state.isDetailedOcclusion() && currentState.isDetailedOcclusion()) {
@@ -1207,13 +1240,186 @@ public class ChunkExporter {
 				}
 			}
 			
-			occludes = state.getOccludes();
+			long occludes = state.getOccludes();
 			occludes >>= dir.getOpposite().id * 4;
-			occludes &= 0b1111;
+			occludes &= 0b1111L;
 			
 			if(by < bounds.getMinY())
-				occludes = 0b1111;
+				occludes = 0b1111L;
+			return occludes;
+		}else if(lodSize < sampleLodSize) {
+			// The occluding block is larger than the current block,
+			// so we need to resize the occlusion.
+			getLODBlockId(chunk, 
+					(bx >> sampleLodLevel) << sampleLodLevel, 
+					(by >> sampleLodYLevel) << sampleLodYLevel, 
+					(bz >> sampleLodLevel) << sampleLodLevel, 
+					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+			if(OCCLUSION_BLOCK_ID[0] < 0) {
+				// If the block id is less than 0, that means
+				// that there was no chunk, so let's say that it does
+				// occlude. This gets rid of the side of the world.
+				return 0b1111;
+			}
 			
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+
+			// Transparent blocks don't occlude non-transparent blocks
+			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
+				return 0;
+			// Leaves blocks don't occlude non-leaves and non-transparent blocks
+			if(state.isLeavesOcclusion() && !currentState.isLeavesOcclusion() && !currentState.isTransparentOcclusion())
+				return 0;
+			// If both sides are leaves blocks, then only one side kept.
+			if(state.isLeavesOcclusion() && currentState.isLeavesOcclusion()) {
+				// Safe out that we have another leaf here.
+				// Used by the corner algorithm.
+				if(!state.isDoubleSided())
+					return 0b1L << 32;
+				else if(dir == Direction.DOWN || dir == Direction.SOUTH || dir == Direction.WEST)
+					return 0b1L << 32;
+			}
+			
+			long occludes = state.getOccludes();
+			occludes >>= dir.getOpposite().id * 4;
+			occludes &= 0b1111L;
+			
+			if(by < bounds.getMinY())
+				occludes = 0b1111L;
+			
+			// Now we have our occlusion value, but we need to pick one of the four
+			// corners and have that be the occlusion for the entire face.
+			if(occludes == 0b1111)
+				return occludes; // Fast path
+			
+			int localX = bx - ((bx >> sampleLodLevel) << sampleLodLevel); 
+			int localY = by - ((by >> sampleLodYLevel) << sampleLodYLevel);
+			int localZ = bz - ((bz >> sampleLodLevel) << sampleLodLevel);
+			int u = 0;
+			int v = 0;
+			if(dir == Direction.NORTH || dir == Direction.SOUTH) {
+				u = localX;
+				v = localY;
+			}else if(dir == Direction.EAST || dir == Direction.WEST) {
+				u = localZ;
+				v = localY;
+			}else if(dir == Direction.UP || dir == Direction.DOWN) {
+				u = localX;
+				v = localY;
+			}
+			
+			// Divide by half the lod size so that we get the corner
+			u /= (sampleLodSize / 2);
+			v /= (sampleLodSize / 2);
+			int cornerIndex = (v & 0b1) * 2 + (u & 0b1);
+			
+			// Check if that corner occludes this block
+			if(((occludes >> cornerIndex) & 0b1) != 0)
+				return 0b1111;
+			return 0b0000;
+		}else {
+			// The sample blocks are smaller than the current blocks, so we need to
+			// sample multiple blocks in order to construct an occlusion value.
+			
+			int sx = (bx >> lodLevel) << lodLevel;
+			int sy = (by >> lodYLevel) << lodYLevel;
+			int sz = (bz >> lodLevel) << lodLevel;
+			if(dir == Direction.DOWN)
+				sy += lodYSize / 2;
+			if(dir == Direction.NORTH)
+				sz += lodSize / 2;
+			if(dir == Direction.WEST)
+				sx += lodSize / 2;
+			
+			long occludes = 0;
+			for(int v = 0; v < 2; ++v) {
+				for(int u = 0; u < 2; ++u) {
+					int cornerIndex = v * 2 + u;
+					int x = sx;
+					int y = sy;
+					int z = sz;
+					if(dir == Direction.NORTH || dir == Direction.SOUTH) {
+						x += u * (lodSize / 2);
+						y += v * (lodYSize / 2);
+					}else if(dir == Direction.EAST || dir == Direction.WEST) {
+						z += u * (lodSize / 2);
+						y += v * (lodYSize / 2);
+					}else if(dir == Direction.UP || dir == Direction.DOWN) {
+						x += u * (lodSize / 2);
+						z += v * (lodSize / 2);
+					}
+					
+					getLODBlockId(chunk, 
+							(x >> sampleLodLevel) << sampleLodLevel, 
+							(y >> sampleLodYLevel) << sampleLodYLevel, 
+							(z >> sampleLodLevel) << sampleLodLevel, 
+							sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+					
+					if(OCCLUSION_BLOCK_ID[0] < 0) {
+						// If the block id is less than 0, that means
+						// that there was no chunk, so let's say that it does
+						// occlude. This gets rid of the side of the world.
+						occludes |= 0b1 << cornerIndex;
+						continue;
+					}
+					
+					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
+							OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+
+					// Transparent blocks don't occlude non-transparent blocks
+					if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
+						continue;
+					// Leaves blocks don't occlude non-leaves and non-transparent blocks
+					if(state.isLeavesOcclusion() && !currentState.isLeavesOcclusion() && !currentState.isTransparentOcclusion())
+						continue;
+					// If both sides are leaves blocks, then only one side kept.
+					if(state.isLeavesOcclusion() && currentState.isLeavesOcclusion()) {
+						// Safe out that we have another leaf here.
+						// Used by the corner algorithm.
+						occludes |= 0b1L << 32;
+						if(!state.isDoubleSided())
+							continue;
+						else if(dir == Direction.DOWN || dir == Direction.SOUTH || dir == Direction.WEST)
+							continue;
+					}
+					
+					long occludesTmp = state.getOccludes();
+					occludesTmp >>= dir.getOpposite().id * 4;
+					occludesTmp &= 0b1111L;
+					
+					if(by < bounds.getMinY())
+						occludesTmp = 0b1111L;
+					
+					if(occludesTmp == 0b1111L)
+						occludes |= 0b1L << cornerIndex; // Only set this corner to occluded if it occludes the entire face.
+				}
+			}
+			
+			return occludes;
+		}
+	}
+	
+	private long getOcclusion(Chunk chunk, int cx, int cy, int cz, BakedBlockState currentState, 
+								List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
+		long occlusion = 0;
+		
+		if(currentState.isDetailedOcclusion())
+			detailedOcclusionFaces.clear();
+		
+		long occludes = 0;
+		for(Direction dir : Direction.CACHED_VALUES) {
+			int bx = cx + dir.x * lodSize;
+			int by = cy + dir.y * lodYSize;
+			int bz = cz + dir.z * lodSize;
+			
+			occludes = getOcclusionFromDirection(chunk, bx, by, bz, dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);
+			if((occludes & (0b1L << 32)) != 0)
+				// Safe out that we have another leaf here.
+				// Used by the corner algorithm.
+				occlusion |= 0b1 << (dir.id + 32);
+			
+			occludes &= 0b1111;
 			occludes <<= dir.id * 4;
 			occlusion |= occludes;
 		}
@@ -1437,7 +1643,7 @@ public class ChunkExporter {
 		world = null;
 		meshes = null;
 		individualBlocks = null;
-		lodCache = null;
+		//lodCache = null;
 		caveCache = null;
 		
 		System.gc();
@@ -1486,7 +1692,7 @@ public class ChunkExporter {
 		float threshold = (MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
-		MeshProcessors processors = new MeshProcessors();
+		MeshProcessors processors = new MeshProcessors("mesh_chunk_" + chunkX + "_" + chunkZ);
 		if(Config.runOptimiser) {
 			if(Config.runRaytracingOptimiser) {
 				RaytracingOptimiser raytracingOptimiser = new RaytracingOptimiser(threshold, dos);
@@ -1501,6 +1707,10 @@ public class ChunkExporter {
 		WriteProcessor writeProcessor = new WriteProcessor(dos);
 		processors.addProcessor(writeProcessor);
 		
+		int meshMergerId = -1;
+		if(Config.useGeometerySubsets)
+			meshMergerId = processors.beginMeshMerger(MeshMergerMode.MERGE);
+		
 		dos.writeUTF(name);
 		dos.writeByte((MCWorldExporter.getApp().getFGChunks().contains(name) || MCWorldExporter.getApp().getFGChunks().isEmpty()) ? 
 				1 : 0); // Is foreground chunk
@@ -1509,8 +1719,13 @@ public class ChunkExporter {
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			processors.process(mesh.getValue());
 
-			MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size());
+			MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
 		}
+		if(meshMergerId >= 0)
+			processors.endMeshMerger(meshMergerId);
+		
+
+		MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
 		dos.writeByte(0); // Array of meshes end with a 0
 		
 		// Pretty much all of the code assumes that a block is 16 units.
@@ -1527,6 +1742,8 @@ public class ChunkExporter {
 			for(int i = 0; i < blocks.getValue().size(); ++i)
 				dos.writeFloat(blocks.getValue().get(i) * worldScale);
 		}
+
+		MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
 	}
 
 }

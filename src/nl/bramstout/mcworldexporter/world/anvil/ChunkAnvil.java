@@ -141,7 +141,8 @@ public class ChunkAnvil extends Chunk {
 			calculateHeightmap();
 			this.lastAccess = System.currentTimeMillis();
 		}
-		loadError = false;
+		if(this.blocks != null)
+			loadError = false;
 	}
 	
 	@Override

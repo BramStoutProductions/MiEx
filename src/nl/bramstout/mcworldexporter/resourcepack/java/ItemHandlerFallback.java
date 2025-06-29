@@ -39,10 +39,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.nbt.NbtTagInt;
 import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 
@@ -58,7 +60,7 @@ public class ItemHandlerFallback extends ItemHandler{
 		
 		public boolean match(NbtTagCompound data, String displayContext) {
 			float value = getValue(data, displayContext);
-			return value == valueToMatch;
+			return Math.abs(value - valueToMatch) < 0.0001f;
 		}
 		
 		protected abstract float getValue(NbtTagCompound data, String displayContext);
@@ -233,11 +235,22 @@ public class ItemHandlerFallback extends ItemHandler{
 		@Override
 		protected float getValue(NbtTagCompound data, String displayContext) {
 			NbtTag components = data.get("components");
-			if(components == null || !(components instanceof NbtTagCompound))
-				return Float.NaN;
+			if(components == null || !(components instanceof NbtTagCompound)) {
+				NbtTag tags = data.get("tag");
+				if(tags == null || !(tags instanceof NbtTagCompound))
+					return Float.NaN;
+				NbtTag customModelData = ((NbtTagCompound)components).get("CustomModelData");
+				if(customModelData == null || !(customModelData instanceof NbtTagInt))
+					return Float.NaN;
+				return ((NbtTagInt) customModelData).asFloat();
+			}
 			
 			NbtTag customModelData = ((NbtTagCompound)components).get("minecraft:custom_model_data");
-			if(customModelData == null || !(customModelData instanceof NbtTagCompound))
+			if(customModelData == null)
+				return Float.NaN;
+			if(customModelData instanceof NbtTagInt)
+				return customModelData.asFloat();
+			if(!(customModelData instanceof NbtTagCompound))
 				return Float.NaN;
 			
 			NbtTag floatsArray = ((NbtTagCompound) customModelData).get("floats");
@@ -396,6 +409,75 @@ public class ItemHandlerFallback extends ItemHandler{
 			}
 		}
 	}
+	
+	private static Color parseColor(NbtTag valueEl, boolean asIntArray) {
+		if(valueEl == null) {
+			return new Color(1f, 1f, 1f);
+		}else if(valueEl instanceof NbtTagInt){
+			int rgb = valueEl.asInt();
+			return new Color(rgb);
+		}else if(valueEl instanceof NbtTagList) {
+			if(asIntArray) {
+				int ir = 255;
+				int ig = 255;
+				int ib = 255;
+				NbtTagList valueArray = (NbtTagList) valueEl;
+				if(valueArray.getSize() > 0)
+					ir = valueArray.get(0).asInt();
+				if(valueArray.getSize() > 1)
+					ig = valueArray.get(1).asInt();
+				if(valueArray.getSize() > 2)
+					ib = valueArray.get(2).asInt();
+				
+				ir = Math.min(Math.max(ir, 0), 255);
+				ig = Math.min(Math.max(ig, 0), 255);
+				ib = Math.min(Math.max(ib, 0), 255);
+				return new Color(ir << 16 | ig << 8 | ib);
+			}else {
+				float r = 1f;
+				float g = 1f;
+				float b = 1f;
+				NbtTagList valueArray = (NbtTagList) valueEl;
+				if(valueArray.getSize() > 0)
+					r = valueArray.get(0).asFloat();
+				if(valueArray.getSize() > 1)
+					g = valueArray.get(1).asFloat();
+				if(valueArray.getSize() > 2)
+					b = valueArray.get(2).asFloat();
+				
+				int ir = Math.min(Math.max((int) (r * 255f), 0), 255);
+				int ig = Math.min(Math.max((int) (g * 255f), 0), 255);
+				int ib = Math.min(Math.max((int) (b * 255f), 0), 255);
+				return new Color(ir << 16 | ig << 8 | ib);
+			}
+		}else {
+			return new Color(1f, 1f, 1f);
+		}
+	}
+	
+	private Color getDye(NbtTagCompound data) {
+		NbtTag components = data.get("components");
+		if(components == null || !(components instanceof NbtTagCompound)) {
+			NbtTag tags = data.get("tag");
+			if(tags == null || !(tags instanceof NbtTagCompound))
+				return null;
+			NbtTag display = ((NbtTagCompound) tags).get("display");
+			if(display == null || !(display instanceof NbtTagCompound))
+				return null;
+			NbtTag color = ((NbtTagCompound) display).get("color");
+			if(color == null)
+				return null;
+			return parseColor(color, true);
+		}
+		NbtTag dyedColorComponent = ((NbtTagCompound) components).get("minecraft:dyed_color");
+		if(dyedColorComponent != null) {
+			if(dyedColorComponent instanceof NbtTagCompound)
+				return parseColor(((NbtTagCompound) dyedColorComponent).get("rgb"), true);
+			else
+				return parseColor(dyedColorComponent, true);
+		}
+		return null;
+	}
 
 	@Override
 	public Model getModel(String name, NbtTagCompound data, String displayContext) {
@@ -410,7 +492,21 @@ public class ItemHandlerFallback extends ItemHandler{
 		}
 		
 		int modelId = ModelRegistry.getIdForName(modelName, false);
-		return ModelRegistry.getModel(modelId);
+		Model model = ModelRegistry.getModel(modelId);
+		
+		// Check if we have a dye applied to it.
+		Color dye = getDye(data);
+		if(dye != null) {
+			// Apply the tint
+			ArrayList<Color> tints = new ArrayList<Color>();
+			tints.add(dye);
+			
+			Model model2 = new Model(model.getName(), null, model.isDoubleSided());
+			model2.addModel(model, tints);
+			model = model2;
+		}
+		
+		return model;
 	}
 
 }

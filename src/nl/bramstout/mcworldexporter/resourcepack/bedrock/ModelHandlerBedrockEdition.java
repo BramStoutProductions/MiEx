@@ -393,17 +393,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			JsonObject uvObj = uv.getAsJsonObject();
 			
 			if(uvObj.has("north")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("north");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.x;
 				float uvHeight = uvSize.y;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#north";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x + size.x, origin.y, origin.z,
@@ -420,17 +421,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.NORTH, texture));
 			} else if(uvObj.has("south")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("south");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.x;
 				float uvHeight = uvSize.y;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#south";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x, origin.y, origin.z + size.z,
@@ -447,17 +449,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.SOUTH, texture));
 			} else if(uvObj.has("west")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("west");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.z;
 				float uvHeight = uvSize.y;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#west";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x, origin.y, origin.z,
@@ -474,17 +477,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.WEST, texture));
 			} else if(uvObj.has("east")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("east");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.z;
 				float uvHeight = uvSize.y;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#east";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x + size.x, origin.y, origin.z + size.z,
@@ -501,17 +505,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.EAST, texture));
 			} else if(uvObj.has("up")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("up");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.x;
 				float uvHeight = uvSize.z;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#up";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x, origin.y + size.y, origin.z + size.z,
@@ -528,17 +533,18 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.UP, texture));
 			} else if(uvObj.has("down")) {
-				float u0 = uvObj.get("uv").getAsJsonArray().get(0).getAsFloat();
-				float v0 = uvObj.get("uv").getAsJsonArray().get(1).getAsFloat();
+				JsonObject uvObj2 = uvObj.getAsJsonObject("down");
+				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
+				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
 				float uvWidth = uvSize.x;
 				float uvHeight = uvSize.z;
-				if(uvObj.has("uv_size")) {
-					uvWidth = uvObj.get("uv_size").getAsJsonArray().get(0).getAsFloat();
-					uvHeight = uvObj.get("uv_size").getAsJsonArray().get(1).getAsFloat();
+				if(uvObj2.has("uv_size")) {
+					uvWidth = uvObj2.get("uv_size").getAsJsonArray().get(0).getAsFloat();
+					uvHeight = uvObj2.get("uv_size").getAsJsonArray().get(1).getAsFloat();
 				}
 				String texture = "#down";
-				if(uvObj.has("material_instance")) {
-					texture = "#" + uvObj.get("material_instance").getAsString();
+				if(uvObj2.has("material_instance")) {
+					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
 						origin.x, origin.y, origin.z + size.z,
