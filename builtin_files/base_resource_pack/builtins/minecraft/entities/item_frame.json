@@ -25,7 +25,8 @@
 
                 "rotY = facing == 'east' ? 270.0 : rotY",
 
-                "rotY = facing == 'west' ? 90.0 : rotY"
+                "rotY = facing == 'west' ? 90.0 : rotY",
+                "isVisible = thisEntity.state.Invisible == null || thisEntity.state.Invisible == 0"
             ],
             "textures": {
                 "back": "'minecraft:block/birch_planks'",
@@ -45,7 +46,7 @@
             },
             "children": [
                 {
-                    "condition": "isMap != true",
+                    "condition": "isMap != true && isVisible",
                     "elements": [
                         {
                             "from": [3, 3, 0],
@@ -84,7 +85,7 @@
                     ]
                 },
                 {
-                    "condition": "isMap == true",
+                    "condition": "isMap == true && isVisible",
                     "elements": [
                         {
                             "from": [1, 1, 0],
