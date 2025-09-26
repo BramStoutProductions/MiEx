@@ -15,6 +15,10 @@
                         "type": "str",
                         "value": "Closest"
                     },
+                    "colorspace_settings":{
+                        "type": "str",
+                        "value": "sRGB"
+                    },
                     "Color": {
                         "type": "Color"
                     }
