@@ -41,7 +41,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -83,7 +83,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -154,7 +154,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -196,7 +196,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -270,7 +270,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -312,7 +312,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -398,7 +398,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
@@ -440,7 +440,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "raw"
+                        "value": "Raw"
                     },
                     "Color": {
                         "type": "Color"
