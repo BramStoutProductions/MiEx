@@ -67,7 +67,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "sRGB"
+                        "value": ["sRGB", "Utility - sRGB - Texture", "sRGB Encoded Rec.709 (sRGB)", "sRGB - Texture"]
                     },
                     "Color": {
                         "type": "Color"
@@ -185,7 +185,7 @@
                     },
                     "colorspace_settings":{
                         "type": "str",
-                        "value": "sRGB"
+                        "value": ["sRGB", "Utility - sRGB - Texture", "sRGB Encoded Rec.709 (sRGB)", "sRGB - Texture"]
                     },
                     "Color": {
                         "type": "Color"
