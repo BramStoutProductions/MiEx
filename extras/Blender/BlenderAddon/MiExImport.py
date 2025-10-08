@@ -221,7 +221,7 @@ class MiexImport(Operator, ImportHelper):
     flatten: BoolProperty(
         name="Flatten",
         description="Flatten the meshes normals",
-        default=False
+        default=True
     )
     
     hide_background: EnumProperty(
