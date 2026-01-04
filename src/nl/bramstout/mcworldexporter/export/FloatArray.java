@@ -55,6 +55,11 @@ public class FloatArray {
 		this.size = data.length;
 	}
 	
+	public void resize(int size) {
+		data = Arrays.copyOf(data, size);
+		this.size = size;
+	}
+	
 	public void set(int index, float value) {
 		if(index >= data.length) {
 			this.data = Arrays.copyOf(this.data, Math.max(this.data.length * 2, index + 1));

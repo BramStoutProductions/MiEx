@@ -517,12 +517,17 @@ public class Materials {
 		
 	}
 	
+	private static Object templatesMutex = new Object();
 	private static List<List<MaterialTemplate>> templates = null;
 	public static MaterialNetwork sharedNodes = new MaterialNetwork();
 	
 	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
-		if(templates == null)
-			reload();
+		if(templates == null) {
+			synchronized(templatesMutex) {
+				if(templates == null)
+					reload();
+			}
+		}
 		
 		try {
 			// If we are using templates, then they are created based on which template

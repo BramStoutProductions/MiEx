@@ -114,6 +114,9 @@ public class Config {
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
 	public static boolean useGeometerySubsets;
+	public static boolean useIndexedUVs;
+	public static boolean useIndexedVertexColors;
+	public static boolean useIndexedNormals;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -402,6 +405,15 @@ public class Config {
 				
 				if(data.has("useGeometerySubsets"))
 					useGeometerySubsets = data.get("useGeometerySubsets").getAsBoolean();
+				
+				if(data.has("useIndexedUVs"))
+					useIndexedUVs = data.get("useIndexedUVs").getAsBoolean();
+				
+				if(data.has("useIndexedVertexColors"))
+					useIndexedVertexColors = data.get("useIndexedVertexColors").getAsBoolean();
+				
+				if(data.has("useIndexedNormals"))
+					useIndexedNormals = data.get("useIndexedNormals").getAsBoolean();
 				
 			}catch(Exception ex) {
 				ex.printStackTrace();

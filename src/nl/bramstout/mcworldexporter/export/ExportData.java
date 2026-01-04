@@ -36,6 +36,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Pair;
@@ -250,8 +253,17 @@ public class ExportData {
 	}
 	
 	public void apply(boolean onlySettings) {
-		if(!(new File(world)).exists())
+		if(!onlySettings && !(new File(world)).exists()) {
+			SwingUtilities.invokeLater(new Runnable() {
+				
+				@Override
+				public void run() {
+					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find world save specified in export.", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+				
+			});
 			return;
+		}
 		//ResourcePack.setActiveResourcePacks(resourcePacks);
 		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
 		List<String> resourcePackUUIDS = new ArrayList<String>();

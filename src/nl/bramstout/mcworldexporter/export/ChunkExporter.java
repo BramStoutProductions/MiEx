@@ -845,13 +845,14 @@ public class ChunkExporter {
 		String matTexture = texture;
 		String meshName = texture;
 		if(tint != null) {
-			meshName = meshName + "_BIOME";
-			// If the face doesn't have a tintIndex, set the tint to white.
+			// If the face doesn't have a tintIndex, get rid of the tint.
 			// This is also how Minecraft does it.
 			// But don't do it, if we want to force the biome colour anyways.
 			if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
 					Config.forceNoBiomeColor.contains(blockName))
-				tint = new Color(1.0f, 1.0f, 1.0f);
+				tint = null;
+			else
+				meshName = meshName + "_BIOME";
 		}
 		float lodSizeF = ((float) (lodSize-1)) / 2.0f;
 		float lodYSizeF = ((float) (lodYSize-1)) / 2.0f;

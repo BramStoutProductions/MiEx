@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.bramstout.mcworldexporter.entity.EntityRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
@@ -192,6 +193,9 @@ public class BlockStateRegistry {
 		}
 		synchronized(BiomeRegistry.missingBiomes) {
 			BiomeRegistry.missingBiomes.clear();
+		}
+		synchronized(EntityRegistry.missingEntities) {
+			EntityRegistry.missingEntities.clear();
 		}
 	}
 	

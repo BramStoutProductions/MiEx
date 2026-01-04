@@ -44,7 +44,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,6 +64,7 @@ import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel3D;
 import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.ExportData;
 import nl.bramstout.mcworldexporter.export.Exporter;
+import nl.bramstout.mcworldexporter.export.FloatArray;
 import nl.bramstout.mcworldexporter.export.IndividualBlockId;
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
@@ -236,7 +236,7 @@ public class USDConverter extends Converter{
 		rootWriter.endMetaData();
 		rootWriter.beginChildren();
 		
-		Set<Texture> usedTextures = new HashSet<Texture>();
+		Map<String, Texture> usedTextures = new HashMap<String, Texture>();
 		
 		writeEntities(rootWriter, usedTextures);
 		
@@ -331,10 +331,10 @@ public class USDConverter extends Converter{
 		writer.endMetaData();
 	}
 	
-	private void writeEntities(USDWriter writer, Set<Texture> usedTextures) throws IOException {
+	private void writeEntities(USDWriter writer, Map<String, Texture> usedTextures) throws IOException {
 		String entitiesFilename = dis.readUTF();
 		File entitiesFile = new File(inputFile.getParentFile(), entitiesFilename);
-		Set<Texture> usedTexturesEntities = new HashSet<Texture>();
+		Map<String, Texture> usedTexturesEntities = new HashMap<String, Texture>();
 		
 		convertEntities(new LargeDataInputStream(new BufferedInputStream(new FileInputStream(entitiesFile))),
 						new File(chunksFolder, "entities.usd"), usedTexturesEntities);
@@ -346,13 +346,11 @@ public class USDConverter extends Converter{
 		writer.beginChildren();
 		writer.beginOver("materials");
 		writer.beginChildren();
-		for(Texture tex : usedTexturesEntities) {
-			usedTextures.add(tex);
+		for(Entry<String, Texture> entry : usedTexturesEntities.entrySet()) {
+			usedTextures.put(entry.getKey(), entry.getValue());
 			
-			writer.writeAttributeName("rel", 
-					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
-			writer.writeAttributeValue("</world/materials/" + 
-					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor) + ">");
+			writer.writeAttributeName("rel", entry.getKey(), false);
+			writer.writeAttributeValue("</world/materials/" + entry.getKey() + ">");
 		}
 		writer.endChildren();
 		writer.endOver();
@@ -360,7 +358,7 @@ public class USDConverter extends Converter{
 		writer.endDef();
 	}
 	
-	private void convertEntities(LargeDataInputStream dis, File usdFile, Set<Texture> usedTextures) throws IOException {
+	private void convertEntities(LargeDataInputStream dis, File usdFile, Map<String, Texture> usedTextures) throws IOException {
 		USDWriter writer = new USDWriter(usdFile);
 		Map<MatKey, Materials.MaterialTemplate> templates = new HashMap<MatKey, Materials.MaterialTemplate>();
 		
@@ -400,9 +398,8 @@ public class USDConverter extends Converter{
 		
 		writer.beginDef("Scope", "materials");
 		writer.beginChildren();
-		for(Texture tex : usedTextures) {
-			writer.writeAttributeName("rel", 
-					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
+		for(Entry<String, Texture> entry : usedTextures.entrySet()) {
+			writer.writeAttributeName("rel", entry.getKey(), false);
 		}
 		writer.endChildren();
 		writer.endDef();
@@ -559,8 +556,9 @@ public class USDConverter extends Converter{
 		writer.endOver();
 	}
 	
-	private void writeIndividualBlocks(USDWriter writer, Set<Texture> usedTextures, long individualBlocksOffset) throws IOException {
+	private void writeIndividualBlocks(USDWriter writer, Map<String, Texture> usedTextures, long individualBlocksOffset) throws IOException {
 		Map<MatKey, Materials.MaterialTemplate> templates = new HashMap<MatKey, Materials.MaterialTemplate>();
+		
 		dis.skipBytes(individualBlocksOffset - dis.getPosition());
 		int numBaseMeshes = dis.readInt();
 		if(numBaseMeshes > 0) {
@@ -606,7 +604,7 @@ public class USDConverter extends Converter{
 		return chunkFilenames;
 	}
 	
-	private void writeChunks(USDWriter writer, Set<Texture> usedTextures, String[] chunkFilenames,
+	private void writeChunks(USDWriter writer, Map<String, Texture> usedTextures, String[] chunkFilenames,
 						List<ConvertChunkTask> bgChunks, List<ConvertChunkTask> fgChunks) throws IOException {
 		int numChunks = chunkFilenames.length;
 		
@@ -627,7 +625,7 @@ public class USDConverter extends Converter{
 				fgChunks.add((ConvertChunkTask) future.runnable);
 			else
 				bgChunks.add((ConvertChunkTask) future.runnable);
-			usedTextures.addAll(((ConvertChunkTask) future.runnable).usedTextures);
+			usedTextures.putAll(((ConvertChunkTask) future.runnable).usedTextures);
 		}
 		Comparator<ConvertChunkTask> chunkInfoComparator = new Comparator<ConvertChunkTask>() {
 
@@ -655,7 +653,7 @@ public class USDConverter extends Converter{
 		private File chunksFolder;
 		public boolean isFG;
 		public String name;
-		public Set<Texture> usedTextures;
+		public Map<String, Texture> usedTextures;
 		public Map<IndividualBlockId, List<Float>> instancers;
 		public Map<MatKey, MaterialTemplate> templates;
 		
@@ -664,7 +662,7 @@ public class USDConverter extends Converter{
 			this.chunksFolder = chunksFolder;
 			this.isFG = true;
 			this.name = "";
-			this.usedTextures = new HashSet<Texture>();
+			this.usedTextures = new HashMap<String, Texture>();
 			this.instancers = new HashMap<IndividualBlockId, List<Float>>();
 			this.templates = new HashMap<MatKey, MaterialTemplate>();
 		}
@@ -756,9 +754,8 @@ public class USDConverter extends Converter{
 		private void writeMaterialSlots(USDWriter chunkWriter) throws IOException {
 			chunkWriter.beginDef("Scope", "materials");
 			chunkWriter.beginChildren();
-			for(Texture tex : usedTextures) {
-				chunkWriter.writeAttributeName("rel", 
-						MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
+			for(Entry<String, Texture> entry : usedTextures.entrySet()) {
+				chunkWriter.writeAttributeName("rel", entry.getKey(), false);
 			}
 			chunkWriter.endChildren();
 			chunkWriter.endDef();
@@ -767,7 +764,7 @@ public class USDConverter extends Converter{
 	}
 	
 	private static void writeMeshes(LargeDataInputStream dis, USDWriter proxyWriter, 
-									USDWriter renderWriter, Set<Texture> usedTextures, 
+									USDWriter renderWriter, Map<String, Texture> usedTextures, 
 									Map<MatKey, MaterialTemplate> templates, Kind kind, 
 									String materialsPrim) throws IOException {
 		while(true) {
@@ -778,7 +775,7 @@ public class USDConverter extends Converter{
 	}
 	
 	private static boolean writeSingleMesh(LargeDataInputStream dis, USDWriter proxyWriter, 
-				USDWriter renderWriter, Set<Texture> usedTextures, 
+				USDWriter renderWriter, Map<String, Texture> usedTextures, 
 				Map<MatKey, MaterialTemplate> templates, Kind kind, 
 				String materialsPrim) throws IOException {
 		Mesh mesh = readMesh(dis);
@@ -811,7 +808,7 @@ public class USDConverter extends Converter{
 	
 	
 	private static void writeMesh(Mesh mesh, USDWriter writer, MeshPurpose purpose,
-									Set<Texture> usedTextures, Map<MatKey, MaterialTemplate> templates,
+									Map<String, Texture> usedTextures, Map<MatKey, MaterialTemplate> templates,
 									Kind kind, String materialsPrim) throws IOException{
 		mesh.validateSubsets();
 		String meshName = mesh.getName();
@@ -854,14 +851,15 @@ public class USDConverter extends Converter{
 			try {
 				String texture = BannerTextureCreator.createBannerTexture(mesh.getExtraData(), bannerTexName);
 				mesh.setTexture(texture, false);
+				mesh.setMatTexture(texture);
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
 		}
 		
 		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.getColorSetNames(), templates);
-		
-		usedTextures.add(textureObj);
+		String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
+		usedTextures.put(matName, textureObj);
 		
 		writer.beginDef("Mesh", meshName);
 		writer.beginMetaData();
@@ -895,52 +893,99 @@ public class USDConverter extends Converter{
 		writer.writeAttributeName("int[]", "faceVertexCounts", false);
 		writer.writeAttributeValueIntArray(mesh.getFaceCounts().getData(), mesh.getFaceCounts().size());
 		
-		writer.writeAttributeName("texCoord2f[]", "primvars:st", false);
-		writer.writeAttributeValuePoint2fArray(mesh.getUs().getData(), mesh.getVs().getData(), mesh.getUs().size());
-		writer.beginMetaData();
-		writer.writeMetaData("interpolation", "\"faceVarying\"");
-		writer.endMetaData();
-		
-		writer.writeAttributeName("int[]", "primvars:st:indices", false);
-		writer.writeAttributeValueIntArray(mesh.getUvIndices().getData(), mesh.getUvIndices().size());
-		
-		if(Config.calculateCornerUVs) {
-			writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
-			writer.writeAttributeValuePoint2fArray(mesh.getCornerUVs().getData(), mesh.getCornerUVs().size());
+		if(Config.useIndexedUVs) {
+			writer.writeAttributeName("texCoord2f[]", "primvars:st", false);
+			writer.writeAttributeValuePoint2fArray(mesh.getUs().getData(), mesh.getVs().getData(), mesh.getUs().size());
 			writer.beginMetaData();
 			writer.writeMetaData("interpolation", "\"faceVarying\"");
 			writer.endMetaData();
 			
-			writer.writeAttributeName("int[]", "primvars:uvCornerST:indices", false);
-			writer.writeAttributeValueIntArray(mesh.getCornerUVIndices().getData(), mesh.getCornerUVIndices().size());
+			writer.writeAttributeName("int[]", "primvars:st:indices", false);
+			writer.writeAttributeValueIntArray(mesh.getUvIndices().getData(), mesh.getUvIndices().size());
+		}else {
+			FloatArray flatUs = new FloatArray();
+			FloatArray flatVs = new FloatArray();
+			mesh.getFlatUVs(flatUs, flatVs);
+			writer.writeAttributeName("texCoord2f[]", "primvars:st", false);
+			writer.writeAttributeValuePoint2fArray(flatUs.getData(), flatVs.getData(), flatUs.size());
+			writer.beginMetaData();
+			writer.writeMetaData("interpolation", "\"faceVarying\"");
+			writer.endMetaData();
 		}
 		
-		writer.writeAttributeName("normal3f[]", "primvars:normals", false);
-		writer.writeAttributeValuePoint3fArray(mesh.getNormals().getData(), mesh.getNormals().size());
-		writer.beginMetaData();
-		writer.writeMetaData("interpolation", "\"faceVarying\"");
-		writer.endMetaData();
+		if(Config.calculateCornerUVs) {
+			if(Config.useIndexedUVs) {
+				writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
+				writer.writeAttributeValuePoint2fArray(mesh.getCornerUVs().getData(), mesh.getCornerUVs().size());
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+				
+				writer.writeAttributeName("int[]", "primvars:uvCornerST:indices", false);
+				writer.writeAttributeValueIntArray(mesh.getCornerUVIndices().getData(), mesh.getCornerUVIndices().size());
+			}else {
+				FloatArray flatUs = new FloatArray();
+				FloatArray flatVs = new FloatArray();
+				mesh.getFlatCornerUVs(flatUs, flatVs);
+				
+				writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
+				writer.writeAttributeValuePoint2fArray(flatUs.getData(), flatVs.getData(), flatUs.size());
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+			}
+		}
 		
-		writer.writeAttributeName("int[]", "primvars:normals:indices", false);
-		writer.writeAttributeValueIntArray(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size());
+		if(Config.useIndexedNormals) {
+			writer.writeAttributeName("normal3f[]", "primvars:normals", false);
+			writer.writeAttributeValuePoint3fArray(mesh.getNormals().getData(), mesh.getNormals().size());
+			writer.beginMetaData();
+			writer.writeMetaData("interpolation", "\"faceVarying\"");
+			writer.endMetaData();
+			
+			writer.writeAttributeName("int[]", "primvars:normals:indices", false);
+			writer.writeAttributeValueIntArray(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size());
+		}else {
+			FloatArray flatNormals = new FloatArray();
+			mesh.getFlatNormals(flatNormals);
+			
+			writer.writeAttributeName("normal3f[]", "primvars:normals", false);
+			writer.writeAttributeValuePoint3fArray(flatNormals.getData(), flatNormals.size());
+			writer.beginMetaData();
+			writer.writeMetaData("interpolation", "\"faceVarying\"");
+			writer.endMetaData();
+		}
 		
 		// If we're exporting vertex colours as display colour but exporting
 		// display colour is turned off, then don't export out vertex colours.
 		if(mesh.hasColors() && !(Config.exportVertexColorAsDisplayColor && !Config.exportDisplayColor)) {
-			if(Config.exportVertexColorAsDisplayColor)
-				writer.writeAttributeName("color3f[]", "primvars:displayColor", false);
-			else
-				writer.writeAttributeName("color3f[]", "primvars:Cd", false);
-			writer.writeAttributeValuePoint3fArray(mesh.getColors().getValues().getData(), mesh.getColors().getValues().size());
-			writer.beginMetaData();
-			writer.writeMetaData("interpolation", "\"faceVarying\"");
-			writer.endMetaData();
-			
-			if(Config.exportVertexColorAsDisplayColor)
-				writer.writeAttributeName("int[]", "primvars:displayColor:indices", false);
-			else
-				writer.writeAttributeName("int[]", "primvars:Cd:indices", false);
-			writer.writeAttributeValueIntArray(mesh.getColors().getIndices().getData(), mesh.getColors().getIndices().size());
+			if(Config.useIndexedVertexColors) {
+				if(Config.exportVertexColorAsDisplayColor)
+					writer.writeAttributeName("color3f[]", "primvars:displayColor", false);
+				else
+					writer.writeAttributeName("color3f[]", "primvars:Cd", false);
+				writer.writeAttributeValuePoint3fArray(mesh.getColors().getValues().getData(), mesh.getColors().getValues().size());
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+				
+				if(Config.exportVertexColorAsDisplayColor)
+					writer.writeAttributeName("int[]", "primvars:displayColor:indices", false);
+				else
+					writer.writeAttributeName("int[]", "primvars:Cd:indices", false);
+				writer.writeAttributeValueIntArray(mesh.getColors().getIndices().getData(), mesh.getColors().getIndices().size());
+			}else {
+				FloatArray flatColors = mesh.getColors().getFlatValues();
+				
+				if(Config.exportVertexColorAsDisplayColor)
+					writer.writeAttributeName("color3f[]", "primvars:displayColor", false);
+				else
+					writer.writeAttributeName("color3f[]", "primvars:Cd", false);
+				writer.writeAttributeValuePoint3fArray(flatColors.getData(), flatColors.size());
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+			}
 		}
 		if(Config.exportDisplayColor && !Config.exportVertexColorAsDisplayColor) {
 			// If we were exporting vertex colours as display colours,
@@ -956,32 +1001,62 @@ public class USDConverter extends Converter{
 		}
 		
 		if(mesh.hasAO()) {
-			if(Config.exportAmbientOcclusionAsDisplayOpacity)
-				writer.writeAttributeName("float[]", "primvars:displayOpacity", false);
-			else
-				writer.writeAttributeName("float[]", "primvars:ao", false);
-			writer.writeAttributeValueFloatArray(mesh.getAO().getValues().getData(), mesh.getAO().getValues().size());
-			writer.beginMetaData();
-			writer.writeMetaData("interpolation", "\"faceVarying\"");
-			writer.endMetaData();
-			
-			if(Config.exportAmbientOcclusionAsDisplayOpacity)
-				writer.writeAttributeName("int[]", "primvars:displayOpacity:indices", false);
-			else
-				writer.writeAttributeName("int[]", "primvars:ao:indices", false);
-			writer.writeAttributeValueIntArray(mesh.getAO().getIndices().getData(), mesh.getAO().getIndices().size());
-		}
-		
-		if(mesh.getAdditionalColorSets() != null) {
-			for(VertexColorSet colorSet : mesh.getAdditionalColorSets()) {
-				writer.writeAttributeName("float[]", "primvars:" + colorSet.getName(), false);
-				writer.writeAttributeValueFloatArray(colorSet.getValues().getData(), colorSet.getValues().size());
+			if(Config.useIndexedVertexColors) {
+				if(Config.exportAmbientOcclusionAsDisplayOpacity)
+					writer.writeAttributeName("float[]", "primvars:displayOpacity", false);
+				else
+					writer.writeAttributeName("float[]", "primvars:CdAO", false);
+				writer.writeAttributeValueFloatArray(mesh.getAO().getValues().getData(), mesh.getAO().getValues().size());
 				writer.beginMetaData();
 				writer.writeMetaData("interpolation", "\"faceVarying\"");
 				writer.endMetaData();
 				
-				writer.writeAttributeName("int[]", "primvars:" + colorSet.getName() + ":indices", false);
-				writer.writeAttributeValueIntArray(colorSet.getIndices().getData(), colorSet.getIndices().size());
+				if(Config.exportAmbientOcclusionAsDisplayOpacity)
+					writer.writeAttributeName("int[]", "primvars:displayOpacity:indices", false);
+				else
+					writer.writeAttributeName("int[]", "primvars:CdAO:indices", false);
+				writer.writeAttributeValueIntArray(mesh.getAO().getIndices().getData(), mesh.getAO().getIndices().size());
+			}else {
+				FloatArray flatValues = mesh.getAO().getFlatValues();
+				
+				if(Config.exportAmbientOcclusionAsDisplayOpacity)
+					writer.writeAttributeName("float[]", "primvars:displayOpacity", false);
+				else
+					writer.writeAttributeName("float[]", "primvars:CdAO", false);
+				writer.writeAttributeValueFloatArray(flatValues.getData(), flatValues.size());
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+			}
+		}
+		
+		if(mesh.getAdditionalColorSets() != null) {
+			for(VertexColorSet colorSet : mesh.getAdditionalColorSets()) {
+				String typeName = "float[]";
+				if(colorSet.getComponentCount() == 2)
+					typeName = "float2[]";
+				else if(colorSet.getComponentCount() == 3)
+					typeName = "color3f[]";
+				else if(colorSet.getComponentCount() == 4)
+					typeName = "color4f[]";
+				if(Config.useIndexedVertexColors) {
+					writer.writeAttributeName(typeName, "primvars:" + colorSet.getName(), false);
+					writer.writeAttributeValuePointNfArray(colorSet.getValues().getData(), colorSet.getValues().size(), colorSet.getComponentCount());
+					writer.beginMetaData();
+					writer.writeMetaData("interpolation", "\"faceVarying\"");
+					writer.endMetaData();
+					
+					writer.writeAttributeName("int[]", "primvars:" + colorSet.getName() + ":indices", false);
+					writer.writeAttributeValueIntArray(colorSet.getIndices().getData(), colorSet.getIndices().size());
+				}else {
+					FloatArray flatValues = colorSet.getFlatValues();
+					
+					writer.writeAttributeName(typeName, "primvars:" + colorSet.getName(), false);
+					writer.writeAttributeValuePointNfArray(flatValues.getData(), flatValues.size(), colorSet.getComponentCount());
+					writer.beginMetaData();
+					writer.writeMetaData("interpolation", "\"faceVarying\"");
+					writer.endMetaData();
+				}
 			}
 		}
 		
@@ -991,8 +1066,7 @@ public class USDConverter extends Converter{
 		}
 		
 		writer.writeAttributeName("rel", "material:binding", false);
-		writer.writeAttributeValue("<" + materialsPrim + 
-				MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor) + ">");
+		writer.writeAttributeValue("<" + materialsPrim + matName + ">");
 		
 		writeMeshSubsets(writer, mesh, purpose, usedTextures, materialsPrim, templates);
 		
@@ -1000,7 +1074,7 @@ public class USDConverter extends Converter{
 		writer.endDef();
 	}
 	
-	private static void writeMeshSubsets(USDWriter writer, Mesh mesh, MeshPurpose purpose, Set<Texture> usedTextures, 
+	private static void writeMeshSubsets(USDWriter writer, Mesh mesh, MeshPurpose purpose, Map<String, Texture> usedTextures, 
 											String materialsPrim, Map<MatKey, MaterialTemplate> templates) throws IOException {
 		if(mesh.getSubsets() != null) {
 			for(MeshSubset subset : mesh.getSubsets()) {
@@ -1042,10 +1116,10 @@ public class USDConverter extends Converter{
 				if(subset.getMatTexture() != null) {
 					Texture textureObj2 = new Texture(subset.getTexture(), subset.getMatTexture(), mesh.hasColors(), 
 							mesh.getColorSetNames(), templates);
-					usedTextures.add(textureObj2);
+					String matName = MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor);
+					usedTextures.put(matName, textureObj2);
 					writer.writeAttributeName("rel", "material:binding", false);
-					writer.writeAttributeValue("<" + materialsPrim + 
-							MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor) + ">");
+					writer.writeAttributeValue("<" + materialsPrim + matName + ">");
 				}
 				writer.endChildren();
 				writer.endOver();
@@ -1054,7 +1128,7 @@ public class USDConverter extends Converter{
 	}
 	
 	private static void writeGroup(MeshGroup group, USDWriter writer, MeshPurpose purpose,
-									Set<Texture> usedTextures, Map<MatKey, MaterialTemplate> templates,
+									Map<String, Texture> usedTextures, Map<MatKey, MaterialTemplate> templates,
 									Kind kind, String materialsPrim) throws IOException {
 		String groupName = group.getName();
 		if(groupName == "")
@@ -1191,7 +1265,7 @@ public class USDConverter extends Converter{
 	}
 	
 	
-	private void writeMaterials(USDWriter writer, Set<Texture> usedTextures) throws IOException {
+	private void writeMaterials(USDWriter writer, Map<String, Texture> usedTextures) throws IOException {
 		Materials.reload();
 		
 		MaterialWriter[] materialWriters = new MaterialWriter[] { 
@@ -1205,11 +1279,11 @@ public class USDConverter extends Converter{
 		for(MaterialWriter materialWriter : materialWriters)
 			materialWriter.writeSharedNodes("/materials");
 		
-		for(Texture texture : usedTextures) {
-			Materials.MaterialTemplate material = texture.materialTemplate;
+		for(Entry<String, Texture> entry : usedTextures.entrySet()) {
+			Materials.MaterialTemplate material = entry.getValue().materialTemplate;
 			if(material != null)
 				for(MaterialWriter materialWriter : materialWriters)
-					materialWriter.writeMaterial(material, texture.texture, texture.hasBiomeColor, 
+					materialWriter.writeMaterial(entry.getKey(), material, entry.getValue().texture, entry.getValue().hasBiomeColor, 
 													"/materials", "/materials/sharedNodes");
 		}
 		
@@ -1292,11 +1366,9 @@ public class USDConverter extends Converter{
 		
 		writer.beginOver("materials");
 		writer.beginChildren();
-		for(Texture tex : chunk.usedTextures) {
-			writer.writeAttributeName("rel", 
-					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor), false);
-			writer.writeAttributeValue("</world/materials/" + 
-					MaterialWriter.getMaterialName(tex.texture, tex.materialTemplate, tex.hasBiomeColor) + ">");
+		for(Entry<String, Texture> entry : chunk.usedTextures.entrySet()) {
+			writer.writeAttributeName("rel", entry.getKey(), false);
+			writer.writeAttributeValue("</world/materials/" + entry.getKey() + ">");
 		}
 		writer.endChildren();
 		writer.endOver();

@@ -257,6 +257,9 @@ public class Occlusion {
 					long edgeId = edgeId1 < edgeId2 ? ((edgeId1 << 32) | edgeId2) : ((edgeId2 << 32) | edgeId1);
 					
 					int edgeToFaceIndex = edgeIndexCache.getOrDefault(edgeId, -1);
+					if(edgeToFaceIndex < 0)
+						continue;
+					
 					int[] facesArray = edgeToFaces[edgeToFaceIndex];
 					
 					boolean isConnected = false;

@@ -1288,6 +1288,36 @@ public class Mesh {
 		for(MeshSubset subset : this.subsets)
 			this.subsetNames.add(subset.getName());
 	}
+	
+	public void getFlatUVs(FloatArray flatUs, FloatArray flatVs) {
+		flatUs.resize(uvIndices.size());
+		flatVs.resize(uvIndices.size());
+		
+		for(int i = 0; i < uvIndices.size(); ++i) {
+			flatUs.set(i, us.get(uvIndices.get(i)));
+			flatVs.set(i, vs.get(uvIndices.get(i)));
+		}
+	}
+	
+	public void getFlatCornerUVs(FloatArray flatUs, FloatArray flatVs) {
+		flatUs.resize(cornerUVIndices.size());
+		flatVs.resize(cornerUVIndices.size());
+		
+		for(int i = 0; i < cornerUVIndices.size(); ++i) {
+			flatUs.set(i, cornerUVs.get(cornerUVIndices.get(i) * 2));
+			flatVs.set(i, cornerUVs.get(cornerUVIndices.get(i) * 2 + 1));
+		}
+	}
+	
+	public void getFlatNormals(FloatArray flatNormals) {
+		flatNormals.resize(normalIndices.size()*3);
+		
+		for(int i = 0; i < normalIndices.size(); ++i) {
+			flatNormals.set(i * 3    , normals.get(normalIndices.get(i) * 3));
+			flatNormals.set(i * 3 + 1, normals.get(normalIndices.get(i) * 3 + 1));
+			flatNormals.set(i * 3 + 2, normals.get(normalIndices.get(i) * 3 + 2));
+		}
+	}
 
 	public void write(LargeDataOutputStream dos) throws IOException {
 		dos.writeByte(1); // Mesh type : Mesh

@@ -73,6 +73,8 @@ public class LauncherMultiMC extends Launcher{
 		if(instacesFolder.exists() && instacesFolder.isDirectory()) {
 			for(File f : instacesFolder.listFiles()) {
 				File savesFolder = new File(f, "minecraft/saves");
+				if(!savesFolder.exists())
+					savesFolder = new File(f, ".minecraft/saves");
 				if(savesFolder.exists() && savesFolder.isDirectory()) {
 					for(File save : savesFolder.listFiles()) {
 						if(save.isDirectory()) {

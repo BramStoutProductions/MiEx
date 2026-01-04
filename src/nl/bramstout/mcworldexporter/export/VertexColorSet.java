@@ -146,6 +146,17 @@ public class VertexColorSet {
 		return indices;
 	}
 	
+	public FloatArray getFlatValues() {
+		FloatArray flatValues = new FloatArray(indices.size() * componentCount);
+		for(int i = 0; i < indices.size(); ++i) {
+			int index = indices.get(i);
+			for(int j = 0; j < componentCount; ++j) {
+				flatValues.set(i * componentCount + j, values.get(index * componentCount + j));
+			}
+		}
+		return flatValues;
+	}
+	
 	public void clear() {
 		values.clear();
 		indices.clear();

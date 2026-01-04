@@ -72,7 +72,7 @@ public class EXRWriter {
 	}
 	
 	public void writeChannelsAttribute(Channel[] channels) throws IOException{
-		int size = 0;
+		int size = 1; // Start with 1 for the null byte at the end
 		for(Channel channel : channels)
 			size += channel.getSize();
 		writeAttributeStart("channels", "chlist", size);

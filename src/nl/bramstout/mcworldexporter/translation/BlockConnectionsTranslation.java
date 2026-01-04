@@ -322,9 +322,7 @@ public class BlockConnectionsTranslation {
 	}
 	
 	public void load() {
-		if(translationMap == null)
-			translationMap = new HashMap<String, List<BlockConnections>>();
-		translationMap.clear();
+		Map<String, List<BlockConnections>> translationMap = new HashMap<String, List<BlockConnections>>();
 		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
 			File translationFile = new File(resourcePacks.get(i).getFolder(), 
@@ -438,6 +436,7 @@ public class BlockConnectionsTranslation {
 		
 		if(translationMap.isEmpty())
 			translationMap = null;
+		this.translationMap = translationMap;
 	}
 	
 	public BlockConnections getBlockConnections(String blockName, int dataVersion) {

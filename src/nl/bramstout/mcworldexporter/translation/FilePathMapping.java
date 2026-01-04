@@ -57,8 +57,8 @@ public class FilePathMapping {
 	}
 	
 	public void load() {
-		translationMap.clear();
-		inverseTranslationMap.clear();
+		Map<String, String> translationMap = new HashMap<String, String>();
+		Map<String, String> inverseTranslationMap = new HashMap<String, String>();
 		
 		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
@@ -84,6 +84,9 @@ public class FilePathMapping {
 				continue;
 			inverseTranslationMap.put(entry.getValue(), entry.getKey());
 		}
+		
+		this.translationMap = translationMap;
+		this.inverseTranslationMap = inverseTranslationMap;
 	}
 	
 	/**

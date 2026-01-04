@@ -216,20 +216,22 @@ public class WorldAnvil extends World{
 		List<Region> tmpRegions = new ArrayList<Region>(files.length);
 		
 		for(File f : files) {
-			if(!f.getName().endsWith(".mca"))
-				continue;
-			String[] tokens = f.getName().split("\\.");
-			if(tokens.length != 4)
-				continue;
-			int x = Integer.parseInt(tokens[1]);
-			int z = Integer.parseInt(tokens[2]);
-			
-			regionMinX = Math.min(regionMinX, x);
-			regionMinZ = Math.min(regionMinZ, z);
-			regionMaxX = Math.max(regionMaxX, x);
-			regionMaxZ = Math.max(regionMaxZ, z);
-			
-			tmpRegions.add(new RegionAnvil(this, f, x, z));
+			try {
+				if(!f.getName().endsWith(".mca"))
+					continue;
+				String[] tokens = f.getName().split("\\.");
+				if(tokens.length != 4)
+					continue;
+				int x = Integer.parseInt(tokens[1]);
+				int z = Integer.parseInt(tokens[2]);
+				
+				regionMinX = Math.min(regionMinX, x);
+				regionMinZ = Math.min(regionMinZ, z);
+				regionMaxX = Math.max(regionMaxX, x);
+				regionMaxZ = Math.max(regionMaxZ, z);
+				
+				tmpRegions.add(new RegionAnvil(this, f, x, z));
+			}catch(Exception ex) {}
 		}
 		
 		if(tmpRegions.size() == 0)

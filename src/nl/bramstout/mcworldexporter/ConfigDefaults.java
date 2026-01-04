@@ -107,6 +107,9 @@ public class ConfigDefaults {
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
 	public static boolean useGeometerySubsets;
+	public static boolean useIndexedUVs;
+	public static boolean useIndexedVertexColors;
+	public static boolean useIndexedNormals;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -264,6 +267,9 @@ public class ConfigDefaults {
 		minCubeSize = -1.0f;
 		maxMaterialNameLength = -1;
 		useGeometerySubsets = false;
+		useIndexedUVs = true;
+		useIndexedVertexColors = true;
+		useIndexedNormals = true;
 	}
 	
 	public static void loadDefaults() {

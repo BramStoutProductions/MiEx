@@ -50,6 +50,7 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.entity.EntityRegistry;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
@@ -307,24 +308,56 @@ public class Exporter {
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		String message = "World exported successfully.";
+		List<String> missingStuff = new ArrayList<String>();
 		if(BlockStateRegistry.missingBlockStates.size() > 0) {
-			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
+			missingStuff.add("blockstates");
 			for(String blockName : BlockStateRegistry.missingBlockStates) {
 				System.out.println("Missing blockstate: " + blockName);
 			}
 		}
-		if(BlockStateRegistry.missingBlockStates.size() > 0) {
-			message = "World exported, but some biomes may be missing. Check the log for more information.";
+		if(BiomeRegistry.missingBiomes.size() > 0) {
+			missingStuff.add("biomes");
 			for(String biomeName : BiomeRegistry.missingBiomes) {
 				System.out.println("Missing biome: " + biomeName);
 			}
 		}
+		if(EntityRegistry.missingEntities.size() > 0) {
+			// EntityRegistry.missingEntities contains all entities that are in the world
+			// where no entity handler is specified for. But we only want to print out
+			// that an entity handler is missing for entities that we want to export out.
+			// So we need to go through the list and make sure that we only print out
+			// entities that are also set as export.
+			Set<String> enabledEntityExports = new HashSet<String>(
+					MCWorldExporter.getApp().getUI().getEntityDialog().getExportEntities().getSelection());
+			boolean hasMissingEntities = false;
+			for(String entityName : EntityRegistry.missingEntities) {
+				if(enabledEntityExports.contains(entityName)) {
+					System.out.println("Missing entity handler: " + entityName);
+					hasMissingEntities = true;
+				}
+			}
+			if(hasMissingEntities)
+				missingStuff.add("entity handlers");
+		}
 		
 		if(ModelRegistry.missingModels.size() > 0) {
-			message = "World exported, but some blocks may be missing due to missing blockstates or models. Check the log for more information.";
+			missingStuff.add("models");
 			for(String blockName : ModelRegistry.missingModels) {
 				System.out.println("Missing model: " + blockName);
 			}
+		}
+		if(missingStuff.size() > 0) {
+			message = "World exported, but some things may be missing due to missing ";
+			message += missingStuff.get(0);
+			for(int i = 1; i < missingStuff.size() - 1; ++i) {
+				message += ", " + missingStuff.get(i);
+			}
+			if(missingStuff.size() > 2) {
+				message += ", or " + missingStuff.get(missingStuff.size() - 1);
+			}else if(missingStuff.size() > 2) {
+				message += " or " + missingStuff.get(missingStuff.size() - 1);
+			}
+			message += ". Check the log for more information";
 		}
 		System.out.println("Exported:" + usdFile.getPath());
 		

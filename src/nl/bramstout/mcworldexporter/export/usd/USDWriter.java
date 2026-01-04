@@ -34,10 +34,10 @@ package nl.bramstout.mcworldexporter.export.usd;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -59,9 +59,11 @@ public class USDWriter {
 		this.outFile = file;
 		this.usdaFile = new File(file.getPath() + "a");
 		if(FileUtil.hasUSDCat())
-			fw = new BufferedWriter(new FileWriter(usdaFile, Charset.forName("UTF-8")));
+			//fw = new BufferedWriter(new FileWriter(usdaFile, Charset.forName("UTF-8")));
+			fw = Files.newBufferedWriter(usdaFile.toPath(), Charset.forName("UTF-8"));
 		else
-			fw = new BufferedWriter(new FileWriter(outFile, Charset.forName("UTF-8")));
+			//fw = new BufferedWriter(new FileWriter(outFile, Charset.forName("UTF-8")));
+			fw = Files.newBufferedWriter(outFile.toPath(), Charset.forName("UTF-8"));
 		indent = 0;
 		wroteChildren = false;
 		usdCatProcess = null;
@@ -383,6 +385,32 @@ public class USDWriter {
 			fw.write(Integer.toString(value[i]));
 			if(i != num)
 				fw.write(",");
+		}
+		fw.write("]");
+	}
+	
+	public void writeAttributeValuePointNfArray(float[] value, int componentCount) throws IOException{
+		writeAttributeValuePointNfArray(value, value.length, componentCount);
+	}
+	
+	public void writeAttributeValuePointNfArray(float[] value, int size, int componentCount) throws IOException{
+		if(componentCount <= 1) {
+			writeAttributeValueFloatArray(value, size);
+			return;
+		}
+		fw.write(" = [");
+		int num = size - componentCount;
+		for(int i = 0; i <= num; i += componentCount) {
+			fw.write("(");
+			for(int j = 0; j < componentCount; ++j) {
+				if(j > 0)
+					fw.write(",");
+				fw.write(Float.toString(value[i+j]));
+			}
+			if(i == num)
+				fw.write(")");
+			else
+				fw.write("),");
 		}
 		fw.write("]");
 	}

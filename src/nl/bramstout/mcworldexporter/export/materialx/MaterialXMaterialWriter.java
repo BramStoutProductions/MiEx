@@ -125,7 +125,7 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 	}
 
 	@Override
-	public void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor, String parentPrim,
+	public void writeMaterial(String matName, MaterialTemplate material, String texture, boolean hasBiomeColor, String parentPrim,
 			String sharedPrims) throws IOException {
 		// MaterialX requires that when you connect to a node,
 		// that that node is already defined.
@@ -134,9 +134,9 @@ public class MaterialXMaterialWriter extends MaterialWriter {
 		// processing to change the order.
 		Set<String> writtenNodes = new HashSet<String>();
 		
-		String suffix = MaterialWriter.getMaterialName(texture, material, hasBiomeColor).substring(3);
+		String suffix = matName.substring(3);
 		
-		String matName = "MAT" + suffix;
+		matName = "MAT" + suffix;
 		
 		String surfaceShaderNodeName = material.shadingGroup.getOrDefault("mtlx:surface", "");
 		ShadingNode surfaceShaderNode = null;

@@ -611,9 +611,16 @@ public class ResourcePackDefaults {
 		
 	}
 	
-	private static void miexConfigParseModel(String modelName, File resourcePack, ModelData modelData) {
+	private static void miexConfigParseModel(String modelName, File resourcePack, ModelData modelData, List<String> visitedModels) {
 		if(!modelName.contains(":"))
 			modelName = "minecraft:" + modelName;
+		// If this model file has a parent attribute, this function gets recursively called.
+		// If the data isn't valid, then it could create a cycle that causes a stackoverflow.
+		// This detects that and prevents it from happening.
+		if(visitedModels.contains(modelName))
+			return;
+		visitedModels.add(modelName);
+		
 		String[] modelTokens = modelName.split(":");
 		
 		String modelPath = "assets/" + modelTokens[0] + "/models/" + modelTokens[1] + ".json";
@@ -629,7 +636,7 @@ public class ResourcePackDefaults {
 			
 			if(data.has("parent")) {
 				// It has a parent, so process that one as well
-				miexConfigParseModel(data.get("parent").getAsString(), resourcePack, modelData);
+				miexConfigParseModel(data.get("parent").getAsString(), resourcePack, modelData, visitedModels);
 			}
 			
 			if(data.has("textures")) {
@@ -692,7 +699,8 @@ public class ResourcePackDefaults {
 	
 	private static void miexConfigProcessModel(String blockName, String modelName, File resourcePack, MiExConfigData configData) {
 		ModelData model = new ModelData();
-		miexConfigParseModel(modelName, resourcePack, model);
+		List<String> visitedModels = new ArrayList<String>();
+		miexConfigParseModel(modelName, resourcePack, model, visitedModels);
 		
 		boolean usesBiomeColours = false;
 		for(ModelFaceData face : model.getFaces()) {

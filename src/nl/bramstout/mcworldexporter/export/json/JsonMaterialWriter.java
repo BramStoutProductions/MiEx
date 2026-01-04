@@ -121,13 +121,13 @@ public class JsonMaterialWriter extends MaterialWriter {
 	}
 
 	@Override
-	public void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor, String parentPrim,
+	public void writeMaterial(String matName, MaterialTemplate material, String texture, boolean hasBiomeColor, String parentPrim,
 			String sharedPrims) throws IOException {
 		JsonObject matObj = new JsonObject();
 
-		String suffix = MaterialWriter.getMaterialName(texture, material, hasBiomeColor).substring(3);
+		String suffix = matName.substring(3);
 		
-		String matName = "MAT" + suffix;
+		matName = "MAT" + suffix;
 
 		JsonObject terminalsObj = new JsonObject();
 

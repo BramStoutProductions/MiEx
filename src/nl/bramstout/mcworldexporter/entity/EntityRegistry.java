@@ -31,18 +31,28 @@
 
 package nl.bramstout.mcworldexporter.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class EntityRegistry {
 	
+	public static List<String> missingEntities = new ArrayList<String>();
+	
 	public static Entity getEntity(String id, NbtTagCompound properties) {
 		if(!id.contains(":"))
 			id = "minecraft:" + id;
 		EntityHandler handler = ResourcePacks.getEntityHandler(id);
-		if(handler == null)
+		if(handler == null) {
+			synchronized(missingEntities) {
+				if(!missingEntities.contains(id))
+					missingEntities.add(id);
+			}
 			return null;
+		}
 		return new Entity(id, properties, handler);
 	}
 	

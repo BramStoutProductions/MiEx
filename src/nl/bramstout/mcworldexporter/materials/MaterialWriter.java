@@ -88,11 +88,11 @@ public abstract class MaterialWriter {
 	}
 	
 	public static String getMaterialName(String texture, Materials.MaterialTemplate template, boolean hasBiomeColor) {
+		synchronized(mats) {
 		MatKey matkey = new MatKey(texture, template);
 		String matName = mats.getOrDefault(matkey, null);
-		if(matName == null) {
-			synchronized(mats) {
-				matName = mats.getOrDefault(matkey, null);
+		//if(matName == null) {
+				//matName = mats.getOrDefault(matkey, null);
 				if(matName != null)
 					return "MAT_" + matName;
 				
@@ -116,13 +116,14 @@ public abstract class MaterialWriter {
 				}
 				
 				mats.put(matkey, matName);
-			}
-		}
+	//		}
+		//}
 		
 		return "MAT_" + matName;
+		}
 	}
 	
-	public abstract void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor,
+	public abstract void writeMaterial(String matName, MaterialTemplate material, String texture, boolean hasBiomeColor,
 			String parentPrim, String sharedPrims) throws IOException;
 	
 	public abstract void writeSharedNodes(String parentPrim) throws IOException;

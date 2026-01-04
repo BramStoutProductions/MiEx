@@ -1437,6 +1437,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(typeEl == null)
 			return null;
 		String typeStr = typeEl.getAsString();
+		if(!typeStr.contains(":"))
+			typeStr = "minecraft:" + typeStr;
 		if(typeStr.equals(ItemModelComposite.TYPE))
 			return new ItemModelComposite(data);
 		else if(typeStr.equals(ItemModelCondition.TYPE))
@@ -1459,6 +1461,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(typeEl == null)
 			return null;
 		String typeStr = typeEl.getAsString();
+		if(!typeStr.contains(":"))
+			typeStr = "minecraft:" + typeStr;
 		if(typeStr.equals(TintSourceConstant.TYPE))
 			return new TintSourceConstant(data);
 		else if(typeStr.equals(TintSourceDye.TYPE))
@@ -1485,6 +1489,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(propertyEl == null)
 			return null;
 		String propertyStr = propertyEl.getAsString();
+		if(!propertyStr.contains(":"))
+			propertyStr = "minecraft:" + propertyStr;
 		if(propertyStr.equals(ConditionBroken.TYPE))
 			return new ConditionBroken(data);
 		else if(propertyStr.equals(ConditionComponent.TYPE))
@@ -1505,6 +1511,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(propertyEl == null)
 			return null;
 		String propertyStr = propertyEl.getAsString();
+		if(!propertyStr.contains(":"))
+			propertyStr = "minecraft:" + propertyStr;
 		if(propertyStr.equals(PropertyBlockState.TYPE))
 			return new PropertyBlockState(data);
 		else if(propertyStr.equals(PropertyChargeType.TYPE))
@@ -1531,6 +1539,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(propertyEl == null)
 			return null;
 		String propertyStr = propertyEl.getAsString();
+		if(!propertyStr.contains(":"))
+			propertyStr = "minecraft:" + propertyStr;
 		if(propertyStr.equals(NumericPropertyBundleFullness.TYPE))
 			return new NumericPropertyBundleFullness(data);
 		else if(propertyStr.equals(NumericPropertyCount.TYPE))
@@ -1549,6 +1559,8 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 		if(typeEl == null)
 			return null;
 		String typeStr = typeEl.getAsString();
+		if(!typeStr.contains(":"))
+			typeStr = "minecraft:" + typeStr;
 		if(typeStr.equals(SpecialModelBanner.TYPE))
 			return new SpecialModelBanner(data);
 		else if(typeStr.equals(SpecialModelBed.TYPE))

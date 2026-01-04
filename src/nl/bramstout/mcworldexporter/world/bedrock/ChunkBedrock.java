@@ -167,91 +167,95 @@ public class ChunkBedrock extends Chunk{
 					dis.readInts(sectionData, 0, numBytes);
 					
 					int paletteSize = dis.readInt();
-					if(paletteMap == null || paletteMap.length < paletteSize)
-						paletteMap = new int[paletteSize];
-					
-					for (int i = 0; i < paletteSize; ++i) {
-						NbtTag block = NbtTag.readFromStream(dis);
-						if(!(block instanceof NbtTagCompound)) {
-							paletteMap[i] = 0;
-							continue;
-						}
-						blockName = ((NbtTagString) ((NbtTagCompound) block).get("name")).getData();
-						blockProperties = (NbtTagCompound) ((NbtTagCompound) block).get("states");
-						boolean needsFreeing = false;
-						if(blockProperties == null) {
-							blockProperties = NbtTagCompound.newInstance("states");
-							needsFreeing = true;
-						}
+					if(paletteSize > 0) {
+						if(paletteMap == null || paletteMap.length < paletteSize)
+							paletteMap = new int[paletteSize];
 						
-						blockName = blockTranslatorManager.map(blockName, blockProperties);
-						
-						if(blockProperties.getSize() == 0) {
-							if(needsFreeing) {
-								blockProperties.free();
-								needsFreeing = false;
+						for (int i = 0; i < paletteSize; ++i) {
+							NbtTag block = NbtTag.readFromStream(dis);
+							if(!(block instanceof NbtTagCompound)) {
+								paletteMap[i] = 0;
+								continue;
 							}
-							blockProperties = null; // If there are no properties, then default to null
-													// so that we don't have two possible values for
-													// a block with no properties. Which the BlockRegistry
-													// would see as different blocks.
+							blockName = ((NbtTagString) ((NbtTagCompound) block).get("name")).getData();
+							blockProperties = (NbtTagCompound) ((NbtTagCompound) block).get("states");
+							boolean needsFreeing = false;
+							if(blockProperties == null) {
+								blockProperties = NbtTagCompound.newInstance("states");
+								needsFreeing = true;
+							}
+							
+							blockName = blockTranslatorManager.map(blockName, blockProperties);
+							
+							if(blockProperties.getSize() == 0) {
+								if(needsFreeing) {
+									blockProperties.free();
+									needsFreeing = false;
+								}
+								blockProperties = null; // If there are no properties, then default to null
+														// so that we don't have two possible values for
+														// a block with no properties. Which the BlockRegistry
+														// would see as different blocks.
+							}
+							
+							paletteMap[i] = BlockRegistry.getIdForName(blockName, blockProperties, 0, charBuffer);
+							block.free();
+							if(needsFreeing)
+								blockProperties.free();
 						}
-						
-						paletteMap[i] = BlockRegistry.getIdForName(blockName, blockProperties, 0, charBuffer);
-						block.free();
-						if(needsFreeing)
-							blockProperties.free();
-					}
-				
-					if(blockStorageI == 0) {
-						int i = 0;
-						for(int bx = 0; bx < 16; ++bx) {
-							for(int bz = 0; bz < 16; ++bz) {
-								for(int by = 0; by < 16; ++by) {
-									intIndex = i / idsPerInt;
-									idIndex = i % idsPerInt;
-									paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
-									sectionBlocks[by * 16 * 16 + bz * 16 + bx] = paletteMap[paletteIndex];
-									i++;
+					
+						if(blockStorageI == 0) {
+							int i = 0;
+							for(int bx = 0; bx < 16; ++bx) {
+								for(int bz = 0; bz < 16; ++bz) {
+									for(int by = 0; by < 16; ++by) {
+										intIndex = i / idsPerInt;
+										idIndex = i % idsPerInt;
+										paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
+										paletteIndex %= paletteSize;
+										sectionBlocks[by * 16 * 16 + bz * 16 + bx] = paletteMap[paletteIndex];
+										i++;
+									}
 								}
 							}
-						}
-					}else {
-						// The following blocks are on extra layers, so we need to combine them together
-						int i = 0;
-						int overlayBlockId = 0;
-						int currentBlockId = 0;
-						Block currentBlock = null;
-						Block overlayBlock = null;
-						NbtTagCompound newProperties = null;
-						NbtTagString waterloggedTag = null;
-						for(int bx = 0; bx < 16; ++bx) {
-							for(int bz = 0; bz < 16; ++bz) {
-								for(int by = 0; by < 16; ++by) {
-									intIndex = i / idsPerInt;
-									idIndex = i % idsPerInt;
-									paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
-									currentBlockId = sectionBlocks[by * 16 * 16 + bz * 16 + bx];
-									overlayBlockId = paletteMap[paletteIndex];
-									if(currentBlockId <= 0) {
-										// We don't yet have a block there, so just set it.
-										sectionBlocks[by * 16 * 16 + bz * 16 + bx] = overlayBlockId;
-									}else {
-										// There is a block there, so if this overlay block is water
-										// set the waterlogged property
-										overlayBlock = BlockRegistry.getBlock(overlayBlockId);
-										if(overlayBlock.getName().equals("minecraft:water")) {
-											currentBlock = BlockRegistry.getBlock(currentBlockId);
-											newProperties = (NbtTagCompound) currentBlock.getProperties().copy();
-											waterloggedTag = NbtTagString.newInstance("waterlogged", "true");
-											newProperties.addElement(waterloggedTag);
-											currentBlockId = BlockRegistry.getIdForName(currentBlock.getName(), 
-																	newProperties, 0, charBuffer);
-											newProperties.free();
+						}else {
+							// The following blocks are on extra layers, so we need to combine them together
+							int i = 0;
+							int overlayBlockId = 0;
+							int currentBlockId = 0;
+							Block currentBlock = null;
+							Block overlayBlock = null;
+							NbtTagCompound newProperties = null;
+							NbtTagString waterloggedTag = null;
+							for(int bx = 0; bx < 16; ++bx) {
+								for(int bz = 0; bz < 16; ++bz) {
+									for(int by = 0; by < 16; ++by) {
+										intIndex = i / idsPerInt;
+										idIndex = i % idsPerInt;
+										paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
+										paletteIndex %= paletteSize;
+										currentBlockId = sectionBlocks[by * 16 * 16 + bz * 16 + bx];
+										overlayBlockId = paletteMap[paletteIndex];
+										if(currentBlockId <= 0) {
+											// We don't yet have a block there, so just set it.
+											sectionBlocks[by * 16 * 16 + bz * 16 + bx] = overlayBlockId;
+										}else {
+											// There is a block there, so if this overlay block is water
+											// set the waterlogged property
+											overlayBlock = BlockRegistry.getBlock(overlayBlockId);
+											if(overlayBlock.getName().equals("minecraft:water")) {
+												currentBlock = BlockRegistry.getBlock(currentBlockId);
+												newProperties = (NbtTagCompound) currentBlock.getProperties().copy();
+												waterloggedTag = NbtTagString.newInstance("waterlogged", "true");
+												newProperties.addElement(waterloggedTag);
+												currentBlockId = BlockRegistry.getIdForName(currentBlock.getName(), 
+																		newProperties, 0, charBuffer);
+												newProperties.free();
+											}
+											sectionBlocks[by * 16 * 16 + bz * 16 + bx] = currentBlockId;
 										}
-										sectionBlocks[by * 16 * 16 + bz * 16 + bx] = currentBlockId;
+										i++;
 									}
-									i++;
 								}
 							}
 						}
@@ -286,36 +290,39 @@ public class ChunkBedrock extends Chunk{
 						biomeDis.readInts(sectionData, 0, numBytes);
 						
 						int paletteSize = biomeDis.readInt();
-						if(paletteMap == null || paletteMap.length < paletteSize)
-							paletteMap = new int[paletteSize];
-						
-						for (int i = 0; i < paletteSize; ++i) {
-							if((blockVersionNumber & 1) == 0) {
-								NbtTag block = NbtTag.readFromStream(biomeDis);
-								int id = 0;
-								if(block != null)
-									id = block.asByte();
-								String biomeName = BedrockBiomes.getName(id);
-								biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
-								paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
-								if(block != null)
-									block.free();
-							}else {
-								int id = biomeDis.readInt();
-								String biomeName = BedrockBiomes.getName(id);
-								biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
-								paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
+						if(paletteSize > 0) {
+							if(paletteMap == null || paletteMap.length < paletteSize)
+								paletteMap = new int[paletteSize];
+							
+							for (int i = 0; i < paletteSize; ++i) {
+								if((blockVersionNumber & 1) == 0) {
+									NbtTag block = NbtTag.readFromStream(biomeDis);
+									int id = 0;
+									if(block != null)
+										id = block.asByte();
+									String biomeName = BedrockBiomes.getName(id);
+									biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
+									paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
+									if(block != null)
+										block.free();
+								}else {
+									int id = biomeDis.readInt();
+									String biomeName = BedrockBiomes.getName(id);
+									biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
+									paletteMap[i] = BiomeRegistry.getIdForName(biomeName);
+								}
 							}
-						}
-						
-						for(int bx = 0; bx < 4; ++bx) {
-							for(int bz = 0; bz < 4; ++bz) {
-								for(int by = 0; by < 4; ++by) {
-									int i = (bx * 4) * 16 * 16 + (bz * 4) * 16 + (by * 4);
-									intIndex = i / idsPerInt;
-									idIndex = i % idsPerInt;
-									paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
-									sectionBiomes[by * 4 * 4 + bz * 4 + bx] = paletteMap[paletteIndex];
+							
+							for(int bx = 0; bx < 4; ++bx) {
+								for(int bz = 0; bz < 4; ++bz) {
+									for(int by = 0; by < 4; ++by) {
+										int i = (bx * 4) * 16 * 16 + (bz * 4) * 16 + (by * 4);
+										intIndex = i / idsPerInt;
+										idIndex = i % idsPerInt;
+										paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
+										paletteIndex %= paletteSize;
+										sectionBiomes[by * 4 * 4 + bz * 4 + bx] = paletteMap[paletteIndex];
+									}
 								}
 							}
 						}

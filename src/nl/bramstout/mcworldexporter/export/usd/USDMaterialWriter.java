@@ -107,9 +107,8 @@ public class USDMaterialWriter extends MaterialWriter{
 	}
 	
 	@Override
-	public void writeMaterial(MaterialTemplate material, String texture, boolean hasBiomeColor,
+	public void writeMaterial(String matName, MaterialTemplate material, String texture, boolean hasBiomeColor,
 										String parentPrim, String sharedPrims) throws IOException{
-		String matName = getMaterialName(texture, material, hasBiomeColor);
 		writer.beginDef("Material", matName);
 		writer.beginChildren();
 		for(Entry<String, String> conn : material.shadingGroup.entrySet()) {

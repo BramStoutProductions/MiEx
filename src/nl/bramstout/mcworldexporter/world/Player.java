@@ -37,6 +37,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.util.LinkedList;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -45,6 +46,65 @@ import com.google.gson.stream.JsonReader;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public class Player {
+	
+	private static LinkedList<Player> PLAYER_LOOKUP_QUEUE = new LinkedList<Player>();
+	
+	private static Thread PlayerLookupThread = new Thread(new Runnable() {
+
+		@Override
+		public void run() {
+			while(true) {
+				try {
+					Player player = null;
+					synchronized(PLAYER_LOOKUP_QUEUE) {
+						if(!PLAYER_LOOKUP_QUEUE.isEmpty()) {
+							player = PLAYER_LOOKUP_QUEUE.pop();
+						}
+					}
+					if(player == null) {
+						try {
+							Thread.sleep(50);
+						}catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						continue;
+					}
+					
+					// Try to get the player name from the UUID
+					HttpURLConnection connection = null;
+					InputStream stream = null;
+					try {
+						URL url = new URI("https://api.minecraftservices.com/minecraft/profile/lookup/" + player.uuid.replace("-", "")).toURL();
+						connection = (HttpURLConnection) url.openConnection();
+						stream = connection.getInputStream();
+						
+						JsonObject jsonData = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonObject();
+						if(jsonData.has("name")) {
+							player.name = jsonData.get("name").getAsString();
+						}
+					}catch(Exception ex) {
+						//ex.printStackTrace();
+					}
+					try {
+						if(stream != null)
+							stream.close();
+					}catch(Exception ex) {}
+					try {
+						if(connection != null)
+							connection.disconnect();
+					}catch(Exception ex) {}
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		}
+		
+	});
+	static {
+		PlayerLookupThread.setName("PlayerLookupThread");
+		PlayerLookupThread.setDaemon(true);
+		PlayerLookupThread.start();
+	}
 	
 	protected String uuid;
 	protected String name;
@@ -65,28 +125,9 @@ public class Player {
 		this.dimension = dimension;
 		
 		if(tryResolveName) {
-			// Try to get the player name from the UUID
-			HttpURLConnection connection = null;
-			InputStream stream = null;
-			try {
-				URL url = new URI("https://api.minecraftservices.com/minecraft/profile/lookup/" + uuid.replace("-", "")).toURL();
-				connection = (HttpURLConnection) url.openConnection();
-				stream = connection.getInputStream();
-				
-				JsonObject jsonData = JsonParser.parseReader(new JsonReader(new BufferedReader(new InputStreamReader(stream)))).getAsJsonObject();
-				if(jsonData.has("name"))
-					this.name = jsonData.get("name").getAsString();
-			}catch(Exception ex) {
-				//ex.printStackTrace();
+			synchronized(PLAYER_LOOKUP_QUEUE) {
+				PLAYER_LOOKUP_QUEUE.add(this);
 			}
-			try {
-				if(stream != null)
-					stream.close();
-			}catch(Exception ex) {}
-			try {
-				if(connection != null)
-					connection.disconnect();
-			}catch(Exception ex) {}
 		}
 	}
 

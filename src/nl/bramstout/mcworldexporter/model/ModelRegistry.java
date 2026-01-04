@@ -52,8 +52,6 @@ public class ModelRegistry {
 	
 	public static int getIdForName(String name, boolean doubleSided) {
 		if(!name.contains("geometry.")) {
-			if(!name.contains("/"))
-				name = "block/" + name;
 			if(!name.contains(":"))
 				name = "minecraft:" + name;
 		}

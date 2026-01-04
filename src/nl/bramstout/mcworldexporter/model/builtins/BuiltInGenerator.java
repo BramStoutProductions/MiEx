@@ -161,9 +161,14 @@ public abstract class BuiltInGenerator {
 			
 			EntityHandler handler = ResourcePacks.getEntityHandler(entityId);
 			
+			if(handler == null)
+				return;
+			
 			Entity entity = new Entity(entityId, properties, handler);
 			
 			Model model = handler.getModel(entity);
+			if(model == null)
+				return;
 			
 			context.model.addModel(model);
 		}
@@ -644,7 +649,16 @@ public abstract class BuiltInGenerator {
 							if(tag.getImpl() instanceof ExprValueNbtCompound) {
 								el = nbtToJson(((ExprValueNbtCompound) tag.getImpl()).getNbt());
 							}else {
-								el = JsonParser.parseString(tag.asString());
+								String text = tag.asString();
+								if(text.length() == 0) {
+									el = new JsonPrimitive(text);
+								}else {
+									if(text.charAt(0) == '{' || text.charAt(0) == '[') {
+										el = JsonParser.parseString(tag.asString());
+									}else {
+										el = new JsonPrimitive(text);
+									}
+								}
 							}
 							if (i == 0)
 								frontText1 = el;
@@ -655,6 +669,7 @@ public abstract class BuiltInGenerator {
 							else if (i == 3)
 								frontText4 = el;
 						} catch (Exception ex) {
+							System.err.println("Sign Text: " + tag.asString());
 							ex.printStackTrace();
 						}
 						i++;
@@ -682,7 +697,16 @@ public abstract class BuiltInGenerator {
 							if(tag.getImpl() instanceof ExprValueNbtCompound) {
 								el = nbtToJson(((ExprValueNbtCompound) tag.getImpl()).getNbt());
 							}else {
-								el = JsonParser.parseString(tag.asString());
+								String text = tag.asString();
+								if(text.length() == 0) {
+									el = new JsonPrimitive(text);
+								}else {
+									if(text.charAt(0) == '{' || text.charAt(0) == '[') {
+										el = JsonParser.parseString(tag.asString());
+									}else {
+										el = new JsonPrimitive(text);
+									}
+								}
 							}
 							if (i == 0)
 								backText1 = el;
@@ -693,6 +717,7 @@ public abstract class BuiltInGenerator {
 							else if (i == 3)
 								backText4 = el;
 						} catch (Exception ex) {
+							System.err.println("Sign Text: " + tag.asString());
 							ex.printStackTrace();
 						}
 						i++;

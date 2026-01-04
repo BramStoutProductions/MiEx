@@ -59,10 +59,14 @@ public class ModelItemGenerated extends Model{
 	
 	@Override
 	public Model postConstruct(Model topLevelModel) {
-		Model model = new Model(this);
-		model.getTextures().putAll(topLevelModel.getTextures());
-		generateModel(model);
-		return model;
+		//Model model = new Model(this);
+		//model.getTextures().putAll(topLevelModel.getTextures());
+		//model.getDisplayTransforms().putAll(topLevelModel.getDisplayTransforms());
+		//generateModel(model);
+		//return model;
+		if(topLevelModel.getFaces().isEmpty())
+			generateModel(topLevelModel);
+		return this;
 	}
 	
 	private static class LayeredItem{
