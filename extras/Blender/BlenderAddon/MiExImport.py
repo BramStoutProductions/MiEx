@@ -24,6 +24,7 @@ class SetupMaterials:
         self.data = data
         self.rootDir = rootDir
         self.hasTransparency = False
+        self.useBackfaceCulling = True
         self.options = options
 
     def setup_materials(self):
@@ -66,7 +67,7 @@ class SetupMaterials:
                 warnings.warn('Failed to connect terminal: ' + name, UserWarning)
                 raise e
         
-        self.mat.use_backface_culling = True
+        self.mat.use_backface_culling = self.useBackfaceCulling
         self.mat.blend_method = 'HASHED'
 
     def import_node(self,name,data):
@@ -81,6 +82,9 @@ class SetupMaterials:
                 try:
                     if isBsdf and attrName == "Alpha":
                         self.hasTransparency = True
+                    if isBsdf and attrName == "Backface Culling":
+                        self.useBackfaceCulling = bool(attrData['value'])
+                        continue
 
                     if attrData["type"] == "asset":
                         imagePath = attrData['value']
