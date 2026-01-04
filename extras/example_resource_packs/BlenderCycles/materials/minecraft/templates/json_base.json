@@ -51,6 +51,10 @@
                     "Base Color": {
                         "type": "Color",
                         "connection": "FILE.Color"
+                    },
+                    "Backface Culling":{
+                        "type": "Bool",
+                        "value": false
                     }
                 }
             },
