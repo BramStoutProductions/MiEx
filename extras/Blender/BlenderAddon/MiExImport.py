@@ -68,6 +68,10 @@ class SetupMaterials:
                 raise e
         
         self.mat.use_backface_culling = self.useBackfaceCulling
+        try:
+            self.mat.use_backface_culling_shadow = self.useBackfaceCulling
+        except:
+            pass
         self.mat.blend_method = 'HASHED'
 
     def import_node(self,name,data):
