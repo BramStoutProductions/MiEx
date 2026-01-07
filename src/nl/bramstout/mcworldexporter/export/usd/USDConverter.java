@@ -124,13 +124,13 @@ public class USDConverter extends Converter{
 		Materials.MaterialTemplate materialTemplate;
 		boolean hasBiomeColor;
 		
-		public Texture(String texture, String matTexture, boolean hasBiomeColor, Set<String> colorSets, 
-						Map<MatKey, Materials.MaterialTemplate> templates) {
+		public Texture(String texture, String matTexture, boolean hasBiomeColor, boolean isDoubleSided, 
+						Set<String> colorSets, Map<MatKey, Materials.MaterialTemplate> templates) {
 			this.texture = texture;
 			MatKey matKey = new MatKey(matTexture, hasBiomeColor);
 			this.materialTemplate = templates.getOrDefault(matKey, null);
 			if(this.materialTemplate == null) {
-				this.materialTemplate = Materials.getMaterial(matTexture, hasBiomeColor, colorSets,
+				this.materialTemplate = Materials.getMaterial(matTexture, hasBiomeColor, isDoubleSided, colorSets,
 										Exporter.currentExportFile.getParentFile().getAbsolutePath());
 				templates.put(matKey, materialTemplate);
 			}
@@ -857,7 +857,8 @@ public class USDConverter extends Converter{
 			}
 		}
 		
-		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.getColorSetNames(), templates);
+		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.isDoubleSided(), 
+										mesh.getColorSetNames(), templates);
 		String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
 		usedTextures.put(matName, textureObj);
 		
@@ -1115,7 +1116,7 @@ public class USDConverter extends Converter{
 				writer.writeAttributeValueIntArray(subset.getFaceIndices().getData(), subset.getFaceIndices().size());
 				if(subset.getMatTexture() != null) {
 					Texture textureObj2 = new Texture(subset.getTexture(), subset.getMatTexture(), mesh.hasColors(), 
-							mesh.getColorSetNames(), templates);
+							mesh.isDoubleSided(), mesh.getColorSetNames(), templates);
 					String matName = MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor);
 					usedTextures.put(matName, textureObj2);
 					writer.writeAttributeName("rel", "material:binding", false);

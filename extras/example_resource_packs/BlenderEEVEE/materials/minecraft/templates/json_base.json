@@ -471,6 +471,16 @@
                     }
                 }
             }
+        },
+        "@doubleSided@":{
+            "MAT": {
+                "attributes": {
+                    "Backface Culling":{
+                        "type": "Bool",
+                        "value": false
+                    }
+                }
+            }
         }
     }
 }

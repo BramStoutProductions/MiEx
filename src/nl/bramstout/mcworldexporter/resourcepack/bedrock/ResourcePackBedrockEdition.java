@@ -188,18 +188,80 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 									paths.add(path.getAsJsonObject().get("path").getAsString());
 								}else if(path.getAsJsonObject().has("variants")) {
 									JsonArray variations = path.getAsJsonObject().get("variants").getAsJsonArray();
+									String combinedPath = "";
+									for(JsonElement variation : variations.asList()) {
+										if(variation.isJsonObject()) {
+											JsonObject variationObj = variation.getAsJsonObject();
+											float weight = 1.0f;
+											if(variationObj.has("weight")) {
+												weight = variationObj.get("weight").getAsFloat();
+											}
+											if(variationObj.has("path")) {
+												if(!combinedPath.isEmpty())
+													combinedPath += "[|]";
+												combinedPath += Float.toString(weight) + "|" + variationObj.get("path").getAsString();
+											}
+										}
+									}
+									if(!combinedPath.isEmpty())
+										paths.add(combinedPath);
+								}else if(path.getAsJsonObject().has("variations")) {
+									JsonArray variations = path.getAsJsonObject().get("variations").getAsJsonArray();
+									String combinedPath = "";
 									for(JsonElement variation : variations.asList()) {
 										if(variation.isJsonObject()) {
 											JsonObject variationObj = variation.getAsJsonObject();
 											if(variationObj.has("path")) {
-												paths.add(variationObj.get("path").getAsString());
+												if(!combinedPath.isEmpty())
+													combinedPath += "[|]";
+												combinedPath += variationObj.get("path").getAsString();
 											}
 										}
 									}
+									if(!combinedPath.isEmpty())
+										paths.add(combinedPath);
 								}
 							}else if(path.isJsonPrimitive()) {
 								paths.add(path.getAsString());
 							}
+						}
+					}else if(textures.isJsonObject()) {
+						if(textures.getAsJsonObject().has("path")) {
+							paths.add(textures.getAsJsonObject().get("path").getAsString());
+						}else if(textures.getAsJsonObject().has("variants")) {
+							JsonArray variations = textures.getAsJsonObject().get("variants").getAsJsonArray();
+							String combinedPath = "";
+							for(JsonElement variation : variations.asList()) {
+								if(variation.isJsonObject()) {
+									JsonObject variationObj = variation.getAsJsonObject();
+									float weight = 1.0f;
+									if(variationObj.has("weight")) {
+										weight = variationObj.get("weight").getAsFloat();
+									}
+									if(variationObj.has("path")) {
+										if(!combinedPath.isEmpty())
+											combinedPath += "[|]";
+										combinedPath += Float.toString(weight) + "|" + variationObj.get("path").getAsString();
+									}
+								}
+							}
+							if(!combinedPath.isEmpty())
+								paths.add(combinedPath);
+						}else if(textures.getAsJsonObject().has("variations")) {
+							JsonArray variations = textures.getAsJsonObject().get("variations").getAsJsonArray();
+							String combinedPath = "";
+							for(JsonElement variation : variations.asList()) {
+								if(variation.isJsonObject()) {
+									JsonObject variationObj = variation.getAsJsonObject();
+									if(variationObj.has("path")) {
+										if(!combinedPath.isEmpty())
+											combinedPath += "[|]";
+										combinedPath += variationObj.get("path").getAsString();
+									}
+								}
+							}
+							if(!combinedPath.isEmpty())
+								paths.add(combinedPath);
 						}
 					}else if(textures.isJsonPrimitive()) {
 						paths.add(textures.getAsString());
@@ -288,6 +350,13 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 					if(textures.isJsonObject()) {
 						for(Entry<String, JsonElement> path : textures.getAsJsonObject().entrySet()) {
 							String varName = path.getKey();
+							if(varName.equals("side")) {
+								// Side is short hand for the different sides, so add those in.
+								paths.put("#north", path.getValue().getAsString());
+								paths.put("#south", path.getValue().getAsString());
+								paths.put("#east", path.getValue().getAsString());
+								paths.put("#west", path.getValue().getAsString());
+							}
 							if(!varName.startsWith("#") && !varName.equals("*"))
 								varName = "#" + varName;
 							paths.put(varName, path.getValue().getAsString());
@@ -296,6 +365,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 						paths.put("*", textures.getAsString());
 					}
 					String blockName = el.getKey();
+					blockTextureMappings.put(blockName, paths);
 					if(blockName.contains(":"))
 						blockName = blockName.substring(blockName.indexOf(':') + 1);
 					blockTextureMappings.put(blockName, paths);
@@ -711,9 +781,31 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		if(file.exists())
 			return file;
 		
+		// Try the same lookup again, but then remapping "block" to "blocks"
+		// and "item" to "items" because Bedrock names those folders like that.
+		tokens = namespaced_name.replace(":block/", ":blocks/").replace(":item/", ":items/").split(":");
+		path = type + "/" + tokens[tokens.length - 1];
+		
+		file = new File(getFolder(), path + extension);
+		if(file.exists())
+			return file;
+		
 		List<String> paths = terrain_textures.getOrDefault(name, null);
 		if(paths != null && paths.size() > 0) {
 			path = paths.get(0);
+			if(path.contains("[|]")) {
+				// This path is a list of variations.
+				// So just grab the first one.
+				int sep = path.indexOf("[|]");
+				if(sep >= 0) {
+					path = path.substring(0, sep);
+					// Remove the weight that was added in front of it.
+					int sep2 = path.indexOf('|');
+					if(sep2 >= 0) {
+						path = path.substring(sep2+1);
+					}
+				}
+			}
 			file = new File(getFolder(), path + extension);
 			if(file.exists())
 				return file;
@@ -846,6 +938,9 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 	}
 	
 	public static Map<String, String> getBlockTextureMapping(String blockName){
+		Map<String, String> res = blockTextureMappings.getOrDefault(blockName, null);
+		if(res != null)
+			return res;
 		if(blockName.contains(":"))
 			blockName = blockName.substring(blockName.indexOf(':') + 1);
 		return blockTextureMappings.getOrDefault(blockName, null);

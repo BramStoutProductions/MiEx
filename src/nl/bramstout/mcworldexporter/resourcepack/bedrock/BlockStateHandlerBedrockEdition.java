@@ -44,6 +44,7 @@ import com.google.gson.JsonObject;
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Random;
+import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
@@ -176,6 +177,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 			materialInstances.putAll(otherMaterialInstances);
 		}
 		
+		int variationsEncountered = 0;
 		for(Entry<String, String> entry : materialInstances.entrySet()) {
 			if(!entry.getValue().contains("/")) {
 				List<String> paths = ResourcePackBedrockEdition.getTerrainTexture(entry.getValue());
@@ -185,8 +187,50 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 				}else if(paths.size() > 0){
 					// Points to a path, so let's put that path in here
 					// Also make sure to unmap it, in case it's a vanilla texture
+					
+					String path = paths.get(0);
+					if(path.contains("[|]")) {
+						// This path is a list of variations.
+						// So let's separate it out.
+						String[] variations = path.split("(\\[\\|\\])");
+						// Each variation also has a weight with it.
+						String[] pathVariations = new String[variations.length];
+						float[] weightVariations = new float[variations.length];
+						float totalWeight = 0f;
+						for(int i = 0; i < variations.length; ++i) {
+							String variation = variations[i];
+							int sep = variation.indexOf('|');
+							float weight = 1f;
+							if(sep > 0) {
+								try {
+									weight = Float.parseFloat(variation.substring(0, sep));
+								}catch(Exception ex) {}
+							}
+							String pathVariation = variation.substring(sep+1);
+							pathVariations[i] = pathVariation;
+							weightVariations[i] = weight;
+							totalWeight += weight;
+						}
+						float random = Noise.get(x + variationsEncountered, y, z);
+						variationsEncountered++;
+						
+						random *= totalWeight;
+						
+						boolean hit = false;
+						for(int i = 0; i < variations.length; ++i) {
+							random -= weightVariations[i];
+							if(random <= 0f) {
+								path = pathVariations[i];
+								hit = true;
+								break;
+							}
+						}
+						if(!hit)
+							path = pathVariations[0];
+					}
+					
 					materialInstances.put(entry.getKey(), 
-							TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(paths.get(0)));
+							TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(path));
 				}
 			}
 		}

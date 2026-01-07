@@ -293,7 +293,8 @@ public class Materials {
 			return null;
 		}
 		
-		public boolean evaluateCondition(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
+		public boolean evaluateCondition(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
+										Set<String> colorSets, String currentWorkingDirectory) {
 			for(String condition : this.condition.split("&&")) {
 				boolean invert = false;
 				if(condition.startsWith("!")) {
@@ -309,6 +310,13 @@ public class Materials {
 						if(!hasBiomeColor)
 							return false;
 						continue;
+					}
+				}
+				if(condition.equals("@doubleSided@")) {
+					if(invert) {
+						return !isDoubleSided;
+					}else {
+						return isDoubleSided;
 					}
 				}
 				if(condition.startsWith("@color.")) {
@@ -491,12 +499,13 @@ public class Materials {
 			return false;
 		}
 		
-		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
+		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
+										Set<String> colorSets, String currentWorkingDirectory) {
 			MaterialTemplate material = new MaterialTemplate(name, 0);
 			material.shadingGroup = shadingGroup;
 			material.networks.add(new MaterialNetwork());
 			for(MaterialNetwork network : networks) {
-				if(!network.evaluateCondition(texture, hasBiomeColor, colorSets, currentWorkingDirectory))
+				if(!network.evaluateCondition(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory))
 					continue;
 				try {
 					material.networks.get(0).override(network, true);
@@ -521,7 +530,8 @@ public class Materials {
 	private static List<List<MaterialTemplate>> templates = null;
 	public static MaterialNetwork sharedNodes = new MaterialNetwork();
 	
-	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, Set<String> colorSets, String currentWorkingDirectory) {
+	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
+												Set<String> colorSets, String currentWorkingDirectory) {
 		if(templates == null) {
 			synchronized(templatesMutex) {
 				if(templates == null)
@@ -546,7 +556,7 @@ public class Materials {
 							currentTemplate = template;
 				}
 				if(currentTemplate != null)
-					return currentTemplate.flatten(texture, hasBiomeColor, colorSets, currentWorkingDirectory);
+					return currentTemplate.flatten(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory);
 			}
 		}catch(Exception ex) {
 			System.out.println("Failed to get material for texture " + texture);

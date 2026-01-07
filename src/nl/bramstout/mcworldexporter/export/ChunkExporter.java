@@ -718,9 +718,9 @@ public class ChunkExporter {
 		public String atlasTexture;
 		public Materials.MaterialTemplate materialTemplate;
 		
-		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, Set<String> colorSets) {
+		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, Set<String> colorSets) {
 			atlasTexture = item.atlas;
-			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, colorSets, "");
+			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, isDoubleSided, colorSets, "");
 		}
 		
 		@Override
@@ -744,12 +744,12 @@ public class ChunkExporter {
 	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
 	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
 	
-	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor) {
+	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided) {
 		String meshName = atlasMappings.getOrDefault(originalTexture, null);
 		if(meshName != null)
 			return meshName;
 		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, null);
+		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null);
 		meshName = atlasMappings2.getOrDefault(key, null);
 		if(meshName != null) {
 			atlasMappings.put(originalTexture, meshName);
@@ -862,7 +862,7 @@ public class ChunkExporter {
 		float lodYUVScale = lodNoUVScale ? 1.0f : lodYScale;
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
-			meshName = getMeshName(atlas, texture, tint != null);
+			meshName = getMeshName(atlas, texture, tint != null, doubleSided);
 			texture = atlas.atlas;
 			// When using an atlas, we can't just scale up the UVs.
 			lodUVScale = Math.min(lodUVScale, (float) atlas.padding);

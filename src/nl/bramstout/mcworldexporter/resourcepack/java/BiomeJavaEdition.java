@@ -33,8 +33,10 @@ package nl.bramstout.mcworldexporter.resourcepack.java;
 
 import java.awt.image.BufferedImage;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
@@ -48,6 +50,43 @@ public class BiomeJavaEdition extends Biome{
 		super(name, id);
 		this.data = data;
 		calculateTints();
+	}
+	
+	private int parseColor(JsonElement colorObj) {
+		if(colorObj.isJsonPrimitive()) {
+			JsonPrimitive colorPrim = colorObj.getAsJsonPrimitive();
+			if(colorPrim.isNumber()) {
+				return colorPrim.getAsInt();
+			}else if(colorPrim.isString()) {
+				String colorStr = colorPrim.getAsString();
+				if(colorStr.startsWith("#")) {
+					return Integer.parseUnsignedInt(colorStr.substring(1), 16);
+				}else {
+					return Integer.parseUnsignedInt(colorStr, 16);
+				}
+			}
+			return 0;
+		}else if(colorObj.isJsonArray()) {
+			JsonArray colorArray = colorObj.getAsJsonArray();
+			float r = 1f;
+			float g = 1f;
+			float b = 1f;
+			if(colorArray.size() >= 1) {
+				r = g = b = colorArray.get(0).getAsFloat();
+			}else if(colorArray.size() >= 2) {
+				g = b = colorArray.get(1).getAsFloat();
+			}else if(colorArray.size() >= 3) {
+				b = colorArray.get(2).getAsFloat();
+			}
+			r = (float) Math.pow(r, 1.0 / 2.2);
+			g = (float) Math.pow(g, 1.0 / 2.2);
+			b = (float) Math.pow(b, 1.0 / 2.2);
+			int ri = ((int) (r * 255.0f + 0.5f)) & 0xFF;
+			int gi = ((int) (g * 255.0f + 0.5f)) & 0xFF;
+			int bi = ((int) (b * 255.0f + 0.5f)) & 0xFF;
+			return (ri << 16) | (gi << 8) | bi;
+		}
+		return 0;
 	}
 	
 	@Override
@@ -64,15 +103,15 @@ public class BiomeJavaEdition extends Biome{
 			if(effectsObj != null) {
 				JsonElement foliageColourObj = effectsObj.get("foliage_color");
 				if(foliageColourObj != null)
-					foliageColourI = foliageColourObj.getAsInt();
+					foliageColourI = parseColor(foliageColourObj);
 				
 				JsonElement grassColourObj = effectsObj.get("grass_color");
 				if(grassColourObj != null)
-					grassColourI = grassColourObj.getAsInt();
+					grassColourI = parseColor(grassColourObj);
 				
 				JsonElement waterColourObj = effectsObj.get("water_color");
 				if(waterColourObj != null)
-					waterColourI = waterColourObj.getAsInt();
+					waterColourI = parseColor(waterColourObj);
 				
 				JsonElement grassColourModifierObj = effectsObj.get("grass_color_modifier");
 				if(grassColourModifierObj != null)

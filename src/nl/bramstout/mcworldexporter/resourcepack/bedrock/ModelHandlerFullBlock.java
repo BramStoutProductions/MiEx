@@ -51,43 +51,43 @@ public class ModelHandlerFullBlock extends ModelHandler{
 		// North
 		float[] points = new float[] {
 				-8f,  0f, -8f,
-				 8f, 16f, -8f
+				 8f, 16f, 8f
 		};
 		model.addFace(points, uvs, Direction.NORTH, "#north");
 		
 		// South
-		points = new float[] {
+		/*points = new float[] {
 				-8f,  0f, 8f,
 				 8f, 16f, 8f
-		};
+		};*/
 		model.addFace(points, uvs, Direction.SOUTH, "#south");
 		
 		// West
-		points = new float[] {
+		/*points = new float[] {
 				-8f,  0f, -8f,
 				-8f, 16f,  8f
-		};
+		};*/
 		model.addFace(points, uvs, Direction.WEST, "#west");
 		
 		// East
-		points = new float[] {
+		/*points = new float[] {
 				8f,  0f, -8f,
 				8f, 16f,  8f
-		};
+		};*/
 		model.addFace(points, uvs, Direction.EAST, "#east");
 		
 		// Up
-		points = new float[] {
+		/*points = new float[] {
 				-8f, 16f, -8f,
 				 8f, 16f,  8f
-		};
+		};*/
 		model.addFace(points, uvs, Direction.UP, "#up");
 		
 		// Down
-		points = new float[] {
+		/*points = new float[] {
 				-8f, 0f, -8f,
 				 8f, 0f,  8f
-		};
+		};*/
 		model.addFace(points, uvs, Direction.DOWN, "#down");
 	}
 

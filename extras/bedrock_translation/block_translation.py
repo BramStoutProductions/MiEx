@@ -247,6 +247,26 @@ def run():
             mappings.append(map)
 
         translations[key] = mappings
+    
+    # Add in some hardcoded mappings
+    translations["minecraft:light_block_0"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_1"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_2"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_3"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_4"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_5"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_6"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_7"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_8"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_9"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_10"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_11"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_12"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_13"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_14"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:light_block_15"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:border_block"] = [ { "name": "minecraft:air" } ]
+    translations["minecraft:unknown"] = [ { "name": "minecraft:air" } ]
 
     outData = [
         {

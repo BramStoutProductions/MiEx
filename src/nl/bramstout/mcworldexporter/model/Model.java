@@ -344,6 +344,10 @@ public class Model {
 	public boolean isDoubleSided() {
 		return doubleSided;
 	}
+	
+	public void setDoubleSided(boolean doubleSided) {
+		this.doubleSided = doubleSided;
+	}
 
 	public void addTexture(String name, String value) {
 		textures.put(name, value);

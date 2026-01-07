@@ -452,7 +452,10 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	private void processTagsFile(String resourceIdentifier, File file, 
 									Map<String, List<String>> tagToResourceIdentifiers) {
 		try {
-			JsonObject data = Json.read(file).getAsJsonObject();
+			JsonElement dataEl = Json.read(file);
+			if(dataEl == null || !dataEl.isJsonObject())
+				return;
+			JsonObject data = dataEl.getAsJsonObject();
 			
 			boolean replace = false;
 			if(data.has("replace"))
@@ -494,6 +497,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 				}
 			}
 		} catch (Exception e) {
+			System.out.println("Failure parsing file: " + file.getPath());
 			e.printStackTrace();
 		}
 	}

@@ -131,8 +131,10 @@ public class BlockStatePart {
 			this.scalePivot = new Vector3f(8f, 8f, 8f);
 			if(transformationObj.has("translation"))
 				this.translation = readVector3f(transformationObj.get("translation"));
-			if(transformationObj.has("rotation"))
+			if(transformationObj.has("rotation")) {
 				this.rotation = readVector3f(transformationObj.get("rotation"));
+				this.rotation.y *= -1f;
+			}
 			if(transformationObj.has("rotation_pivot")) {
 				this.rotationPivot = readVector3f(transformationObj.get("rotation_pivot"));
 				// MiEx origin is bottom left of the block

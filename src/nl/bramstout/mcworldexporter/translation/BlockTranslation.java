@@ -101,7 +101,9 @@ public class BlockTranslation {
 			if(nameMapping != null) {
 				NbtTag property = properties.get(name);
 				if(property != null) {
-					property.setName(nameMapping);
+					NbtTag copy = property.copy();
+					copy.setName(nameMapping);
+					properties.addElement(copy);
 				}
 			}
 			if(valueMapping != null) {

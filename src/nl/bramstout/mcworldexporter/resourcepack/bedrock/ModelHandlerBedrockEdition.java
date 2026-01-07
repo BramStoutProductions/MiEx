@@ -88,6 +88,17 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 	
 	@Override
 	public void getGeometry(Model model) {
+		// Bedrock Edition geometry is always double sided.
+		// If the model isn't already double sided and we need
+		// double sided to be true to correctly show the model,
+		// then set double sided to be true.
+		// The preference is for doubleSided to be false for blocks,
+		// to match Java Edition, so we only want to set it to true,
+		// when we need it.
+		if(!model.isDoubleSided())
+			if(needsDoubleSided())
+				model.setDoubleSided(true);
+		
 		if(parent != null) {
 			ModelHandler parentHandler = ResourcePacks.getModelHandler(parent);
 			if(parentHandler instanceof ModelHandlerBedrockEdition) {
@@ -98,6 +109,67 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 		}
 		
 		addBones(textureWidth, textureHeight, model);
+	}
+	
+	private boolean needsDoubleSided() {
+		if(!data.has("bones"))
+			return false;
+		
+		// If we have a cube that is missing one of its faces,
+		// then there's a good chance that we'll be able to see
+		// the back side of the faces and so we need doubleSided
+		// to be true. If none of the cubes are missing a face,
+		// then there's no way to see the back side of a face,
+		// and then we don't need doubleSided to be true.
+		// The preference is for doubleSided to be false for blocks,
+		// to match Java Edition.
+		JsonArray bones = data.get("bones").getAsJsonArray();
+		for(JsonElement boneEl : bones.asList()) {
+			JsonObject boneObj = boneEl.getAsJsonObject();
+			
+			if(boneObj.has("cubes")) {
+				for(JsonElement cubeEl : boneObj.get("cubes").getAsJsonArray().asList()) {
+					JsonObject cubeObj = cubeEl.getAsJsonObject();
+					
+					// If the cube is flipped, then we can also see the back side,
+					// but if we flip it twice, then it's the same as a 180 degree
+					// rotation and we no longer can see the back side.
+					// So if there was one or three flips, then we can also
+					// see the back side.
+					Vector3f size = readVector3f(cubeObj.get("size"));
+					int numNegatives = 0;
+					if(size.x < 0f)
+						numNegatives++;
+					if(size.y < 0f)
+						numNegatives++;
+					if(size.z < 0f)
+						numNegatives++;
+					if(numNegatives == 1 || numNegatives == 3)
+						return true;
+					
+					JsonElement uv = cubeObj.get("uv");
+					if(uv == null || uv.isJsonArray()) {
+						continue;
+					}else if(uv.isJsonObject()) {
+						JsonObject uvObj = uv.getAsJsonObject();
+						
+						if(!uvObj.has("north"))
+							return true;
+						if(!uvObj.has("south"))
+							return true;
+						if(!uvObj.has("east"))
+							return true;
+						if(!uvObj.has("west"))
+							return true;
+						if(!uvObj.has("up"))
+							return true;
+						if(!uvObj.has("down"))
+							return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 	
 	private void addBones(int textureWidth, int textureHeight, Model model) {
@@ -407,8 +479,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
-						origin.x + size.x, origin.y, origin.z,
-						origin.x, origin.y + size.y, origin.z
+						origin.x, origin.y, origin.z,
+						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
 					u0, v0,
@@ -420,7 +492,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				uvs[3] *= textureScaleV;
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.NORTH, texture));
-			} else if(uvObj.has("south")) {
+			}
+			if(uvObj.has("south")) {
 				JsonObject uvObj2 = uvObj.getAsJsonObject("south");
 				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
 				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
@@ -435,7 +508,7 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
-						origin.x, origin.y, origin.z + size.z,
+						origin.x, origin.y, origin.z,
 						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
@@ -448,7 +521,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				uvs[3] *= textureScaleV;
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.SOUTH, texture));
-			} else if(uvObj.has("west")) {
+			}
+			if(uvObj.has("west")) {
 				JsonObject uvObj2 = uvObj.getAsJsonObject("west");
 				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
 				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
@@ -464,7 +538,7 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				}
 				float[] points = new float[] {
 						origin.x, origin.y, origin.z,
-						origin.x, origin.y + size.y, origin.z + size.z
+						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
 					u0, v0,
@@ -476,7 +550,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				uvs[3] *= textureScaleV;
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.WEST, texture));
-			} else if(uvObj.has("east")) {
+			}
+			if(uvObj.has("east")) {
 				JsonObject uvObj2 = uvObj.getAsJsonObject("east");
 				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
 				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
@@ -491,8 +566,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
-						origin.x + size.x, origin.y, origin.z + size.z,
-						origin.x + size.x, origin.y + size.y, origin.z
+						origin.x, origin.y, origin.z,
+						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
 					u0, v0,
@@ -504,7 +579,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				uvs[3] *= textureScaleV;
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.EAST, texture));
-			} else if(uvObj.has("up")) {
+			}
+			if(uvObj.has("up")) {
 				JsonObject uvObj2 = uvObj.getAsJsonObject("up");
 				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
 				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
@@ -519,8 +595,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
-						origin.x, origin.y + size.y, origin.z + size.z,
-						origin.x + size.x, origin.y + size.y, origin.z
+						origin.x, origin.y, origin.z,
+						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
 					u0, v0,
@@ -532,7 +608,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 				uvs[3] *= textureScaleV;
 				bone.faceIds.add(model.getFaces().size());
 				faces.add(model.addFace(points, uvs, Direction.UP, texture));
-			} else if(uvObj.has("down")) {
+			}
+			if(uvObj.has("down")) {
 				JsonObject uvObj2 = uvObj.getAsJsonObject("down");
 				float u0 = uvObj2.get("uv").getAsJsonArray().get(0).getAsFloat();
 				float v0 = uvObj2.get("uv").getAsJsonArray().get(1).getAsFloat();
@@ -547,8 +624,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 					texture = "#" + uvObj2.get("material_instance").getAsString();
 				}
 				float[] points = new float[] {
-						origin.x, origin.y, origin.z + size.z,
-						origin.x + size.x, origin.y, origin.z
+						origin.x, origin.y, origin.z,
+						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
 				float[] uvs = new float[] {
 					u0, v0,
