@@ -40,6 +40,8 @@ import java.util.Map.Entry;
 
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.world.Block;
 
 public class ConnectedTextures {
 	
@@ -70,6 +72,16 @@ public class ConnectedTextures {
 			return true;
 		}
 		
+	}
+	
+	public static class MatchBlock{
+		public String name;
+		public BlockStateConstraint state;
+		
+		public MatchBlock(String name, BlockStateConstraint state) {
+			this.name = name;
+			this.state = state;
+		}
 	}
 	
 	private static Map<String, List<ConnectedTexture>> connectedTexturesByTile = new HashMap<String, List<ConnectedTexture>>();
@@ -109,8 +121,8 @@ public class ConnectedTextures {
 		connectedTextures2.add(connectedTexture);
 	}
 	
-	public static Entry<ConnectedTexture, List<ConnectedTexture>> getConnectedTexture(String block, NbtTagCompound properties, String texture) {
-		List<ConnectedTexture> connectedTextures = getConnectedTextures(block, properties, texture);
+	public static Entry<ConnectedTexture, List<ConnectedTexture>> getConnectedTexture(Block block, int x, int y, int z, Biome biome, String texture) {
+		List<ConnectedTexture> connectedTextures = getConnectedTextures(block, x, y, z, biome, texture);
 		if(connectedTextures == null)
 			return null;
 		ConnectedTexture main = null;
@@ -146,8 +158,8 @@ public class ConnectedTextures {
 		};
 	}
 	
-	private static List<ConnectedTexture> getConnectedTextures(String block, NbtTagCompound properties, String texture) {
-		Map<BlockStateConstraint, List<ConnectedTexture>> byBlock = connectedTexturesByBlock.get(block);
+	private static List<ConnectedTexture> getConnectedTextures(Block block, int x, int y, int z, Biome biome, String texture) {
+		Map<BlockStateConstraint, List<ConnectedTexture>> byBlock = connectedTexturesByBlock.get(block.getName());
 		List<ConnectedTexture> byTile = connectedTexturesByTile.get(texture);
 		
 		if(byBlock == null && byTile == null)
@@ -157,9 +169,11 @@ public class ConnectedTextures {
 		int maxPriority = 0;
 		if(byBlock != null) {
 			for(Entry<BlockStateConstraint, List<ConnectedTexture>> texs : byBlock.entrySet()) {
-				if(!texs.getKey().meetsConstraint(properties))
+				if(!texs.getKey().meetsConstraint(block.getProperties()))
 					continue;
 				for(ConnectedTexture tex : texs.getValue()) {
+					if(!tex.testConstraints(block, x, y, z, biome))
+						continue;
 					if(tex.getPriority() == maxPriority)
 						res.add(tex);
 					else if(tex.getPriority() > maxPriority) {
@@ -172,6 +186,8 @@ public class ConnectedTextures {
 		}
 		if(byTile != null) {
 			for(ConnectedTexture tex : byTile) {
+				if(!tex.testConstraints(block, x, y, z, biome))
+					continue;
 				if(tex.getPriority() == maxPriority)
 					res.add(tex);
 				else if(tex.getPriority() > maxPriority) {

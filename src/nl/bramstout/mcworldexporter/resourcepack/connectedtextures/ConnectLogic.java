@@ -39,6 +39,7 @@ import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures.MatchBlock;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
@@ -92,6 +93,8 @@ public abstract class ConnectLogic {
 				if(thisTex != null)
 					break;
 			}
+			if(thisTex == null)
+				return false;
 			models.clear();
 			otherState.getDefaultModels(models);
 			for(Model model : models) {
@@ -104,6 +107,8 @@ public abstract class ConnectLogic {
 				if(otherTex != null)
 					break;
 			}
+			if(otherTex == null)
+				return false;
 			return thisTex.equals(otherTex);
 		}
 		
@@ -111,13 +116,20 @@ public abstract class ConnectLogic {
 	
 	public static class ConnectLogicBlockNames extends ConnectLogic{
 		
-		public List<String> blockNames = new ArrayList<String>();
+		public List<MatchBlock> blocks = new ArrayList<MatchBlock>();
 		
 		@Override
 		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
 			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
 			Block otherBlock = BlockRegistry.getBlock(otherId);
-			return blockNames.contains(otherBlock.getName());
+			
+			for(MatchBlock block : blocks) {
+				if(otherBlock.getName().equals(block.name) && block.state.meetsConstraint(otherBlock.getProperties())) {
+					return true;
+				}
+			}
+			
+			return false;
 		}
 		
 	}
@@ -143,6 +155,8 @@ public abstract class ConnectLogic {
 				if(otherTex != null)
 					break;
 			}
+			if(otherTex == null)
+				return false;
 			
 			return textures.contains(otherTex);
 		}

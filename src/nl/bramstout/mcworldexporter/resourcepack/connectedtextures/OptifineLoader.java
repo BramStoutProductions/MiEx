@@ -44,8 +44,12 @@ import java.util.Map.Entry;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.BlockConstraints.BlockConstraintBiome;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.BlockConstraints.BlockConstraintHeight;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.BlockConstraints.HeightRange;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextureRandom.Symmetry;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures.BlockStateConstraint;
+import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures.MatchBlock;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 
 public class OptifineLoader extends ConnectedTexturesLoader{
@@ -123,11 +127,11 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 			String line;
 			while((line = reader.readLine()) != null) {
 				line = line.trim();
-				String[] tokens = line.split("=");
-				if(tokens.length != 2)
+				int sep = line.indexOf('=');
+				if(sep < 0)
 					continue;
-				String key = tokens[0].trim();
-				String value = tokens[1].trim();
+				String key = line.substring(0, sep).trim();
+				String value = line.substring(sep + 1).trim();
 				if(key.equalsIgnoreCase("method"))
 					method = value;
 				else if(key.equalsIgnoreCase("tiles"))
@@ -347,12 +351,10 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 			}
 		}
 		if(connectBlocks != null) {
-			String[] blocksTokens = connectBlocks.split("[ ,]");
+			List<MatchBlock> matches = parseBlockList(connectBlocks);
 			connectLogic = new ConnectLogic.ConnectLogicBlockNames();
-			for(String block : blocksTokens) {
-				if(!block.contains(":"))
-					block = "minecraft:" + block;
-				((ConnectLogic.ConnectLogicBlockNames)connectLogic).blockNames.add(block);
+			for(MatchBlock match : matches) {
+				((ConnectLogic.ConnectLogicBlockNames)connectLogic).blocks.add(match);
 			}
 		}
 		connectedTexture.setConnectLogic(connectLogic);
@@ -393,11 +395,39 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		}
 		
 		if(biomes != null) {
-			// Currently not supported
+			BlockConstraintBiome constraint = new BlockConstraintBiome();
+			if(biomes.startsWith("!"))
+				constraint.invert = true;
+			String[] tokens = biomes.split("[ ,]");
+			for(String token : tokens) {
+				token = token.replace("!", "");
+				if(token.contains(":"))
+					constraint.biomes.add(token);
+				else
+					constraint.biomes.add("minecraft:" + token);
+			}
+			connectedTexture.getBlockConstraints().add(constraint);
 		}
 		
 		if(heights != null) {
-			// Currently not supported
+			BlockConstraintHeight constraint = new BlockConstraintHeight();
+			String[] tokens = heights.split("[ ,]");
+			for(String token : tokens) {
+				if(token.contains("-")) {
+					try {
+						int sep = token.indexOf('-');
+						int minVal = Integer.parseInt(token.substring(0, sep));
+						int maxVal = Integer.parseInt(token.substring(sep+1));
+						constraint.ranges.add(new HeightRange(minVal, maxVal));
+					}catch(Exception ex) {}
+				}else {
+					try {
+						int intVal = Integer.parseInt(token);
+						constraint.ranges.add(new HeightRange(intVal, intVal));
+					}catch(Exception ex) {}
+				}
+			}
+			connectedTexture.getBlockConstraints().add(constraint);
 		}
 		
 		if(method.equalsIgnoreCase("random")) {
@@ -431,34 +461,46 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 			}
 		}
 		if(matchBlocks != null) {
-			String[] blocksTokens = matchBlocks.split("[ ]");
-			for(String block : blocksTokens) {
-				String[] blockTokens = block.split(":");
-				String blockNamespace = "minecraft";
-				String blockName = blockTokens[0];
-				BlockStateConstraint stateConstraint = new BlockStateConstraint();
-				if(blockTokens.length > 1) {
-					int propertyStartIndex = 1;
-					if(!blockTokens[1].contains("=")){
-						// If the next token doesn't contain an =,
-						// then it's the block name and not a property
-						blockNamespace = blockTokens[0];
-						blockName = blockTokens[1];
-						propertyStartIndex=2;
-					}
-					for(int i = propertyStartIndex; i < blockTokens.length; ++i) {
-						int equalsIndex = blockTokens[i].indexOf('=');
-						if(equalsIndex < 0)
-							continue;
-						String propertyName = blockTokens[i].substring(0, equalsIndex);
-						String valueStr = blockTokens[i].substring(equalsIndex + 1);
-						String[] valueTokens = valueStr.split(",");
-						stateConstraint.checks.put(propertyName, Arrays.asList(valueTokens));
-					}
-				}
-				ConnectedTextures.registerConnectedTextureByBlock(blockNamespace + ":" + blockName, stateConstraint, connectedTexture);
+			List<MatchBlock> matches = parseBlockList(matchBlocks);
+			for(MatchBlock match : matches) {
+				ConnectedTextures.registerConnectedTextureByBlock(match.name, match.state, connectedTexture);
 			}
 		}
+	}
+	
+	private List<MatchBlock> parseBlockList(String matchBlocks){
+		List<MatchBlock> res = new ArrayList<MatchBlock>();
+		
+		String[] blocksTokens = matchBlocks.split("[ ,]");
+		for(String block : blocksTokens) {
+			String[] blockTokens = block.split(":");
+			String blockNamespace = "minecraft";
+			String blockName = blockTokens[0];
+			BlockStateConstraint stateConstraint = new BlockStateConstraint();
+			if(blockTokens.length > 1) {
+				int propertyStartIndex = 1;
+				if(!blockTokens[1].contains("=")){
+					// If the next token doesn't contain an =,
+					// then it's the block name and not a property
+					blockNamespace = blockTokens[0];
+					blockName = blockTokens[1];
+					propertyStartIndex=2;
+				}
+				for(int i = propertyStartIndex; i < blockTokens.length; ++i) {
+					int equalsIndex = blockTokens[i].indexOf('=');
+					if(equalsIndex < 0)
+						continue;
+					String propertyName = blockTokens[i].substring(0, equalsIndex);
+					String valueStr = blockTokens[i].substring(equalsIndex + 1);
+					String[] valueTokens = valueStr.split(",");
+					stateConstraint.checks.put(propertyName, Arrays.asList(valueTokens));
+				}
+			}
+			
+			res.add(new MatchBlock(blockNamespace + ":" + blockName, stateConstraint));
+		}
+		
+		return res;
 	}
 
 }

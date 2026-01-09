@@ -59,6 +59,7 @@ import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.Occlusion;
 import nl.bramstout.mcworldexporter.model.Subdivider;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
@@ -255,6 +256,8 @@ public class ChunkExporter {
 					else if(state.isRandomAnimationYOffset())
 						uvOffsetY = (float) Math.floor(Noise.get(0, by, 0) * 32.0f);
 					
+					int biomeId = chunk.getBiomeIdLocal(bx, by, bz);
+					Biome biomeInstance = BiomeRegistry.getBiome(biomeId);
 					
 					if(state.isGrassColormap() || state.isFoliageColormap() || state.isWaterColormap() || 
 							liquidState != null || state.getTint() != null)
@@ -264,13 +267,13 @@ public class ChunkExporter {
 						handleIndividualBlock(blockId, wx, by, wz, offsetX, offsetY, offsetZ, state.isNeedsConnectionInfo());
 					}else {
 						handleBlock(models, state, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, detailedOcclusionFaces, 
-									wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY, biome, lodSize, lodYSize, occlusionHandler);
+									wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY, biomeInstance, biome, lodSize, lodYSize, occlusionHandler);
 					}
 					
 					
 					if(liquidState != null) {
 						handleLiquidState(models, state, liquidState, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, 
-									wx, by, wz, biome, lodSize, lodYSize, occlusionHandler);
+									wx, by, wz, biomeInstance, biome, lodSize, lodYSize, occlusionHandler);
 					}
 				}
 			}
@@ -302,7 +305,7 @@ public class ChunkExporter {
 	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, int dataVersion, long occlusion, 
 							long ambientOcclusion, List<ModelFace> detailedOcclusionFaces, int wx, int by, int wz, 
 							float offsetX, float offsetY, float offsetZ, float uvOffsetY,
-							BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
+							Biome biomeInstance, BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
 		models.clear();
 		state.getModels(blockId[1], blockId[2], blockId[3], models);
 		
@@ -338,7 +341,8 @@ public class ChunkExporter {
 				
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
-				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), wx, by, wz, 
+				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
+						biomeInstance, wx, by, wz, wx, by, wz, 
 						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), 
 						lodSize, lodYSize, state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
 				
@@ -351,7 +355,7 @@ public class ChunkExporter {
 	
 	private void handleLiquidState(List<Model> models, BakedBlockState state, BakedBlockState liquidState, int[] blockId,
 									int dataVersion, long occlusion, long ambientOcclusion, int wx, int by, int wz, 
-									BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
+									Biome biomeInstance, BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler) {
 		models.clear();
 		liquidState.getModels(blockId[1], blockId[2], blockId[3], models);
 		
@@ -372,7 +376,8 @@ public class ChunkExporter {
 				
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
-				addFace(meshes, "minecraft:water", blockId[0], dataVersion, face, model.getTexture(face.getTexture()), wx, by, wz, 
+				addFace(meshes, "minecraft:water", blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
+						biomeInstance, wx, by, wz, wx, by, wz, 
 						0f, 0f, 0f, 0f, model.getExtraData(), biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, 
 						state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
 				
@@ -772,7 +777,7 @@ public class ChunkExporter {
 	}
 	
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
-			float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
+			Biome biome, int ix, int iy, int iz, float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
 			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale, boolean noConnectedTextures, long ambientOcclusion, int cornerData) {
 		if(texture == null || texture.equals(""))
@@ -782,7 +787,7 @@ public class ChunkExporter {
 		if(!noConnectedTextures) {
 			Block block = BlockRegistry.getBlock(blockId);
 			Entry<ConnectedTexture, List<ConnectedTexture>> connectedTextures = 
-										ConnectedTextures.getConnectedTexture(blockName, block.getProperties(), texture);
+										ConnectedTextures.getConnectedTexture(block, ix, iy, iz, biome, texture);
 			if(connectedTextures != null) {
 				ConnectedTexture connectedTexture = connectedTextures.getKey();
 				if(connectedTexture != null) {
@@ -817,22 +822,23 @@ public class ChunkExporter {
 											// so figure that out.
 											
 											// Get the biome
-											BlendedBiome biome = new BlendedBiome();
-											getBlendedBiome((int) bx, (int) by, (int) bz, biome);
+											BlendedBiome biome2 = new BlendedBiome();
+											getBlendedBiome(ix, iy, iz, biome2);
 											
 											// Get a block state for the tintBlock name
 											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
 																					dataVersion, charBuffer);
 											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
 																						(int) bx, (int) by, (int) bz);
-											overlayTint = biome.getBiomeColor(blockState);
+											overlayTint = biome2.getBiomeColor(blockState);
 										}else {
 											overlayTint = tint;
 										}
 									}
 								}
 								
-								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, bx, by, bz, ox, oy, oz, 
+								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, 
+										ix, iy, iz, bx, by, bz, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
 										lodNoUVScale, true, ambientOcclusion, cornerData);
 							}

@@ -38,6 +38,8 @@ import java.util.Set;
 
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.world.Block;
 
 public abstract class ConnectedTexture {
 	
@@ -50,6 +52,7 @@ public abstract class ConnectedTexture {
 	private ConnectLogic connectLogic;
 	private Integer tintIndex;
 	private String tintBlock;
+	private List<BlockConstraints> blockConstraints;
 	
 	public ConnectedTexture(String name, int priority) {
 		this.name = name;
@@ -59,9 +62,18 @@ public abstract class ConnectedTexture {
 		this.connectLogic = null;
 		this.tintIndex = null;
 		this.tintBlock = null;
+		this.blockConstraints = new ArrayList<BlockConstraints>();
 	}
 	
 	public abstract String getTexture(int x, int y, int z, ModelFace face);
+	
+	public boolean testConstraints(Block block, int x, int y, int z, Biome biome) {
+		for(BlockConstraints constraint : blockConstraints) {
+			if(!constraint.test(block, x, y, z, biome))
+				return false;
+		}
+		return true;
+	}
 	
 	public boolean isOverlay() {
 		return false;
@@ -362,6 +374,10 @@ public abstract class ConnectedTexture {
 	
 	public void setTintBlock(String tintBlock) {
 		this.tintBlock = tintBlock;
+	}
+	
+	public List<BlockConstraints> getBlockConstraints(){
+		return blockConstraints;
 	}
 	
 }
