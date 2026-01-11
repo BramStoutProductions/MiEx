@@ -37,6 +37,8 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
+import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation.BlockConnections;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
@@ -53,14 +55,12 @@ public class BlockState {
 	protected boolean caveBlock;
 	protected boolean randomOffset;
 	protected boolean randomYOffset;
-	protected boolean grassColormap;
-	protected boolean foliageColormap;
-	protected boolean waterColormap;
 	protected boolean doubleSided;
 	protected boolean randomAnimationXZOffset;
 	protected boolean randomAnimationYOffset;
 	protected boolean lodNoUVScale;
 	protected int lodPriority;
+	protected Tint tint;
 	protected boolean _needsConnectionInfo;
 	protected BlockConnections blockConnections;
 	protected BlockStateHandler handler;
@@ -77,14 +77,12 @@ public class BlockState {
 		this.caveBlock = Config.caveBlocks.contains(name);
 		this.randomOffset = Config.randomOffset.contains(name);
 		this.randomYOffset = Config.randomYOffset.contains(name);
-		grassColormap = Config.grassColormapBlocks.contains(name);
-		foliageColormap = Config.foliageColormapBlocks.contains(name);
-		waterColormap = Config.waterColormapBlocks.contains(name);
 		doubleSided = Config.doubleSided.contains(name) || Config.forceDoubleSidedOnEverything;
 		randomAnimationXZOffset = Config.randomAnimationXZOffset.contains(name);
 		randomAnimationYOffset = Config.randomAnimationYOffset.contains(name);
 		lodNoUVScale = Config.lodNoUVScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
+		tint = Tints.getTint(name);
 		BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
 												.getWorld().getBlockConnectionsTranslation();
 		if(blockConnectionsTranslation != null)
@@ -139,18 +137,6 @@ public class BlockState {
 		return doubleSided;
 	}
 	
-	public boolean isGrassColormap() {
-		return grassColormap;
-	}
-	
-	public boolean isFoliageColormap() {
-		return foliageColormap;
-	}
-	
-	public boolean isWaterColormap() {
-		return waterColormap;
-	}
-	
 	public int getLodPriority() {
 		return lodPriority;
 	}
@@ -173,6 +159,10 @@ public class BlockState {
 	
 	public int getDataVersion() {
 		return dataVersion;
+	}
+	
+	public Tint getTint() {
+		return tint;
 	}
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
@@ -210,7 +200,7 @@ public class BlockState {
 	}
 
 	public boolean hasTint() {
-		return grassColormap || foliageColormap || waterColormap;
+		return tint != null;
 	}
 	
 }

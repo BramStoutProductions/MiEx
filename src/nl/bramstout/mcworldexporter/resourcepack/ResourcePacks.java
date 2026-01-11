@@ -36,8 +36,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JOptionPane;
 
@@ -65,6 +67,7 @@ public class ResourcePacks {
 	private static List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>();
 	private static Object mutex = new Object();
 	private static Map<String, Integer> defaultColours = new HashMap<String, Integer>();
+	private static Set<String> colorMaps = new HashSet<String>();
 	
 	public static void init() {
 		synchronized(mutex) {
@@ -94,6 +97,12 @@ public class ResourcePacks {
 			newActiveResourcePacks.add(getResourcePack("base_resource_pack"));
 			
 			activeResourcePacks = newActiveResourcePacks;
+			
+			colorMaps.clear();
+			for(ResourcePack rp : activeResourcePacks) {
+				rp.getColorMaps(colorMaps);
+			}
+			
 			for(int i = activeResourcePacks.size()-1; i >= 0; --i)
 				activeResourcePacks.get(i).load();
 		}
@@ -168,6 +177,11 @@ public class ResourcePacks {
 		ResourcePack baseResourcePack = getResourcePack("base_resource_pack");
 		if(baseResourcePack != null)
 			activeResourcePacks.add(baseResourcePack);
+		
+		colorMaps.clear();
+		for(ResourcePack rp : activeResourcePacks) {
+			rp.getColorMaps(colorMaps);
+		}
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Loading resource packs");
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
@@ -450,6 +464,10 @@ public class ResourcePacks {
 				return font;
 		}
 		return null;
+	}
+	
+	public static Set<String> getColorMaps(){
+		return colorMaps;
 	}
 	
 }

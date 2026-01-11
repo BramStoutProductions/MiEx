@@ -43,6 +43,9 @@ import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
+import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
@@ -54,13 +57,21 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	private String flowTexture;
 	
 	public BakedBlockStateLiquid(String name) {
-		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, false, false, 
-				Config.waterColormapBlocks.contains(name), // Only apply the water biome colour when we say to in the config.
-				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), false, 2, null, true);
+		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, 
+				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), 
+				false, 2, getTintLayers(name), true);
 		String[] nameTokens = getName().split(":");
 		stillTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_still";
 		flowTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_flow";
 		modelCache = new Cache<Model>();
+	}
+	
+	private static TintLayers getTintLayers(String name) {
+		Tint tint = Tints.getTint(name);
+		if(tint != null) {
+			return tint.getTint(null);
+		}
+		return null;
 	}
 	
 	public void getModels(int x, int y, int z, List<Model> res){

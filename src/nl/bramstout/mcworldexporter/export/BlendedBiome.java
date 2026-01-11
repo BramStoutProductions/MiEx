@@ -31,95 +31,70 @@
 
 package nl.bramstout.mcworldexporter.export;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 
 public class BlendedBiome {
 	
-	private Color grassColor;
-	private Color foliageColor;
-	private Color waterColor;
-	private float grassWeight;
-	private float foliageWeight;
-	private float waterWeight;
+	private static class WeightedColor{
+		public Color color;
+		public float weight;
+		
+		public WeightedColor() {
+			this.color = new Color(0f, 0f, 0f, 0f);
+			this.weight = 0f;
+		}
+	}
+	
+	private Map<String, WeightedColor> colors;
 	
 	public BlendedBiome() {
-		this.grassColor = new Color(0);
-		this.foliageColor = new Color(0);
-		this.waterColor = new Color(0);
-		this.grassWeight = 0.0f;
-		this.foliageWeight = 0.0f;
-		this.waterWeight = 0.0f;
+		this.colors = new HashMap<String, WeightedColor>();
 	}
 	
 	public void clear() {
-		grassColor.set(0f, 0f, 0f);
-		foliageColor.set(0f, 0f, 0f);
-		waterColor.set(0f, 0f, 0f);
-		grassWeight = 0.0f;
-		foliageWeight = 0.0f;
-		waterWeight = 0.0f;
+		for(Entry<String, WeightedColor> entry : colors.entrySet()) {
+			entry.getValue().color.set(0f, 0f, 0f, 0f);
+			entry.getValue().weight = 0f;
+		}
 	}
 	
 	public void normalise() {
-		if(grassWeight > 0.0f) {
-			float invWeight = 1.0f / grassWeight;
-			grassColor.mult(invWeight);
-		}else {
-			grassColor.set(1f, 1f, 1f);
-		}
-		if(foliageWeight > 0.0f) {
-			float invWeight = 1.0f / foliageWeight;
-			foliageColor.mult(invWeight);
-		}else {
-			foliageColor.set(1f, 1f, 1f);
-		}
-		if(waterWeight > 0.0f) {
-			float invWeight = 1.0f / waterWeight;
-			waterColor.mult(invWeight);
-		}else {
-			waterColor.set(1f, 1f, 1f);
+		for(Entry<String, WeightedColor> entry : colors.entrySet()) {
+			if(entry.getValue().weight > 0.0f) {
+				float invWeight = 1.0f / entry.getValue().weight;
+				entry.getValue().color.mult(invWeight);
+			}else {
+				entry.getValue().color.set(1f, 1f, 1f);
+			}
 		}
 	}
 	
-	public Color getFoliageColour() {
-		return foliageColor;
-	}
-	
-	public Color getGrassColour() {
-		return grassColor;
-	}
-	
-	public Color getWaterColour() {
-		return waterColor;
+	public Color getColor(String name) {
+		WeightedColor color = colors.getOrDefault(name, null);
+		if(color == null)
+			return null;
+		if(color.weight == 0.0f)
+			return null;
+		return color.color;
 	}
 	
 	public void addBiome(Biome biome, float weight) {
-		if(biome.getGrassColour() != null) {
-			grassColor.addWeighted(biome.getGrassColour(), weight);
-			grassWeight += weight;
+		for(Entry<String, Color> entry : biome.getColors()) {
+			if(entry.getValue() == null)
+				continue;
+			WeightedColor color = colors.getOrDefault(entry.getKey(), null);
+			if(color == null) {
+				color = new WeightedColor();
+				colors.put(entry.getKey(), color);
+			}
+			color.color.addWeighted(entry.getValue(), weight);
+			color.weight += weight;
 		}
-		if(biome.getFoliageColour() != null) {
-			foliageColor.addWeighted(biome.getFoliageColour(), weight);
-			foliageWeight += weight;
-		}
-		if(biome.getWaterColour() != null) {
-			waterColor.addWeighted(biome.getWaterColour(), weight);
-			waterWeight += weight;
-		}
-	}
-	
-	public Color getBiomeColor(BakedBlockState block) {
-		if(block.getTint() != null)
-			return block.getTint();
-		if(block.isGrassColormap())
-			return getGrassColour();
-		else if(block.isFoliageColormap())
-			return getFoliageColour();
-		else if(block.isWaterColormap())
-			return getWaterColour();
-		return null;
 	}
 	
 }

@@ -144,6 +144,9 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 						numNegatives++;
 					if(size.z < 0f)
 						numNegatives++;
+					if(cubeObj.has("mirror"))
+						if(cubeObj.get("mirror").getAsBoolean())
+							numNegatives++;
 					if(numNegatives == 1 || numNegatives == 3)
 						return true;
 					
@@ -195,8 +198,8 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			parents.put(bone, parent);
 			
 			if(boneObj.has("pivot")) {
-				bone.translation = readVector3f(boneObj.get("pivot"));
-				//bone.translation.x *= -1f;
+				bone.pivot = readVector3f(boneObj.get("pivot"));
+				bone.pivot.x *= -1f;
 			}
 			if(boneObj.has("rotation"))
 				bone.rotation = readVector3f(boneObj.get("rotation"));
@@ -302,14 +305,14 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 	}
 	
 	private void pivotToLocalSpace(ModelBone bone, Model model) {
-		if(bone.getParent() != null) {
+		/*if(bone.getParent() != null) {
 			bone.translation = bone.translation.subtract(bone.getParent().getWorldSpacePivot());
 		}
 		for(ModelBone bone2 : model.getBones()) {
 			if(bone2.getParent() != bone)
 				continue;
 			pivotToLocalSpace(bone2, model);
-		}
+		}*/
 	}
 	
 	private void addCube(JsonObject cubeObj, Model model, ModelBone bone, boolean mirror, float inflate, 
@@ -325,11 +328,12 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 		Vector3f rotation = baseRotation;
 		if(cubeObj.has("rotation"))
 			rotation = readVector3f(cubeObj.get("rotation"));
-		Vector3f pivot = new Vector3f(baseTranslation);
+		Vector3f pivot = new Vector3f(origin.add(size.multiply(0.5f)));
 		if(cubeObj.has("pivot")) {
 			pivot = readVector3f(cubeObj.get("pivot"));
 		}
 		pivot.x *= -1f;
+		//pivot.z *= -1f;
 		
 		if(cubeObj.has("inflate"))
 			inflate = cubeObj.get("inflate").getAsFloat();
@@ -646,9 +650,9 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 		
 		// Bedrock has its models rotated 180 degrees, so we need
 		// to rotate each cube 180 degrees to compensate
-		for(ModelFace face : faces) {
+		/*for(ModelFace face : faces) {
 			face.rotate(0f, 180f, 0f, centerX, centerY, centerZ);
-		}
+		}*/
 		
 		if(mirror) {
 			for(ModelFace face : faces) {
@@ -662,9 +666,9 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			}
 		}
 		
-		for(ModelFace face : faces) {
+		/*for(ModelFace face : faces) {
 			face.translate(baseTranslation.x, -baseTranslation.y, -baseTranslation.z);
-		}
+		}*/
 	}
 	
 	private Vector3f readVector3f(JsonElement el) {

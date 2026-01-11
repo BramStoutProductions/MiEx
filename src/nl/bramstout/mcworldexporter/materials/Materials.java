@@ -953,12 +953,11 @@ public class Materials {
 		if(biomeData == null)
 			return new Color();
 		
-		if(type.equalsIgnoreCase("grass"))
-			return biomeData.getGrassColour();
-		else if(type.equalsIgnoreCase("foliage"))
-			return biomeData.getFoliageColour();
-		else if(type.equalsIgnoreCase("water"))
-			return biomeData.getWaterColour();
+		if(!type.contains(":"))
+			type = "minecraft:" + type;
+		Color color = biomeData.getColor(type);
+		if(color != null)
+			return color;
 		return new Color();
 	}
 		

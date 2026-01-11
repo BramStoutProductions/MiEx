@@ -62,6 +62,8 @@ import nl.bramstout.mcworldexporter.model.Subdivider;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
@@ -259,8 +261,7 @@ public class ChunkExporter {
 					int biomeId = chunk.getBiomeIdLocal(bx, by, bz);
 					Biome biomeInstance = BiomeRegistry.getBiome(biomeId);
 					
-					if(state.isGrassColormap() || state.isFoliageColormap() || state.isWaterColormap() || 
-							liquidState != null || state.getTint() != null)
+					if(liquidState != null || state.getTint() != null)
 						getBlendedBiome(wx, by, wz, biome);
 					
 					if(state.isIndividualBlocks() || Config.onlyIndividualBlocks) {
@@ -342,8 +343,8 @@ public class ChunkExporter {
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
 				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
-						biomeInstance, wx, by, wz, wx, by, wz, 
-						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), biome.getBiomeColor(state), model.isDoubleSided(), 
+						biomeInstance, biome, wx, by, wz, wx, by, wz, 
+						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), state.getTint(), model.isDoubleSided(), 
 						lodSize, lodYSize, state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
 				
 				faceIndex++;
@@ -377,8 +378,8 @@ public class ChunkExporter {
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
 				addFace(meshes, "minecraft:water", blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
-						biomeInstance, wx, by, wz, wx, by, wz, 
-						0f, 0f, 0f, 0f, model.getExtraData(), biome.getWaterColour(), model.isDoubleSided(), lodSize, lodYSize, 
+						biomeInstance, biome, wx, by, wz, wx, by, wz, 
+						0f, 0f, 0f, 0f, model.getExtraData(), liquidState.getTint(), model.isDoubleSided(), lodSize, lodYSize, 
 						state.isLodNoUVScale(), false, ambientOcclusion, cornerData);
 				
 				faceIndex++;
@@ -777,8 +778,8 @@ public class ChunkExporter {
 	}
 	
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
-			Biome biome, int ix, int iy, int iz, float bx, float by, float bz, float ox, float oy, float oz, float uvOffsetY,
-			String extraData, Color tint, boolean doubleSided, int lodSize, int lodYSize,
+			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, float bx, float by, float bz, float ox, float oy, float oz, 
+			float uvOffsetY, String extraData, TintLayers tintLayers, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale, boolean noConnectedTextures, long ambientOcclusion, int cornerData) {
 		if(texture == null || texture.equals(""))
 			return;
@@ -811,7 +812,7 @@ public class ChunkExporter {
 														((float) face.getDirection().y) * faceOffset, 
 														((float) face.getDirection().z) * faceOffset);
 								faceOffset += 0.0125f;
-								Color overlayTint = null;
+								TintLayers overlayTint = null;
 								if(overlayTexture.getTintIndex() != null) {
 									overlayFace.setTintIndex(overlayTexture.getTintIndex().intValue());
 									if(overlayTexture.getTintIndex().intValue() < 0)
@@ -821,23 +822,19 @@ public class ChunkExporter {
 											// It's the biome colour from some other block,
 											// so figure that out.
 											
-											// Get the biome
-											BlendedBiome biome2 = new BlendedBiome();
-											getBlendedBiome(ix, iy, iz, biome2);
-											
 											// Get a block state for the tintBlock name
 											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
 																					dataVersion, charBuffer);
 											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
 																						(int) bx, (int) by, (int) bz);
-											overlayTint = biome2.getBiomeColor(blockState);
+											overlayTint = blockState.getTint();
 										}else {
-											overlayTint = tint;
+											overlayTint = tintLayers;
 										}
 									}
 								}
 								
-								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, 
+								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, blendedBiome,
 										ix, iy, iz, bx, by, bz, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
 										lodNoUVScale, true, ambientOcclusion, cornerData);
@@ -850,6 +847,16 @@ public class ChunkExporter {
 		
 		String matTexture = texture;
 		String meshName = texture;
+		Color tint = null;
+		if(tintLayers != null) {
+			int tintIndex = face.getTintIndex();
+			if(tintIndex < 0 && Config.forceBiomeColor.contains(texture))
+				tintIndex = 0;
+			TintValue tintValue = tintLayers.getLayer(tintIndex);
+			if(tintValue != null) {
+				tint = tintValue.getColor(blendedBiome);
+			}
+		}
 		if(tint != null) {
 			// If the face doesn't have a tintIndex, get rid of the tint.
 			// This is also how Minecraft does it.

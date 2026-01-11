@@ -59,6 +59,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 
 import nl.bramstout.mcworldexporter.BuiltInFiles;
@@ -334,58 +335,6 @@ public class ResourcePackDefaults {
 				leavesOcclusion.add(val);
 		}
 		
-		JsonArray grassColormapBlocks = new JsonArray();
-		if(configRoot.has("grassColormapBlocks.add"))
-			grassColormapBlocks = configRoot.get("grassColormapBlocks.add").getAsJsonArray();
-		if(configRoot.has("grassColormapBlocks"))
-			grassColormapBlocks = configRoot.get("grassColormapBlocks").getAsJsonArray();
-		
-		JsonArray foliageColormapBlocks = new JsonArray();
-		if(configRoot.has("foliageColormapBlocks.add"))
-			foliageColormapBlocks = configRoot.get("foliageColormapBlocks.add").getAsJsonArray();
-		if(configRoot.has("foliageColormapBlocks"))
-			foliageColormapBlocks = configRoot.get("foliageColormapBlocks").getAsJsonArray();
-		
-		JsonArray waterColormapBlocks = new JsonArray();
-		if(configRoot.has("waterColormapBlocks.add"))
-			waterColormapBlocks = configRoot.get("waterColormapBlocks.add").getAsJsonArray();
-		if(configRoot.has("waterColormapBlocks"))
-			waterColormapBlocks = configRoot.get("waterColormapBlocks").getAsJsonArray();
-		
-		List<String> colormapBlocks = new ArrayList<String>();
-		for(JsonElement el : grassColormapBlocks.asList()) {
-			colormapBlocks.add(el.getAsString());
-		}
-		for(JsonElement el : foliageColormapBlocks.asList()) {
-			colormapBlocks.add(el.getAsString());
-		}
-		for(JsonElement el : waterColormapBlocks.asList()) {
-			colormapBlocks.add(el.getAsString());
-		}
-		
-		for(String val : configData.grassColormapBlocks) {
-			boolean found = false;
-			for(String str : colormapBlocks) {
-				if(checkResourceIdentifier(str, val)) {
-					found = true;
-					break;
-				}
-			}
-			if(!found)
-				grassColormapBlocks.add(val);
-		}
-		
-		for(String val : configData.foliageColormapBlocks) {
-			boolean found = false;
-			for(String str : colormapBlocks) {
-				if(checkResourceIdentifier(str, val)) {
-					found = true;
-					break;
-				}
-			}
-			if(!found)
-				foliageColormapBlocks.add(val);
-		}
 		
 		// Normally we want to add the blocks to the normal vanilla blocks,
 		// but if the miex_config file already there fully overrides the list
@@ -400,21 +349,60 @@ public class ResourcePackDefaults {
 		else
 			configRoot.add("leavesOcclusion.add", leavesOcclusion);
 		
-		if(configRoot.has("grassColormapBlocks"))
-			configRoot.add("grassColormapBlocks", grassColormapBlocks);
-		else
-			configRoot.add("grassColormapBlocks.add", grassColormapBlocks);
-		
-		if(configRoot.has("foliageColormapBlocks"))
-			configRoot.add("foliageColormapBlocks", foliageColormapBlocks);
-		else
-			configRoot.add("foliageColormapBlocks.add", foliageColormapBlocks);
 		
 		FileWriter writer = null;
 		try {
-			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
+			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().disableHtmlEscaping().create();
 			String jsonString = gson.toJson(configRoot);
 			writer = new FileWriter(configFile);
+			writer.write(jsonString);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		if(writer != null) {
+			try {
+				writer.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		File blockTintsFile = new File(resourcePack, "miex_block_tints.json");
+		
+		JsonObject blockTintsRoot = new JsonObject();
+		if(blockTintsFile.exists()) {
+			try {
+				blockTintsRoot = Json.read(blockTintsFile).getAsJsonObject();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		for(String block : configData.grassColormapBlocks) {
+			if(blockTintsRoot.has(block))
+				continue;
+			if(block.startsWith("minecraft:") && blockTintsRoot.has(block.substring(10)))
+				continue;
+			JsonObject obj = new JsonObject();
+			obj.add("tint", new JsonPrimitive("minecraft:grass"));
+			blockTintsRoot.add(block, obj);
+		}
+		
+		for(String block : configData.foliageColormapBlocks) {
+			if(blockTintsRoot.has(block))
+				continue;
+			if(block.startsWith("minecraft:") && blockTintsRoot.has(block.substring(10)))
+				continue;
+			JsonObject obj = new JsonObject();
+			obj.add("tint", new JsonPrimitive("minecraft:foliage"));
+			blockTintsRoot.add(block, obj);
+		}
+		
+		writer = null;
+		try {
+			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().disableHtmlEscaping().create();
+			String jsonString = gson.toJson(blockTintsRoot);
+			writer = new FileWriter(blockTintsFile);
 			writer.write(jsonString);
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -530,22 +518,22 @@ public class ResourcePackDefaults {
 			if(!hasRotation) {
 				switch(dir) {
 				case NORTH:
-					canOcclude = Math.abs(0f - minZ) < 0.01f;
+					canOcclude = Math.abs(0f - minZ) < 0.0011f;
 					break;
 				case SOUTH:
-					canOcclude = Math.abs(16f - maxZ) < 0.01f;
+					canOcclude = Math.abs(16f - maxZ) < 0.0011f;
 					break;
 				case EAST:
-					canOcclude = Math.abs(16f - maxX) < 0.01f;
+					canOcclude = Math.abs(16f - maxX) < 0.0011f;
 					break;
 				case WEST:
-					canOcclude = Math.abs(0f - minX) < 0.01f;
+					canOcclude = Math.abs(0f - minX) < 0.0011f;
 					break;
 				case UP:
-					canOcclude = Math.abs(16f - maxY) < 0.01f;
+					canOcclude = Math.abs(16f - maxY) < 0.0011f;
 					break;
 				case DOWN:
-					canOcclude = Math.abs(0f - minY) < 0.01f;
+					canOcclude = Math.abs(0f - minY) < 0.0011f;
 					break;
 				}
 			}

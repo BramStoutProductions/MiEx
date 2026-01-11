@@ -41,7 +41,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
@@ -58,6 +57,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -243,12 +243,12 @@ public class BuiltInBlockState extends BlockState{
 		}
 		
 		Tint tint = Tints.getTint(name);
-		Color tintColor = null;
+		TintLayers tintColor = null;
 		if(tint != null)
 			tintColor = tint.getTint(properties);
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, randomOffset, randomYOffset, grassColormap, foliageColormap, 
-				waterColormap, doubleSided, randomAnimationXZOffset, randomAnimationYOffset, lodNoUVScale, lodPriority, tintColor, 
+				individualBlocks, hasLiquid(properties), caveBlock, randomOffset, randomYOffset, doubleSided, 
+				randomAnimationXZOffset, randomAnimationYOffset, lodNoUVScale, lodPriority, tintColor, 
 				needsConnectionInfo());
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.

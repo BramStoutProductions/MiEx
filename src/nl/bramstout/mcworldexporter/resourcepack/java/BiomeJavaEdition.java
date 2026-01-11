@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.resourcepack.java;
 
 import java.awt.image.BufferedImage;
+import java.util.Map.Entry;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -40,6 +41,7 @@ import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
 
 public class BiomeJavaEdition extends Biome{
@@ -65,7 +67,7 @@ public class BiomeJavaEdition extends Biome{
 					return Integer.parseUnsignedInt(colorStr, 16);
 				}
 			}
-			return 0;
+			return -1;
 		}else if(colorObj.isJsonArray()) {
 			JsonArray colorArray = colorObj.getAsJsonArray();
 			float r = 1f;
@@ -86,32 +88,27 @@ public class BiomeJavaEdition extends Biome{
 			int bi = ((int) (b * 255.0f + 0.5f)) & 0xFF;
 			return (ri << 16) | (gi << 8) | bi;
 		}
-		return 0;
+		return -1;
 	}
 	
 	@Override
 	public void calculateTints() {
-		int foliageColourI = 0xffffff;
-		int grassColourI = 0xffffff;
-		int waterColourI = 0xffffff;
+		biomeColours.clear();
 		
 		if(data != null) {
-			foliageColourI = 0;
-			grassColourI = 0;
 			String grassColourModifier = null;
 			JsonObject effectsObj = data.getAsJsonObject("effects");
 			if(effectsObj != null) {
-				JsonElement foliageColourObj = effectsObj.get("foliage_color");
-				if(foliageColourObj != null)
-					foliageColourI = parseColor(foliageColourObj);
-				
-				JsonElement grassColourObj = effectsObj.get("grass_color");
-				if(grassColourObj != null)
-					grassColourI = parseColor(grassColourObj);
-				
-				JsonElement waterColourObj = effectsObj.get("water_color");
-				if(waterColourObj != null)
-					waterColourI = parseColor(waterColourObj);
+				for(Entry<String, JsonElement> entry : effectsObj.entrySet()) {
+					if(entry.getKey().endsWith("_color")) {
+						String colorMap = entry.getKey().substring(0, entry.getKey().length() - 6);
+						if(!colorMap.contains(":"))
+							colorMap = "minecraft:" + colorMap;
+						int color = parseColor(entry.getValue());
+						if(color != -1)
+							biomeColours.put(colorMap, new Color(color));
+					}
+				}
 				
 				JsonElement grassColourModifierObj = effectsObj.get("grass_color_modifier");
 				if(grassColourModifierObj != null)
@@ -133,44 +130,35 @@ public class BiomeJavaEdition extends Biome{
 			float tintY = 1.0f - (Math.max(Math.min(downfall, 1.0f), 0.0f) * tintX);
 			tintX = 1.0f - tintX;
 			
-			if(foliageColourI == 0) {
-				BufferedImage foliageColorMap = Tints.getFoliageColorMap();
-				if(foliageColorMap != null) {
-					int tintXI = (int) (tintX * ((float) (foliageColorMap.getWidth()-1)));
-					int tintYI = (int) (tintY * ((float) (foliageColorMap.getHeight()-1)));
-					foliageColourI = foliageColorMap.getRGB(tintXI, tintYI);
-				}
-			}
-			
-			if(grassColourI == 0) {
-				BufferedImage grassColorMap = Tints.getGrassColorMap();
-				if(grassColorMap != null) {
-					int tintXI = (int) (tintX * ((float) (grassColorMap.getWidth()-1)));
-					int tintYI = (int) (tintY * ((float) (grassColorMap.getHeight()-1)));
-					
-					grassColourI = grassColorMap.getRGB(tintXI, tintYI);
-					
-					if(grassColourModifier != null) {
-						if(grassColourModifier.equalsIgnoreCase("dark_forest")) {
-							grassColourI &= 0xFEFEFE;
-							int gcR = (grassColourI >> 16) & 0xFF;
-							int gcG = (grassColourI >> 8) & 0xFF;
-							int gcB = grassColourI & 0xFF;
-							gcR = (gcR + 0x28) / 2;
-							gcG = (gcG + 0x34) / 2;
-							gcB = (gcB + 0x0A) / 2;
-							grassColourI = (gcR << 16) | (gcG << 8) | gcB;
-						}else if(grassColourModifier.equalsIgnoreCase("swamp")) {
-							grassColourI = 0x6A7039;
+			for(String colorMap : ResourcePacks.getColorMaps()) {
+				if(!biomeColours.containsKey(colorMap)) {
+					BufferedImage colorMapImg = Tints.getColorMap(colorMap);
+					if(colorMapImg != null) {
+						int tintXI = (int) (tintX * ((float) (colorMapImg.getWidth()-1)));
+						int tintYI = (int) (tintY * ((float) (colorMapImg.getHeight()-1)));
+						int colorI = colorMapImg.getRGB(tintXI, tintYI);
+						
+						if(colorMap.equals("minecraft:grass") && grassColourModifier != null) {
+							if(grassColourModifier.equalsIgnoreCase("dark_forest")) {
+								colorI &= 0xFEFEFE;
+								int gcR = (colorI >> 16) & 0xFF;
+								int gcG = (colorI >> 8) & 0xFF;
+								int gcB = colorI & 0xFF;
+								gcR = (gcR + 0x28) / 2;
+								gcG = (gcG + 0x34) / 2;
+								gcB = (gcB + 0x0A) / 2;
+								colorI = (gcR << 16) | (gcG << 8) | gcB;
+							}else if(grassColourModifier.equalsIgnoreCase("swamp")) {
+								colorI = 0x6A7039;
+							}
 						}
+						
+						Color color = new Color(colorI);
+						biomeColours.put(colorMap, color);
 					}
 				}
 			}
 		}
-		
-		foliageColour = new Color(foliageColourI);
-		grassColour = new Color(grassColourI);
-		waterColour = new Color(waterColourI);
 	}
 
 }

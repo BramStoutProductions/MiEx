@@ -690,5 +690,36 @@ public class ResourcePackJavaEdition extends ResourcePack{
 			break;
 		}
 	}
+	
+	@Override
+	public void getColorMaps(Set<String> colorMaps) {
+		for(File folder : getFolders()) {
+			File assetsFolder = new File(folder, "assets");
+			if(!assetsFolder.exists() || !assetsFolder.isDirectory())
+				continue;
+			for(File namespace : assetsFolder.listFiles()) {
+				if(!namespace.isDirectory())
+					continue;
+				
+				File colormapFolder = new File(namespace, "textures/colormap");
+				if(!colormapFolder.exists() || !colormapFolder.isDirectory())
+					continue;
+				
+				findColorMapsInFolder(colormapFolder, namespace.getName() + ":", colorMaps);
+			}
+		}
+	}
+	
+	private void findColorMapsInFolder(File folder, String parent, Set<String> colorMaps) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				findColorMapsInFolder(f, parent + f.getName() + "/", colorMaps);
+			}else if(f.isFile()) {
+				if(f.getName().endsWith(".png")) {
+					colorMaps.add(parent + f.getName().substring(0, f.getName().length()-4));
+				}
+			}
+		}
+	}
 
 }

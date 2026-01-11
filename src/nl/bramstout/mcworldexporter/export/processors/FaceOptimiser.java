@@ -118,15 +118,13 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	
 	private void getFacesPerVertex(Mesh mesh, MeshSubset subset){
 		int facesPerVertexSize = mesh.getVertices().size() / 3;
-		if(facesPerVertex == null || facesPerVertex.length < facesPerVertexSize)
+		if(facesPerVertex == null) {
 			facesPerVertex = new int[facesPerVertexSize][];
-		else {
-			for(int i = 0; i < facesPerVertexSize; ++i) {
-				if(facesPerVertex[i] == null) {
-					facesPerVertex[i] = new int[5];
-				}
-				facesPerVertex[i][0] = 0;
-			}
+		}else if(facesPerVertex.length < facesPerVertexSize) {
+			facesPerVertex = Arrays.copyOf(facesPerVertex, facesPerVertexSize);
+			clearFacesPerVertex(mesh, subset);
+		}else {
+			clearFacesPerVertex(mesh, subset);
 		}
 		
 		if(subset == null) {
@@ -166,6 +164,25 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 					arrayLength += 1;
 					facesPerVertex[vertexId][arrayLength] = faceIndex;
 					facesPerVertex[vertexId][0] = arrayLength;
+				}
+			}
+		}
+	}
+	
+	private void clearFacesPerVertex(Mesh mesh, MeshSubset subset) {
+		if(subset == null) {
+			int facesPerVertexSize = mesh.getVertices().size() / 3;
+			for(int i = 0; i < facesPerVertexSize; ++i) {
+				if(facesPerVertex[i] != null)
+					facesPerVertex[i][0] = 0;
+			}
+		}else {
+			for(int faceIndexI = 0; faceIndexI < subset.getFaceIndices().size(); ++faceIndexI) {
+				int faceIndex = subset.getFaceIndices().get(faceIndexI);
+				for(int i = 0; i < 4; ++i) {
+					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
+					if(facesPerVertex[vertexId] != null)
+						facesPerVertex[vertexId][0] = 0;
 				}
 			}
 		}

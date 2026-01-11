@@ -41,7 +41,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Random;
 import nl.bramstout.mcworldexporter.export.Noise;
@@ -58,8 +57,8 @@ import nl.bramstout.mcworldexporter.molang.MolangExpression;
 import nl.bramstout.mcworldexporter.molang.MolangQuery;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
-import nl.bramstout.mcworldexporter.resourcepack.Tints;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 
 public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
@@ -275,16 +274,15 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 		models2.add(model);
 		models.add(models2);
 		
-		Tint tint = Tints.getTint(state.getName());
-		Color tintColor = null;
+		Tint tint = state.getTint();
+		TintLayers tintColor = null;
 		if(tint != null)
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(name, models, state.isTransparentOcclusion(), 
 									state.isLeavesOcclusion(), state.isDetailedOcclusion(), 
 									state.isIndividualBlocks(), state.hasLiquid(properties), 
 									state.isCaveBlock(), state.hasRandomOffset(), 
-									state.hasRandomYOffset(), state.isGrassColormap(), 
-									state.isFoliageColormap(), state.isWaterColormap(), 
+									state.hasRandomYOffset(),
 									state.isDoubleSided(), state.hasRandomAnimationXZOffset(), 
 									state.hasRandomAnimationYOffset(), state.isLodNoUVScale(),
 									state.getLodPriority(), tintColor, state.needsConnectionInfo());

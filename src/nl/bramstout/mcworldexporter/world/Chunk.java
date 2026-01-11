@@ -45,6 +45,8 @@ import nl.bramstout.mcworldexporter.parallel.Queue;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 
 public abstract class Chunk {
 
@@ -412,15 +414,19 @@ public abstract class Chunk {
 			if (state.hasTint()) {
 				int biomeId = getBiomeIdLocal(x, y, z);
 				Biome biome = BiomeRegistry.getBiome(biomeId);
-				nl.bramstout.mcworldexporter.Color tint = biome.getBiomeColor(state, block);
-				if(tint != null) {
-					int r = (colour >>> 16) & 0xFF;
-					int g = (colour >>> 8) & 0xFF;
-					int b = (colour) & 0xFF;
-					r = (int) (((float) r) * tint.getR());
-					g = (int) (((float) g) * tint.getG());
-					b = (int) (((float) b) * tint.getB());
-					colour = (r << 16) | (g << 8) | b;
+				TintLayers tintLayers = biome.getBiomeColor(state, block);
+				if(tintLayers != null) {
+					TintValue tintVal = tintLayers.getGenericTint();
+					nl.bramstout.mcworldexporter.Color tint = tintVal.getColor(biome);
+					if(tint != null) {
+						int r = (colour >>> 16) & 0xFF;
+						int g = (colour >>> 8) & 0xFF;
+						int b = (colour) & 0xFF;
+						r = (int) (((float) r) * tint.getR());
+						g = (int) (((float) g) * tint.getG());
+						b = (int) (((float) b) * tint.getB());
+						colour = (r << 16) | (g << 8) | b;
+					}
 				}
 			}
 		}
@@ -494,7 +500,7 @@ public abstract class Chunk {
 						BlockState state = BlockStateRegistry.getState(stateId);
 						colour = getColourForBlock(block, state, x, height, z);
 						
-						if(state.isWaterColormap()) {
+						if(block.isLiquid()) {
 							// Let's make water transparent. We keep going down until we find
 							// a block that's not water. We get that block's colour
 							// and blend it with the water colour.
@@ -503,7 +509,7 @@ public abstract class Chunk {
 								block = BlockRegistry.getBlock(blockId);
 								stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 								state = BlockStateRegistry.getState(stateId);
-								if(state.isWaterColormap())
+								if(block.isLiquid())
 									continue;
 								
 								// We have found a non-water block!

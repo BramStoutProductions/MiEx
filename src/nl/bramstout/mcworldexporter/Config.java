@@ -68,9 +68,6 @@ public class Config {
 	public static List<String> caveBlocks = new ArrayList<String>();
 	public static List<String> randomOffset = new ArrayList<String>();
 	public static List<String> randomYOffset = new ArrayList<String>();
-	public static List<String> grassColormapBlocks = new ArrayList<String>();
-	public static List<String> foliageColormapBlocks = new ArrayList<String>();
-	public static List<String> waterColormapBlocks = new ArrayList<String>();
 	public static List<String> forceBiomeColor = new ArrayList<String>();
 	public static List<String> forceNoBiomeColor = new ArrayList<String>();
 	public static List<String> doubleSided = new ArrayList<String>();
@@ -280,12 +277,6 @@ public class Config {
 				parseList("randomOffset", data, randomOffset);
 				
 				parseList("randomYOffset", data, randomYOffset);
-				
-				parseList("grassColormapBlocks", data, grassColormapBlocks);
-				
-				parseList("foliageColormapBlocks", data, foliageColormapBlocks);
-				
-				parseList("waterColormapBlocks", data, waterColormapBlocks);
 				
 				parseList("forceBiomeColor", data, forceBiomeColor);
 				

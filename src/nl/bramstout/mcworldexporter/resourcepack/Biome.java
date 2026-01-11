@@ -31,22 +31,27 @@
 
 package nl.bramstout.mcworldexporter.resourcepack;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.world.Block;
 
 public abstract class Biome {
 
 	protected String name;
 	protected int id;
-	protected Color foliageColour;
-	protected Color grassColour;
-	protected Color waterColour;
+	protected Map<String, Color> biomeColours;
 	
 	public Biome(String name, int id) {
 		this.name = name;
 		this.id = id;
+		this.biomeColours = new HashMap<String, Color>();
 	}
 	
 	public abstract void calculateTints();
@@ -59,32 +64,26 @@ public abstract class Biome {
 		return id;
 	}
 	
-	public Color getFoliageColour() {
-		return foliageColour;
+	public Color getColor(String name) {
+		return biomeColours.getOrDefault(name, null);
 	}
 	
-	public Color getGrassColour() {
-		return grassColour;
+	public void setColor(String name, Color color) {
+		biomeColours.put(name, color);
 	}
 	
-	public Color getWaterColour() {
-		return waterColour;
+	public Set<Entry<String, Color>> getColors(){
+		return biomeColours.entrySet();
 	}
 	
-	public void setFoliageColour(Color color) {
-		this.foliageColour = color;
-	}
-	
-	public void setGrassColour(Color color) {
-		this.grassColour = color;
-	}
-	
-	public void setWaterColour(Color color) {
-		this.waterColour = color;
-	}
-	
-	public Color getBiomeColor(BlockState state, Block block) {
+	public TintLayers getBiomeColor(BlockState state, Block block) {
 		Tint tint = Tints.getTint(block.getName());
+		if(tint == null)
+			return null;
+		TintLayers layers = tint.getTint(block.getProperties());
+		return layers;
+		
+		/*Tint tint = Tints.getTint(block.getName());
 		if(tint != null)
 			return tint.getTint(block.getProperties());
 		if(state.isGrassColormap())
@@ -93,7 +92,7 @@ public abstract class Biome {
 			return getFoliageColour();
 		else if(state.isWaterColormap())
 			return getWaterColour();
-		return new Color();
+		return new Color();*/
 	}
 	
 }

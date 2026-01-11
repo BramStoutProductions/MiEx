@@ -273,7 +273,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 			float tintY = 1.0f - (Math.max(Math.min(downfall, 1.0f), 0.0f) * tintX);
 			tintX = 1.0f - tintX;
 			
-			BufferedImage grassColorMap = Tints.getGrassColorMap();
+			BufferedImage grassColorMap = Tints.getColorMap("minecraft:grass");
 			if(grassColorMap != null) {
 				int tintXI = (int) (tintX * ((float) (grassColorMap.getWidth()-1)));
 				int tintYI = (int) (tintY * ((float) (grassColorMap.getHeight()-1)));

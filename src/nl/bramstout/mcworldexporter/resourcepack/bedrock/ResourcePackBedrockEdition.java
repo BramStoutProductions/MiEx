@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import com.google.gson.JsonArray;
@@ -390,40 +391,69 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 							biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
 							biomes.put(biomeName, new BiomeBedrockEdition(biomeName, 0, biomeObj.getAsJsonObject("components")));
 							
-							JsonObject components = biomeObj.getAsJsonObject("components");
-							if(components.has("minecraft:tags")) {
-								JsonElement el = components.get("minecraft:tags");
-								if(el.isJsonArray()) {
-									for(JsonElement tag : el.getAsJsonArray().asList()) {
-										String tagName = tag.getAsString();
-										if(!tagName.contains(":"))
-											tagName = "minecraft:" + tagName;
-										tagName.replace(":", ":worldgen/biome");
-										
-										registerTag(tagName, biomeName);
+							if(biomeObj.has("components")) {
+								JsonObject components = biomeObj.getAsJsonObject("components");
+								if(components.has("minecraft:tags")) {
+									JsonElement el = components.get("minecraft:tags");
+									if(el.isJsonArray()) {
+										for(JsonElement tag : el.getAsJsonArray().asList()) {
+											String tagName = tag.getAsString();
+											if(!tagName.contains(":"))
+												tagName = "minecraft:" + tagName;
+											tagName.replace(":", ":worldgen/biome");
+											
+											registerTag(tagName, biomeName);
+										}
+									}else if(el.isJsonObject()) {
+										for(JsonElement tag : el.getAsJsonObject().getAsJsonArray("tags").asList()) {
+											String tagName = tag.getAsString();
+											if(!tagName.contains(":"))
+												tagName = "minecraft:" + tagName;
+											tagName.replace(":", ":worldgen/biome");
+											
+											registerTag(tagName, biomeName);
+										}
 									}
-								}else if(el.isJsonObject()) {
-									for(JsonElement tag : el.getAsJsonObject().getAsJsonArray("tags").asList()) {
-										String tagName = tag.getAsString();
-										if(!tagName.contains(":"))
-											tagName = "minecraft:" + tagName;
-										tagName.replace(":", ":worldgen/biome");
-										
-										registerTag(tagName, biomeName);
-									}
-								}
-							}else {
-								for(Entry<String, JsonElement> entry : components.entrySet()) {
-									if(!entry.getKey().startsWith("minecraft:")) {
-										String tagName = entry.getKey();
-										if(!tagName.contains(":"))
-											tagName = "minecraft:" + tagName;
-										tagName.replace(":", ":worldgen/biome");
-										registerTag(tagName, biomeName);
+								}else {
+									for(Entry<String, JsonElement> entry : components.entrySet()) {
+										if(!entry.getKey().startsWith("minecraft:")) {
+											String tagName = entry.getKey();
+											if(!tagName.contains(":"))
+												tagName = "minecraft:" + tagName;
+											tagName.replace(":", ":worldgen/biome");
+											registerTag(tagName, biomeName);
+										}
 									}
 								}
 							}
-						}else {
+						}else if(data.has("minecraft:client_biome")) {
+							JsonObject biomeObj = data.getAsJsonObject("minecraft:client_biome");
+							JsonObject descriptionObj = biomeObj.getAsJsonObject("description");
+							String biomeName = descriptionObj.get("identifier").getAsString();
+							if(!biomeName.contains(":"))
+								biomeName = "minecraft:" + biomeName;
+							biomeName = TranslationRegistry.BIOME_BEDROCK.map(biomeName);
+							
+							Biome biome = biomes.getOrDefault(biomeName, null);
+							if(biome == null) {
+								biome = new BiomeBedrockEdition(biomeName, 0, null);
+								biomes.put(biomeName, biome);
+							}
+							
+							if(biomeObj.has("components")) {
+								JsonObject components = biomeObj.getAsJsonObject("components");
+								
+								if(components.has("minecraft:water_appearance")) {
+									JsonObject waterAppearance = components.getAsJsonObject("minecraft:water_appearance");
+									if(waterAppearance.has("surface_color")) {
+										JsonElement surfaceColor = waterAppearance.getAsJsonArray("surface_color");
+										
+										Color color = BiomeBedrockEdition.parseTint(surfaceColor);
+										biome.setColor("minecraft:water", color);
+									}
+								}
+							}
+						} else {
 							for(Entry<String, JsonElement> entry : data.entrySet()) {
 								String biomeName = entry.getKey();
 								if(!biomeName.contains(":"))
@@ -497,7 +527,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 							biome = new BiomeBedrockEdition(biomeName, 0, null);
 							biomes.put(biomeName, biome);
 						}
-						biome.setWaterColour(new Color(waterSurfaceColor));
+						biome.setColor("minecraft:water", new Color(waterSurfaceColor));
 					}
 				}
 			}catch(Exception ex) {
@@ -1040,6 +1070,30 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 			out.add("misc");
 			out.add("colormap");
 			break;
+		}
+	}
+	
+	@Override
+	public void getColorMaps(Set<String> colorMaps) {
+		for(File folder : getFolders()) {
+				
+			File colormapFolder = new File(folder, "textures/colormap");
+			if(!colormapFolder.exists() || !colormapFolder.isDirectory())
+				continue;
+			
+			findColorMapsInFolder(colormapFolder, "minecraft:", colorMaps);
+		}
+	}
+	
+	private void findColorMapsInFolder(File folder, String parent, Set<String> colorMaps) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				findColorMapsInFolder(f, parent + f.getName() + "/", colorMaps);
+			}else if(f.isFile()) {
+				if(f.getName().endsWith(".png")) {
+					colorMaps.add(parent + f.getName().substring(0, f.getName().length()-4));
+				}
+			}
 		}
 	}
 

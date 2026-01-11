@@ -184,6 +184,8 @@ public class ChunkBedrock extends Chunk{
 								blockProperties = NbtTagCompound.newInstance("states");
 								needsFreeing = true;
 							}
+							if(blockName.indexOf(':') == -1)
+								blockName = "minecraft:" + blockName;
 							
 							blockName = blockTranslatorManager.map(blockName, blockProperties);
 							

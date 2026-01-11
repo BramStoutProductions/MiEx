@@ -1,4 +1,67 @@
 {
+    "grass_block":{
+        "tint": "minecraft:grass"
+    },
+    "fern":{
+        "tint": "minecraft:grass"
+    },
+    "grass":{
+        "tint": "minecraft:grass"
+    },
+    "short_grass":{
+        "tint": "minecraft:grass"
+    },
+    "tall_grass":{
+        "tint": "minecraft:grass"
+    },
+    "large_fern":{
+        "tint": "minecraft:grass"
+    },
+    "sugar_cane":{
+        "tint": "minecraft:grass"
+    },
+    "potted_fern":{
+        "tint": "minecraft:grass"
+    },
+    "bamboo":{
+        "tint": "minecraft:grass"
+    },
+    "bamboo_sapling":{
+        "tint": "minecraft:grass"
+    },
+    "pink_petals":{
+        "tint": "minecraft:grass"
+    },
+    "wildflowers":{
+        "tint": "minecraft:grass"
+    },
+    "bush":{
+        "tint": "minecraft:grass"
+    },
+    "leaf_litter":{
+        "tint": "minecraft:dry_foliage"
+    },
+    "acacia_leaves":{
+        "tint": "minecraft:foliage"
+    },
+    "dark_oak_leaves":{
+        "tint": "minecraft:foliage"
+    },
+    "jungle_leaves":{
+        "tint": "minecraft:foliage"
+    },
+    "mangrove_leaves":{
+        "tint": "minecraft:foliage"
+    },
+    "oak_leaves":{
+        "tint": "minecraft:foliage"
+    },
+    "vine":{
+        "tint": "minecraft:foliage"
+    },
+    "pale_oak_leaves":{
+        "tint": "minecraft:foliage"
+    },
     "birch_leaves": {
         "tint": "#80A755"
     },
@@ -7,6 +70,12 @@
     },
     "cherry_leaves": {
         "tint": null
+    },
+    "water":{
+        "tint": "minecraft:water"
+    },
+    "water_cauldron":{
+        "tint": "minecraft:water"
     },
     "lily_pad": {
         "tint": "#208030"

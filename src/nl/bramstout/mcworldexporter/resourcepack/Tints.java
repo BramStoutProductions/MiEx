@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.resourcepack;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,26 +46,134 @@ import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public class Tints {
 	
+	public static class TintValue{
+		public Color color;
+		public String biomeColor;
+		
+		public TintValue(Color color, String biomeColor) {
+			this.color = color;
+			this.biomeColor = biomeColor;
+		}
+		
+		public Color getColor(Biome biome) {
+			if(color != null)
+				return color;
+			if(biomeColor != null)
+				return biome.getColor(biomeColor);
+			return null;
+		}
+		
+		public Color getColor(BlendedBiome biome) {
+			if(color != null)
+				return color;
+			if(biomeColor != null)
+				return biome.getColor(biomeColor);
+			return null;
+		}
+	}
+	
+	public static class TintLayers{
+		/**
+		 * Tint index -1 means no tint, but in some cases we might
+		 * want to force a tint anyways, in which case we want to specify
+		 * the -1 index.
+		 * Tint index 0+ means a specific tint layer.
+		 * 
+		 * Because -1 is a valid index, we offset all of the indices by +1.
+		 */
+		private TintValue[] layers;
+		/**
+		 * Used when there is no non-null TintValue for the given tint index.
+		 * However, it's never used for -1 tint index. That requires setting
+		 * specifically.
+		 */
+		private TintValue defaultValue;
+		
+		public TintLayers() {
+			layers = null;
+			defaultValue = null;
+		}
+		
+		public TintValue getLayer(int layerId) {
+			layerId += 1; // Offset ids by +1
+			if(layers == null || layers.length == 0) {
+				if(layerId == 0)
+					return null;
+				return defaultValue;
+			}
+			if(layerId < 0 || layerId >= layers.length)
+				return defaultValue;
+			TintValue layer = layers[layerId];
+			if(layer == null && layerId > 0)
+				return defaultValue;
+			return layer;
+		}
+		
+		public void setLayer(int layerId, TintValue value) {
+			layerId += 1;
+			if(layerId < 0)
+				return;
+			if(layers == null)
+				layers = new TintValue[layerId + 1];
+			if(layerId >= layers.length)
+				layers = Arrays.copyOf(layers, layerId+1);
+			layers[layerId] = value;
+			
+			// Make sure that we always have a default value.
+			if(layerId == 1 || defaultValue == null)
+				defaultValue = value;
+		}
+		
+		public void setDefaultValue(TintValue value) {
+			this.defaultValue = value;
+		}
+		
+		public TintValue getGenericTint() {
+			if(layers != null) {
+				for(int i = 0; i < layers.length; ++i)
+					if(layers[i] != null)
+						return layers[i];
+			}
+			return defaultValue;
+		}
+	}
+	
 	public static class Tint{
 		
-		private Color baseTint;
-		private Map<List<Map<String, String>>, Color> stateTints;
+		private TintLayers baseTint;
+		private Map<List<Map<String, String>>, TintLayers> stateTints;
 		
 		public Tint(JsonObject data) {
-			baseTint = new Color(1f,1f,1f);
+			baseTint = new TintLayers();
 			stateTints = null;
 			if(data.has("tint")) {
 				JsonElement tintData = data.get("tint");
-				baseTint = getColorFromElement(tintData);
+				if(tintData.isJsonObject()) {
+					JsonObject tints = tintData.getAsJsonObject();
+					for(Entry<String, JsonElement> entry : tints.entrySet()) {
+						if(!entry.getKey().equals("*")) {
+							try {
+								int layerId = Integer.parseInt(entry.getKey());
+								baseTint.setLayer(layerId, getColorFromElement(entry.getValue()));
+							}catch(Exception ex) {}
+						}
+					}
+					if(tints.has("*")) {
+						baseTint.setDefaultValue(getColorFromElement(tints.get("*")));
+					}
+				}else {
+					baseTint.setDefaultValue(getColorFromElement(tintData));
+				}
 			}
 			if(data.has("states")) {
-				stateTints = new HashMap<List<Map<String, String>>, Color>();
+				stateTints = new HashMap<List<Map<String, String>>, TintLayers>();
 				JsonObject statesData = data.get("states").getAsJsonObject();
 				for(Entry<String, JsonElement> entry : statesData.asMap().entrySet()) {
 					List<Map<String, String>> checks = new ArrayList<Map<String, String>>();
@@ -78,34 +187,58 @@ public class Tints {
 						}
 						checks.add(check);
 					}
-					stateTints.put(checks, getColorFromElement(entry.getValue()));
+					TintLayers layers = new TintLayers();
+					if(entry.getValue().isJsonObject()) {
+						JsonObject tints = entry.getValue().getAsJsonObject();
+						for(Entry<String, JsonElement> entry2 : tints.entrySet()) {
+							if(!entry2.getKey().equals("*")) {
+								try {
+									int layerId = Integer.parseInt(entry2.getKey());
+									layers.setLayer(layerId, getColorFromElement(entry2.getValue()));
+								}catch(Exception ex) {}
+							}
+						}
+						if(tints.has("*")) {
+							layers.setDefaultValue(getColorFromElement(tints.get("*")));
+						}
+					}else {
+						layers.setDefaultValue(getColorFromElement(entry.getValue()));
+					}
+					stateTints.put(checks, layers);
 				}
 			}
 		}
 		
-		private Color getColorFromElement(JsonElement tintData) {
+		private TintValue getColorFromElement(JsonElement tintData) {
 			if(tintData.isJsonPrimitive()) {
 				JsonPrimitive tintPrim = tintData.getAsJsonPrimitive();
 				if(tintPrim.isString()) {
 					String tintString = tintPrim.getAsString();
-					if(tintString.startsWith("#"))
-						tintString = tintString.substring(1);
-					try {
-						int rgb = Integer.parseUnsignedInt(tintString, 16);
-						return new Color(rgb);
-					}catch(Exception ex) {}
+					if(tintString.contains(":")) {
+						// Biome colour being referenced.
+						return new TintValue(null, tintString);
+					}else {
+						// Hardcoded tint
+						if(tintString.startsWith("#"))
+							tintString = tintString.substring(1);
+						try {
+							int rgb = Integer.parseUnsignedInt(tintString, 16);
+							return new TintValue(new Color(rgb), null);
+						}catch(Exception ex) {}
+					}
 				}else if(tintPrim.isNumber()) {
-					return new Color(tintPrim.getAsInt());
+					// Hardcoded tint
+					return new TintValue(new Color(tintPrim.getAsInt()), null);
 				}
 			}
-			return new Color(1f,1f,1f);
+			return null;
 		}
 		
-		public Color getTint(NbtTagCompound properties) {
+		public TintLayers getTint(NbtTagCompound properties) {
 			if(stateTints == null || properties == null)
 				return baseTint;
 			
-			for(Entry<List<Map<String, String>>, Color> state : stateTints.entrySet()) {
+			for(Entry<List<Map<String, String>>, TintLayers> state : stateTints.entrySet()) {
 				if(useTint(properties, state.getKey())) {
 					return state.getValue();
 				}
@@ -146,8 +279,7 @@ public class Tints {
 	}
 	
 	private static Map<String, Tint> tintRegistry = new HashMap<String, Tint>();
-	private static BufferedImage grassColorMap = null;
-	private static BufferedImage foliageColorMap = null;
+	private static Map<String, BufferedImage> colorMaps = new HashMap<String, BufferedImage>();
 	private static Object mutex = new Object();
 	
 	public static void load() {
@@ -178,8 +310,7 @@ public class Tints {
 		}
 		
 		synchronized(mutex) {
-			grassColorMap = null;
-			foliageColorMap = null;
+			colorMaps.clear();
 		}
 	}
 	
@@ -187,38 +318,30 @@ public class Tints {
 		return tintRegistry.getOrDefault(name, null);
 	}
 	
-	public static BufferedImage getGrassColorMap() {
-		if (grassColorMap != null)
-			return grassColorMap;
+	public static BufferedImage getColorMap(String name) {
+		BufferedImage img = colorMaps.getOrDefault(name, null);
+		if(img != null)
+			return img;
 		synchronized(mutex) {
-			if (grassColorMap != null)
-				return grassColorMap;
+			img = colorMaps.getOrDefault(name, null);
+			if(img != null)
+				return img;
+			
+			int sep = name.indexOf(":");
+			String namespace = sep < 0 ? "minecraft:" : name.substring(0, sep+1);
+			String texName = "colormap/" + (sep < 0 ? name : name.substring(sep+1));
+			
 			try {
-				File mapFile = ResourcePacks.getTexture("minecraft:colormap/grass");
-				if(mapFile != null && mapFile.exists())
-					grassColorMap = ImageReader.readImage(mapFile);
-			} catch (Exception ex) {
+				File mapFile = ResourcePacks.getTexture(namespace + texName);
+				if(mapFile != null && mapFile.exists()) {
+					img = ImageReader.readImage(mapFile);
+					colorMaps.put(name, img);
+				}
+			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
-			return grassColorMap;
 		}
-	}
-	
-	public static BufferedImage getFoliageColorMap() {
-		if (foliageColorMap != null)
-			return foliageColorMap;
-		synchronized(mutex) {
-			if (foliageColorMap != null)
-				return foliageColorMap;
-			try {
-				File mapFile = ResourcePacks.getTexture("minecraft:colormap/foliage");
-				if(mapFile != null && mapFile.exists())
-					foliageColorMap = ImageReader.readImage(mapFile);
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-			return foliageColorMap;
-		}
+		return img;
 	}
 	
 }

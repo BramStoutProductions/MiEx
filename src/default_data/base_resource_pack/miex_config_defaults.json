@@ -458,40 +458,6 @@
     "minecraft:tall_grass",
     "minecraft:large_fern"
   ],
-  "grassColormapBlocks": [
-    "minecraft:grass_block",
-    "minecraft:fern",
-    "minecraft:grass",
-    "minecraft:short_grass",
-    "minecraft:tall_grass",
-    "minecraft:large_fern",
-    "minecraft:lily_pad",
-    "minecraft:sugar_cane",
-    "minecraft:melon_stem",
-    "minecraft:pumpkin_stem",
-    "minecraft:attached_melon_stem",
-    "minecraft:redstone_wire",
-    "minecraft:potted_fern",
-    "minecraft:attached_pumpkin_stem",
-    "minecraft:bamboo",
-    "minecraft:bamboo_sapling",
-    "minecraft:pink_petals"
-  ],
-  "foliageColormapBlocks": [
-    "minecraft:acacia_leaves",
-    "minecraft:birch_leaves",
-    "minecraft:dark_oak_leaves",
-    "minecraft:jungle_leaves",
-    "minecraft:mangrove_leaves",
-    "minecraft:oak_leaves",
-    "minecraft:spruce_leaves",
-    "minecraft:vine",
-    "minecraft:cherry_leaves"
-  ],
-  "waterColormapBlocks": [
-    "minecraft:water",
-    "minecraft:water_cauldron"
-  ],
   "forceBiomeColor": [
     "minecraft:block/grass_block_side"
   ],

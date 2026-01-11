@@ -38,15 +38,14 @@ import java.util.Map.Entry;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
-import nl.bramstout.mcworldexporter.resourcepack.Tints;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 
 public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 
@@ -86,15 +85,14 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 				models.add(part.models);
 			}
 		}
-		Tint tint = Tints.getTint(state.getName());
-		Color tintColor = null;
+		Tint tint = state.getTint();
+		TintLayers tintColor = null;
 		if(tint != null)
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
 				state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
 				state.hasLiquid(properties), state.isCaveBlock(), state.hasRandomOffset(), 
-				state.hasRandomYOffset(), state.isGrassColormap(), state.isFoliageColormap(), 
-				state.isWaterColormap(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
+				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.getLodPriority(), tintColor, state.needsConnectionInfo());
 	}
 

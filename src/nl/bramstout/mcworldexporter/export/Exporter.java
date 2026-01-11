@@ -63,6 +63,8 @@ import nl.bramstout.mcworldexporter.parallel.ThreadPool;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool.Task;
 import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
@@ -233,7 +235,7 @@ public class Exporter {
 			
 			occlusionHandler.calculateCornerDataForModel(models, state, 0, emptyFaceList);
 			
-			Color tint = defaultBlendedBiome.getBiomeColor(state);
+			TintLayers tintLayers = state.getTint();
 			
 			int faceIndex = 0;
 			for(Model model : models) {
@@ -243,7 +245,15 @@ public class Exporter {
 						faceIndex++;
 						continue;
 					}
-					Color faceTint = tint;
+					Color faceTint = null;
+					if(tintLayers != null) {
+						int tintIndex = face.getTintIndex();
+						if(tintIndex < 0 && Config.forceBiomeColor.contains(texture))
+							tintIndex = 0;
+						TintValue tintValue = tintLayers.getLayer(tintIndex);
+						if(tintValue != null)
+							faceTint = tintValue.getColor(defaultBlendedBiome);
+					}
 					if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
 							Config.forceNoBiomeColor.contains(state.getName()))
 						faceTint = null;
@@ -290,6 +300,7 @@ public class Exporter {
 		raf.write((int) ((individualBlocksOffset >>> 48) & 0xFF));
 		raf.write((int) ((individualBlocksOffset >>> 56) & 0xFF));
 		raf.close();
+		
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Converting");

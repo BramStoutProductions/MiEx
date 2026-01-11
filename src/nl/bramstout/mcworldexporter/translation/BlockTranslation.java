@@ -61,26 +61,27 @@ public class BlockTranslation {
 			this.optional = false;
 		}
 		
-		public boolean matches(NbtTagCompound properties) {
+		public int matches(NbtTagCompound properties) {
+			int matches = 0;
 			for(Entry<String, String> value : values.entrySet()) {
 				NbtTag valueTag = properties.get(value.getKey());
 				if(valueTag == null) {
 					if(optional)
 						continue;
-					return false;
+					return -1;
 				}
 				String valueStr = valueTag.asString();
+				if(valueStr.equals("false"))
+					valueStr = "0";
+				if(valueStr.equals("true"))
+					valueStr = "1";
+				
 				if(!valueStr.equals(value.getValue())) {
-					if((valueStr.equals("true") || valueStr.equals("1")) &&
-							(value.getValue().equals("true") || value.getValue().equals("1")))
-						continue;
-					if((valueStr.equals("false") || valueStr.equals("0")) &&
-							(value.getValue().equals("false") || value.getValue().equals("0")))
-						continue;
-					return false;
+					return -1;
 				}
+				matches++;
 			}
-			return true;
+			return matches;
 		}
 		
 	}
@@ -157,8 +158,12 @@ public class BlockTranslation {
 			this.constants = new ArrayList<Constant>();
 		}
 		
-		public boolean matches(NbtTagCompound properties) {
-			return condition.matches(properties) && optionalCondition.matches(properties);
+		public int matches(NbtTagCompound properties) {
+			int matchStrength1 = condition.matches(properties);
+			int matchStrength2 = optionalCondition.matches(properties);
+			if(matchStrength1 < 0 || matchStrength2 < 0)
+				return -1;
+			return matchStrength1 + matchStrength2;
 		}
 		
 		public void map(NbtTagCompound properties) {
@@ -200,9 +205,14 @@ public class BlockTranslation {
 				return name;
 			
 			BlockItem map = null;
-			for(BlockItem item : items)
-				if(item.matches(properties))
+			int maxMatchStrength = -1;
+			for(BlockItem item : items) {
+				int matchStrength = item.matches(properties);
+				if(matchStrength > maxMatchStrength) {
 					map = item;
+					maxMatchStrength = matchStrength;
+				}
+			}
 			
 			if(map == null)
 				return name;
@@ -299,12 +309,22 @@ public class BlockTranslation {
 								}
 								if(block.has("condition")) {
 									for(Entry<String, JsonElement> condition : block.get("condition").getAsJsonObject().entrySet()) {
-										item.condition.values.put(condition.getKey(), condition.getValue().getAsString());
+										String valueStr = condition.getValue().getAsString();
+										if(valueStr.equals("false"))
+											valueStr = "0";
+										if(valueStr.equals("true"))
+											valueStr = "1";
+										item.condition.values.put(condition.getKey(), valueStr);
 									}
 								}
 								if(block.has("optionalCondition")) {
 									for(Entry<String, JsonElement> condition : block.get("optionalCondition").getAsJsonObject().entrySet()) {
-										item.optionalCondition.values.put(condition.getKey(), condition.getValue().getAsString());
+										String valueStr = condition.getValue().getAsString();
+										if(valueStr.equals("false"))
+											valueStr = "0";
+										if(valueStr.equals("true"))
+											valueStr = "1";
+										item.optionalCondition.values.put(condition.getKey(), valueStr);
 									}
 								}
 								if(block.has("mapping")) {

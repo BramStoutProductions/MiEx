@@ -35,6 +35,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.gson.JsonObject;
 
@@ -171,5 +172,7 @@ public abstract class ResourcePack {
 	 * @param groups
 	 */
 	public abstract void getTextures(List<Entry<String, File>> out, TextureGroup... groups);
+	
+	public abstract void getColorMaps(Set<String> colorMaps);
 	
 }

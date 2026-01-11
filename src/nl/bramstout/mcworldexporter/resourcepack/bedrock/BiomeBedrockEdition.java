@@ -32,12 +32,16 @@
 package nl.bramstout.mcworldexporter.resourcepack.bedrock;
 
 import java.awt.image.BufferedImage;
+import java.util.Map.Entry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
 
 public class BiomeBedrockEdition extends Biome{
@@ -53,20 +57,14 @@ public class BiomeBedrockEdition extends Biome{
 	public BiomeBedrockEdition(BiomeBedrockEdition other, int newId) {
 		super(other.getName(), newId);
 		this.data = other.data;
-		this.foliageColour = other.foliageColour;
-		this.grassColour = other.grassColour;
-		this.waterColour = other.waterColour;
+		for(Entry<String, Color> entry : other.biomeColours.entrySet()) {
+			biomeColours.put(entry.getKey(), new Color(entry.getValue()));
+		}
 	}
 	
 	@Override
 	public void calculateTints() {
-		int foliageColourI = 0xffffff;
-		int grassColourI = 0xffffff;
-		
-		if(data != null) {
-			foliageColourI = 0;
-			grassColourI = 0;
-			
+		if(data != null) {			
 			float downfall = 0.5f;
 			float temperature = 0.5f;
 			
@@ -84,29 +82,75 @@ public class BiomeBedrockEdition extends Biome{
 				float tintY = 1.0f - (Math.max(Math.min(downfall, 1.0f), 0.0f) * tintX);
 				tintX = 1.0f - tintX;
 				
-				if(foliageColourI == 0) {
-					BufferedImage foliageColorMap = Tints.getFoliageColorMap();
-					if(foliageColorMap != null) {
-						int tintXI = (int) (tintX * ((float) (foliageColorMap.getWidth()-1)));
-						int tintYI = (int) (tintY * ((float) (foliageColorMap.getHeight()-1)));
-						foliageColourI = foliageColorMap.getRGB(tintXI, tintYI);
+				for(String colorMap : ResourcePacks.getColorMaps()) {
+					if(!biomeColours.containsKey(colorMap)) {
+						BufferedImage colorMapImg = Tints.getColorMap(colorMap);
+						if(colorMapImg != null) {
+							int tintXI = (int) (tintX * ((float) (colorMapImg.getWidth()-1)));
+							int tintYI = (int) (tintY * ((float) (colorMapImg.getHeight()-1)));
+							int colorI = colorMapImg.getRGB(tintXI, tintYI);
+							
+							Color color = new Color(colorI);
+							biomeColours.put(colorMap, color);
+						}
 					}
 				}
-				
-				if(grassColourI == 0) {
-					BufferedImage grassColorMap = Tints.getGrassColorMap();
-					if(grassColorMap != null) {
-						int tintXI = (int) (tintX * ((float) (grassColorMap.getWidth()-1)));
-						int tintYI = (int) (tintY * ((float) (grassColorMap.getHeight()-1)));
-						
-						grassColourI = grassColorMap.getRGB(tintXI, tintYI);
+			}
+			if(data.has("minecraft:map_tints")) {
+				JsonObject mapTints = data.getAsJsonObject("minecraft:map_tints");
+				for(Entry<String, JsonElement> entry : mapTints.entrySet()) {
+					String colormapName = entry.getKey();
+					if(!colormapName.contains(":"))
+						colormapName = "minecraft:" + colormapName;
+					if(entry.getValue().isJsonObject()) {
+						if(entry.getValue().getAsJsonObject().has("tint")) {
+							JsonElement tint = entry.getValue().getAsJsonObject().get("tint");
+							biomeColours.put(colormapName, parseTint(tint));
+						}
+					}else {
+						biomeColours.put(colormapName, parseTint(entry.getValue()));
 					}
 				}
-				
-				foliageColour = new Color(foliageColourI);
-				grassColour = new Color(grassColourI);
 			}
 		}
+	}
+	
+	public static Color parseTint(JsonElement tint) {
+		if(tint.isJsonArray()) {
+			JsonArray tintArray = tint.getAsJsonArray();
+			float r = 1f;
+			float g = 1f;
+			float b = 1f;
+			if(tintArray.size() > 0) {
+				if(tintArray.get(0).isJsonPrimitive() && tintArray.get(0).getAsJsonPrimitive().isNumber()) {
+					r = g = b = tintArray.get(0).getAsFloat();
+				}
+			}
+			if(tintArray.size() > 1) {
+				if(tintArray.get(1).isJsonPrimitive() && tintArray.get(1).getAsJsonPrimitive().isNumber()) {
+					g = b = tintArray.get(1).getAsFloat();
+				}
+			}
+			if(tintArray.size() > 2) {
+				if(tintArray.get(2).isJsonPrimitive() && tintArray.get(2).getAsJsonPrimitive().isNumber()) {
+					g = b = tintArray.get(2).getAsFloat();
+				}
+			}
+			return new Color(r, g, b);
+		}else if(tint.isJsonPrimitive()) {
+			JsonPrimitive tintPrim = tint.getAsJsonPrimitive();
+			if(tintPrim.isNumber()) {
+				return new Color(tintPrim.getAsInt());
+			}else if(tintPrim.isString()) {
+				String tintStr = tintPrim.getAsString();
+				if(tintStr.startsWith("#"))
+					tintStr = tintStr.substring(1);
+				try {
+					return new Color(Integer.parseUnsignedInt(tintStr, 16));
+				}catch(Exception ex) {}
+			}
+		}
+		return new Color(1f, 1f, 1f);
 	}
 	
 }

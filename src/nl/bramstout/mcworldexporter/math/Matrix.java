@@ -176,8 +176,16 @@ public class Matrix {
 		return rotateZ(z).mult(rotateY(y).mult(rotateX(x)));
 	}
 	
+	public static Matrix rotate(float x, float y, float z, Vector3f pivot) {
+		return translate(pivot).mult(rotate(x, y, z).mult(translate(pivot.multiply(-1f))));
+	}
+	
 	public static Matrix rotate(Vector3f rotation) {
 		return rotate(rotation.x, rotation.y, rotation.z);
+	}
+	
+	public static Matrix rotate(Vector3f rotation, Vector3f pivot) {
+		return translate(pivot).mult(rotate(rotation).mult(translate(pivot.multiply(-1f))));
 	}
 	
 }

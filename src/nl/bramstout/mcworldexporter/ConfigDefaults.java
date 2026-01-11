@@ -65,9 +65,9 @@ public class ConfigDefaults {
 	public static List<String> caveBlocks = new ArrayList<String>();
 	public static List<String> randomOffset = new ArrayList<String>();
 	public static List<String> randomYOffset = new ArrayList<String>();
-	public static List<String> grassColormapBlocks = new ArrayList<String>();
+	/*public static List<String> grassColormapBlocks = new ArrayList<String>();
 	public static List<String> foliageColormapBlocks = new ArrayList<String>();
-	public static List<String> waterColormapBlocks = new ArrayList<String>();
+	public static List<String> waterColormapBlocks = new ArrayList<String>();*/
 	public static List<String> forceBiomeColor = new ArrayList<String>();
 	public static List<String> forceNoBiomeColor = new ArrayList<String>();
 	public static List<String> doubleSided = new ArrayList<String>();
@@ -197,12 +197,12 @@ public class ConfigDefaults {
 		        "kelp", "kelp_plant", "crimson_fungus", "warped_fungus", "brown_mushroom", "red_mushroom"));
 		randomYOffset.addAll(Arrays.asList(
 				"grass", "fern", "short_grass", "tall_grass", "large_fern"));
-		grassColormapBlocks.addAll(Arrays.asList(
+		/*grassColormapBlocks.addAll(Arrays.asList(
 				"grass_block", "fern", "grass", "short_grass", "tall_grass", "large_fern", "lily_pad", "sugar_cane"));
 		foliageColormapBlocks.addAll(Arrays.asList(
 				"acacia_leaves", "birch_leaves", "dark_oak_leaves", "jungle_leaves", "mangrove_leaves", "oak_leaves", "spruce_leaves", "vine"));
 		waterColormapBlocks.addAll(Arrays.asList(
-				"water", "water_cauldron"));
+				"water", "water_cauldron"));*/
 		forceBiomeColor.addAll(Arrays.asList(
 				"block/grass_block_side"));
 		forceNoBiomeColor.addAll(Arrays.asList(

@@ -33,6 +33,9 @@ package nl.bramstout.mcworldexporter.resourcepack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+
+import nl.bramstout.mcworldexporter.Color;
 
 public class BiomeCombined extends Biome{
 
@@ -49,17 +52,13 @@ public class BiomeCombined extends Biome{
 
 	@Override
 	public void calculateTints() {
-		foliageColour = null;
-		grassColour = null;
-		waterColour = null;
+		biomeColours.clear();
 		
 		for(Biome biome : subBiomes) {
-			if(biome.foliageColour != null && foliageColour == null)
-				foliageColour = biome.foliageColour;
-			if(biome.grassColour != null && grassColour == null)
-				grassColour = biome.grassColour;
-			if(biome.waterColour != null && waterColour == null)
-				waterColour = biome.waterColour;
+			for(Entry<String, Color> entry : biome.biomeColours.entrySet()) {
+				if(entry.getValue() != null && getColor(entry.getKey()) == null)
+					setColor(entry.getKey(), entry.getValue());
+			}
 		}
 	}
 

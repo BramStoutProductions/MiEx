@@ -33,9 +33,9 @@ package nl.bramstout.mcworldexporter.model;
 
 import java.util.List;
 
-import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 
 public class BakedBlockState {
 	
@@ -51,24 +51,20 @@ public class BakedBlockState {
 	private boolean randomOffset;
 	private boolean randomYOffset;
 	private boolean air;
-	private boolean grassColormap;
-	private boolean foliageColormap;
-	private boolean waterColormap;
 	private boolean doubleSided;
 	private boolean randomAnimationXZOffset;
 	private boolean randomAnimationYOffset;
 	private boolean lodNoUVScale;
 	private int lodPriority;
-	private Color tint;
+	private TintLayers tint;
 	private boolean needsConnectionInfo;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
 							boolean transparentOcclusion, boolean leavesOcclusion, boolean detailedOcclusion,
 							boolean individualBlocks, boolean liquid, boolean caveBlock,
 							boolean randomOffset, boolean randomYOffset,
-							boolean grassColormap, boolean foliageColormap, boolean waterColormap,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, int lodPriority, Color tint, boolean needsConnectionInfo) {
+							boolean lodNoUVScale, int lodPriority, TintLayers tint, boolean needsConnectionInfo) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -90,9 +86,6 @@ public class BakedBlockState {
 		this.randomOffset = randomOffset;
 		this.randomYOffset = randomYOffset;
 		this.air = name.equals("minecraft:air") || name.equals("minecraft:cave_air") || name.equals("minecraft:void_air");
-		this.grassColormap = grassColormap;
-		this.foliageColormap = foliageColormap;
-		this.waterColormap = waterColormap;
 		this.doubleSided = doubleSided;
 		this.randomAnimationXZOffset = randomAnimationXZOffset;
 		this.randomAnimationYOffset = randomAnimationYOffset;
@@ -197,18 +190,6 @@ public class BakedBlockState {
 		return null;
 	}
 	
-	public boolean isGrassColormap() {
-		return grassColormap;
-	}
-	
-	public boolean isFoliageColormap() {
-		return foliageColormap;
-	}
-	
-	public boolean isWaterColormap() {
-		return waterColormap;
-	}
-	
 	public boolean isDoubleSided() {
 		return doubleSided;
 	}
@@ -229,7 +210,7 @@ public class BakedBlockState {
 		return lodPriority;
 	}
 	
-	public Color getTint() {
+	public TintLayers getTint() {
 		return tint;
 	}
 	

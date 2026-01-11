@@ -41,6 +41,7 @@ public class ModelBone {
 	
 	private String name;
 	public Vector3f translation;
+	public Vector3f pivot;
 	public Vector3f rotation;
 	public Vector3f scaling;
 	public boolean visibility;
@@ -50,6 +51,7 @@ public class ModelBone {
 	public ModelBone(String name) {
 		this.name = name.toLowerCase();
 		this.translation = new Vector3f();
+		this.pivot = new Vector3f();
 		this.rotation = new Vector3f();
 		this.scaling = new Vector3f(1f);
 		this.visibility = true;
@@ -60,6 +62,7 @@ public class ModelBone {
 	public ModelBone(ModelBone other) {
 		this.name = other.name;
 		this.translation = new Vector3f(other.translation);
+		this.pivot = new Vector3f(other.pivot);
 		this.rotation = new Vector3f(other.rotation);
 		this.scaling = new Vector3f(other.scaling);
 		this.visibility = other.visibility;
@@ -93,13 +96,13 @@ public class ModelBone {
 	
 	public Vector3f getWorldSpacePivot() {
 		if(parent == null)
-			return translation;
-		return parent.getWorldSpacePivot().add(translation);
+			return translation.add(pivot);
+		return parent.getMatrix().transformPoint(translation.add(pivot));
 	}
 	
 	public Matrix getLocalMatrix() {
 		return Matrix.translate(translation).mult(
-				Matrix.rotate(rotation).mult(
+				Matrix.rotate(rotation, pivot).mult(
 				Matrix.scale(scaling)));
 	}
 	
