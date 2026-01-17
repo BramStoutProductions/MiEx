@@ -48,6 +48,10 @@ public class BiomeRegistry {
 	private static Object mutex = new Object();
 	public static List<String> missingBiomes = new ArrayList<String>();
 	
+	static {
+		getIdForName("minecraft:the_void");
+	}
+	
 	public static int getIdForName(String name) {
 		if(!name.contains(":"))
 			name = "minecraft:" + name;

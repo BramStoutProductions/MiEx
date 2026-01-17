@@ -132,7 +132,7 @@ public class WorldBedrock extends World{
 		byte[] localPlayerData = db.get(BedrockUtils.bytes("~local_player"));
 		if(localPlayerData != null) {
 			try {
-				ByteArrayDataInputStream dis = new ByteArrayDataInputStream(localPlayerData);
+				ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(localPlayerData);
 				NbtTag tag = NbtTag.readFromStream(dis);
 				if(tag instanceof NbtTagCompound)
 					players.add(new PlayerBedrock("Local Player", (NbtTagCompound) tag));
@@ -155,7 +155,7 @@ public class WorldBedrock extends World{
 						entry.getKey()[4] == 'e' && 
 						entry.getKey()[5] == 'r') {
 					// A remote player
-					ByteArrayDataInputStream dis = new ByteArrayDataInputStream(entry.getValue());
+					ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(entry.getValue());
 					NbtTag tag = NbtTag.readFromStream(dis);
 					if(!(tag instanceof NbtTagCompound))
 						continue;

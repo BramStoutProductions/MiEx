@@ -141,10 +141,10 @@ public class RegionViewer extends JPanel{
 				int regionX = region.getXCoordinate();
 				int regionZ = region.getZCoordinate();
 				
-				for(int chunkZ = 0; chunkZ < 32; ++chunkZ) {
-					for(int chunkX = 0; chunkX < 32; ++chunkX) {
+				for(int chunkZ = 0; chunkZ < region.getStride(); ++chunkZ) {
+					for(int chunkX = 0; chunkX < region.getStride(); ++chunkX) {
 						try {
-							Chunk chunk = region.getChunk((regionX * 32) + chunkX, (regionZ * 32) + chunkZ);
+							Chunk chunk = region.getChunk((regionX * region.getStride()) + chunkX, (regionZ * region.getStride()) + chunkZ);
 							if(chunk == null)
 								continue;
 							
@@ -155,10 +155,10 @@ public class RegionViewer extends JPanel{
 								continue;
 							}
 							
-							int xStart = (regionX-regionMinX) * regionSize + (chunkX * regionSize) / 32 + xPos;
-							int yStart = (regionZ-regionMinZ) * regionSize + (chunkZ * regionSize) / 32 + yPos;
-							int xEnd = (regionX-regionMinX) * regionSize + ((chunkX+1) * regionSize) / 32 + xPos;
-							int yEnd = (regionZ-regionMinZ) * regionSize + ((chunkZ+1) * regionSize) / 32 + yPos;
+							int xStart = (regionX-regionMinX) * regionSize + (chunkX * regionSize) / region.getStride() + xPos;
+							int yStart = (regionZ-regionMinZ) * regionSize + (chunkZ * regionSize) / region.getStride() + yPos;
+							int xEnd = (regionX-regionMinX) * regionSize + ((chunkX+1) * regionSize) / region.getStride() + xPos;
+							int yEnd = (regionZ-regionMinZ) * regionSize + ((chunkZ+1) * regionSize) / region.getStride() + yPos;
 							g2.fillRect(xStart, yStart, Math.max(xEnd-xStart,1), Math.max(yEnd-yStart,1));
 						}catch(Exception ex) {
 							ex.printStackTrace();

@@ -43,16 +43,14 @@ public class ReadWriteMutex {
 	
 	public void acquireRead() {
 		while(true) {
-			int val = lock.get();
-			if(val < 0) { // Write lock has been acquired
-				Thread.yield();
-				continue;
-			}
-			int newVal = val + 1;
-			if(!lock.compareAndSet(val, newVal)) { // Another thread changed it first.
-				continue;
-			}
-			break;
+			int val = lock.incrementAndGet();
+			if(val > 0)
+				return;
+			// The value is negative, meaning that there is
+			// a write lock on it, so reset the value.
+			// It could be that the write lock got released
+			// just now, so we use a compare and set.
+			lock.compareAndSet(val, -100000000);
 		}
 	}
 	
@@ -63,8 +61,9 @@ public class ReadWriteMutex {
 				Thread.yield();
 				continue;
 			}
-			int newVal = -1;
-			if(!lock.compareAndSet(val, newVal)) { // Another thread changed it first
+			int newVal = -100000000;
+			if(!lock.weakCompareAndSetVolatile(val, newVal)) { // Another thread changed it first
+				//Thread.yield();
 				continue;
 			}
 			break;

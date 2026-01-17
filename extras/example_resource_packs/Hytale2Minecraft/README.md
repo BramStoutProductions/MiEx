@@ -1,0 +1,1 @@
+This resource pack provides translation files to map Hytale blocks into Minecraft JE blocks. This is not meant to actually be used in production, but is rather provided for fun. The conversion will be far from accurate since both games have wildly different blocks and ways to manipulate the blocks.

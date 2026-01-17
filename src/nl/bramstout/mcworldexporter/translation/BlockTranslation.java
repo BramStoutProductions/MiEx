@@ -77,7 +77,7 @@ public class BlockTranslation {
 					valueStr = "1";
 				
 				if(!valueStr.equals(value.getValue())) {
-					return -1;
+					return optional ? 0 : -1;
 				}
 				matches++;
 			}

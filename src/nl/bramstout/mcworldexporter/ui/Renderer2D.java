@@ -47,6 +47,7 @@ import nl.bramstout.mcworldexporter.ui.WorldViewer2D.CameraTransform;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.Point;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.World;
+import nl.bramstout.mcworldexporter.world.hytale.WorldHytale;
 
 public class Renderer2D implements Runnable {
 
@@ -371,29 +372,51 @@ public class Renderer2D implements Runnable {
 					minChunkZ = minBlock.iy() >> 4;
 					maxChunkX = maxBlock.ix() >> 4;
 					maxChunkZ = maxBlock.iy() >> 4;
+					int strideX = 1;
+					int strideZ = 1;
+					
+					// Hytale chunks are 32x32 rather than 16x16,
+					// so we work around this by reading in the 32x32 chunk
+					// and putting it in a cache. The ChunkHytale instances
+					// then copy their 16x16 part from the 32x32 chunk.
+					// However, because of this we do have a mutex on the
+					// 32x32 chunk. If the stride is 1, then we get a lot
+					// of waiting since one thread is waiting on the thread
+					// that's rendering the chunk before to load in the 32x32
+					// chunk and put it in the cache. By changing the stride,
+					// we can avoid that.
+					if(MCWorldExporter.getApp().getWorld() != null && 
+							MCWorldExporter.getApp().getWorld() instanceof WorldHytale)
+						strideX = 2;
 
-					for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
-						for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
-							Chunk chunk = MCWorldExporter.getApp().getWorld().getChunk(chunkX, chunkZ);
-							if (chunk == null)
-								continue;
+					for(int oz = 0; oz < strideZ; ++oz) {
+						for(int ox = 0; ox < strideX; ++ox) {
+							for (int chunkZ = minChunkZ + oz; chunkZ <= maxChunkZ; chunkZ += strideZ) {
+								int ox2 = chunkZ % strideX;
+								int ox3 = (ox + ox2) % strideX;
+								for (int chunkX = minChunkX + ox3; chunkX <= maxChunkX; chunkX += strideX) {
+									Chunk chunk = MCWorldExporter.getApp().getWorld().getChunk(chunkX, chunkZ);
+									if (chunk == null)
+										continue;
 
-							BufferedImage img = chunk.getChunkImageForZoomLevel(bufferTransform.zoomLevel);
-							// If the image is null and the render counter of the chunk doesn't match,
-							// then draw the chunk. If the chunk's shouldRender flag is set, force the render.
-							if ((img == null && chunk.getRenderCounter() != renderCounter) || chunk.getShouldRender()) {
-								// Render chunk
-								chunk.setShouldRender(false);
-								if (!chunk.hasLoadError() && !chunk.getRenderRequested()) {
-									chunk.setRenderRequested(true);
-									threadPool.submit(new LoadChunkTask(chunk, this));
+									BufferedImage img = chunk.getChunkImageForZoomLevel(bufferTransform.zoomLevel);
+									// If the image is null and the render counter of the chunk doesn't match,
+									// then draw the chunk. If the chunk's shouldRender flag is set, force the render.
+									if ((img == null && chunk.getRenderCounter() != renderCounter) || chunk.getShouldRender()) {
+										// Render chunk
+										chunk.setShouldRender(false);
+										if (!chunk.hasLoadError() && !chunk.getRenderRequested()) {
+											chunk.setRenderRequested(true);
+											threadPool.submit(new LoadChunkTask(chunk, this));
+										}
+									}
+									// If we don't have an image to show, skip
+									if (img == null)
+										continue;
+
+									drawChunk(chunk, img, g, bufferTransform);
 								}
 							}
-							// If we don't have an image to show, skip
-							if (img == null)
-								continue;
-
-							drawChunk(chunk, img, g, bufferTransform);
 						}
 					}
 				}

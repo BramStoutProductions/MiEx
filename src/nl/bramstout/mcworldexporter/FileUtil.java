@@ -377,6 +377,24 @@ public class FileUtil {
 		return modrinthRootDir;
 	}
 	
+	public static String getHytaleRootDir() {
+		String envPath = Environment.getEnv("MIEX_HYTALE_ROOT_DIR");
+		if(envPath != null)
+			return envPath;
+		
+		if(isWindows())
+			return Environment.getEnv("APPDATA") + "/Hytale";
+		else if(isMacOs())
+			return System.getenv("HOME") + "/Library/Application Support/hytale";
+		else if (isLinux())
+			return System.getenv("HOME") + "/hytale";
+
+		// Return a placeholder value
+		// to avoid erroring out on 
+		// niche systems
+		return "NOT FOUND";
+	}
+	
 	public static File findJarFile(File versionsFolder, String versionName) {
 		File versionFolder = new File(versionsFolder, versionName);
 		File versionJar = new File(versionFolder, versionName + ".jar");

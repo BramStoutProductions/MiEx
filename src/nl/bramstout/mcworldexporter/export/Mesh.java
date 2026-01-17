@@ -808,12 +808,12 @@ public class Mesh {
 		
 		if(v0Data[0] == v1Data[0] || v0Data[0] == v2Data[0] || v0Data[0] == v3Data[0] ||
 				v1Data[0] == v2Data[0] || v1Data[0] == v3Data[0] || v2Data[0] == v3Data[0]) {
-			throw new RuntimeException("Face contains duplicate vertex");
+			//throw new RuntimeException("Face contains duplicate vertex");
 			//return;
 		}
 		if(v0Data[1] == v1Data[1] || v0Data[1] == v2Data[1] || v0Data[1] == v3Data[1] ||
 				v1Data[1] == v2Data[1] || v1Data[1] == v3Data[1] || v2Data[1] == v3Data[1]) {
-			throw new RuntimeException("Face contains duplicate UV vertex");
+			//throw new RuntimeException("Face contains duplicate UV vertex");
 			//return;
 		}
 		
@@ -1031,12 +1031,12 @@ public class Mesh {
 		
 		if(v0Data[0] == v1Data[0] || v0Data[0] == v2Data[0] || v0Data[0] == v3Data[0] ||
 				v1Data[0] == v2Data[0] || v1Data[0] == v3Data[0] || v2Data[0] == v3Data[0]) {
-			throw new RuntimeException("Face contains duplicate vertex");
+			//throw new RuntimeException("Face contains duplicate vertex");
 			//return;
 		}
 		if(v0Data[1] == v1Data[1] || v0Data[1] == v2Data[1] || v0Data[1] == v3Data[1] ||
 				v1Data[1] == v2Data[1] || v1Data[1] == v3Data[1] || v2Data[1] == v3Data[1]) {
-			throw new RuntimeException("Face contains duplicate UV vertex");
+			//throw new RuntimeException("Face contains duplicate UV vertex");
 			//return;
 		}
 		

@@ -42,6 +42,9 @@ public class TranslationRegistry {
 	public static BiomeTranslation BIOME_JAVA = new BiomeTranslation("java");
 	public static BlockTranslation BLOCK_JAVA = new BlockTranslation("java");
 	
+	public static BlockTranslation BLOCK_HYTALE = new BlockTranslation("hytale");
+	public static BiomeTranslation BIOME_HYTALE = new BiomeTranslation("hytale");
+	
 	public static void load() {
 		BLOCK_BEDROCK.load();
 		BIOME_BEDROCK.load();
@@ -49,6 +52,9 @@ public class TranslationRegistry {
 		
 		BIOME_JAVA.load();
 		BLOCK_JAVA.load();
+		
+		BLOCK_HYTALE.load();
+		BIOME_HYTALE.load();
 		
 		if(MCWorldExporter.getApp() != null)
 			if(MCWorldExporter.getApp().getWorld() != null)

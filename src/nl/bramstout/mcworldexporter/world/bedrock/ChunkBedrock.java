@@ -119,9 +119,9 @@ public class ChunkBedrock extends Chunk{
 				key = BedrockUtils.bytes(chunkX, chunkZ, dimensionId, (byte)0x2B);
 			byte[] biomeData = worldDB.get(key);
 			int[] sectionBiomes = null;
-			ByteArrayDataInputStream biomeDis = null;
+			ByteArrayLEDataInputStream biomeDis = null;
 			if(biomeData != null) {
-				biomeDis = new ByteArrayDataInputStream(biomeData);
+				biomeDis = new ByteArrayLEDataInputStream(biomeData);
 				biomeDis.skipBytes(256*2); // Heightmap data.
 			}
 			
@@ -129,7 +129,7 @@ public class ChunkBedrock extends Chunk{
 				byte[] data = subChunkData[y2 + 16];
 				if(data == null)
 					continue;
-				ByteArrayDataInputStream dis = new ByteArrayDataInputStream(data);
+				ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(data);
 				int versionNumber = dis.readUnsignedByte();
 				if(versionNumber != 1 && versionNumber != 8 && versionNumber != 9)
 					throw new Exception("Chunk section format not supported. " + 
@@ -348,7 +348,7 @@ public class ChunkBedrock extends Chunk{
 				int blockEntitySectionY = 0;
 				int currentBlockId = 0;
 				Block currentBlock = null;
-				ByteArrayDataInputStream dis = new ByteArrayDataInputStream(blockEntitiesData);
+				ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(blockEntitiesData);
 				while(dis.available() > 0) {
 					NbtTag tag = NbtTag.readFromStream(dis);
 					blockEntity = (NbtTagCompound) tag;
@@ -483,7 +483,7 @@ public class ChunkBedrock extends Chunk{
 			key = BedrockUtils.bytes(chunkX, chunkZ, dimensionId, (byte)0x32);
 		byte[] entitiesData = worldDB.get(key);
 		if(entitiesData != null) {
-			ByteArrayDataInputStream dis = new ByteArrayDataInputStream(entitiesData);
+			ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(entitiesData);
 			while(dis.available() > 0) {
 				NbtTag tag = NbtTag.readFromStream(dis);
 				NbtTagCompound entityTag = (NbtTagCompound) tag;
@@ -516,7 +516,7 @@ public class ChunkBedrock extends Chunk{
 		if(entityData == null || entityData.length == 0)
 			return;
 		
-		ByteArrayDataInputStream dis = new ByteArrayDataInputStream(entityData);
+		ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(entityData);
 		try {
 			NbtTag dataTag = null;
 			try {

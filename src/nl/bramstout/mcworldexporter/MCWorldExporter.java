@@ -57,6 +57,7 @@ import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 import nl.bramstout.mcworldexporter.world.anvil.WorldAnvil;
 import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
+import nl.bramstout.mcworldexporter.world.hytale.WorldHytale;
 
 public class MCWorldExporter {
 	
@@ -142,6 +143,8 @@ public class MCWorldExporter {
 				tmpWorld = new WorldAnvil(worldFolder);
 			else if(WorldBedrock.supportsWorld(worldFolder))
 				tmpWorld = new WorldBedrock(worldFolder);
+			else if(WorldHytale.supportsWorld(worldFolder))
+				tmpWorld = new WorldHytale(worldFolder);
 			else {
 				SwingUtilities.invokeLater(new Runnable() {
 	

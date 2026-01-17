@@ -1218,8 +1218,8 @@ public class ChunkExporter {
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
 					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
 
-			// Transparent blocks don't occlude non-transparent blocks
-			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
+			// Transparent blocks don't occlude non-transparent blocks or liquid blocks
+			if(state.isTransparentOcclusion() && (!currentState.isTransparentOcclusion() || currentState.hasLiquid()))
 				return 0;
 			// Leaves blocks don't occlude non-leaves and non-transparent blocks
 			if(state.isLeavesOcclusion() && !currentState.isLeavesOcclusion() && !currentState.isTransparentOcclusion())

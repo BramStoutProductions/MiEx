@@ -61,6 +61,10 @@ public abstract class Region {
 	
 	public abstract void pause();
 	
+	public int getStride(){
+		return 32;
+	}
+	
 	public File getRegionFile() {
 		return regionFile;
 	}

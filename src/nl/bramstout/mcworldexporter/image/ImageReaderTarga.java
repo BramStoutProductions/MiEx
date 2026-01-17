@@ -36,7 +36,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import nl.bramstout.mcworldexporter.world.bedrock.ByteArrayDataInputStream;
+import nl.bramstout.mcworldexporter.world.bedrock.ByteArrayLEDataInputStream;
 
 public class ImageReaderTarga extends ImageReader{
 
@@ -45,7 +45,7 @@ public class ImageReaderTarga extends ImageReader{
 		BufferedImage img = null;
 		try {
 			byte[] data = Files.readAllBytes(file.toPath());
-			ByteArrayDataInputStream dis = new ByteArrayDataInputStream(data);
+			ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(data);
 			
 			byte[] footer = new byte[16];
 			dis.seek(data.length - 18);

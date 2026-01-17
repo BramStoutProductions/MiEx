@@ -45,7 +45,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByteArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.world.bedrock.BedrockUtils;
-import nl.bramstout.mcworldexporter.world.bedrock.ByteArrayDataInputStream;
+import nl.bramstout.mcworldexporter.world.bedrock.ByteArrayLEDataInputStream;
 import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
 
 public class MapCreator {
@@ -132,7 +132,7 @@ public class MapCreator {
 		if(data == null)
 			return;
 		
-		ByteArrayDataInputStream dis = new ByteArrayDataInputStream(data);
+		ByteArrayLEDataInputStream dis = new ByteArrayLEDataInputStream(data);
 		
 		try {
 			NbtTagCompound root = (NbtTagCompound) NbtTag.readFromStream(dis);

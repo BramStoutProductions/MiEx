@@ -64,6 +64,10 @@ public class LauncherRegistry {
 		if(modrinthRootDir.exists() && modrinthRootDir.isDirectory())
 			launchers.add(new LauncherModrinth(modrinthRootDir));
 		
+		File hytaleRootDir = new File(FileUtil.getHytaleRootDir());
+		if(hytaleRootDir.exists() && hytaleRootDir.isDirectory())
+			launchers.add(new LauncherHytale(hytaleRootDir));
+		
 		for(String saveDirStr : FileUtil.getAdditionalSaveDirs()) {
 			LauncherSavesDirectory launcher = new LauncherSavesDirectory(saveDirStr);
 			if(launcher.isValid())

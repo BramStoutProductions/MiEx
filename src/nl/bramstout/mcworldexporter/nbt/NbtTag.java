@@ -32,6 +32,12 @@
 package nl.bramstout.mcworldexporter.nbt;
 
 import java.io.DataInput;
+import java.util.Arrays;
+import java.util.Map.Entry;
+
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 
 import nl.bramstout.mcworldexporter.MemoryPool;
 import nl.bramstout.mcworldexporter.Poolable;
@@ -225,6 +231,52 @@ public abstract class NbtTag extends Poolable{
 			throw new RuntimeException(ex);
 		}
 		return tag;
+	}
+	
+	public static NbtTag fromBsonValue(BsonValue value) {
+		return fromBsonValue("", value);
+	}
+	
+	public static NbtTag fromBsonValue(String name, BsonValue value) {
+		if(value.isArray()) {
+			BsonArray array = value.asArray();
+			NbtTag[] children = new NbtTag[array.size()];
+			int numWritten = 0;
+			for(BsonValue val : array.getValues()) {
+				NbtTag valTag = fromBsonValue(val);
+				if(valTag == null)
+					continue;
+				children[numWritten] = valTag;
+				numWritten++;
+			}
+			if(numWritten != children.length)
+				children = Arrays.copyOf(children, numWritten);
+			return NbtTagList.newInstance(name, children);
+		}else if(value.isDocument()) {
+			BsonDocument doc = value.asDocument();
+			NbtTagCompound tag = NbtTagCompound.newInstance(name);
+			for(Entry<String, BsonValue> entry : doc.entrySet()) {
+				NbtTag childTag = fromBsonValue(entry.getKey(), entry.getValue());
+				if(childTag == null)
+					continue;
+				tag.addElement(tag);
+			}
+			return tag;
+		}else if(value.isBinary()) {
+			return NbtTagByteArray.newInstance(name, 
+					Arrays.copyOf(value.asBinary().getData(), value.asBinary().getData().length));
+		}else if(value.isBoolean()) {
+			return NbtTagByte.newInstance(name, value.asBoolean().getValue() ? (byte)1 : (byte)0);
+		}else if(value.isDouble()) {
+			return NbtTagDouble.newInstance(name, value.asDouble().getValue());
+		}else if(value.isInt32()) {
+			return NbtTagInt.newInstance(name, value.asInt32().getValue());
+		}else if(value.isInt64()) {
+			return NbtTagLong.newInstance(name, value.asInt64().getValue());
+		}else if(value.isString()) {
+			return NbtTagString.newInstance(name, value.asString().getValue());
+		}
+		return null;
 	}
 	
 }
