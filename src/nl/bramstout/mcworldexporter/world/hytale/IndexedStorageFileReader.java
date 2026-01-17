@@ -46,6 +46,7 @@ public class IndexedStorageFileReader {
 	private static byte[] MAGIC_NUMBER = "HytaleIndexedStorage".getBytes();
 	
 	private FileChannel fileChannel;
+	private long fileSize;
 	private int version;
 	private int segmentSize;
 	private long[] blobOffsets;
@@ -59,6 +60,7 @@ public class IndexedStorageFileReader {
 			return;
 		
 		this.fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
+		this.fileSize = fileChannel.size();
 		ByteBuffer headerBuffer = ByteBuffer.allocate(32);
 		this.fileChannel.read(headerBuffer, 0);
 		
@@ -105,6 +107,11 @@ public class IndexedStorageFileReader {
 		if(position <= 0)
 			return null;
 		
+		if((position + this.segmentSize) >= this.fileSize) {
+			//throw new IOException("EOF");
+			return null;
+		}
+		
 		//ByteBuffer buffer = ByteBuffer.allocate(this.segmentSize);
 		//this.fileChannel.read(buffer, position);
 		MappedByteBuffer buffer = this.fileChannel.map(MapMode.READ_ONLY, position, this.segmentSize);
@@ -113,6 +120,11 @@ public class IndexedStorageFileReader {
 		int compressedSize = buffer.getInt(4);
 		int fullSize = compressedSize + 8;
 		if(fullSize > this.segmentSize) {
+			if((position + fullSize) >= this.fileSize) {
+				//throw new IOException("EOF");
+				return null;
+			}
+			
 			//buffer = ByteBuffer.allocate(fullSize);
 			//this.fileChannel.read(buffer, position);
 			buffer = this.fileChannel.map(MapMode.READ_ONLY, position, fullSize);

@@ -81,6 +81,7 @@ public class RegionHytale extends Region{
 						chunk.load(data);
 					}catch(Exception ex) {
 						ex.printStackTrace();
+						chunk.load(null);
 					}
 				}
 			}

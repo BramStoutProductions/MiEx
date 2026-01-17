@@ -62,7 +62,7 @@ public class ReadWriteMutex {
 				continue;
 			}
 			int newVal = -100000000;
-			if(!lock.weakCompareAndSetVolatile(val, newVal)) { // Another thread changed it first
+			if(!lock.compareAndSet(val, newVal)) { // Another thread changed it first
 				//Thread.yield();
 				continue;
 			}

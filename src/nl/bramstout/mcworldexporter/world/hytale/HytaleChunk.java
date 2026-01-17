@@ -243,7 +243,7 @@ public class HytaleChunk {
 	
 	public int getBlock(int localX, int localY, int localZ) {
 		if(this.sections == null) {
-			System.out.println("Sections is null " + Boolean.toString(loading) + " " + Boolean.toString(loaded));
+			//System.out.println("Sections is null " + Boolean.toString(loading) + " " + Boolean.toString(loaded));
 			return 0;
 		}
 		
