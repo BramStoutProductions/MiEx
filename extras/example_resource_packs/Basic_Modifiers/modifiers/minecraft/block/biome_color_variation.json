@@ -1,0 +1,42 @@
+{
+    "blocks": "*",
+    "group": "biome_color",
+    "runNodes": [ "SaveBiomeColorGrass", "SaveBiomeColorFoliage" ],
+    "nodes": {
+        "Noise": {
+            "type": "noiseFloat3",
+            "scale": 32.0,
+            "minValue": { "x": -90, "y": -0.5, "z": -0.5},
+            "maxValue": { "x": 90, "y": 0.5, "z": 0.5}
+        },
+        "BiomeColorGrass": {
+            "type": "getBiomeColor",
+            "colormap": "minecraft:grass"
+        },
+        "AdjustGrass": {
+            "type": "adjustHSV",
+            "color": { "connect": "BiomeColorGrass" },
+            "adjustment": { "connect": "Noise" }
+        },
+        "SaveBiomeColorGrass": {
+            "type": "setBiomeColor",
+            "colormap": "minecraft:grass",
+            "color": { "connect": "AdjustGrass" }
+        },
+
+        "BiomeColorFoliage": {
+            "type": "getBiomeColor",
+            "colormap": "minecraft:foliage"
+        },
+        "AdjustFoliage": {
+            "type": "adjustHSV",
+            "color": { "connect": "BiomeColorFoliage" },
+            "adjustment": { "connect": "Noise" }
+        },
+        "SaveBiomeColorFoliage": {
+            "type": "setBiomeColor",
+            "colormap": "minecraft:foliage",
+            "color": { "connect": "AdjustFoliage" }
+        }
+    }
+}
