@@ -310,7 +310,13 @@ def MIEX_IMPORT(path, namespace, variant):
         # Let's rename it so that it has "SG" at the end of it.
         shadingEngine = cmds.rename(shadingEngine, shadingEngine + "SG")
 
-        deleteIncomingNodes(shadingEngine)
+        nodesToDelete = []
+        material = cmds.connectionInfo(shadingEngine + ".surfaceShader",
+                                       sourceFromDestination=True)
+        if material is not None and material != "":
+            material = material.partition(".")[0]
+            nodesToDelete.append(material)
+            deleteIncomingNodes(material, nodesToDelete)
 
         connectionsToMake = []
 
@@ -334,22 +340,38 @@ def MIEX_IMPORT(path, namespace, variant):
                 inputAttr = attr
                 inputAttr = inputAttr.split("/")
                 inputAttr = inputAttr[len(inputAttr)-1]
-                cmds.connectAttr(namespace + ":" + inputAttr, shadingEngine + "." + name)
+                cmds.connectAttr(namespace + ":" + inputAttr, shadingEngine + "." + name, force=True)
             except Exception as e:
                 print(e)
                 print("Could not make connection: ", attr, shadingEngine + "." + name)
+        
+        try:
+            cmds.delete(nodesToDelete)
+        except:
+            pass
 
 
-    def deleteIncomingNodes(node):
+    def deleteIncomingNodes(node, nodesToDelete : list[str]):
         connections = cmds.listConnections(node, d = False, s = True)
+        if connections is None:
+            return
         for node in connections:
             # We only want to delete dgNodes and not dagNodes, so check for dagNodes
+            if not cmds.objExists(node):
+                continue
             types = cmds.nodeType(node, inherited=True)
             if "dagNode" in types:
                 continue
+            if "shadingEngine" in types:
+                continue
+            if "defaultColorMgtGlobals" in node:
+                continue
 
-            # Delete it
-            cmds.delete(node)
+            try:
+                deleteIncomingNodes(node, nodesToDelete)
+                nodesToDelete.append(node)
+            except Exception as e:
+                print(e)
     
     def importNode(name, data, connectionsToMake):
         classifications = cmds.getClassification(data["type"])
