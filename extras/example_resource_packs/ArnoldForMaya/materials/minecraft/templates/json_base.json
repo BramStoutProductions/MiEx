@@ -219,7 +219,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId(reverse=true)}"
+                        "expression": "${frameId(negative=true)}"
                     }
                 }
             }
@@ -233,7 +233,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId(reverse=true)}"
+                        "expression": "${frameId(negative=true)}"
                     }
                 }
             },
@@ -300,7 +300,7 @@
                     },
                     "offset": {
                         "type": "float2",
-                        "expression": "${frameId(reverse=true,offset=1)}"
+                        "expression": "${frameId(negative=true,offset=1)}"
                     }
                 }
             },
