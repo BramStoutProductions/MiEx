@@ -69,6 +69,10 @@
                         "type": "str",
                         "value": "Closest"
                     },
+                    "alpha_mode": {
+                        "type": "str",
+                        "value": "CHANNEL_PACKED"
+                    },
                     "colorspace_settings":{
                         "type": "str",
                         "value": ["sRGB", "Utility - sRGB - Texture", "sRGB Encoded Rec.709 (sRGB)", "sRGB - Texture"]
@@ -186,6 +190,10 @@
                     "interpolation": {
                         "type": "str",
                         "value": "Closest"
+                    },
+                    "alpha_mode": {
+                        "type": "str",
+                        "value": "CHANNEL_PACKED"
                     },
                     "colorspace_settings":{
                         "type": "str",
