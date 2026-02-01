@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -75,7 +76,7 @@ public class PbrGeneratorDialog extends JDialog {
 	private ResourcePackSelector resourcePackSelector;
 	
 	public PbrGeneratorDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.X_AXIS));
 		root.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -201,6 +202,7 @@ public class PbrGeneratorDialog extends JDialog {
 				BlockStateRegistry.clearBlockStateRegistry();
 				ModelRegistry.clearModelRegistry();
 				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
 				MCWorldExporter.getApp().getUI().update();
 				MCWorldExporter.getApp().getUI().fullReRender();
 			}
@@ -210,7 +212,6 @@ public class PbrGeneratorDialog extends JDialog {
 	
 	@Override
 	public void setVisible(boolean b) {
-		super.setVisible(b);
 		if(b) {
 			resourcePackSelector.reset(false);
 			for(int i = ResourcePacks.getActiveResourcePacks().size()-1; i >= 0; --i)
@@ -219,6 +220,7 @@ public class PbrGeneratorDialog extends JDialog {
 			saveToInput.setEnabled(false);
 			saveMode.setSelectedIndex(0);
 		}
+		super.setVisible(b);
 	}
 
 }

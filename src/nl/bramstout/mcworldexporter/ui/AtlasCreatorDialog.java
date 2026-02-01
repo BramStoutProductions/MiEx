@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -72,7 +73,7 @@ public class AtlasCreatorDialog extends JDialog {
 	private ResourcePackSelector resourcePackSelector;
 	
 	public AtlasCreatorDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.X_AXIS));
 		root.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -214,6 +215,10 @@ public class AtlasCreatorDialog extends JDialog {
 					creator.utilityTextures.add(s);
 				}
 				
+				for(String rp : resourcePackSelector.getActiveResourcePacks()) {
+					creator.sourceResourcePacks.add(ResourcePacks.getResourcePack(rp));
+				}
+				
 				creator.process();
 				
 				Atlas.readAtlasConfig();
@@ -233,6 +238,7 @@ public class AtlasCreatorDialog extends JDialog {
 				BlockStateRegistry.clearBlockStateRegistry();
 				ModelRegistry.clearModelRegistry();
 				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
 				MCWorldExporter.getApp().getUI().update();
 				MCWorldExporter.getApp().getUI().fullReRender();
 			}
@@ -242,7 +248,6 @@ public class AtlasCreatorDialog extends JDialog {
 	
 	@Override
 	public void setVisible(boolean b) {
-		super.setVisible(b);
 		if(b) {
 			resourcePackSelector.reset(false);
 			for(int i = ResourcePacks.getActiveResourcePacks().size()-1; i >= 0; --i)
@@ -251,6 +256,7 @@ public class AtlasCreatorDialog extends JDialog {
 			repeatsInput.setValue(Integer.valueOf(4));
 			paddingInput.setValue(Integer.valueOf(1));
 		}
+		super.setVisible(b);
 	}
 
 }

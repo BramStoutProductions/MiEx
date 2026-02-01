@@ -53,13 +53,13 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	
 	
 	private Cache<Model> modelCache;
-	private String stillTexture;
-	private String flowTexture;
+	protected String stillTexture;
+	protected String flowTexture;
 	
 	public BakedBlockStateLiquid(String name) {
-		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, 
+		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, name, false, false, false, 
 				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), 
-				false, 2, getTintLayers(name), true);
+				false, false, 2, getTintLayers(name), true, null);
 		String[] nameTokens = getName().split(":");
 		stillTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_still";
 		flowTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_flow";
@@ -94,7 +94,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		int blockBelow = 0;
 		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
 		if(blockBelowState == null || 
-				!(blockBelowState.hasLiquid() || blockBelowState.isTransparentOcclusion() ||
+				(!blockBelowState.hasLiquid() || blockBelowState.isTransparentOcclusion() ||
 				blockBelowState.isLeavesOcclusion()))
 			blockBelow = 1;
 		

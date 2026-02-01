@@ -792,9 +792,9 @@ public class MolangQuery extends MolangObject{
 		public DistanceFromCamera() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			float dx = x - MCWorldExporter.getApp().getExportBounds().getOffsetX();
-			float dy = y - MCWorldExporter.getApp().getExportBounds().getOffsetY();
-			float dz = z - MCWorldExporter.getApp().getExportBounds().getOffsetZ();
+			float dx = x - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX();
+			float dy = y - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY();
+			float dz = z - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ();
 			return new MolangValue((float) Math.sqrt(dx * dx + dy * dy + dz * dz));
 		}
 	}
@@ -1083,9 +1083,9 @@ public class MolangQuery extends MolangObject{
 		public LodIndex() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			float dx = x - MCWorldExporter.getApp().getExportBounds().getOffsetX();
-			float dy = y - MCWorldExporter.getApp().getExportBounds().getOffsetY();
-			float dz = z - MCWorldExporter.getApp().getExportBounds().getOffsetZ();
+			float dx = x - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX();
+			float dy = y - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY();
+			float dz = z - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ();
 			float d = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			int counter = 0;
 			for(Entry<String, MolangValue> entry : ((MolangDictionary)context.getTempDict().getImpl()).getFields().entrySet()) {
@@ -1496,9 +1496,9 @@ public class MolangQuery extends MolangObject{
 		public CameraRotation() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			float dx = x - MCWorldExporter.getApp().getExportBounds().getOffsetX();
-			float dy = y - MCWorldExporter.getApp().getExportBounds().getOffsetY();
-			float dz = z - MCWorldExporter.getApp().getExportBounds().getOffsetZ();
+			float dx = x - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX();
+			float dy = y - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY();
+			float dz = z - MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ();
 			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			dx /= length;
 			dy /= length;
@@ -1516,9 +1516,9 @@ public class MolangQuery extends MolangObject{
 		public RotationToCamera() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			float dx = MCWorldExporter.getApp().getExportBounds().getOffsetX() - x;
-			float dy = MCWorldExporter.getApp().getExportBounds().getOffsetY() - y;
-			float dz = MCWorldExporter.getApp().getExportBounds().getOffsetZ() - z;
+			float dx = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX() - x;
+			float dy = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY() - y;
+			float dz = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ() - z;
 			float length = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 			dx /= length;
 			dy /= length;

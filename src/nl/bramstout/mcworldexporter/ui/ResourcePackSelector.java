@@ -474,6 +474,35 @@ public class ResourcePackSelector extends JPanel{
 		}
 	}
 	
+	public void syncWithResourcePacks() {
+		try {
+			availablePanel.removeAll();
+			activePanel.removeAll();
+			List<ResourcePack> activePacks = ResourcePacks.getActiveResourcePacks();
+			
+			for(ResourcePack pack : ResourcePacks.getResourcePacks()) {
+				if(activePacks.contains(pack))
+					continue;
+				AvailableResourcePack comp = new AvailableResourcePack(this, pack.getName(), pack.getUUID());
+				availablePanel.add(comp);
+				comp.setEnabled(availablePanel.isEnabled());
+			}
+			
+			for(ResourcePack pack : activePacks) {
+				ActiveResourcePack newComp = new ActiveResourcePack(this, 
+						pack.getName(), pack.getUUID(), pack.getUUID().equals("base_resource_pack"));
+				activePanel.add(newComp);
+				newComp.setEnabled(activePanel.isEnabled());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		sortAvailableResourcePacks();
+		updateUI();
+		revalidate();
+		repaint();
+	}
+	
 	public List<String> getActiveResourcePacks(){
 		return activeResourcePacks;
 	}

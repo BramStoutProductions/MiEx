@@ -51,6 +51,7 @@ import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
@@ -274,7 +275,7 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 			}
 		}
 		
-		File item_texture = new File(getFolder(), "textures/terrain_texture.json");
+		File item_texture = new File(getFolder(), "textures/item_texture.json");
 		if(item_texture.exists()) {
 			try {
 				JsonObject data = Json.read(item_texture).getAsJsonObject();
@@ -858,6 +859,11 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		if(name.equals("minecraft:geometry.cross"))
 			return new ModelHandlerCross();
 		return modelHandlers.getOrDefault(name, null);
+	}
+	
+	@Override
+	public BlockAnimationHandler getBlockAnimationHandler(String name) {
+		return null;
 	}
 	
 	@Override

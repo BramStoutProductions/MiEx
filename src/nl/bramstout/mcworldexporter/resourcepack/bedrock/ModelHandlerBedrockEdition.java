@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelBone;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelLocator;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
@@ -109,6 +110,11 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 		}
 		
 		addBones(textureWidth, textureHeight, model);
+	}
+	
+	@Override
+	public void getGeometry(Model model, BlockAnimationHandler handler, float frame) {
+		this.getGeometry(model);
 	}
 	
 	private boolean needsDoubleSided() {

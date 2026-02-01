@@ -41,50 +41,77 @@ import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.BuiltInBloc
 
 public class BuiltInBlockStateRegistry {
 	
-	public static Map<String, Class<? extends BlockState>> builtins = new HashMap<String, Class<? extends BlockState>>();
+	public static interface IBlockStateConstructor{
+		
+		public BlockState construct(String name, int dataVersion);
+		
+	}
+	
+	public static class DefaultBlockStateConstructor implements IBlockStateConstructor{
+		
+		private Class<? extends BlockState> clazz;
+		
+		public DefaultBlockStateConstructor(Class<? extends BlockState> clazz) {
+			this.clazz = clazz;
+		}
+		
+		@Override
+		public BlockState construct(String name, int dataVersion) {
+			try {
+				return clazz.getConstructor(String.class, int.class).newInstance(name, dataVersion);
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+					| NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+	}
+	
+	public static Map<String, IBlockStateConstructor> builtins = new HashMap<String, IBlockStateConstructor>();
 	
 	public static void load(){
 		BuiltInBlockState.load();
 		
-		Map<String, Class<? extends BlockState>> builtins = new HashMap<String, Class<? extends BlockState>>();
-		builtins.put("dragon_head", BlockStateSkull.class);
-		builtins.put("dragon_wall_head", BlockStateSkull.class);
+		Map<String, IBlockStateConstructor> builtins = new HashMap<String, IBlockStateConstructor>();
+		builtins.put("dragon_head", new DefaultBlockStateConstructor(BlockStateSkull.class));
+		builtins.put("dragon_wall_head", new DefaultBlockStateConstructor(BlockStateSkull.class));
 		
-		builtins.put("minecraft:white_banner", BlockStateBanner.class);
-		builtins.put("minecraft:orange_banner", BlockStateBanner.class);
-		builtins.put("minecraft:magenta_banner", BlockStateBanner.class);
-		builtins.put("minecraft:light_blue_banner", BlockStateBanner.class);
-		builtins.put("minecraft:yellow_banner", BlockStateBanner.class);
-		builtins.put("minecraft:lime_banner", BlockStateBanner.class);
-		builtins.put("minecraft:pink_banner", BlockStateBanner.class);
-		builtins.put("minecraft:gray_banner", BlockStateBanner.class);
-		builtins.put("minecraft:light_gray_banner", BlockStateBanner.class);
-		builtins.put("minecraft:cyan_banner", BlockStateBanner.class);
-		builtins.put("minecraft:purple_banner", BlockStateBanner.class);
-		builtins.put("minecraft:blue_banner", BlockStateBanner.class);
-		builtins.put("minecraft:brown_banner", BlockStateBanner.class);
-		builtins.put("minecraft:green_banner", BlockStateBanner.class);
-		builtins.put("minecraft:red_banner", BlockStateBanner.class);
-		builtins.put("minecraft:black_banner", BlockStateBanner.class);
-		builtins.put("minecraft:white_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:orange_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:magenta_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:light_blue_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:yellow_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:lime_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:pink_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:gray_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:light_gray_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:cyan_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:purple_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:blue_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:brown_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:green_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:red_wall_banner", BlockStateBanner.class);
-		builtins.put("minecraft:black_wall_banner", BlockStateBanner.class);
+		builtins.put("minecraft:white_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:orange_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:magenta_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:light_blue_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:yellow_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:lime_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:pink_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:gray_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:light_gray_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:cyan_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:purple_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:blue_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:brown_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:green_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:red_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:black_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:white_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:orange_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:magenta_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:light_blue_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:yellow_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:lime_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:pink_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:gray_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:light_gray_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:cyan_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:purple_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:blue_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:brown_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:green_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:red_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
+		builtins.put("minecraft:black_wall_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
 		
 		for(String liquidType : Config.liquid)
-			builtins.put(liquidType, BlockStateLiquid.class);
+			builtins.put(liquidType, new DefaultBlockStateConstructor(BlockStateLiquid.class));
 		
 		BuiltInBlockStateRegistry.builtins = builtins;
 	}
@@ -96,14 +123,8 @@ public class BuiltInBlockStateRegistry {
 			return new BuiltInBlockState(name, dataVersion, builtInBlockStateHandler);
 		}
 		
-		Class<? extends BlockState> classObj = builtins.get(name);
-		try {
-			return classObj.getConstructor(String.class, int.class).newInstance(name, dataVersion);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			e.printStackTrace();
-		}
-		return null;
+		IBlockStateConstructor constructor = builtins.get(name);
+		return constructor.construct(name, dataVersion);
 	}
 
 }

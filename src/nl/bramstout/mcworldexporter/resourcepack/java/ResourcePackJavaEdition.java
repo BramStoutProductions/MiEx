@@ -52,6 +52,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityAIHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
@@ -86,6 +87,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 
 	@Override
 	public void load() {
+		textureFilesCache.clear();
 		overlays.clear();
 		rootFolders.clear();
 		rootFolders.add(getFolder());
@@ -254,8 +256,24 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		return file;
 	}
 	
+	private Map<String, File> textureFilesCache = new HashMap<String, File>();
+	private File NO_TEX_FILE = new File("NO_TEX");
 	@Override
 	public File getTexture(String name) {
+		File file = textureFilesCache.getOrDefault(name, NO_TEX_FILE);
+		if(file != NO_TEX_FILE)
+			return file;
+		synchronized(textureFilesCache) {
+			file = textureFilesCache.getOrDefault(name, NO_TEX_FILE);
+			if(file != NO_TEX_FILE)
+				return file;
+			file = getTextureImpl(name);
+			textureFilesCache.put(name, file);
+			return file;
+		}
+	}
+	
+	private File getTextureImpl(String name) {
 		File texFile = getResource(name, "textures", "assets", ".exr");
 		if(texFile.exists())
 			return texFile;
@@ -314,6 +332,11 @@ public class ResourcePackJavaEdition extends ResourcePack{
 				ex.printStackTrace();
 			}
 		}
+		return null;
+	}
+	
+	@Override
+	public BlockAnimationHandler getBlockAnimationHandler(String name) {
 		return null;
 	}
 	

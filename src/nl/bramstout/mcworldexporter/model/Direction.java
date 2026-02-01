@@ -41,6 +41,12 @@ public enum Direction {
 	public int x;
 	public int y;
 	public int z;
+	public int rightX;
+	public int rightY;
+	public int rightZ;
+	public int upX;
+	public int upY;
+	public int upZ;
 	public float rotX;
 	public float rotY;
 	
@@ -49,6 +55,12 @@ public enum Direction {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.rightX = x == 0 ? 1: 0;
+		this.rightY = 0;
+		this.rightZ = x == 0 ? 0 : 1;
+		this.upX = 0;
+		this.upY = y == 0 ? 1 : 0;
+		this.upZ = y == 0 ? 0 : 1;
 		this.rotX = rotX;
 		this.rotY = rotY;
 	}

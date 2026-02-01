@@ -43,6 +43,8 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.math.Matrix;
+import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
@@ -51,12 +53,13 @@ public class Model {
 	private String name;
 	protected int id;
 	protected Model parentModel;
-	private int weight;
+	private float weight;
 	private long occludes;
 	protected String extraData;
 	protected boolean doubleSided;
 	protected String defaultTexture;
 	protected Map<String, Matrix> displayTransforms;
+	private ModelHandler handler;
 
 	protected Map<String, String> textures;
 	protected List<ModelFace> faces;
@@ -118,6 +121,7 @@ public class Model {
 		this.doubleSided = doubleSided;
 		this.defaultTexture = null;
 		this.displayTransforms = new HashMap<String, Matrix>();
+		this.handler = handler;
 
 		this.id = ModelRegistry.getNextId(this);
 
@@ -128,6 +132,36 @@ public class Model {
 		for(int i = 0; i < faces.size(); ++i)
 			occludes |= faces.get(i).getOccludes();
 
+	}
+	
+	public Model(String name, ModelHandler handler, boolean doubleSided, BlockAnimationHandler animationHandler, float frame) {
+		this.name = name;
+		this.parentModel = null;
+		this.textures = new HashMap<String, String>();
+		this.faces = new ArrayList<ModelFace>();
+		this.bones = new ArrayList<ModelBone>();
+		this.locators = new ArrayList<ModelLocator>();
+		this.weight = 1;
+		this.occludes = 0;
+		this.extraData = "";
+		this.doubleSided = doubleSided;
+		this.defaultTexture = null;
+		this.displayTransforms = new HashMap<String, Matrix>();
+		this.handler = handler;
+
+		this.id = ModelRegistry.getNextId(this);
+
+		if(handler != null)
+			handler.getGeometry(this, animationHandler, frame);
+		
+		occludes = 0;
+		for(int i = 0; i < faces.size(); ++i)
+			occludes |= faces.get(i).getOccludes();
+
+	}
+	
+	public Model getAnimatedVersion(BlockAnimationHandler animationHandler, float frame) {
+		return new Model(name, handler, doubleSided, animationHandler, frame);
 	}
 	
 	/**
@@ -295,6 +329,14 @@ public class Model {
 		}
 	}
 	
+	public void rotate(float rotateX, float rotateY, float rotateZ, boolean uvLock) {
+		this.occludes = 0;
+		for (ModelFace face : faces) {
+			face.rotate(rotateX, rotateY, rotateZ, uvLock);
+			this.occludes |= face.getOccludes();
+		}
+	}
+	
 	public void rotate(float rotateX, float rotateY, float rotateZ) {
 		this.occludes = 0;
 		for (ModelFace face : faces) {
@@ -307,6 +349,12 @@ public class Model {
 		this.occludes = 0;
 		for(ModelFace face : faces)
 			face.scale(scale);
+	}
+	
+	public void scale(float scale, Vector3f pivot) {
+		this.occludes = 0;
+		for(ModelFace face : faces)
+			face.scale(scale, scale, scale, pivot.x, pivot.y, pivot.z);
 	}
 	
 	public void scale(float scaleX, float scaleY, float scaleZ) {
@@ -329,11 +377,11 @@ public class Model {
 			face.translate(x, y, z);
 	}
 
-	public int getWeight() {
+	public float getWeight() {
 		return weight;
 	}
 
-	public void setWeight(int weight) {
+	public void setWeight(float weight) {
 		this.weight = weight;
 	}
 
@@ -354,6 +402,35 @@ public class Model {
 	}
 	
 	public void addModel(Model other) {
+		if(other.getFaces().isEmpty())
+			return;
+		// It could be that we have mixed doubleSidedness.
+		// We can always represent a doubleSided mesh as singleSided,
+		// by duplicating the faces and reversing them.
+		if(faces.isEmpty())
+			// If we don't have any faces yet, then we can easily
+			// just copy over the doubleSidedness.
+			doubleSided = other.doubleSided;
+		boolean convertToSingleSided = false;
+		if(!doubleSided && other.doubleSided) {
+			// This mesh is a singleSided mesh, but the other mesh
+			// is double sided, therefore, we need to make sure
+			// that we also had a reverse face for each face in the other mesh.
+			convertToSingleSided = true;
+		}
+		if(doubleSided && !other.doubleSided) {
+			// This mesh is doubleSided, but the other mesh
+			// isn't doubleSided. So, we need to make this mesh singleSided.
+			doubleSided = false;
+			int numFaces = faces.size();
+			for(int i = 0; i < numFaces; ++i) {
+				faces.get(i).setDoubleSided(false);
+				ModelFace backFace = new ModelFace(faces.get(i));
+				backFace.reverseDirection();
+				faces.add(backFace);
+			}
+		}
+		
 		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
 		for(Entry<String, String> entry : other.getTextures().entrySet()) {
 			String tex = entry.getValue();
@@ -367,10 +444,45 @@ public class Model {
 				copy.setTexture(texPrefix + face.getTexture().substring(1));
 			}
 			faces.add(copy);
+			if(convertToSingleSided) {
+				copy.setDoubleSided(false);
+				ModelFace backFace = new ModelFace(copy);
+				backFace.reverseDirection();
+				faces.add(backFace);
+			}
 		}
 	}
 	
 	public void addModel(Model other, List<Color> tints) {
+		if(other.getFaces().isEmpty())
+			return;
+		// It could be that we have mixed doubleSidedness.
+		// We can always represent a doubleSided mesh as singleSided,
+		// by duplicating the faces and reversing them.
+		if(faces.isEmpty())
+			// If we don't have any faces yet, then we can easily
+			// just copy over the doubleSidedness.
+			doubleSided = other.doubleSided;
+		boolean convertToSingleSided = false;
+		if(!doubleSided && other.doubleSided) {
+			// This mesh is a singleSided mesh, but the other mesh
+			// is double sided, therefore, we need to make sure
+			// that we also had a reverse face for each face in the other mesh.
+			convertToSingleSided = true;
+		}
+		if(doubleSided && !other.doubleSided) {
+			// This mesh is doubleSided, but the other mesh
+			// isn't doubleSided. So, we need to make this mesh singleSided.
+			doubleSided = false;
+			int numFaces = faces.size();
+			for(int i = 0; i < numFaces; ++i) {
+				faces.get(i).setDoubleSided(false);
+				ModelFace backFace = new ModelFace(faces.get(i));
+				backFace.reverseDirection();
+				faces.add(backFace);
+			}
+		}
+		
 		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
 		for(Entry<String, String> entry : other.getTextures().entrySet()) {
 			String tex = entry.getValue();
@@ -383,12 +495,21 @@ public class Model {
 			if(face.getTexture().startsWith("#")) {
 				copy.setTexture(texPrefix + face.getTexture().substring(1));
 			}
-			if(copy.getTintIndex() >= 0 && copy.getTintIndex() < tints.size()) {
-				Color color = tints.get(face.getTintIndex());
-				copy.setFaceColour(color.getR(), color.getG(), color.getB());
-				copy.setTintIndex(-1);
+			if(tints != null) {
+				if(copy.getTintIndex() >= 0 && copy.getTintIndex() < tints.size()) {
+					Color color = tints.get(face.getTintIndex());
+					copy.setFaceColour(color.getR(), color.getG(), color.getB());
+					copy.setTintIndex(-1);
+				}
 			}
 			faces.add(copy);
+			
+			if(convertToSingleSided) {
+				copy.setDoubleSided(false);
+				ModelFace backFace = new ModelFace(copy);
+				backFace.reverseDirection();
+				faces.add(backFace);
+			}
 		}
 	}
 	
@@ -441,10 +562,12 @@ public class Model {
 		JsonObject faceData = new JsonObject();
 		faceData.addProperty("texture", texture);
 		faceData.addProperty("tintindex", tintIndex);
-		JsonArray uvData = new JsonArray();
-		for (int i = 0; i < minMaxUVs.length; ++i)
-			uvData.add(minMaxUVs[i]);
-		faceData.add("uv", uvData);
+		if(minMaxUVs != null) {
+			JsonArray uvData = new JsonArray();
+			for (int i = 0; i < minMaxUVs.length; ++i)
+				uvData.add(minMaxUVs[i]);
+			faceData.add("uv", uvData);
+		}
 		if(uvRot != 0f) {
 			faceData.addProperty("rotation", uvRot);
 			faceData.addProperty("rotationMiEx", true);
@@ -541,6 +664,17 @@ public class Model {
 			uvH = height * uvHeight;
 			addFace(minMaxPoints, new float[] { uvX, uvY, uvX + uvW, uvY + uvH }, Direction.NORTH, texture, rotX, rotY);
 		}
+	}
+	
+	public void calculateOcclusions() {
+		for(ModelFace face : faces)
+			face.calculateOcclusion();
+		calculateOccludes();
+	}
+	
+	public void allowOcclusionIfFullyOccluded() {
+		for(ModelFace face : faces)
+			face.allowOcclusionIfFullyOccluded();
 	}
 
 	public void calculateOccludes() {

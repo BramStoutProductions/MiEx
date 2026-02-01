@@ -118,7 +118,7 @@ public class Matrix {
 	}
 	
 	public static Matrix quaternion(float i, float j, float k, float r) {
-		float s = 1f / (i * i + j * j + k * k + r * r);
+		float s = 1f / (float)Math.sqrt(i * i + j * j + k * k + r * r);
 		return new Matrix(new float[] {
 			1f - 2f * s * (j * j + k * k), 		 2f * s * (i * j - k * r), 		 2f * s * (i * k + j * r), 0f,
 				 2f * s * (i * j + k * r), 	1f - 2f * s * (i * i + k * k),		 2f * s * (j * k - i * r), 0f,

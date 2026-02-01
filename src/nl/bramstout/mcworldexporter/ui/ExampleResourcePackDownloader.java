@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -88,7 +89,7 @@ public class ExampleResourcePackDownloader extends JDialog {
 	private JPanel availablePanel;
 
 	public ExampleResourcePackDownloader() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(8, 8, 8, 8));
@@ -147,6 +148,15 @@ public class ExampleResourcePackDownloader extends JDialog {
 				
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("Downloading resource packs");
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
+				System.out.println("Downloading example resource packs:");
+				for(String pack : packs) {
+					System.out.println("  " + pack);
+					// Make sure to delete the old pack, in case the new version
+					// has fewer or different files.
+					File packDir = new File(FileUtil.getResourcePackDir(), pack);
+					if(packDir.exists() && packDir.isDirectory())
+						packDir.delete();
+				}
 				
 				HttpURLConnection connection = null;
 				InputStream stream = null;
@@ -217,6 +227,7 @@ public class ExampleResourcePackDownloader extends JDialog {
 				
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+				System.out.println("Example resource packs downloaded.");
 				
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Packs successfully downloaded!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
@@ -238,6 +249,7 @@ public class ExampleResourcePackDownloader extends JDialog {
 				BlockStateRegistry.clearBlockStateRegistry();
 				ModelRegistry.clearModelRegistry();
 				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
 				MCWorldExporter.getApp().getUI().update();
 				MCWorldExporter.getApp().getUI().fullReRender();
 			}
@@ -247,7 +259,6 @@ public class ExampleResourcePackDownloader extends JDialog {
 	
 	@Override
 	public void setVisible(boolean b) {
-		super.setVisible(b);
 		if(b) {
 			
 			availablePanel.removeAll();
@@ -287,6 +298,7 @@ public class ExampleResourcePackDownloader extends JDialog {
 				
 			});
 		}
+		super.setVisible(b);
 	}
 	
 }

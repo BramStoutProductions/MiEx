@@ -34,6 +34,8 @@ package nl.bramstout.mcworldexporter.ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -63,10 +65,29 @@ public class MainWindow extends JFrame{
 	private ProgressBar progressBar;
 	private ResourcePackManager resourcePackManager;
 	private EntityDialog entityDialog;
+	private AdvancedSettingsPanel advancedSettings;
+	private boolean advancedSettingsVisible;
 	
 	public MainWindow() {
 		super();
 		entityDialog = new EntityDialog(this);
+		
+		addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				requestFocusInWindow();
+			}
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+			@Override
+			public void mouseClicked(MouseEvent e) {}
+		});
 		
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		
@@ -133,6 +154,9 @@ public class MainWindow extends JFrame{
 		resourcePackManager = new ResourcePackManager();
 		contentPanel.add(resourcePackManager, BorderLayout.EAST);
 		
+		advancedSettings = new AdvancedSettingsPanel();
+		advancedSettingsVisible = false;
+		
 		setSize(1400, 800);
 		setTitle("");
 	}
@@ -146,9 +170,8 @@ public class MainWindow extends JFrame{
 	}
 	
 	public void update() {
-		//viewer.render();
-		//viewer.repaint();
 		toolbar.update();
+		advancedSettings.update();
 	}
 	
 	public void fullReRender() {
@@ -156,6 +179,7 @@ public class MainWindow extends JFrame{
 	}
 	
 	public void reset() {
+		MCWorldExporter.getApp().resetExportBounds();
 		update();
 		viewer.reset();
 	}
@@ -170,6 +194,19 @@ public class MainWindow extends JFrame{
 		entityDialog.setEnabled(b);
 		viewer.setEnabled(b);
 		loadingPanel.setVisible(!b);
+	}
+	
+	public void toggleAdvancedSettings(boolean visible) {
+		advancedSettingsVisible = visible;
+		if(advancedSettingsVisible) {
+			contentPanel.remove(resourcePackManager);
+			contentPanel.add(advancedSettings, BorderLayout.EAST);
+		}else {
+			contentPanel.remove(advancedSettings);
+			contentPanel.add(resourcePackManager, BorderLayout.EAST);
+		}
+		this.invalidate();
+		this.repaint();
 	}
 	
 	public WorldViewer2D getViewer() {
@@ -190,6 +227,10 @@ public class MainWindow extends JFrame{
 	
 	public EntityDialog getEntityDialog() {
 		return entityDialog;
+	}
+	
+	public AdvancedSettingsPanel getAdvancedSettings() {
+		return advancedSettings;
 	}
 
 }

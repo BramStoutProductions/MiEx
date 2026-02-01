@@ -59,6 +59,7 @@ public class BlockState {
 	protected boolean randomAnimationXZOffset;
 	protected boolean randomAnimationYOffset;
 	protected boolean lodNoUVScale;
+	protected boolean lodNoScale;
 	protected int lodPriority;
 	protected Tint tint;
 	protected boolean _needsConnectionInfo;
@@ -81,6 +82,7 @@ public class BlockState {
 		randomAnimationXZOffset = Config.randomAnimationXZOffset.contains(name);
 		randomAnimationYOffset = Config.randomAnimationYOffset.contains(name);
 		lodNoUVScale = Config.lodNoUVScale.contains(name);
+		lodNoScale = Config.lodNoScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
 		tint = Tints.getTint(name);
 		BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
@@ -153,6 +155,10 @@ public class BlockState {
 		return lodNoUVScale;
 	}
 	
+	public boolean isLodNoScale() {
+		return lodNoScale;
+	}
+	
 	public boolean needsConnectionInfo() {
 		return _needsConnectionInfo;
 	}
@@ -195,12 +201,25 @@ public class BlockState {
 		return waterloggedTag.getData().equalsIgnoreCase("true");
 	}
 	
+	public String getLiquidName(NbtTagCompound properties) {
+		NbtTagString waterblockTag = (NbtTagString) properties.get("waterblock");
+		
+		if(waterblockTag == null)
+			return null;
+		
+		return waterblockTag.asString();
+	}
+	
 	public String getDefaultTexture() {
 		return handler.getDefaultTexture();
 	}
 
 	public boolean hasTint() {
 		return tint != null;
+	}
+	
+	public BlockStateHandler getHandler() {
+		return handler;
 	}
 	
 }

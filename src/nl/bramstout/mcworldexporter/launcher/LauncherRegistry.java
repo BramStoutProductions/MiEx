@@ -42,41 +42,63 @@ public class LauncherRegistry {
 	private static List<Launcher> launchers = new ArrayList<Launcher>();
 	
 	public static void initLaunchers() {
+		System.out.println("Searching for launchers.");
 		launchers.clear();
 		
 		File javaEditionRootDir = new File(FileUtil.getMinecraftRootDir());
-		if(javaEditionRootDir.exists() && javaEditionRootDir.isDirectory())
+		if(javaEditionRootDir.exists() && javaEditionRootDir.isDirectory()) {
+			System.out.println("Found Minecraft Java Edition launcher at " + javaEditionRootDir.getPath());
 			launchers.add(new LauncherJavaEdition(javaEditionRootDir));
+		}
 		
 		File bedrockEditionRootDir = new File(FileUtil.getMinecraftBedrockRootDir());
-		if(bedrockEditionRootDir.exists() && bedrockEditionRootDir.isDirectory())
+		if(bedrockEditionRootDir.exists() && bedrockEditionRootDir.isDirectory()) {
+			System.out.println("Found Minecraft Bedrock Edition launcher at " + bedrockEditionRootDir.getPath());
 			launchers.add(new LauncherBedrockEdition(bedrockEditionRootDir));
+		}
 		
 		File multiMCRootDir = new File(FileUtil.getMultiMCRootDir());
-		if(multiMCRootDir.exists() && multiMCRootDir.isDirectory())
+		if(multiMCRootDir.exists() && multiMCRootDir.isDirectory()) {
+			System.out.println("Found Multi MC launcher at " + multiMCRootDir.getPath());
 			launchers.add(new LauncherMultiMC(multiMCRootDir));
+		}
 		
 		File technicRootDir = new File(FileUtil.getTechnicRootDir());
-		if(technicRootDir.exists() && technicRootDir.isDirectory())
+		if(technicRootDir.exists() && technicRootDir.isDirectory()) {
+			System.out.println("Found Technic launcher at " + technicRootDir.getPath());
 			launchers.add(new LauncherTechnic(technicRootDir));
+		}
 		
 		File modrinthRootDir = new File(FileUtil.getModrinthRootDir());
-		if(modrinthRootDir.exists() && modrinthRootDir.isDirectory())
+		if(modrinthRootDir.exists() && modrinthRootDir.isDirectory()) {
+			System.out.println("Found Modrinth launcher at " + modrinthRootDir.getPath());
 			launchers.add(new LauncherModrinth(modrinthRootDir));
+		}
 		
 		File hytaleRootDir = new File(FileUtil.getHytaleRootDir());
-		if(hytaleRootDir.exists() && hytaleRootDir.isDirectory())
+		if(hytaleRootDir.exists() && hytaleRootDir.isDirectory()) {
+			System.out.println("Found Hytale launcher at " + hytaleRootDir.getPath());
 			launchers.add(new LauncherHytale(hytaleRootDir));
+		}
 		
 		for(String saveDirStr : FileUtil.getAdditionalSaveDirs()) {
 			LauncherSavesDirectory launcher = new LauncherSavesDirectory(saveDirStr);
-			if(launcher.isValid())
+			if(launcher.isValid()) {
+				System.out.println("Found " + launcher.getName() + " saves launcher at " + launcher.getFolder().getPath());
 				launchers.add(launcher);
+			}
 		}
 	}
 	
 	public static List<Launcher> getLaunchers(){
 		return launchers;
+	}
+	
+	public static Launcher getLauncherForWorld(File worldFolder) {
+		for(Launcher launcher : launchers)
+			if(launcher.ownsWorld(worldFolder))
+				return launcher;
+		return null;
 	}
 	
 }

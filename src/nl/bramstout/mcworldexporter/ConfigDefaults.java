@@ -65,15 +65,13 @@ public class ConfigDefaults {
 	public static List<String> caveBlocks = new ArrayList<String>();
 	public static List<String> randomOffset = new ArrayList<String>();
 	public static List<String> randomYOffset = new ArrayList<String>();
-	/*public static List<String> grassColormapBlocks = new ArrayList<String>();
-	public static List<String> foliageColormapBlocks = new ArrayList<String>();
-	public static List<String> waterColormapBlocks = new ArrayList<String>();*/
 	public static List<String> forceBiomeColor = new ArrayList<String>();
 	public static List<String> forceNoBiomeColor = new ArrayList<String>();
 	public static List<String> doubleSided = new ArrayList<String>();
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
+	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
@@ -85,6 +83,7 @@ public class ConfigDefaults {
 	public static float bgFullnessThreshold;
 	public static int chunkSize;
 	public static int biomeBlendRadius;
+	public static boolean smoothBiomeColors;
 	public static int removeCavesSearchRadius;
 	public static int removeCavesSearchEnergy;
 	public static int removeCavesSurfaceRadius;
@@ -92,6 +91,7 @@ public class ConfigDefaults {
 	public static int removeCavesCaveBlockCost;
 	public static float animatedTexturesFrameTimeMultiplier;
 	public static float blockSizeInUnits;
+	public static boolean blockCenteredXZOnOrigin;
 	public static int atlasMaxResolution;
 	public static int atlasMaxTileResolution;
 	public static boolean exportVertexColorAsDisplayColor;
@@ -106,10 +106,15 @@ public class ConfigDefaults {
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
-	public static boolean useGeometerySubsets;
+	public static boolean useGeometrySubsets;
 	public static boolean useIndexedUVs;
 	public static boolean useIndexedVertexColors;
 	public static boolean useIndexedNormals;
+	public static boolean allowBlockAnimations;
+	public static float animationFrameRate;
+	public static float animationStartFrame;
+	public static float animationEndFrame;
+	public static float usdMetersPerUnit;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -197,12 +202,6 @@ public class ConfigDefaults {
 		        "kelp", "kelp_plant", "crimson_fungus", "warped_fungus", "brown_mushroom", "red_mushroom"));
 		randomYOffset.addAll(Arrays.asList(
 				"grass", "fern", "short_grass", "tall_grass", "large_fern"));
-		/*grassColormapBlocks.addAll(Arrays.asList(
-				"grass_block", "fern", "grass", "short_grass", "tall_grass", "large_fern", "lily_pad", "sugar_cane"));
-		foliageColormapBlocks.addAll(Arrays.asList(
-				"acacia_leaves", "birch_leaves", "dark_oak_leaves", "jungle_leaves", "mangrove_leaves", "oak_leaves", "spruce_leaves", "vine"));
-		waterColormapBlocks.addAll(Arrays.asList(
-				"water", "water_cauldron"));*/
 		forceBiomeColor.addAll(Arrays.asList(
 				"block/grass_block_side"));
 		forceNoBiomeColor.addAll(Arrays.asList(
@@ -222,6 +221,7 @@ public class ConfigDefaults {
 		randomAnimationYOffset.addAll(Arrays.asList(
 				"fire", "soul_fire"));
 		lodNoUVScale.addAll(Arrays.asList());
+		lodNoScale.addAll(Arrays.asList());
 		ignoreAtlas.addAll(Arrays.asList(
 				"block/grass_block_side"));
 		
@@ -245,6 +245,7 @@ public class ConfigDefaults {
 		bgFullnessThreshold = 0.01f;
 		chunkSize = 16;
 		biomeBlendRadius = 8;
+		smoothBiomeColors = true;
 		removeCavesSearchRadius = 4;
 		removeCavesSearchEnergy = 5;
 		removeCavesSurfaceRadius = 16;
@@ -252,6 +253,7 @@ public class ConfigDefaults {
 		removeCavesCaveBlockCost = 5;
 		animatedTexturesFrameTimeMultiplier = 1.0f;
 		blockSizeInUnits = 16.0f;
+		blockCenteredXZOnOrigin = true;
 		atlasMaxResolution = 4096;
 		atlasMaxTileResolution = 256;
 		exportVertexColorAsDisplayColor = false;
@@ -266,10 +268,15 @@ public class ConfigDefaults {
 		forceDoubleSidedOnEverything = false;
 		minCubeSize = -1.0f;
 		maxMaterialNameLength = -1;
-		useGeometerySubsets = false;
+		useGeometrySubsets = false;
 		useIndexedUVs = true;
 		useIndexedVertexColors = true;
 		useIndexedNormals = true;
+		allowBlockAnimations = true;
+		animationFrameRate = 24;
+		animationStartFrame = 0;
+		animationEndFrame = 24000;
+		usdMetersPerUnit = 1f;
 	}
 	
 	public static void loadDefaults() {

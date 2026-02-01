@@ -247,9 +247,9 @@ public class BuiltInBlockState extends BlockState{
 		if(tint != null)
 			tintColor = tint.getTint(properties);
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, randomOffset, randomYOffset, doubleSided, 
-				randomAnimationXZOffset, randomAnimationYOffset, lodNoUVScale, lodPriority, tintColor, 
-				needsConnectionInfo());
+				individualBlocks, hasLiquid(properties), getLiquidName(properties), caveBlock, randomOffset, randomYOffset, doubleSided, 
+				randomAnimationXZOffset, randomAnimationYOffset, lodNoUVScale, lodNoScale, lodPriority, tintColor, 
+				needsConnectionInfo(), null);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}

@@ -46,7 +46,7 @@ import nl.bramstout.mcworldexporter.world.Player;
 public class PlayerAnvil extends Player{
 
 	public PlayerAnvil(String uuid, File playerFile) {
-		super(uuid, null, 0, 0, 0, "minecraft:overworld", true);
+		super(uuid, uuid, null, 0, 0, 0, "minecraft:overworld", true);
 		try {
 			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(playerFile)));
 			DataInputStream dis = new DataInputStream(is);

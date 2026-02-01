@@ -234,11 +234,16 @@ public class Preset {
 		}
 		
 		if(onlyIndividualBlocks != null) {
-			Config.onlyIndividualBlocks = onlyIndividualBlocks.booleanValue();
+			for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList()) {
+				bounds.setOnlyIndividualBlocks(onlyIndividualBlocks.booleanValue());
+			}
 		}
 		
 		if(chunkSize != null) {
 			Config.chunkSize = chunkSize.intValue();
+			for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList()) {
+				bounds.setChunkSize(chunkSize.intValue());
+			}
 		}
 		MCWorldExporter.getApp().getUI().update();
 		
@@ -291,7 +296,7 @@ public class Preset {
 		runOptimisers = Boolean.valueOf(Config.runOptimiser);
 		removeCaves = Boolean.valueOf(Config.removeCaves);
 		fillInCaves = Boolean.valueOf(Config.fillInCaves);
-		onlyIndividualBlocks = Boolean.valueOf(Config.onlyIndividualBlocks);
+		onlyIndividualBlocks = Boolean.valueOf(MCWorldExporter.getApp().getActiveExportBounds().isOnlyIndividualBlocks());
 		chunkSize = Integer.valueOf(Config.chunkSize);
 	}
 	

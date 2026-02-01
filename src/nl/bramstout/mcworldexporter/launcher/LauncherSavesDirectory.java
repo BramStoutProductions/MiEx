@@ -37,6 +37,9 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
+
 public class LauncherSavesDirectory extends Launcher{
 	
 	private String name;
@@ -59,6 +62,10 @@ public class LauncherSavesDirectory extends Launcher{
 	@Override
 	public String getName() {
 		return this.name;
+	}
+	
+	public File getFolder() {
+		return savesFolder;
 	}
 
 	@Override
@@ -101,6 +108,16 @@ public class LauncherSavesDirectory extends Launcher{
 		}
 		
 		return saves;
+	}
+	
+	@Override
+	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
+		return new ArrayList<ResourcePackSource>();
+	}
+	
+	@Override
+	public boolean ownsWorld(File worldFolder) {
+		return worldFolder.getAbsolutePath().startsWith(savesFolder.getAbsolutePath());
 	}
 
 }

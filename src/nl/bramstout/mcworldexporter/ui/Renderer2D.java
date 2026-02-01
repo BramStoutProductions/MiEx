@@ -43,6 +43,7 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
 import nl.bramstout.mcworldexporter.parallel.ThreadPool;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.CameraTransform;
 import nl.bramstout.mcworldexporter.ui.WorldViewer2D.Point;
 import nl.bramstout.mcworldexporter.world.Chunk;
@@ -177,7 +178,7 @@ public class Renderer2D implements Runnable {
 		if(MCWorldExporter.getApp().getWorld() == null)
 			return;
 		if(newBufferTransform.equals(oldBufferTransform)) {
-			// No need to do any reprojection is the transform didn't change.
+			// No need to do any reprojection as the transform didn't change.
 			// We do still need to update the render counter
 			
 			try {
@@ -185,10 +186,10 @@ public class Renderer2D implements Runnable {
 				Point maxBlock = bufferTransform.toWorld(new Point(buffer.getWidth(), buffer.getHeight()),
 						buffer.getWidth(), buffer.getHeight());
 	
-				minChunkX = minBlock.ix() >> 4 + 1;
-				minChunkZ = minBlock.iy() >> 4 + 1;
-				maxChunkX = maxBlock.ix() >> 4 - 1;
-				maxChunkZ = maxBlock.iy() >> 4 - 1;
+				minChunkX = (minBlock.ix() >> 4) + 1;
+				minChunkZ = (minBlock.iy() >> 4) + 1;
+				maxChunkX = (maxBlock.ix() >> 4) - 1;
+				maxChunkZ = (maxBlock.iy() >> 4) - 1;
 	
 				for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
 					for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
@@ -219,10 +220,10 @@ public class Renderer2D implements Runnable {
 				Point maxBlock = bufferTransform.toWorld(new Point(buffer.getWidth(), buffer.getHeight()),
 						buffer.getWidth(), buffer.getHeight());
 	
-				minChunkX = minBlock.ix() >> 4 + 1;
-				minChunkZ = minBlock.iy() >> 4 + 1;
-				maxChunkX = maxBlock.ix() >> 4 - 1;
-				maxChunkZ = maxBlock.iy() >> 4 - 1;
+				minChunkX = (minBlock.ix() >> 4) + 2;
+				minChunkZ = (minBlock.iy() >> 4) + 2;
+				maxChunkX = (maxBlock.ix() >> 4) - 2;
+				maxChunkZ = (maxBlock.iy() >> 4) - 2;
 	
 				for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
 					for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
@@ -301,7 +302,6 @@ public class Renderer2D implements Runnable {
 				}
 
 				// Render to the buffer
-				renderCounter++;
 
 				// Make sure that the buffer is the right size.
 				if (buffer == null || buffer.getWidth() != bufferWidth || buffer.getHeight() != bufferHeight ||
@@ -316,6 +316,10 @@ public class Renderer2D implements Runnable {
 					fullRender = true;
 					clearBuffer = true;
 				}
+				if(fullRender) {
+					renderCounter++;
+				}
+				
 				// Copy the bufferTranform pointer, in case it gets updated during rendering.
 				CameraTransform bufferTransform = this.bufferTransform;
 
@@ -548,7 +552,8 @@ public class Renderer2D implements Runnable {
 		public void run() {
 			MCWorldExporter.worldMutex.acquireRead();
 			if(chunk.getRegion().getWorld() != MCWorldExporter.getApp().getWorld() || 
-					chunk.getRegion().getDimension() != MCWorldExporter.getApp().getWorld().getCurrentDimensions()) {
+					chunk.getRegion().getDimension() != MCWorldExporter.getApp().getWorld().getCurrentDimensions() ||
+					chunk.getRegion().getWorld().isPaused()) {
 				MCWorldExporter.worldMutex.releaseRead();
 				return;
 			}
@@ -562,7 +567,18 @@ public class Renderer2D implements Runnable {
 					MCWorldExporter.worldMutex.releaseRead();
 					return;
 				}
-
+				
+				while(ResourcePacks.isLoading.get()) {
+					// If resource packs are currently being loaded in,
+					// we don't want to do any rendering yet.
+					// This is because loading in a chunk, causes things like
+					// block states and biomes to be registered, but we are
+					// still loading in the resource packs that define this.
+					// This can cause MiEx to end up in a state where it
+					// has block states or biomes that deal with only partial
+					// resource pack data.
+					Thread.sleep(10);
+				}
 				chunk.load();
 				chunk.renderChunkImage();
 				chunk.getChunkImage();

@@ -43,6 +43,7 @@ import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
@@ -91,9 +92,16 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
 				state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
-				state.hasLiquid(properties), state.isCaveBlock(), state.hasRandomOffset(), 
+				state.hasLiquid(properties), state.getLiquidName(properties), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
-				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.getLodPriority(), tintColor, state.needsConnectionInfo());
+				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
+				tintColor, state.needsConnectionInfo(), null);
+	}
+	
+	@Override
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state,
+			BlockAnimationHandler animationHandler, float frame) {
+		return getBakedBlockState(properties, x, y, z, state);
 	}
 
 	@Override

@@ -132,10 +132,8 @@ public class RegionViewer extends JPanel{
 		xOffset = regionMinX;
 		yOffset = regionMinZ;
 		
-		//for(int regionZ = regionMinZ; regionZ <= regionMaxZ; ++regionZ) {
-		//	for(int regionX = regionMinX; regionX <= regionMaxX; ++regionX) {
+		if(world.getRegions() != null) {
 			for(Region region : world.getRegions()) {
-				//Region region = world.getRegion(regionX * 32, regionZ * 32);
 				if(region == null)
 					continue;
 				int regionX = region.getXCoordinate();
@@ -166,7 +164,7 @@ public class RegionViewer extends JPanel{
 					}
 				}
 			}
-		//}
+		}
 	}
 	
 	@Override

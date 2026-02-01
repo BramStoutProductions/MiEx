@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.resourcepack.bedrock;
 
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
 public class ModelHandlerFullBlock extends ModelHandler{
@@ -89,6 +90,11 @@ public class ModelHandlerFullBlock extends ModelHandler{
 				 8f, 0f,  8f
 		};*/
 		model.addFace(points, uvs, Direction.DOWN, "#down");
+	}
+	
+	@Override
+	public void getGeometry(Model model, BlockAnimationHandler handler, float frame) {
+		this.getGeometry(model);
 	}
 
 }

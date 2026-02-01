@@ -40,6 +40,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,7 +71,9 @@ import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.image.ImageReader;
+import nl.bramstout.mcworldexporter.launcher.HytaleVersion;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
+import nl.bramstout.mcworldexporter.launcher.LauncherHytale;
 import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
 import nl.bramstout.mcworldexporter.launcher.MinecraftVersion;
 import nl.bramstout.mcworldexporter.model.Direction;
@@ -87,7 +91,6 @@ public class ResourcePackDefaults {
 			if(!(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json").exists())) {
 				MCWorldExporter.getApp().getUI().setEnabled(false);
 				try {
-					System.out.println("Installing base_resource_pack");
 					updateBaseResourcePack(true);
 					MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
 				}catch(Exception ex) {
@@ -104,6 +107,7 @@ public class ResourcePackDefaults {
 	
 	public static void updateBaseResourcePack(boolean updateToNewest) {
 		try {
+			System.out.println("Installing base_resource_pack.");
 			List<MinecraftVersion> versions = new ArrayList<MinecraftVersion>();
 			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
 				versions.addAll(launcher.getVersions());
@@ -114,6 +118,7 @@ public class ResourcePackDefaults {
 			
 			
 			if(versions.isEmpty()) {
+				System.out.println("Could not find a Minecraft Java Edition install.");
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_VERSIONS_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
@@ -175,10 +180,120 @@ public class ResourcePackDefaults {
 		    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		    
+		    System.out.println("base_resource_pack updated successfully.");
 		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack updated successfully");
 		}catch(Exception ex) {
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	public static void updateBaseResourcePackHytale(boolean updateToNewest) {
+		try {
+			System.out.println("Installing base_resource_pack_hytale.");
+			List<HytaleVersion> versions = new ArrayList<HytaleVersion>();
+			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
+				if(launcher instanceof LauncherHytale)
+					versions.addAll(((LauncherHytale)launcher).getHytaleVersions());
+			}
+			List<String> versionLabels = new ArrayList<String>();
+			for(HytaleVersion version : versions)
+				versionLabels.add(version.getLabel());
+			
+			
+			if(versions.isEmpty()) {
+				System.out.println("Could not find a Hytale install.");
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Hytale install with valid installed versions and so cannot automatically create a base_resource_pack_hytale. Either launch the latest version of Hytale, manually create the base_resource_pack_hytale or specify the MIEX_HYTALE_ROOT_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			// Take index 1 to prefer the release over pre-release
+			Object selectedValue = versionLabels.get(Math.min(1, versionLabels.size()));
+			
+			if(!updateToNewest) {
+				// We're not doing a forced update to the latest version,
+				// so let the user select which version.
+				selectedValue = JOptionPane.showInputDialog(MCWorldExporter.getApp().getUI(),
+			             "Update to version", "Version",
+			             JOptionPane.INFORMATION_MESSAGE, null,
+			             versionLabels.toArray(), versionLabels.get(0));
+				if(selectedValue == null)
+					return;
+			}
+			
+			String selectedVersion = (String) selectedValue;
+			
+			File versionAssets = null;
+			for(HytaleVersion version : versions) {
+				if(version.getLabel().equals(selectedVersion)) {
+					versionAssets = version.getAssetsFile();
+					break;
+				}
+			}
+			if(versionAssets == null) {
+				System.out.println("No Assets.zip found for selected version " + selectedVersion);
+				return;
+			}
+			
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Updating base resource pack hytale");
+			
+			System.out.println("Extracting base_resource_pack_hytale from " + versionAssets.getAbsolutePath());
+			extractResourcePackHytaleFromZip(versionAssets, new File(FileUtil.getResourcePackDir(), "base_resource_pack_hytale"));
+			
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack_hytale"));
+		    
+		    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
+		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+		    
+		    System.out.println("base_resource_pack_hytale updated successfully.");
+		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack_hytale updated successfully");
+		}catch(Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack_hytale", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	public static void extractSourcesIntoResourcePack(List<ResourcePackSource> sources, File resourcePack) {
+		try {
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Installing World Resource Pack");
+			
+			System.out.println("Extracting " + resourcePack.getName() + " from various sources.");
+			float numSources = (float) sources.size();
+			float progress = 0f;
+			for(ResourcePackSource source : sources) {
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress((progress / numSources) * 0.9f);
+				
+				extractResourcePackFromSource(source, resourcePack, (progress / numSources) * 0.9f, 0.9f / numSources);
+				progress += 1f;
+			}
+			
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePack);
+			
+			// Write out packInfo file
+			JsonObject packInfoObj = new JsonObject();
+			JsonArray sourcesArray = new JsonArray();
+			for(ResourcePackSource source : sources) {
+				for(String sourceUuids : source.getSourceUuids()) {
+					sourcesArray.add(sourceUuids);
+				}
+			}
+			packInfoObj.add("sources", sourcesArray);
+			Json.writeJson(new File(resourcePack, "packInfo.json"), packInfoObj);
+			
+		    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
+		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+		    
+		    System.out.println(resourcePack.getName() + " installed successfully.");
+		    
+		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Pack installed successfully");
+		}catch(Exception ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not install resource pack", "Error", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
@@ -243,6 +358,232 @@ public class ResourcePackDefaults {
 			ex.printStackTrace();
 		}
 	    zipIn.close();
+	}
+	
+	public static void extractResourcePackHytaleFromZip(File zipFile, File resourcePackDir) throws IOException {
+		long bytesRead = 0;
+		long totalSize = Files.size(zipFile.toPath());
+		ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFile));
+		try {
+		    ZipEntry entry = null;
+		    byte[] bytesIn = new byte[64*1024*1024];
+		    
+		    while ((entry = zipIn.getNextEntry()) != null) {
+		    	String entryName = entry.getName();
+		    	bytesRead += entry.getCompressedSize();
+		    	float progress = (float) ((((double) bytesRead) / ((double)totalSize)) * 0.8 + 0.1);
+		    	MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
+		    	
+		    	if(!entryName.startsWith("Common/Blocks/") && 
+		    			!entryName.startsWith("Common/Blocks/") && 
+		    			!entryName.startsWith("Common/BlockTextures/") && 
+		    			!entryName.startsWith("Common/Characters/") && 
+		    			!entryName.startsWith("Common/Cosmetics/") && 
+		    			!entryName.startsWith("Common/Items/") && 
+		    			!entryName.startsWith("Common/NPC/") && 
+		    			!entryName.startsWith("Common/Resources/") && 
+		    			!entryName.startsWith("Common/TintGradients/") && 
+		    			!entryName.startsWith("Server/BlockTypeList/") && 
+		    			!entryName.startsWith("Server/Entity/") && 
+		    			!entryName.startsWith("Server/Environments/") && 
+		    			!entryName.startsWith("Server/Item/") && 
+		    			!entryName.startsWith("Server/Models/") && 
+		    			!entryName.startsWith("manifest"))
+		    		continue;
+		    	
+		    	try {
+			        File outFile = new File(resourcePackDir, entryName);
+			        if (!entry.isDirectory()) {
+			        	File dir = outFile.getParentFile();
+			        	dir.mkdirs();
+			            OutputStream os = new FileOutputStream(outFile);
+			            try {
+			            	int read = 0;
+				            while ((read = zipIn.read(bytesIn)) != -1) {
+				                os.write(bytesIn, 0, read);
+				            }
+			            }catch(Exception ex) {
+			            	ex.printStackTrace();
+			            }
+			            os.close();
+			        }
+			        zipIn.closeEntry();
+		    	}catch(Exception ex) {
+		    		ex.printStackTrace();
+		    	}
+		    }
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	    zipIn.close();
+	}
+	
+	private static void extractResourcePackFromSource(ResourcePackSource source, File resourcePack, float startProgress, float progressRange) {
+		System.out.println("  Extracting source " + source.getName());
+		float numFiles = (float) source.getSources().size();
+		float progress = startProgress;
+		for(File file : source.getSources()) {
+			extractResourcePackFromSourceFile(file, resourcePack, progress, progressRange / numFiles);
+			progress += progressRange / numFiles;
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
+		}
+	}
+	
+	private static void extractResourcePackFromSourceFile(File source, File resourcePack, float startProgress, float progressRange) {
+		// source can be one of a few things,
+		// it could be a folder,
+		// it could be a jar file,
+		// it could be a zip file.
+		// Folders we copy as is.
+		// Zip files we extract all.
+		// Jar files we only extract the assets and data folder.
+		System.out.println("    Extracting file " + source.getPath());
+		
+		// TODO: We will have manifest.json and pack.mcmeta files, which will need to be merged.
+		
+		if(source.isDirectory()) {
+			extractFolderToResourcePack(source, resourcePack, startProgress, progressRange);
+		}else if(source.isFile()) {
+			if(source.getName().endsWith(".zip")) {
+				extractZipToResourcePack(source, resourcePack, startProgress, progressRange);
+			}else if(source.getName().endsWith(".jar")) {
+				extractJarToResourcePack(source, resourcePack, startProgress, progressRange);
+			}
+		}
+	}
+	
+	private static void extractFolderToResourcePack(File source, File dst, float startProgress, float progressRange) {
+		if(source.isDirectory()) {
+			File[] files = source.listFiles();
+			float numFiles = (float) files.length;
+			float progress = startProgress;
+			for(File file : files) {
+				extractFolderToResourcePack(file, new File(dst, file.getName()), progress, progressRange / numFiles);
+				progress += progressRange / numFiles;
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
+			}
+		}else if(source.isFile()) {
+			try {
+				if(!dst.getParentFile().exists())
+					dst.getParentFile().mkdirs();
+				Files.copy(source.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+	
+	private static void extractZipToResourcePack(File source, File dst, float startProgress, float progressRange) {
+		try {
+			long bytesRead = 0;
+			long totalSize = Files.size(source.toPath());
+			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
+			try {
+			    ZipEntry entry = null;
+			    byte[] bytesIn = new byte[64*1024*1024];
+			    
+			    while ((entry = zipIn.getNextEntry()) != null) {
+			    	String entryName = entry.getName();
+			    	if(entryName.startsWith("__MACOSX") || entryName.contains(".DS_Store"))
+			    		continue;
+			    	
+			    	long size = entry.getCompressedSize();
+			    	if(size == -1L)
+			    		size = entry.getSize();
+			    	if(size >= 0L)
+			    		bytesRead += size;
+			    	float progress = (float) ((((double) bytesRead) / ((double)totalSize)) * progressRange + startProgress);
+			    	MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
+			    	
+			    	try {
+				        File outFile = new File(dst, entryName);
+				        if (!entry.isDirectory()) {
+				        	File dir = outFile.getParentFile();
+				        	dir.mkdirs();
+				            OutputStream os = new FileOutputStream(outFile);
+				            try {
+				            	int read = 0;
+					            while ((read = zipIn.read(bytesIn)) != -1) {
+					                os.write(bytesIn, 0, read);
+					                if(size == -1L)
+					                	// Couldn't get the size, so increment bytesRead here.
+					                	bytesRead += read;
+					            }
+				            }catch(Exception ex) {
+				            	ex.printStackTrace();
+				            }
+				            os.close();
+				        }
+				        zipIn.closeEntry();
+			    	}catch(Exception ex) {
+			    		ex.printStackTrace();
+			    	}
+			    }
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		    zipIn.close();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	private static void extractJarToResourcePack(File source, File dst, float startProgress, float progressRange) {
+		try {
+			long bytesRead = 0;
+			long totalSize = Files.size(source.toPath());
+			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
+			try {
+			    ZipEntry entry = null;
+			    byte[] bytesIn = new byte[64*1024*1024];
+			    
+			    while ((entry = zipIn.getNextEntry()) != null) {
+			    	String entryName = entry.getName();
+			    	if(entryName.startsWith("__MACOSX") || entryName.contains(".DS_Store"))
+			    		continue;
+			    	
+			    	long size = entry.getCompressedSize();
+			    	if(size == -1)
+			    		size = entry.getSize();
+			    	if(size >= 0)
+			    		bytesRead += size;
+			    	float progress = (float) ((((double) bytesRead) / ((double)totalSize)) * progressRange + startProgress);
+			    	MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
+			    	
+			    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/"))
+			    		continue;
+			    	
+			    	try {
+				        File outFile = new File(dst, entryName);
+				        if (!entry.isDirectory()) {
+				        	File dir = outFile.getParentFile();
+				        	dir.mkdirs();
+				            OutputStream os = new FileOutputStream(outFile);
+				            try {
+				            	int read = 0;
+					            while ((read = zipIn.read(bytesIn)) != -1) {
+					                os.write(bytesIn, 0, read);
+					                if(size == -1)
+					                	// Couldn't get the size, so increment bytesRead here.
+					                	bytesRead += read;
+					            }
+				            }catch(Exception ex) {
+				            	ex.printStackTrace();
+				            }
+				            os.close();
+				        }
+				        zipIn.closeEntry();
+			    	}catch(Exception ex) {
+			    		ex.printStackTrace();
+			    	}
+			    }
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		    zipIn.close();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	private static class MiExConfigData{
@@ -352,6 +693,8 @@ public class ResourcePackDefaults {
 		
 		FileWriter writer = null;
 		try {
+			if(!configFile.getParentFile().exists())
+				configFile.getParentFile().mkdirs();
 			Gson gson = new GsonBuilder().serializeNulls().setPrettyPrinting().disableHtmlEscaping().create();
 			String jsonString = gson.toJson(configRoot);
 			writer = new FileWriter(configFile);

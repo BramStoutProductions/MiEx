@@ -67,5 +67,10 @@ public class Pair<K, V> implements Map.Entry<K, V> {
 		}
 		return false;
 	}
+	
+	@Override
+	public String toString() {
+		return key.toString() + ", " + value.toString();
+	}
 
 }

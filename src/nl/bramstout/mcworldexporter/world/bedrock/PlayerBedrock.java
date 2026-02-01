@@ -40,7 +40,7 @@ import nl.bramstout.mcworldexporter.world.Player;
 public class PlayerBedrock extends Player{
 
 	public PlayerBedrock(String uuid, NbtTagCompound data) {
-		super(uuid, data, 0, 0, 0, getDimension(data), false);
+		super(uuid, uuid, data, 0, 0, 0, getDimension(data), false);
 		
 		NbtTag posTag = data.get("Pos");
 		if(posTag != null && posTag instanceof NbtTagList) {

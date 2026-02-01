@@ -39,6 +39,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class LauncherJavaEdition extends Launcher{
 	
@@ -104,4 +106,15 @@ public class LauncherJavaEdition extends Launcher{
 		}
 		return saves;
 	}
+	
+	@Override
+	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
+		return new ArrayList<ResourcePackSource>();
+	}
+	
+	@Override
+	public boolean ownsWorld(File worldFolder) {
+		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
+	}
+	
 }

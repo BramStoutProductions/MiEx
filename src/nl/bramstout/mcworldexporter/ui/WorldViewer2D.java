@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics;
@@ -43,14 +44,15 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
+import nl.bramstout.mcworldexporter.ExportBounds.ExcludeRegion;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 
 public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, ToolTips.DynamicTooltip{
@@ -79,6 +81,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	private int mouseDragStartY;
 	private CameraTransform transformStart;
 	private ExportBounds selectionStart;
+	private boolean snapToChunks;
 	
 	private int cursorX;
 	private int cursorY;
@@ -86,6 +89,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	private Renderer2D renderer;
 	private Thread rendererThread;
 	private Timer animTimer;
+	private BufferedImage selectionBuffer;
 	
 	public WorldViewer2D() {
 		super();
@@ -97,7 +101,8 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		mouseDragStartX = 0;
 		mouseDragStartY = 0;
 		transformStart = new CameraTransform();
-		selectionStart = MCWorldExporter.getApp().getExportBounds().copy();
+		selectionStart = MCWorldExporter.getApp().getActiveExportBounds().copy();
+		snapToChunks = false;
 		
 		renderer = new Renderer2D();
 		rendererThread = new Thread(renderer);
@@ -184,140 +189,219 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		renderer.getFrameBufferLock().release();
 		
 		// Give the renderer the current resolution, in case it changed, so that it can update it.
+		AffineTransform gtransform = ((Graphics2D)g).getTransform();
 		renderer.setResolution(getWidth(), getHeight());
-		
-		Point selectionMinPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getMinX(), 
-															MCWorldExporter.getApp().getExportBounds().getMinZ()), getWidth(), getHeight());
-		Point selectionMaxPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getMaxX() + 1, 
-															MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1), getWidth(), getHeight());
-		
-		Point lodMinPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getLodMinX(), 
-				MCWorldExporter.getApp().getExportBounds().getLodMinZ()), getWidth(), getHeight());
-		Point lodMaxPos = transform.toScreen(new Point(MCWorldExporter.getApp().getExportBounds().getLodMaxX() + 1, 
-						MCWorldExporter.getApp().getExportBounds().getLodMaxZ() + 1), getWidth(), getHeight());
-		
 		Rectangle2D stringBounds = g.getFontMetrics().getStringBounds("FG", g);
 		
-		int selectionWidth = selectionMaxPos.ix() - selectionMinPos.ix();
-		int selectionHeight = selectionMaxPos.iy() - selectionMinPos.iy();
-		int lodWidth = lodMaxPos.ix() - lodMinPos.ix();
-		int lodHeight = lodMaxPos.iy() - lodMinPos.iy();
-		if (selectionWidth > 1 && selectionHeight > 1) {
-			int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
-			int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
-			int chunkEndX = MCWorldExporter.getApp().getExportBounds().getMaxX() >> 4;
-			int chunkEndZ = MCWorldExporter.getApp().getExportBounds().getMaxZ() >> 4;
+		int selectionBufferWidth = (int) (g.getClipBounds().width * gtransform.getScaleX());
+		int selectionBufferHeight = (int) (g.getClipBounds().height * gtransform.getScaleY());
+		if(selectionBuffer == null || (selectionBuffer.getWidth() != selectionBufferWidth || selectionBuffer.getHeight() != selectionBufferHeight)) {
+			selectionBuffer = new BufferedImage(selectionBufferWidth, selectionBufferHeight, BufferedImage.TYPE_INT_ARGB);
+		}
+		
+		RenderingHints renderingHints = ((Graphics2D)g).getRenderingHints();
+		
+		int[][] regionColors = new int[][] {
+				new int[] {255, 0, 255},
+				new int[] {255, 255, 0},
+				new int[] {0, 255, 255},
+				new int[] {255, 90, 90},
+				new int[] {90, 90, 255},
+				new int[] {90, 255, 90}
+		};
+		
+		int regionI = 0;
+		for(ExportBounds exportBounds : MCWorldExporter.getApp().getExportBoundsList()) {
+			boolean isActive = MCWorldExporter.getApp().getActiveExportBounds().getName().equals(exportBounds.getName());
+			float opacity = isActive ? 1f : 0.33f;
 			
-			g.setColor(new Color(255, 0, 255, 48));
-			//g.fillRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+			boolean hasExcludeRegions = !exportBounds.excludeRegions.isEmpty();
 			
-			int chunkI = 0;
-			int chunkJ = 0;
-			for(int j = chunkStartZ; j <= chunkEndZ; j += Config.chunkSize) {
-				chunkI = 0;
-				int blockMinZ = j * 16;
-				blockMinZ = Math.max(Math.min(blockMinZ, MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1), 
-						MCWorldExporter.getApp().getExportBounds().getMinZ());
-				int blockMaxZ = (j + Config.chunkSize) * 16;
-				blockMaxZ = Math.max(Math.min(blockMaxZ, MCWorldExporter.getApp().getExportBounds().getMaxZ() + 1),
-						MCWorldExporter.getApp().getExportBounds().getMinZ());
+			Graphics ebG = g;
+			if(hasExcludeRegions) {
+				ebG = selectionBuffer.createGraphics();
+				((Graphics2D)ebG).setBackground(new Color(0, 0, 0, 0));
+				((Graphics2D) ebG).addRenderingHints(renderingHints);
+				((Graphics2D) ebG).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				((Graphics2D) ebG).setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+				((Graphics2D) ebG).setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_DEFAULT);
+				ebG.setFont(g.getFont());
+				((Graphics2D) ebG).setTransform(gtransform);
+				ebG.clearRect(0, 0, getWidth(), getHeight());
+			}
+			
+			Point selectionMinPos = transform.toScreen(new Point(exportBounds.getMinX(), exportBounds.getMinZ()), 
+														getWidth(), getHeight());
+			Point selectionMaxPos = transform.toScreen(new Point(exportBounds.getMaxX() + 1, exportBounds.getMaxZ() + 1), 
+														getWidth(), getHeight());
+			
+			Point lodMinPos = transform.toScreen(new Point(exportBounds.getLodMinX(), exportBounds.getLodMinZ()), 
+													getWidth(), getHeight());
+			Point lodMaxPos = transform.toScreen(new Point(exportBounds.getLodMaxX() + 1, exportBounds.getLodMaxZ() + 1), 
+													getWidth(), getHeight());
+			
+			
+			int selectionWidth = selectionMaxPos.ix() - selectionMinPos.ix();
+			int selectionHeight = selectionMaxPos.iy() - selectionMinPos.iy();
+			int lodWidth = lodMaxPos.ix() - lodMinPos.ix();
+			int lodHeight = lodMaxPos.iy() - lodMinPos.iy();
+			if (selectionWidth > 1 && selectionHeight > 1) {
+				int chunkStartX = exportBounds.getMinX() >> 4;
+				int chunkStartZ = exportBounds.getMinZ() >> 4;
+				int chunkEndX = exportBounds.getMaxX() >> 4;
+				int chunkEndZ = exportBounds.getMaxZ() >> 4;
 				
-				for(int i = chunkStartX; i <= chunkEndX; i += Config.chunkSize) {
-					int blockMinX = i * 16;
-					blockMinX = Math.max(Math.min(blockMinX, MCWorldExporter.getApp().getExportBounds().getMaxX() + 1), 
-										MCWorldExporter.getApp().getExportBounds().getMinX());
+				ebG.setColor(new Color(255, 0, 255, (int) (48f * opacity)));
+				//ebG.fillRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+				
+				int chunkI = 0;
+				int chunkJ = 0;
+				for(int j = chunkStartZ; j <= chunkEndZ; j += exportBounds.getChunkSize()) {
+					chunkI = 0;
+					int blockMinZ = j * 16;
+					blockMinZ = Math.max(Math.min(blockMinZ, exportBounds.getMaxZ() + 1), exportBounds.getMinZ());
+					int blockMaxZ = (j + exportBounds.getChunkSize()) * 16;
+					blockMaxZ = Math.max(Math.min(blockMaxZ, exportBounds.getMaxZ() + 1), exportBounds.getMinZ());
 					
-					int blockMaxX = (i + Config.chunkSize) * 16;
-					blockMaxX = Math.max(Math.min(blockMaxX, MCWorldExporter.getApp().getExportBounds().getMaxX() + 1), 
-										MCWorldExporter.getApp().getExportBounds().getMinX());
-					
-					Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
-					Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
-					
-					if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(chunkI, chunkJ)) {
-						g.fillRect(pixelMinPos.ix(), pixelMinPos.iy(), 
-								pixelMaxPos.ix() - pixelMinPos.ix(), pixelMaxPos.iy() - pixelMinPos.iy());
+					for(int i = chunkStartX; i <= chunkEndX; i += exportBounds.getChunkSize()) {
+						int blockMinX = i * 16;
+						blockMinX = Math.max(Math.min(blockMinX, exportBounds.getMaxX() + 1), exportBounds.getMinX());
+						
+						int blockMaxX = (i + exportBounds.getChunkSize()) * 16;
+						blockMaxX = Math.max(Math.min(blockMaxX, exportBounds.getMaxX() + 1), exportBounds.getMinX());
+						
+						Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
+						Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
+						
+						if(exportBounds.isChunkEnabled(chunkI, chunkJ)) {
+							ebG.fillRect(pixelMinPos.ix(), pixelMinPos.iy(), 
+									pixelMaxPos.ix() - pixelMinPos.ix(), pixelMaxPos.iy() - pixelMinPos.iy());
+						}
+						
+						chunkI++;
 					}
 					
-					chunkI++;
+					chunkJ++;
 				}
 				
-				chunkJ++;
-			}
-			
-			if(MCWorldExporter.getApp().getExportBounds().hasLod()) {
-				g.setColor(new Color(0, 255, 255, 48));
-				g.fillRect(lodMinPos.ix(), lodMinPos.iy(), lodWidth, lodHeight);
-			}
-			
-			g.setColor(new Color(128, 128, 128, 128));
-			
-			// Draw vertical lines
-			for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += Config.chunkSize) {
-				int blockX = chunkX * 16;
-				blockX = Math.max(Math.min(blockX, MCWorldExporter.getApp().getExportBounds().getMaxX()), MCWorldExporter.getApp().getExportBounds().getMinX());
-				
-				Point pixelPos = transform.toScreen(new Point(blockX, 0), getWidth(), getHeight());
-				
-				g.drawLine(pixelPos.ix(), selectionMinPos.iy(), pixelPos.ix(), selectionMaxPos.iy());
-			}
-			
-			// Draw horizontal lines
-			for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += Config.chunkSize) {
-				int blockZ = chunkZ * 16;
-				blockZ = Math.max(Math.min(blockZ, MCWorldExporter.getApp().getExportBounds().getMaxZ()), MCWorldExporter.getApp().getExportBounds().getMinZ());
-				
-				Point pixelPos = transform.toScreen(new Point(0, blockZ), getWidth(), getHeight());
-				
-				g.drawLine(selectionMinPos.ix(), pixelPos.iy(), selectionMaxPos.ix(), pixelPos.iy());
-			}
-			
-			// Draw FG markers
-			g.setColor(new Color(48, 255, 48));
-			chunkI = 1;
-			chunkJ = 1;
-			for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += Config.chunkSize) {
-				int blockMinZ = chunkZ * 16;
-				blockMinZ = Math.max(Math.min(blockMinZ, MCWorldExporter.getApp().getExportBounds().getMaxZ()), MCWorldExporter.getApp().getExportBounds().getMinZ());
-				
-				int blockMaxZ = (chunkZ + Config.chunkSize) * 16;
-				blockMaxZ = Math.max(Math.min(blockMaxZ, MCWorldExporter.getApp().getExportBounds().getMaxZ()), MCWorldExporter.getApp().getExportBounds().getMinZ());
-				
-				for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += Config.chunkSize) {
-					String chunkName = "chunk_" + chunkI + "_" + chunkJ;
-					
-					if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(chunkI - 1, chunkJ - 1)) {
-						if((MCWorldExporter.getApp().getFGChunks().isEmpty() && !MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) || 
-								MCWorldExporter.getApp().getFGChunks().contains(chunkName)) {
-							int blockMinX = chunkX * 16;
-							blockMinX = Math.max(Math.min(blockMinX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
-												MCWorldExporter.getApp().getExportBounds().getMinX());
-							
-							int blockMaxX = (chunkX + Config.chunkSize) * 16;
-							blockMaxX = Math.max(Math.min(blockMaxX, MCWorldExporter.getApp().getExportBounds().getMaxX()), 
-												MCWorldExporter.getApp().getExportBounds().getMinX());
-							
-							Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
-							Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
-							
-							int posX = (pixelMinPos.ix() + pixelMaxPos.ix()) / 2;
-							int posY = (pixelMinPos.iy() + pixelMaxPos.iy()) / 2;
-							
-							
-							g.drawString("FG", posX - ((int) (stringBounds.getWidth() / 2)), posY + ((int) (stringBounds.getHeight() / 2)));
+				if(hasExcludeRegions) {
+					// Draw exclude regions, which we do via clearing
+					for(ExcludeRegion region : exportBounds.excludeRegions) {
+						// Don't show any regions above or below out export bounds.
+						if(region.maxY < exportBounds.minY || region.minY > exportBounds.maxY)
+							continue;
+						
+						Point pixelMinPos = transform.toScreen(new Point(region.minX, region.minZ), getWidth(), getHeight());
+						Point pixelMaxPos = transform.toScreen(new Point(region.maxX+1, region.maxZ+1), getWidth(), getHeight());
+						
+						if(region.maxY < exportBounds.maxY) {
+							// The top part of the region is below the top part of the export bounds,
+							// in order to help communicate this, we want to draw it at half opacity.
+							// We do this by clearing every other line.
+							// If we have overlapping regions, then we want the clear lines to overlap,
+							// so let's make sure that minX is always a multiple of two.
+							int minX = (pixelMinPos.ix() >> 1) << 1;
+							if(minX < pixelMinPos.ix())
+								minX += 2;
+							for(int x = minX; x < pixelMaxPos.ix(); x += 2) {
+								ebG.clearRect(x, pixelMinPos.iy(), 1, pixelMaxPos.iy() - pixelMinPos.iy());
+							}
+							int minY = (pixelMinPos.iy() >> 2) << 2;
+							if(minY < pixelMinPos.iy())
+								minY += 4;
+							for(int y = minY; y < pixelMaxPos.iy(); y += 4) {
+								ebG.clearRect(pixelMinPos.ix(), y, pixelMaxPos.ix() - pixelMinPos.ix(), 1);
+							}
+						}else {
+							ebG.clearRect(pixelMinPos.ix(), pixelMinPos.iy(), 
+									pixelMaxPos.ix() - pixelMinPos.ix(), pixelMaxPos.iy() - pixelMinPos.iy());
 						}
 					}
-					
-					chunkI += 1;
 				}
+				
+				if(exportBounds.hasLod()) {
+					ebG.setColor(new Color(0, 255, 255, (int) (48f * opacity)));
+					ebG.fillRect(lodMinPos.ix(), lodMinPos.iy(), lodWidth, lodHeight);
+				}
+				
+				ebG.setColor(new Color(128, 128, 128, (int) (128f * opacity)));
+				
+				// Draw vertical lines
+				for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += exportBounds.getChunkSize()) {
+					int blockX = chunkX * 16;
+					blockX = Math.max(Math.min(blockX, exportBounds.getMaxX()), exportBounds.getMinX());
+					
+					Point pixelPos = transform.toScreen(new Point(blockX, 0), getWidth(), getHeight());
+					
+					ebG.drawLine(pixelPos.ix(), selectionMinPos.iy(), pixelPos.ix(), selectionMaxPos.iy());
+				}
+				
+				// Draw horizontal lines
+				for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += exportBounds.getChunkSize()) {
+					int blockZ = chunkZ * 16;
+					blockZ = Math.max(Math.min(blockZ, exportBounds.getMaxZ()), exportBounds.getMinZ());
+					
+					Point pixelPos = transform.toScreen(new Point(0, blockZ), getWidth(), getHeight());
+					
+					ebG.drawLine(selectionMinPos.ix(), pixelPos.iy(), selectionMaxPos.ix(), pixelPos.iy());
+				}
+				
+				// Draw FG markers
+				ebG.setColor(new Color(48, 255, 48, (int) (255f * opacity)));
 				chunkI = 1;
-				chunkJ += 1;
+				chunkJ = 1;
+				for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += exportBounds.getChunkSize()) {
+					int blockMinZ = chunkZ * 16;
+					blockMinZ = Math.max(Math.min(blockMinZ, exportBounds.getMaxZ()), exportBounds.getMinZ());
+					
+					int blockMaxZ = (chunkZ + exportBounds.getChunkSize()) * 16;
+					blockMaxZ = Math.max(Math.min(blockMaxZ, exportBounds.getMaxZ()), exportBounds.getMinZ());
+					
+					for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += exportBounds.getChunkSize()) {
+						String chunkName = "chunk_" + chunkI + "_" + chunkJ;
+						
+						if(exportBounds.isChunkEnabled(chunkI - 1, chunkJ - 1)) {
+							if((exportBounds.getFgChunks().isEmpty() && !MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) || 
+									exportBounds.getFgChunks().contains(chunkName)) {
+								int blockMinX = chunkX * 16;
+								blockMinX = Math.max(Math.min(blockMinX, exportBounds.getMaxX()), exportBounds.getMinX());
+								
+								int blockMaxX = (chunkX + exportBounds.getChunkSize()) * 16;
+								blockMaxX = Math.max(Math.min(blockMaxX, exportBounds.getMaxX()), exportBounds.getMinX());
+								
+								Point pixelMinPos = transform.toScreen(new Point(blockMinX, blockMinZ), getWidth(), getHeight());
+								Point pixelMaxPos = transform.toScreen(new Point(blockMaxX, blockMaxZ), getWidth(), getHeight());
+								
+								int posX = (pixelMinPos.ix() + pixelMaxPos.ix()) / 2;
+								int posY = (pixelMinPos.iy() + pixelMaxPos.iy()) / 2;
+								
+								
+								ebG.drawString("FG", posX - ((int) (stringBounds.getWidth() / 2)), posY + ((int) (stringBounds.getHeight() / 2)));
+							}
+						}
+						
+						chunkI += 1;
+					}
+					chunkI = 1;
+					chunkJ += 1;
+				}
+				
+				
+				
+				ebG.setColor(new Color(
+						regionColors[regionI%regionColors.length][0], 
+						regionColors[regionI%regionColors.length][1], 
+						regionColors[regionI%regionColors.length][2], 
+						(int)(127f * opacity + 128f)));
+				((Graphics2D)ebG).setStroke(new BasicStroke(isActive ? 2f : 0.5f));
+				ebG.drawRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+				
+				if(hasExcludeRegions) {
+					g.drawImage(selectionBuffer, 0, 0, getWidth(), getHeight(), null);
+				}
 			}
 			
-			
-			
-			g.setColor(new Color(255, 0, 255));
-			g.drawRect(selectionMinPos.ix(), selectionMinPos.iy(), selectionWidth, selectionHeight);
+			regionI++;
 		}
 		
 		Point cursorCoordinates = transform.toWorld(new Point(cursorX, cursorY), getWidth(), getHeight());
@@ -369,15 +453,19 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			mouseSelection = 1;
 		if(e.isControlDown())
 			mouseSelection = 2;
-		int worldMinX = MCWorldExporter.getApp().getExportBounds().getMinX();
-		int worldMinZ = MCWorldExporter.getApp().getExportBounds().getMinZ();
-		int worldMaxX = MCWorldExporter.getApp().getExportBounds().getMaxX();
-		int worldMaxZ = MCWorldExporter.getApp().getExportBounds().getMaxZ();
+		if(e.isAltDown())
+			snapToChunks = true;
+		else
+			snapToChunks = false;
+		int worldMinX = MCWorldExporter.getApp().getActiveExportBounds().getMinX();
+		int worldMinZ = MCWorldExporter.getApp().getActiveExportBounds().getMinZ();
+		int worldMaxX = MCWorldExporter.getApp().getActiveExportBounds().getMaxX();
+		int worldMaxZ = MCWorldExporter.getApp().getActiveExportBounds().getMaxZ();
 		if(mouseSelection == 1) {
-			worldMinX = MCWorldExporter.getApp().getExportBounds().getLodMinX();
-			worldMinZ = MCWorldExporter.getApp().getExportBounds().getLodMinZ();
-			worldMaxX = MCWorldExporter.getApp().getExportBounds().getLodMaxX();
-			worldMaxZ = MCWorldExporter.getApp().getExportBounds().getLodMaxZ();
+			worldMinX = MCWorldExporter.getApp().getActiveExportBounds().getLodMinX();
+			worldMinZ = MCWorldExporter.getApp().getActiveExportBounds().getLodMinZ();
+			worldMaxX = MCWorldExporter.getApp().getActiveExportBounds().getLodMaxX();
+			worldMaxZ = MCWorldExporter.getApp().getActiveExportBounds().getLodMaxZ();
 		}
 		Point selectionMinPos = transform.toScreen(new Point(worldMinX, worldMinZ), getWidth(), getHeight());
 		Point selectionMaxPos = transform.toScreen(new Point(worldMaxX + 1, worldMaxZ + 1), getWidth(), getHeight());
@@ -390,7 +478,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		int mouseY = e.getY();
 
 		if (mouseX >= selectionMinX - 4 && mouseX <= selectionMaxX + 4 && mouseY >= selectionMinZ - 4
-				&& mouseY <= selectionMaxZ + 4 && (mouseSelection != 1 || MCWorldExporter.getApp().getExportBounds().hasLod())) {
+				&& mouseY <= selectionMaxZ + 4 && (mouseSelection != 1 || MCWorldExporter.getApp().getActiveExportBounds().hasLod())) {
 			if (mouseY <= selectionMinZ + 4) {
 				// Top Edge
 				if (mouseX <= selectionMinX + 4) {
@@ -442,25 +530,31 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 	
 	@Override
 	public void mousePressed(MouseEvent e) {
+		requestFocusInWindow();
+		
 		mouseSelection = e.isControlDown() ? 2 : (e.isShiftDown() ? 1 : 0);
 		mouseDragStartX = e.getX();
 		mouseDragStartY = e.getY();
 		mouseButton = e.getButton();
 		transformStart = transform.clone();
-		selectionStart = MCWorldExporter.getApp().getExportBounds().copy();
+		selectionStart = MCWorldExporter.getApp().getActiveExportBounds().copy();
+		if(e.isAltDown())
+			snapToChunks = true;
+		else
+			snapToChunks = false;
 		
 		if(mouseSelection == 2) {
 			if (mouseButton == MouseEvent.BUTTON1) {
 				Point mouseBlock = transform.toWorld(new Point(e.getX(), e.getY()), getWidth(), getHeight());
 				
-				if(mouseBlock.ix() < MCWorldExporter.getApp().getExportBounds().getMinX() || 
-						mouseBlock.ix() > MCWorldExporter.getApp().getExportBounds().getMaxX() ||
-						mouseBlock.iy() < MCWorldExporter.getApp().getExportBounds().getMinZ() ||
-						mouseBlock.iy() > MCWorldExporter.getApp().getExportBounds().getMaxZ())
+				if(mouseBlock.ix() < MCWorldExporter.getApp().getActiveExportBounds().getMinX() || 
+						mouseBlock.ix() > MCWorldExporter.getApp().getActiveExportBounds().getMaxX() ||
+						mouseBlock.iy() < MCWorldExporter.getApp().getActiveExportBounds().getMinZ() ||
+						mouseBlock.iy() > MCWorldExporter.getApp().getActiveExportBounds().getMaxZ())
 					return;
 				
-				int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
-				int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
+				int chunkStartX = MCWorldExporter.getApp().getActiveExportBounds().getMinX() >> 4;
+				int chunkStartZ = MCWorldExporter.getApp().getActiveExportBounds().getMinZ() >> 4;
 				
 				int mouseChunkX = mouseBlock.ix() >> 4;
 				int mouseChunkZ = mouseBlock.iy() >> 4;
@@ -471,24 +565,24 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 				if(chunkX < 0 || chunkZ < 0)
 					return;
 				
-				chunkX /= Config.chunkSize;
-				chunkZ /= Config.chunkSize;
+				chunkX /= MCWorldExporter.getApp().getActiveExportBounds().getChunkSize();
+				chunkZ /= MCWorldExporter.getApp().getActiveExportBounds().getChunkSize();
 				
-				MCWorldExporter.getApp().getExportBounds().toggleChunk(chunkX, chunkZ);
+				MCWorldExporter.getApp().getActiveExportBounds().toggleChunk(chunkX, chunkZ);
 			}
 		}else {
 			if(MCWorldExporter.getApp().getUI().getToolbar().isEditingFGChunks()) {
 				if (mouseButton == MouseEvent.BUTTON1) {
 					Point mouseBlock = transform.toWorld(new Point(e.getX(), e.getY()), getWidth(), getHeight());
 					
-					if(mouseBlock.ix() < MCWorldExporter.getApp().getExportBounds().getMinX() || 
-							mouseBlock.ix() > MCWorldExporter.getApp().getExportBounds().getMaxX() ||
-							mouseBlock.iy() < MCWorldExporter.getApp().getExportBounds().getMinZ() ||
-							mouseBlock.iy() > MCWorldExporter.getApp().getExportBounds().getMaxZ())
+					if(mouseBlock.ix() < MCWorldExporter.getApp().getActiveExportBounds().getMinX() || 
+							mouseBlock.ix() > MCWorldExporter.getApp().getActiveExportBounds().getMaxX() ||
+							mouseBlock.iy() < MCWorldExporter.getApp().getActiveExportBounds().getMinZ() ||
+							mouseBlock.iy() > MCWorldExporter.getApp().getActiveExportBounds().getMaxZ())
 						return;
 					
-					int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
-					int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
+					int chunkStartX = MCWorldExporter.getApp().getActiveExportBounds().getMinX() >> 4;
+					int chunkStartZ = MCWorldExporter.getApp().getActiveExportBounds().getMinZ() >> 4;
 					
 					int mouseChunkX = mouseBlock.ix() >> 4;
 					int mouseChunkZ = mouseBlock.iy() >> 4;
@@ -499,18 +593,18 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 					if(chunkX < 0 || chunkZ < 0)
 						return;
 					
-					chunkX /= Config.chunkSize;
-					chunkZ /= Config.chunkSize;
+					chunkX /= MCWorldExporter.getApp().getActiveExportBounds().getChunkSize();
+					chunkZ /= MCWorldExporter.getApp().getActiveExportBounds().getChunkSize();
 					
 					chunkX += 1;
 					chunkZ += 1;
 					
 					String chunkName = "chunk_" + chunkX + "_" + chunkZ;
 					
-					if(MCWorldExporter.getApp().getFGChunks().contains(chunkName))
-						MCWorldExporter.getApp().getFGChunks().remove(chunkName);
+					if(MCWorldExporter.getApp().getActiveExportBounds().getFgChunks().contains(chunkName))
+						MCWorldExporter.getApp().getActiveExportBounds().getFgChunks().remove(chunkName);
 					else
-						MCWorldExporter.getApp().getFGChunks().add(chunkName);
+						MCWorldExporter.getApp().getActiveExportBounds().getFgChunks().add(chunkName);
 				}
 			}
 		}
@@ -527,6 +621,11 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		Point mouseBlockCurrent = transform.toWorld(new Point(e.getX(), e.getY()), getWidth(), getHeight());
 		Point mouseBlockDelta = new Point(mouseBlockCurrent.x - mouseBlockStart.x, mouseBlockCurrent.y - mouseBlockStart.y);
 		
+		if(e.isAltDown())
+			snapToChunks = true;
+		else
+			snapToChunks = false;
+		
 		if (mouseButton == MouseEvent.BUTTON1) {
 			int deltaX = mouseBlockDelta.ix();
 			int deltaZ = mouseBlockDelta.iy();
@@ -535,15 +634,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 				// New selection
 				
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							mouseBlockStart.ix(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							mouseBlockStart.iy(), 
 							mouseBlockCurrent.ix(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							mouseBlockCurrent.iy());
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunks();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							mouseBlockStart.ix(), 
 							mouseBlockStart.iy(), 
 							mouseBlockCurrent.ix(), 
@@ -552,15 +653,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 1) {
 				// Move whole selection
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ() + deltaZ, 
 							selectionStart.getMaxX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ() + deltaZ);
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunks();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX() + deltaX,  
 							selectionStart.getLodMinZ() + deltaZ, 
 							selectionStart.getLodMaxX() + deltaX,  
@@ -569,15 +672,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 2) {
 				// Move left side
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ(), 
 							selectionStart.getMaxX(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ());
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinX();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX() + deltaX,  
 							selectionStart.getLodMinZ(), 
 							selectionStart.getLodMaxX(),  
@@ -586,15 +691,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 3) {
 				// Move right side
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ(), 
 							selectionStart.getMaxX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ());
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxX();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX(),  
 							selectionStart.getLodMinZ(), 
 							selectionStart.getLodMaxX() + deltaX,  
@@ -603,15 +710,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 4) {
 				// Move top side
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ() + deltaZ, 
 							selectionStart.getMaxX(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ());
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinZ();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX(),  
 							selectionStart.getLodMinZ() + deltaZ, 
 							selectionStart.getLodMaxX(),  
@@ -620,15 +729,17 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 5) {
 				// Move bottom side
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ(), 
 							selectionStart.getMaxX(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ() + deltaZ);
+					if(snapToChunks)
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxZ();
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX(), 
 							selectionStart.getLodMinZ(), 
 							selectionStart.getLodMaxX(), 
@@ -637,15 +748,19 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 6) {
 				// Move top left corner
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ() + deltaZ, 
 							selectionStart.getMaxX(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ());
+					if(snapToChunks) {
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinX();
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinZ();
+					}
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX() + deltaX, 
 							selectionStart.getLodMinZ() + deltaZ, 
 							selectionStart.getLodMaxX(),  
@@ -654,15 +769,19 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 7) {
 				// Move top right corner
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ() + deltaZ, 
 							selectionStart.getMaxX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ());
+					if(snapToChunks) {
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxX();
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinZ();
+					}
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX(),  
 							selectionStart.getLodMinZ() + deltaZ, 
 							selectionStart.getLodMaxX() + deltaX,  
@@ -671,15 +790,19 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 8) {
 				// Move bottom left corner
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ(), 
 							selectionStart.getMaxX(), 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ() + deltaZ);
+					if(snapToChunks) {
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMinX();
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxZ();
+					}
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX() + deltaX,  
 							selectionStart.getLodMinZ(), 
 							selectionStart.getLodMaxX(),  
@@ -688,15 +811,19 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			} else if(mouseGrabType == 9) {
 				// Move bottom right corner
 				if(mouseSelection == 0) {
-					MCWorldExporter.getApp().getExportBounds().set(
+					MCWorldExporter.getApp().getActiveExportBounds().set(
 							selectionStart.getMinX(), 
-							MCWorldExporter.getApp().getExportBounds().getMinY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMinY(), 
 							selectionStart.getMinZ(), 
 							selectionStart.getMaxX() + deltaX, 
-							MCWorldExporter.getApp().getExportBounds().getMaxY(), 
+							MCWorldExporter.getApp().getActiveExportBounds().getMaxY(), 
 							selectionStart.getMaxZ() + deltaZ);
+					if(snapToChunks) {
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxX();
+						MCWorldExporter.getApp().getActiveExportBounds().snapToChunksMaxZ();
+					}
 				}else if(mouseSelection == 1) {
-					MCWorldExporter.getApp().getExportBounds().setLod(
+					MCWorldExporter.getApp().getActiveExportBounds().setLod(
 							selectionStart.getLodMinX(),  
 							selectionStart.getLodMinZ(), 
 							selectionStart.getLodMaxX() + deltaX,  
@@ -851,7 +978,7 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		if(mouseSelection == 2) {
 			return "Click on export chunks to enable or disable them. Disabled chunks won't show a magenta overlay.";
 		}
-		return "Move around the world or make an export selection. Drag outside the current selection to make a new one. Drag the centre to move it. Drag the edges to expand or contract it. Hold control to enable or disable specific chunks.";
+		return "Move around the world or make an export selection. Drag outside the current selection to make a new one. Drag the centre to move it. Drag the edges to expand or contract it. Hold control to enable or disable specific chunks. Hold alt down in order to snap the region to chunks";
 	}
 
 }

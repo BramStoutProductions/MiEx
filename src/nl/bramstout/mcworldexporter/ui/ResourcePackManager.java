@@ -72,6 +72,7 @@ public class ResourcePackManager extends JPanel {
 	private JPopupMenu toolsMenu;
 	private JMenuItem reloadTool;
 	private JMenuItem updateBaseResourcePackTool;
+	private JMenuItem updateBaseResourcePackHytaleTool;
 	private JMenuItem updateBuiltInFilesTool;
 	private JMenuItem exampleResourcePackDownloaderTool;
 	private JMenuItem extractModResourcePackTool;
@@ -130,6 +131,8 @@ public class ResourcePackManager extends JPanel {
 		ToolTips.registerTooltip(reloadTool, ToolTips.TOOL_RELOAD);
 		updateBaseResourcePackTool = toolsMenu.add("Update Base Resourcepack");
 		ToolTips.registerTooltip(updateBaseResourcePackTool, ToolTips.TOOL_UPDATE_BASE_RESOURCE_PACK);
+		updateBaseResourcePackHytaleTool = toolsMenu.add("Update Base Resourcepack Hytale");
+		ToolTips.registerTooltip(updateBaseResourcePackHytaleTool, ToolTips.TOOL_UPDATE_BASE_RESOURCE_PACK_HYTALE);
 		updateBuiltInFilesTool = toolsMenu.add("Update Built In Files");
 		ToolTips.registerTooltip(updateBuiltInFilesTool, ToolTips.TOOL_UPDATE_BUILT_IN_FILES);
 		exampleResourcePackDownloaderTool = toolsMenu.add("Download Example Resourcepacks");
@@ -138,7 +141,7 @@ public class ResourcePackManager extends JPanel {
 		ToolTips.registerTooltip(extractModResourcePackTool, ToolTips.TOOL_EXTRACT_MOD_RESOURCE_PACK);
 		createAtlassesTool = toolsMenu.add("Create Atlasses");
 		ToolTips.registerTooltip(createAtlassesTool, ToolTips.TOOL_CREATE_ATLASSES);
-		pbrGeneratorTool = toolsMenu.add("Generator PBR textures");
+		pbrGeneratorTool = toolsMenu.add("Generate PBR textures");
 		ToolTips.registerTooltip(pbrGeneratorTool, ToolTips.TOOL_GENERATE_PBR_TEXTURES);
 		environmentSettingsTool = toolsMenu.add("Edit Environment Settings");
 		ToolTips.registerTooltip(environmentSettingsTool, ToolTips.TOOL_ENVIRONMENT_SETTINGS);
@@ -236,6 +239,7 @@ public class ResourcePackManager extends JPanel {
 						BlockStateRegistry.clearBlockStateRegistry();
 						ModelRegistry.clearModelRegistry();
 						BiomeRegistry.recalculateTints();
+						ResourcePacks.doPostLoad();
 						MCWorldExporter.getApp().getUI().update();
 						MCWorldExporter.getApp().getUI().fullReRender();
 						repaint();
@@ -266,6 +270,36 @@ public class ResourcePackManager extends JPanel {
 				BlockStateRegistry.clearBlockStateRegistry();
 				ModelRegistry.clearModelRegistry();
 				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
+				MCWorldExporter.getApp().getUI().update();
+				MCWorldExporter.getApp().getUI().fullReRender();
+				repaint();
+			}
+			
+		});
+		
+		updateBaseResourcePackHytaleTool.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ResourcePackDefaults.updateBaseResourcePackHytale(false);
+				
+				// Reload everything
+				ResourcePacks.load();
+				List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
+				List<String> currentlyLoadedUUIDS = new ArrayList<String>();
+				for(ResourcePack pack : currentlyLoaded)
+					currentlyLoadedUUIDS.add(pack.getUUID());
+				
+				resourcePackSelector.reset(false);
+				resourcePackSelector.enableResourcePack(currentlyLoadedUUIDS);
+				
+				Atlas.readAtlasConfig();
+				Config.load();
+				BlockStateRegistry.clearBlockStateRegistry();
+				ModelRegistry.clearModelRegistry();
+				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
 				MCWorldExporter.getApp().getUI().update();
 				MCWorldExporter.getApp().getUI().fullReRender();
 				repaint();
@@ -305,6 +339,7 @@ public class ResourcePackManager extends JPanel {
 						BlockStateRegistry.clearBlockStateRegistry();
 						ModelRegistry.clearModelRegistry();
 						BiomeRegistry.recalculateTints();
+						ResourcePacks.doPostLoad();
 						MCWorldExporter.getApp().getUI().update();
 						MCWorldExporter.getApp().getUI().fullReRender();
 						repaint();
@@ -321,8 +356,8 @@ public class ResourcePackManager extends JPanel {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				exampleResourcePackDownloader.setVisible(true);
 				exampleResourcePackDownloader.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				exampleResourcePackDownloader.setVisible(true);
 			}
 			
 		});
@@ -331,8 +366,8 @@ public class ResourcePackManager extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				resourcePackExtractor.setVisible(true);
 				resourcePackExtractor.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				resourcePackExtractor.setVisible(true);
 			}
 			
 		});
@@ -341,8 +376,8 @@ public class ResourcePackManager extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				atlasCreator.setVisible(true);
 				atlasCreator.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				atlasCreator.setVisible(true);
 			}
 			
 		});
@@ -351,8 +386,8 @@ public class ResourcePackManager extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				pbrGenerator.setVisible(true);
 				pbrGenerator.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				pbrGenerator.setVisible(true);
 			}
 			
 		});
@@ -390,6 +425,10 @@ public class ResourcePackManager extends JPanel {
 	
 	public void disableResourcePack(List<String> uuids) {
 		resourcePackSelector.disableResourcePack(uuids);
+	}
+	
+	public void syncWithResourcePacks() {
+		resourcePackSelector.syncWithResourcePacks();
 	}
 	
 	@Override

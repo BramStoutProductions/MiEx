@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.LayoutManager;
@@ -74,8 +75,7 @@ public class EnvironmentSettingsDialog extends JDialog implements ComponentListe
 	private JPanel variablesPanel;
 	
 	public EnvironmentSettingsDialog() {
-		super(MCWorldExporter.getApp().getUI());
-		setModalityType(ModalityType.APPLICATION_MODAL);
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		
 		JPanel root = new JPanel();
 		root.setLayout(new DialogLayout());

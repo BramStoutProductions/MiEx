@@ -43,6 +43,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.entity.builtins.EntityBuiltinsRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
+import nl.bramstout.mcworldexporter.modifier.Modifiers;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
@@ -74,12 +75,13 @@ public class Config {
 	public static List<String> randomAnimationXZOffset = new ArrayList<String>();
 	public static List<String> randomAnimationYOffset = new ArrayList<String>();
 	public static List<String> lodNoUVScale = new ArrayList<String>();
+	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean removeCaves = false;
 	public static boolean fillInCaves = false;
-	public static boolean onlyIndividualBlocks = false;
+	public static boolean exportBlockAnimations = true;
 	public static boolean runOptimiser;
 	public static boolean runRaytracingOptimiser;
 	public static boolean runFaceOptimiser;
@@ -89,6 +91,7 @@ public class Config {
 	public static int chunkSize;
 	public static int defaultChunkSize;
 	public static int biomeBlendRadius;
+	public static boolean smoothBiomeColors;
 	public static int removeCavesSearchRadius;
 	public static int removeCavesSearchEnergy;
 	public static int removeCavesSurfaceRadius;
@@ -96,6 +99,7 @@ public class Config {
 	public static int removeCavesCaveBlockCost;
 	public static float animatedTexturesFrameTimeMultiplier;
 	public static float blockSizeInUnits;
+	public static boolean blockCenteredXZOnOrigin;
 	public static int atlasMaxResolution;
 	public static int atlasMaxTileResolution;
 	public static boolean exportVertexColorAsDisplayColor;
@@ -110,10 +114,15 @@ public class Config {
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
 	public static int maxMaterialNameLength;
-	public static boolean useGeometerySubsets;
+	public static boolean useGeometrySubsets;
 	public static boolean useIndexedUVs;
 	public static boolean useIndexedVertexColors;
 	public static boolean useIndexedNormals;
+	public static boolean allowBlockAnimations;
+	public static float animationFrameRate;
+	public static float animationStartFrame;
+	public static float animationEndFrame;
+	public static float usdMetersPerUnit;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -220,14 +229,21 @@ public class Config {
 		BedrockMaterials.load();
 		BiomeIds.load();
 		BlockIds.load();
+		Modifiers.load();
 		
 		boolean updateChunkSize = defaultChunkSize == chunkSize;
 		int oldChunkSize = chunkSize;
 		
 		ConfigDefaults.loadDefaults();
 		
-		if(!updateChunkSize)
+		if(!updateChunkSize) {
 			chunkSize = oldChunkSize;
+			for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList()) {
+				if(bounds.getChunkSize() == defaultChunkSize) {
+					bounds.setChunkSize(oldChunkSize);
+				}
+			}
+		}
 		// We only tint faces with biome colours if they have tintindex specified
 		// in the block model file, but in MiEx we don't use the grass_block_side_overlay
 		// as a seprate mesh like Minecraft does. Instead, we composite it over the texture
@@ -291,6 +307,8 @@ public class Config {
 				parseMap("lodPriority", data, lodPriority);
 				
 				parseList("lodNoUVScale", data, lodNoUVScale);
+
+				parseList("lodNoScale", data, lodNoScale);
 				
 				parseList("ignoreAtlas", data, ignoreAtlas);
 				
@@ -320,6 +338,9 @@ public class Config {
 				if(data.has("biomeBlendRadius"))
 					biomeBlendRadius = data.get("biomeBlendRadius").getAsInt();
 				
+				if(data.has("smoothBiomeColors"))
+					smoothBiomeColors = data.get("smoothBiomeColors").getAsBoolean();
+					
 				if(data.has("removeCavesSearchRadius"))
 					removeCavesSearchRadius = data.get("removeCavesSearchRadius").getAsInt();
 				
@@ -354,6 +375,9 @@ public class Config {
 				
 				if(data.has("blockSizeInUnits"))
 					blockSizeInUnits = data.get("blockSizeInUnits").getAsFloat();
+				
+				if(data.has("blockCenteredXZOnOrigin"))
+					blockCenteredXZOnOrigin = data.get("blockCenteredXZOnOrigin").getAsBoolean();
 				
 				if(data.has("atlasMaxResolution"))
 					atlasMaxResolution = data.get("atlasMaxResolution").getAsInt();
@@ -394,8 +418,8 @@ public class Config {
 				if(data.has("maxMaterialNameLength"))
 					maxMaterialNameLength = data.get("maxMaterialNameLength").getAsInt();
 				
-				if(data.has("useGeometerySubsets"))
-					useGeometerySubsets = data.get("useGeometerySubsets").getAsBoolean();
+				if(data.has("useGeometrySubsets"))
+					useGeometrySubsets = data.get("useGeometrySubsets").getAsBoolean();
 				
 				if(data.has("useIndexedUVs"))
 					useIndexedUVs = data.get("useIndexedUVs").getAsBoolean();
@@ -405,6 +429,21 @@ public class Config {
 				
 				if(data.has("useIndexedNormals"))
 					useIndexedNormals = data.get("useIndexedNormals").getAsBoolean();
+				
+				if(data.has("allowBlockAnimations"))
+					allowBlockAnimations = data.get("allowBlockAnimations").getAsBoolean();
+				
+				if(data.has("animationFrameRate"))
+					animationFrameRate = data.get("animationFrameRate").getAsFloat();
+				
+				if(data.has("animationStartFrame"))
+					animationStartFrame = data.get("animationStartFrame").getAsFloat();
+				
+				if(data.has("animationEndFrame"))
+					animationEndFrame = data.get("animationEndFrame").getAsFloat();
+				
+				if(data.has("usdMetersPerUnit"))
+					usdMetersPerUnit = data.get("usdMetersPerUnit").getAsFloat();
 				
 			}catch(Exception ex) {
 				ex.printStackTrace();

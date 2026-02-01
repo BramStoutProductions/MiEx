@@ -31,7 +31,11 @@
 
 package nl.bramstout.mcworldexporter.launcher;
 
+import java.io.File;
 import java.util.List;
+
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
 
 public abstract class Launcher {
 	
@@ -40,5 +44,9 @@ public abstract class Launcher {
 	public abstract List<MinecraftVersion> getVersions();
 	
 	public abstract List<MinecraftSave> getSaves();
+	
+	public abstract List<ResourcePackSource> getResourcePackSourcesForWorld(World world);
+	
+	public abstract boolean ownsWorld(File worldFolder);
 	
 }

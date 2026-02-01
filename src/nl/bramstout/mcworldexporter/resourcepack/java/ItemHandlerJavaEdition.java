@@ -1192,7 +1192,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 			}
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
-			int blockId = BlockRegistry.getIdForName(blockName, data, 0, charBuffer);
+			int blockId = BlockRegistry.getIdForName(blockName, data, Integer.MAX_VALUE, charBuffer);
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, 0, 0, 0);
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(0, 0, 0, models);
@@ -1318,7 +1318,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 			}
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
-			int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
+			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, 0, 0, 0);
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(0, 0, 0, models);

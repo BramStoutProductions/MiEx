@@ -64,5 +64,42 @@ public class Noise {
 		int index = x >= 0 ? (x / width) : ((x + 1) / width - 1);
 		return x - (index * width);
 	}
+	
+	public static float getLarge(int x, int y, int z) {
+		float permuteF = get(x >> 6, y >> 6, z >> 6);
+		int permute = (int) (permuteF * 64f);
+		
+		x = wrapPixel(x, 64);
+		y = wrapPixel(y, 64);
+		z = wrapPixel(z, 64);
+		int tmp = 0;
+		
+		if((permute & 1) != 0) {
+			x = 63 - x;
+		}
+		if((permute & 2) != 0) {
+			y = 63 - y;
+		}
+		if((permute & 4) != 0) {
+			z = 63 - z;
+		}
+		if((permute & 8) != 0) {
+			tmp = x;
+			x = y;
+			y = tmp;
+		}
+		if((permute & 16) != 0) {
+			tmp = x;
+			x = z;
+			z = tmp;
+		}
+		if((permute & 32) != 0) {
+			tmp = y;
+			y = z;
+			z = tmp;
+		}
+		
+		return noise[x + z * 64 + y * 64 * 64];
+	}
 
 }

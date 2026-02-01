@@ -35,6 +35,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
+
 public class LauncherHytale extends Launcher{
 	
 	private File rootFolder;
@@ -46,6 +49,22 @@ public class LauncherHytale extends Launcher{
 	@Override
 	public String getName() {
 		return "Hytale";
+	}
+	
+	public List<HytaleVersion> getHytaleVersions(){
+		List<HytaleVersion> versions = new ArrayList<HytaleVersion>();
+		
+		File installFolder = new File(rootFolder, "install");
+		for(File versionFolder : installFolder.listFiles()) {
+			if(!versionFolder.isDirectory())
+				continue;
+			File assetsFolder = new File(versionFolder, "package/game/latest/Assets.zip");
+			if(assetsFolder.exists()) {
+				versions.add(new HytaleVersion(versionFolder.getName(), assetsFolder));
+			}
+		}
+		
+		return versions;
 	}
 
 	@Override
@@ -65,6 +84,16 @@ public class LauncherHytale extends Launcher{
 				saves.add(new MinecraftSave(f.getName(), f, new File(f, "preview.png"), this));
 		}
 		return saves;
+	}
+	
+	@Override
+	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
+		return new ArrayList<ResourcePackSource>();
+	}
+	
+	@Override
+	public boolean ownsWorld(File worldFolder) {
+		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
 	}
 
 }

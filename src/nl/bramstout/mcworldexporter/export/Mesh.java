@@ -71,7 +71,7 @@ public class Mesh {
 	private boolean doubleSided;
 	private boolean hasColors;
 	private boolean hasAO;
-	private IndexCache vertexCache;
+	private IndexCacheDoubleLong vertexCache;
 	private FaceCache faceCache;
 	//private IndexCache normalCache;
 	private VertexColorSet colors;
@@ -109,7 +109,7 @@ public class Mesh {
 		//this.aoIndices = new IntArray(largeCapacity*4);
 		this.faceCenters = new FloatArray(largeCapacity*4);
 		this.doubleSided = doubleSided;
-		this.vertexCache = new IndexCache();
+		this.vertexCache = new IndexCacheDoubleLong();
 		this.hasColors = false;
 		this.hasAO = false;
 		this.faceCache = new FaceCache();
@@ -233,18 +233,34 @@ public class Mesh {
 				(((x >> 18) & 7) << 7)  | (((y >> 18) & 7) << 4)  | (((z >> 18) & 7) << 1);
 	}
 	
-	private long calcVertexId(float x, float y, float z) {
+	/*private long calcVertexId(float x, float y, float z) {
 		// We compact the three floats into a single 64 bit integer
 		return packVertexId(Float.floatToRawIntBits(x) >>> 11,
 							Float.floatToRawIntBits(y) >>> 11,
 							Float.floatToRawIntBits(z) >>> 11);
+	}*/
+	
+	private long calcVertexId1(float x, float y, float z) {
+		// We compact the three floats into a single 64 bit integer
+		return packVertexId(Float.floatToRawIntBits(x) >>> 14,
+							Float.floatToRawIntBits(y) >>> 14,
+							Float.floatToRawIntBits(z) >>> 14);
+	}
+	
+	private long calcVertexId2(float x, float y, float z) {
+		// We compact the three floats into a single 64 bit integer
+		return packVertexId((Float.floatToRawIntBits(x) >> 6) & 0xFF,
+							(Float.floatToRawIntBits(y) >> 6) & 0xFF,
+							(Float.floatToRawIntBits(z) >> 6) & 0xFF);
 	}
 	
 	public void addPoint(float x, float y, float z, float u, float v, float cornerU, float cornerV, 
 						float r, float g, float b, float ao, int[] out) {
 		int vertexIndex = -1;
-		long hash = calcVertexId(x, y, z);
-		vertexIndex = this.vertexCache.getOrDefault(hash, -1);
+		//long hash = calcVertexId(x, y, z);
+		long hash1 = calcVertexId1(x, y, z);
+		long hash2 = calcVertexId2(x, y, z);
+		vertexIndex = this.vertexCache.getOrDefault(hash1, hash2, -1);
 		
 		int uvIndex = -1;
 		float[] uData = us.getData();
@@ -297,7 +313,7 @@ public class Mesh {
 			vertices.add(x);
 			vertices.add(y);
 			vertices.add(z);
-			this.vertexCache.put(hash, vertexIndex);
+			this.vertexCache.put(hash1, hash2, vertexIndex);
 		}
 		
 		if(uvIndex == -1) {
@@ -385,9 +401,49 @@ public class Mesh {
 			1.0f, 1.0f, 1.0f
 	};
 	
+	private Color[] tint1 = new Color[1];
+	
 	public void addFace(ModelFace face, float bx, float by, float bz, Atlas.AtlasItem atlas, 
 						Color tint, int cornerData, VertexColorSet.VertexColorFace[] vertexColors) {
-		addFace(face, bx, by, bz, 0f, 0f, 0f, 0f, 1.0f, 1.0f, 1.0f, 1.0f, atlas, tint, 0, cornerData, vertexColors);
+		tint1[0] = tint;
+		addFace(face, bx, by, bz, 0f, 0f, 0f, 0f, 1.0f, 1.0f, 1.0f, 1.0f, atlas, tint == null ? null : tint1, null, cornerData, vertexColors, null);
+	}
+	
+	private float lerp(float t, float v0, float v1) {
+		return v0 + (v1 - v0) * t;
+	}
+	
+	private float lerp3d(float tx, float ty, float tz, 
+			float v000, float v100, float v001, float v101,
+			float v010, float v110, float v011, float v111) {
+		float v00 = lerp(tz, v000, v001);
+		float v01 = lerp(tz, v010, v011);
+		float v10 = lerp(tz, v100, v101);
+		float v11 = lerp(tz, v110, v111);
+		float v0 = lerp(ty, v00, v01);
+		float v1 = lerp(ty, v10, v11);
+		return lerp(tx, v0, v1);
+	}
+	
+	private void setTint(float[] points, float[] colors, Color[] tint, int index) {
+		if(tint.length == 1) {
+			colors[index*3] *= tint[0].getR();
+			colors[index*3+1] *= tint[0].getG();
+			colors[index*3+2] *= tint[0].getB();
+		}else {
+			float tx = Math.min(Math.max(points[index*3]/16f, 0f), 1f);
+			float ty = Math.min(Math.max(points[index*3+1]/16f, 0f), 1f);
+			float tz = Math.min(Math.max(points[index*3+2]/16f, 0f), 1f);
+			colors[index*3] *= lerp3d(tx, ty, tz,
+					tint[0].getR(), tint[1].getR(), tint[2].getR(), tint[3].getR(),
+					tint[4].getR(), tint[5].getR(), tint[6].getR(), tint[7].getR());
+			colors[index*3+1] *= lerp3d(tx, ty, tz,
+					tint[0].getG(), tint[1].getG(), tint[2].getG(), tint[3].getG(),
+					tint[4].getG(), tint[5].getG(), tint[6].getG(), tint[7].getG());
+			colors[index*3+2] *= lerp3d(tx, ty, tz,
+					tint[0].getB(), tint[1].getB(), tint[2].getB(), tint[3].getB(),
+					tint[4].getB(), tint[5].getB(), tint[6].getB(), tint[7].getB());
+		}
 	}
 	
 	private float[] normalData = new float[3];
@@ -397,8 +453,9 @@ public class Mesh {
 	private int[] v2Data = new int[5];
 	private int[] v3Data = new int[5];
 	public void addFace(ModelFace face, float bx, float by, float bz, float additionalX, float additionalY, float additionalZ,
-			float uvOffsetY, float scale, float yScale, float uvScale, float yuvScale, Atlas.AtlasItem atlas, Color tint,
-			long ambientOcclusion, int cornerData, VertexColorSet.VertexColorFace[] vertexColors) {
+			float uvOffsetY, float scale, float yScale, float uvScale, float yuvScale, Atlas.AtlasItem atlas, Color[] tint,
+			AmbientOcclusion ambientOcclusion, int cornerData, VertexColorSet.VertexColorFace[] vertexColors,
+			float[] normalData) {
 		float ox = bx * 16.0f + additionalX;
 		float oy = by * 16.0f + additionalY;
 		float oz = bz * 16.0f + additionalZ;
@@ -430,21 +487,10 @@ public class Mesh {
 		}
 		if(tint != null) {
 			colors = colors.clone();
-			colors[0] *= tint.getR();
-			colors[1] *= tint.getG();
-			colors[2] *= tint.getB();
-			
-			colors[3] *= tint.getR();
-			colors[4] *= tint.getG();
-			colors[5] *= tint.getB();
-			
-			colors[6] *= tint.getR();
-			colors[7] *= tint.getG();
-			colors[8] *= tint.getB();
-			
-			colors[9] *= tint.getR();
-			colors[10] *= tint.getG();
-			colors[11] *= tint.getB();
+			setTint(points, colors, tint, 0);
+			setTint(points, colors, tint, 1);
+			setTint(points, colors, tint, 2);
+			setTint(points, colors, tint, 3);
 		}
 		if(atlas != null) {
 			uvs = Arrays.copyOf(uvs, uvs.length);
@@ -468,7 +514,7 @@ public class Mesh {
 		float ao1 = 1.0f;
 		float ao2 = 1.0f;
 		float ao3 = 1.0f;
-		if(Config.calculateAmbientOcclusion) {
+		if(Config.calculateAmbientOcclusion && ambientOcclusion != null) {
 			ao0 = getAOForPoint(points[0], points[1], points[2], ambientOcclusion, face.getDirection());
 			ao1 = getAOForPoint(points[3], points[4], points[5], ambientOcclusion, face.getDirection());
 			ao2 = getAOForPoint(points[6], points[7], points[8], ambientOcclusion, face.getDirection());
@@ -534,7 +580,10 @@ public class Mesh {
 		addFaceVertex(v3Data);
 		faceCounts.add(4);
 		
-		face.calculateNormal(normalData);
+		if(normalData == null) {
+			normalData = this.normalData;
+			face.calculateNormal(normalData);
+		}
 		int normalIndex = addNormal(normalData[0], normalData[1], normalData[2]);
 		normalIndices.add(normalIndex);
 		normalIndices.add(normalIndex);
@@ -600,7 +649,16 @@ public class Mesh {
 		}
 	}
 	
-	private float getAOForPoint(float x, float y, float z, long ao, Direction dir) {
+	private float getAOForPoint(float x, float y, float z, AmbientOcclusion ao, Direction dir) {
+		x = Math.min(Math.max(x/16f, 0f), 1f);
+		y = Math.min(Math.max(y/16f, 0f), 1f);
+		z = Math.min(Math.max(z/16f, 0f), 1f);
+		float aof = ao.getAmbientOcclusionForPoint(x, y, z, dir);
+		
+		return (float) Math.floor(aof * 100f + 0.5f) / 100f;
+	}
+	
+	/*private float getAOForPoint(float x, float y, float z, long ao, Direction dir) {
 		long ao0 = 0;
 		long ao1 = 0;
 		float t0 = 0f;
@@ -660,11 +718,7 @@ public class Mesh {
 		aof = 1f - aof;
 		
 		return (float) Math.floor(aof * 100f + 0.5f) / 100f;
-	}
-	
-	private float lerp(float a, float b, float t) {
-		return a * (1f-t) + b * t;
-	}
+	}*/
 	
 	public void getVertex(int faceIndex, int vertexIndex, float[] out) {
 		int vertexId = faceIndices.get(faceIndex * 4 + vertexIndex);
@@ -1346,11 +1400,15 @@ public class Mesh {
 		// Pretty much all of the code assumes that a block is 16 units.
 		// In order to not break any of that, we do the scaling here.
 		float worldScale = Config.blockSizeInUnits / 16.0f;
+		float worldOffsetXZ = Config.blockCenteredXZOnOrigin ? 0f : (Config.blockSizeInUnits * 0.5f);
 		
 		// vertex data
 		int i = 0;
-		for(i = 0; i < vertices.size(); ++i)
-			dos.writeFloat(vertices.get(i) * worldScale);
+		for(i = 0; i < vertices.size(); i += 3) {
+			dos.writeFloat(vertices.get(i) * worldScale + worldOffsetXZ);
+			dos.writeFloat(vertices.get(i+1) * worldScale);
+			dos.writeFloat(vertices.get(i+2) * worldScale + worldOffsetXZ);
+		}
 		// uv data
 		for(i = 0; i < us.size(); ++i)
 			dos.writeFloat(us.get(i));
@@ -1515,7 +1573,7 @@ public class Mesh {
 		}
 		
 		this.faceCenters = new FloatArray(4);
-		this.vertexCache = new IndexCache();
+		this.vertexCache = new IndexCacheDoubleLong();
 		this.faceCache = new FaceCache();
 		
 		int numSubsets = dis.readInt();

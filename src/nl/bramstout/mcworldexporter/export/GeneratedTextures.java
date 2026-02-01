@@ -92,6 +92,7 @@ public class GeneratedTextures {
 		File texFile = getTextureFile(name);
 		if(!texFile.getParentFile().exists())
 			texFile.getParentFile().mkdirs();
+		System.out.println("Writing generated texture: " + texId);
 		ImageWriter.writeImage(texFile, image);
 		return texId;
 	}
@@ -111,6 +112,7 @@ public class GeneratedTextures {
 				System.out.println("Missing online texture " + url + " > " + name);
 				World.handleError(new RuntimeException("Could not download missing texture due to offline mode"));
 			}else {
+				System.out.println("Downloading online texture " + url + " > " + name);
 				try {
 					if(!texFile.getParentFile().exists())
 						texFile.getParentFile().mkdirs();

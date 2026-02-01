@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -66,7 +67,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 	
 	public ResourcePackExtractorDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(16, 16, 16, 16));
@@ -135,6 +136,8 @@ public class ResourcePackExtractorDialog extends JDialog {
 					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Invalid resource pack name!", "", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
+				System.out.println("Extracting resource pack from mods folder: " + modsFolder.getPath());
+				System.out.println("Saving into: " + resourcePackInput.getText());
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
 				File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePackInput.getText());
 				File[] mods = modsFolder.listFiles();
@@ -158,6 +161,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1.0f);
 				
 				
+				System.out.println("Mod resource pack extracted successfully.");
 				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mod resource pack extracted successfully!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
@@ -179,6 +183,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 				BlockStateRegistry.clearBlockStateRegistry();
 				ModelRegistry.clearModelRegistry();
 				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
 				MCWorldExporter.getApp().getUI().update();
 				MCWorldExporter.getApp().getUI().fullReRender();
 			}

@@ -228,6 +228,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		VertexColorSet.VertexColorFace[] vertexColors;
 		int[] faceIndices;
 		int faceIndicesSize;
+		boolean valid;
 		
 		public CombinedFace() {
 			vertices = new float[3*4];
@@ -244,6 +245,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			vertexColors = null;
 			faceIndices = new int[32];
 			faceIndicesSize = 0;
+			valid = true;
 		}
 		
 		public void setup(Mesh mesh, int face) {
@@ -282,6 +284,31 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				colors[0] = mesh.getColors().getR(colorIndex);
 				colors[1] = mesh.getColors().getG(colorIndex);
 				colors[2] = mesh.getColors().getB(colorIndex);
+				
+				// Make sure that the colours are all the same.
+				// Sometimes the values might not be the same.
+				// In that case, just don't optimise it.
+				colorIndex = mesh.getColors().getIndex(face*4+1);
+				if(Math.abs(mesh.getColors().getR(colorIndex) - colors[0]) > 0.0001f || 
+						Math.abs(mesh.getColors().getG(colorIndex) - colors[1]) > 0.0001f ||
+						Math.abs(mesh.getColors().getB(colorIndex) - colors[2]) > 0.0001f) {
+					valid = false;
+					return;
+				}
+				colorIndex = mesh.getColors().getIndex(face*4+2);
+				if(Math.abs(mesh.getColors().getR(colorIndex) - colors[0]) > 0.0001f || 
+						Math.abs(mesh.getColors().getG(colorIndex) - colors[1]) > 0.0001f ||
+						Math.abs(mesh.getColors().getB(colorIndex) - colors[2]) > 0.0001f) {
+					valid = false;
+					return;
+				}
+				colorIndex = mesh.getColors().getIndex(face*4+2);
+				if(Math.abs(mesh.getColors().getR(colorIndex) - colors[0]) > 0.0001f || 
+						Math.abs(mesh.getColors().getG(colorIndex) - colors[1]) > 0.0001f ||
+						Math.abs(mesh.getColors().getB(colorIndex) - colors[2]) > 0.0001f) {
+					valid = false;
+					return;
+				}
 			}
 			hasAO = false;
 			if(mesh.hasAO()) {
@@ -310,10 +337,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			faceIndices[0] = face;
 			faceIndicesSize = 1;
+			
+			valid = true;
 		}
 		
 		public void extend(int edgeId, Mesh mesh, int includeFace, int includeEdge, 
 							float offsetU, float offsetV, boolean reverse, AtlasItem currentAtlasItem) {
+			if(!valid)
+				return;
 			int vertexIndex1 = mesh.getFaceIndices().get(includeFace*4 + includeEdge);
 			int vertexIndex2 = mesh.getFaceIndices().get(includeFace*4 + ((includeEdge + 1) % 4));
 			
@@ -334,7 +365,9 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			if((vertices[0] == vertices[3] && vertices[1] == vertices[4] && vertices[2] == vertices[5]) || 
 					(vertices[0] == vertices[9] && vertices[1] == vertices[10] && vertices[2] == vertices[11])) {
-				throw new RuntimeException();
+				//throw new RuntimeException();
+				valid = false;
+				return;
 			}
 			
 			int uvIndex1 = mesh.getUvIndices().get(includeFace*4 + includeEdge);
@@ -381,7 +414,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 					(us[0] == us[3] && vs[0] == vs[3]) || (us[1] == us[2] && vs[1] == vs[2]) || 
 					(us[1] == us[3] && vs[1] == vs[3]) || (us[2] == us[3] && vs[2] == vs[3]))
 				return false;
-			return true;
+			return valid;
 		}
 		
 	}
@@ -406,6 +439,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				continue; // We have already processed this face, so skip.
 			
 			combinedFace.setup(inMesh, faceIndex);
+			if(!combinedFace.isValid())
+				continue;
 			AtlasItem currentAtlasItem = null;
 			if(atlas != null) {
 				for(AtlasItem item : atlas) {
@@ -501,6 +536,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		}
 	}
 	
+	private float[] vertexColorValues1 = new float[4];
+	private float[] vertexColorValues2 = new float[4];
+	private float[] vertexColorValues3 = new float[4];
+	private float[] vertexColorValues4 = new float[4];
+	private float[] vertexColorValues5 = new float[4];
+	private float[] vertexColorValues6 = new float[4];
+	private float[] vertexColorValues7 = new float[4];
+	private float[] vertexColorValues8 = new float[4];
 	private void processFace(Mesh inMesh, boolean[] processedFaces, int[][] facesPerVertex, int faceIndex, 
 										int edgeId, CombinedFace combinedFace,
 										List<AtlasItem> atlas, AtlasItem currentAtlasItem) {
@@ -536,9 +579,16 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			float normalX = inMesh.getNormals().get(normalId*3);
 			float normalY = inMesh.getNormals().get(normalId*3+1);
 			float normalZ = inMesh.getNormals().get(normalId*3+2);
-			int colorId = 0;
-			if(inMesh.hasColors())
-				colorId = inMesh.getColors().getIndex(faceIndex * 4);
+			int colorId1 = 0;
+			int colorId2 = 0;
+			int colorId3 = 0;
+			int colorId4 = 0;
+			if(inMesh.hasColors()) {
+				colorId1 = inMesh.getColors().getIndex(faceIndex * 4);
+				colorId2 = inMesh.getColors().getIndex(faceIndex * 4 + 1);
+				colorId3 = inMesh.getColors().getIndex(faceIndex * 4 + 2);
+				colorId4 = inMesh.getColors().getIndex(faceIndex * 4 + 3);
+			}
 			
 			int uvIndex1 = inMesh.getUvIndices().get(faceIndex * 4 + edgeId);
 			float u1 = inMesh.getUs().get(uvIndex1);
@@ -598,10 +648,17 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 						Math.abs(normalZ - normalZ2) > 0.01f)
 					continue; // Normals don't match
 				
-				int colorId2 = 0;
-				if(inMesh.hasColors())
-					colorId2 = inMesh.getColors().getIndex(faceIndex2*4);
-				if(colorId2 != colorId)
+				int colorId2_1 = 0;
+				int colorId2_2 = 0;
+				int colorId2_3 = 0;
+				int colorId2_4 = 0;
+				if(inMesh.hasColors()) {
+					colorId2_1 = inMesh.getColors().getIndex(faceIndex2*4);
+					colorId2_2 = inMesh.getColors().getIndex(faceIndex2*4 + 1);
+					colorId2_3 = inMesh.getColors().getIndex(faceIndex2*4 + 2);
+					colorId2_4 = inMesh.getColors().getIndex(faceIndex2*4 + 3);
+				}
+				if(colorId2_1 != colorId1 || colorId2_2 != colorId2 || colorId2_3 != colorId3 || colorId2_4 != colorId4)
 					continue; // Colours don't match.
 				
 				int edgeId2 = 0;
@@ -773,7 +830,62 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				if(ao0 != ao2_0 || ao1 != ao2_1 || ao2 != ao2_2 || ao3 != ao2_3)
 					continue;
 				
-				// TODO: Check against additionalColorSets
+				if(inMesh.getAdditionalColorSets() != null) {
+					boolean colorSetNoMatch = false;
+					for(VertexColorSet colorSet : inMesh.getAdditionalColorSets()) {
+						vertexColorValues1[0] = 0f; vertexColorValues1[1] = 0f; vertexColorValues1[2] = 0f; vertexColorValues1[3] = 0f;
+						vertexColorValues2[0] = 0f; vertexColorValues2[1] = 0f; vertexColorValues2[2] = 0f; vertexColorValues2[3] = 0f;
+						vertexColorValues3[0] = 0f; vertexColorValues3[1] = 0f; vertexColorValues3[2] = 0f; vertexColorValues3[3] = 0f;
+						vertexColorValues4[0] = 0f; vertexColorValues4[1] = 0f; vertexColorValues4[2] = 0f; vertexColorValues4[3] = 0f;
+						vertexColorValues5[0] = 0f; vertexColorValues5[1] = 0f; vertexColorValues5[2] = 0f; vertexColorValues5[3] = 0f;
+						vertexColorValues6[0] = 0f; vertexColorValues6[1] = 0f; vertexColorValues6[2] = 0f; vertexColorValues6[3] = 0f;
+						vertexColorValues7[0] = 0f; vertexColorValues7[1] = 0f; vertexColorValues7[2] = 0f; vertexColorValues7[3] = 0f;
+						vertexColorValues8[0] = 0f; vertexColorValues8[1] = 0f; vertexColorValues8[2] = 0f; vertexColorValues8[3] = 0f;
+						
+						int csIndex_0 = colorSet.getIndex(faceIndex * 4 + ((edgeId+0)%4));
+						colorSet.get(csIndex_0, vertexColorValues1);
+						int csIndex_1 = colorSet.getIndex(faceIndex * 4 + ((edgeId+1)%4));
+						colorSet.get(csIndex_1, vertexColorValues2);
+						int csIndex_2 = colorSet.getIndex(faceIndex * 4 + ((edgeId+2)%4));
+						colorSet.get(csIndex_2, vertexColorValues3);
+						int csIndex_3 = colorSet.getIndex(faceIndex * 4 + ((edgeId+3)%4));
+						colorSet.get(csIndex_3, vertexColorValues4);
+						
+						int csIndex2_0 = colorSet.getIndex(faceIndex2 * 4 + ((edgeId2+2)%4));
+						colorSet.get(csIndex2_0, vertexColorValues5);
+						int csIndex2_1 = colorSet.getIndex(faceIndex2 * 4 + ((edgeId2+3)%4));
+						colorSet.get(csIndex2_1, vertexColorValues6);
+						int csIndex2_2 = colorSet.getIndex(faceIndex2 * 4 + ((edgeId2+0)%4));
+						colorSet.get(csIndex2_2, vertexColorValues7);
+						int csIndex2_3 = colorSet.getIndex(faceIndex2 * 4 + ((edgeId2+1)%4));
+						colorSet.get(csIndex2_3, vertexColorValues8);
+						
+						if(		vertexColorValues1[0] != vertexColorValues5[0]||
+								vertexColorValues1[1] != vertexColorValues5[1]||
+								vertexColorValues1[2] != vertexColorValues5[2]||
+								vertexColorValues1[3] != vertexColorValues5[3]||
+								
+								vertexColorValues2[0] != vertexColorValues6[0]||
+								vertexColorValues2[1] != vertexColorValues6[1]||
+								vertexColorValues2[2] != vertexColorValues6[2]||
+								vertexColorValues2[3] != vertexColorValues6[3]||
+								
+								vertexColorValues3[0] != vertexColorValues7[0]||
+								vertexColorValues3[1] != vertexColorValues7[1]||
+								vertexColorValues3[2] != vertexColorValues7[2]||
+								vertexColorValues3[3] != vertexColorValues7[3]||
+								
+								vertexColorValues4[0] != vertexColorValues8[0]||
+								vertexColorValues4[1] != vertexColorValues8[1]||
+								vertexColorValues4[2] != vertexColorValues8[2]||
+								vertexColorValues4[3] != vertexColorValues8[3]) {
+							colorSetNoMatch = true;
+							break;
+						}
+					}
+					if(colorSetNoMatch)
+						continue;
+				}
 				
 				// Everything matches, so let's include this face.
 				

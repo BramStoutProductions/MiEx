@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -66,7 +67,7 @@ public class TeleportDialog extends JDialog {
 	private RegionViewer regionViewer;
 	
 	public TeleportDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(16, 16, 16, 16));

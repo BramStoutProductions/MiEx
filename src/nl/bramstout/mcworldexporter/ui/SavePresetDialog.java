@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -63,7 +64,7 @@ public class SavePresetDialog extends JDialog {
 	private JComboBox<String> resourcePacks;
 	
 	public SavePresetDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(8, 8, 8, 8));
@@ -135,9 +136,11 @@ public class SavePresetDialog extends JDialog {
 					return;
 				}
 				
+				
 				String presetName = nameInput.getText();
 				String parentName = (String) resourcePacks.getSelectedItem();
 				Preset preset = new Preset(presetName, parentName, parentName);
+				System.out.println("Saving preset " + presetName);
 				preset.fromApp();
 				Preset.addPreset(preset);
 				
@@ -151,7 +154,6 @@ public class SavePresetDialog extends JDialog {
 	
 	@Override
 	public void setVisible(boolean b) {
-		super.setVisible(b);
 		if(b) {
 			nameInput.setText("");
 			
@@ -171,6 +173,7 @@ public class SavePresetDialog extends JDialog {
 				}
 			}
 		}
+		super.setVisible(b);
 	}
 
 }

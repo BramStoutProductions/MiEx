@@ -55,10 +55,9 @@ public class MCMetaBedrockEdition extends MCMeta{
 		imgHeight = 16;
 		
 		if(data != null) {
-			if(!data.has("animation"))
-				return;
-			
-			JsonObject animData = data.get("animation").getAsJsonObject();
+			JsonObject animData = data;
+			if(data.has("animation"))
+				animData = data.get("animation").getAsJsonObject();
 			animate = true;
 			
 			if(animData.has("ticks_per_frame"))

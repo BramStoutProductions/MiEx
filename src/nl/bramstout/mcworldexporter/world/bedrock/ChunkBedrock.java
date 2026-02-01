@@ -40,6 +40,7 @@ import org.iq80.leveldb.DB;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
@@ -559,5 +560,8 @@ public class ChunkBedrock extends Chunk{
 			chunkSectionOffset = 0;
 		}
 	}
+	
+	@Override
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {}
 
 }

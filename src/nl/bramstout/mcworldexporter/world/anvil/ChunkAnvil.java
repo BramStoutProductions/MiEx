@@ -42,6 +42,7 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
@@ -208,5 +209,8 @@ public class ChunkAnvil extends Chunk {
 			chunkSectionOffset = 0;
 		}
 	}
+	
+	@Override
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {}
 
 }

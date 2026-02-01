@@ -253,6 +253,35 @@ public class FileUtil {
 		return hasAlpha;
 	}
 	
+	private static Map<File, Long> imageSizeCache = new HashMap<File, Long>();
+	
+	public static long getImageSize(File file) {
+		Long cachedValue = imageSizeCache.getOrDefault(file, null);
+		if(cachedValue == null) {
+			synchronized(imageSizeCache) {
+				cachedValue = imageSizeCache.getOrDefault(file, null);
+				if(cachedValue == null) {
+					cachedValue = Long.valueOf(calcImageSize(file));
+					imageSizeCache.put(file, cachedValue);
+				}
+			}
+		}
+		return cachedValue.longValue();
+	}
+	
+	public static long calcImageSize(File file) {
+		long size = 0;
+		try {
+			BufferedImage tex = ImageReader.readImage(file);
+			if(tex != null) {
+				size = (((long) tex.getWidth()) << 32) | ((long) tex.getHeight());
+			}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return size;
+	}
+	
 	public static boolean isWindows() {
 		return System.getProperty("os.name", "none").toLowerCase().contains("win");
 	}
@@ -377,7 +406,10 @@ public class FileUtil {
 		return modrinthRootDir;
 	}
 	
+	protected static String hytaleRootDir = null;
 	public static String getHytaleRootDir() {
+		if(hytaleRootDir != null)
+			return hytaleRootDir;
 		String envPath = Environment.getEnv("MIEX_HYTALE_ROOT_DIR");
 		if(envPath != null)
 			return envPath;

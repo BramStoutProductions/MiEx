@@ -32,7 +32,6 @@
 package nl.bramstout.mcworldexporter.resourcepack.connectedtextures;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,7 @@ public class ConnectedTextures {
 	public static class BlockStateConstraint{
 		
 		public Map<String, List<String>> checks = new HashMap<String, List<String>>();
+		public List<String> propertiesToBeUndefined = new ArrayList<String>();
 		
 		@Override
 		public boolean equals(Object obj) {
@@ -67,6 +67,11 @@ public class ConnectedTextures {
 				if(tag == null)
 					return false;
 				if(!entry.getValue().contains(tag.asString()))
+					return false;
+			}
+			for(String property : propertiesToBeUndefined) {
+				NbtTag tag = properties.get(property);
+				if(tag != null)
 					return false;
 			}
 			return true;
@@ -98,7 +103,7 @@ public class ConnectedTextures {
 			loader.load();
 	}
 	
-	protected static void registerConnectedTextureByTile(String tile, ConnectedTexture connectedTexture) {
+	public static void registerConnectedTextureByTile(String tile, ConnectedTexture connectedTexture) {
 		List<ConnectedTexture> connectedTextures = connectedTexturesByTile.get(tile);
 		if(connectedTextures == null) {
 			connectedTextures = new ArrayList<ConnectedTexture>();
@@ -107,7 +112,7 @@ public class ConnectedTextures {
 		connectedTextures.add(connectedTexture);
 	}
 	
-	protected static void registerConnectedTextureByBlock(String block, BlockStateConstraint constraint, ConnectedTexture connectedTexture) {
+	public static void registerConnectedTextureByBlock(String block, BlockStateConstraint constraint, ConnectedTexture connectedTexture) {
 		Map<BlockStateConstraint, List<ConnectedTexture>> connectedTextures = connectedTexturesByBlock.get(block);
 		if(connectedTextures == null) {
 			connectedTextures = new HashMap<BlockStateConstraint, List<ConnectedTexture>>();
@@ -133,8 +138,12 @@ public class ConnectedTextures {
 					overlays = new ArrayList<ConnectedTexture>();
 				overlays.add(connectedTextures.get(i));
 			}
-			if(!connectedTextures.get(i).isOverlay() && main == null)
-				main = connectedTextures.get(i);
+			if(!connectedTextures.get(i).isOverlay()) {
+				if(main == null)
+					main = connectedTextures.get(i);
+				else if(main.getName().length() > connectedTextures.get(i).getName().length())
+					main = connectedTextures.get(i);
+			}
 		}
 		final ConnectedTexture fMain = main;
 		final List<ConnectedTexture> fOverlays = overlays;
@@ -202,7 +211,7 @@ public class ConnectedTextures {
 		if(res.size() == 1)
 			return res;
 		// Sort based on names
-		res.sort(new Comparator<ConnectedTexture>() {
+		/*res.sort(new Comparator<ConnectedTexture>() {
 
 			@Override
 			public int compare(ConnectedTexture o1, ConnectedTexture o2) {
@@ -217,7 +226,7 @@ public class ConnectedTextures {
 				return 0;
 			}
 			
-		});
+		});*/
 		return res;
 	}
 	

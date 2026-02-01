@@ -53,6 +53,7 @@ public abstract class ConnectedTexture {
 	private Integer tintIndex;
 	private String tintBlock;
 	private List<BlockConstraints> blockConstraints;
+	private float uvRotation;
 	
 	public ConnectedTexture(String name, int priority) {
 		this.name = name;
@@ -63,6 +64,7 @@ public abstract class ConnectedTexture {
 		this.tintIndex = null;
 		this.tintBlock = null;
 		this.blockConstraints = new ArrayList<BlockConstraints>();
+		this.uvRotation = 0f;
 	}
 	
 	public abstract String getTexture(int x, int y, int z, ModelFace face);
@@ -378,6 +380,14 @@ public abstract class ConnectedTexture {
 	
 	public List<BlockConstraints> getBlockConstraints(){
 		return blockConstraints;
+	}
+	
+	public float getUVRotation() {
+		return uvRotation;
+	}
+	
+	public void setUVRotation(float uvRotation) {
+		this.uvRotation = uvRotation;
 	}
 	
 }

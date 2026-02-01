@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -44,16 +45,18 @@ import javax.swing.JOptionPane;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.IndexCache;
+import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class WorldAnvil extends World{
 
-	public WorldAnvil(File worldDir) {
-		super(worldDir);
+	public WorldAnvil(File worldDir, String name, Launcher launcher) {
+		super(worldDir, name, launcher);
 		blockConnectionsTranslation = new BlockConnectionsTranslation("java");
 		blockConnectionsTranslation.load();
 		File levelDatFile = new File(worldDir, "level.dat");
@@ -256,6 +259,45 @@ public class WorldAnvil extends World{
 				regions[id] = r;
 			}
 		}
+	}
+	
+	@Override
+	public List<String> getRequiredResourcePacks() {
+		return Arrays.asList("base_resource_pack");
+	}
+	
+	@Override
+	public List<ResourcePackSource> getDependentResourcePacks() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		File resourcesZip = new File(getWorldDir(), "resources.zip");
+		if(resourcesZip.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's resources.zip");
+			source.addSource(ResourcePackSource.getHash(resourcesZip), resourcesZip);
+			sources.add(source);
+		}
+		
+		File datapacksFolder = new File(getWorldDir(), "datapacks");
+		if(datapacksFolder.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's datapacks");
+			for(File datapackFile : datapacksFolder.listFiles()) {
+				// We only care about the biome definitions in the datapacks right now.
+				// If a datapack doesn't contain any biome definitions, then no need to
+				// put it as a source.
+				if(!datapackFile.isDirectory() || !new File(datapackFile, "pack.mcmeta").exists() ||
+						!new File(datapackFile, "data/minecraft/worldgen/biome").exists())
+					continue;
+				
+				source.addSource(ResourcePackSource.getHash(datapackFile), datapackFile);
+			}
+			
+			if(!source.isEmpty())
+				sources.add(source);
+		}
+		
+		if(launcher != null)
+			sources.addAll(launcher.getResourcePackSourcesForWorld(this));
+		
+		return sources;
 	}
 
 }

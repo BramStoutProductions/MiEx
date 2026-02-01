@@ -194,8 +194,8 @@ public class BlockStateSkull extends BlockState{
 		model.rotate(0, rotY, false);
 		
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), caveBlock, false, false, false, false, false, true, 0, null,
-				needsConnectionInfo());
+				individualBlocks, hasLiquid(properties), getLiquidName(properties), caveBlock, false, false, false, false, false, true, true, 0, null,
+				needsConnectionInfo(), null);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}

@@ -115,7 +115,6 @@ public class MemoryPool<T extends Poolable> {
 			return val;
 		}
 		
-		@SuppressWarnings("deprecation")
 		public void free(T val) {
 			int occupancyIndex = val._MEMORY_POOL_PAGE_SUBINDEX / 64;
 			int bitIndex = val._MEMORY_POOL_PAGE_SUBINDEX - (occupancyIndex * 64);
@@ -147,7 +146,6 @@ public class MemoryPool<T extends Poolable> {
 			return getFreeIndex(numAllocations);
 		}
 		
-		@SuppressWarnings("deprecation")
 		private int getFreeIndex(int startSearchIndex) {
 			while(true) {
 				boolean foundEmptySpot = false;
@@ -203,7 +201,6 @@ public class MemoryPool<T extends Poolable> {
 		this.page = new Page<T>(type);
 	}
 	
-	@SuppressWarnings("deprecation")
 	public T alloc() {
 		Page<T> currentPage = page;
 		while(true) {

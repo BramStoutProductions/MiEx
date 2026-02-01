@@ -37,6 +37,9 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
+
 public class LauncherBedrockEdition extends Launcher{
 	
 	private File rootFolder;
@@ -85,6 +88,16 @@ public class LauncherBedrockEdition extends Launcher{
 		}
 		
 		return saves;
+	}
+	
+	@Override
+	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
+		return new ArrayList<ResourcePackSource>();
+	}
+	
+	@Override
+	public boolean ownsWorld(File worldFolder) {
+		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
 	}
 
 }

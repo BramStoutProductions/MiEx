@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JOptionPane;
 
@@ -57,6 +58,7 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
+import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -68,6 +70,7 @@ public class ResourcePacks {
 	private static Object mutex = new Object();
 	private static Map<String, Integer> defaultColours = new HashMap<String, Integer>();
 	private static Set<String> colorMaps = new HashSet<String>();
+	public static AtomicBoolean isLoading = new AtomicBoolean(false);
 	
 	public static void init() {
 		synchronized(mutex) {
@@ -80,7 +83,9 @@ public class ResourcePacks {
 			for(File f : resourcePacksFolder.listFiles()) {
 				if(!f.isDirectory())
 					continue;
-				if(ResourcePackBedrockEdition.supportsResourcePack(f))
+				if(ResourcePackHytale.supportsResourcePack(f))
+					resourcePacks.add(new ResourcePackHytale(f));
+				else if(ResourcePackBedrockEdition.supportsResourcePack(f))
 					resourcePacks.add(new ResourcePackBedrockEdition(f));
 				else
 					resourcePacks.add(new ResourcePackJavaEdition(f));
@@ -98,13 +103,22 @@ public class ResourcePacks {
 			
 			activeResourcePacks = newActiveResourcePacks;
 			
-			colorMaps.clear();
-			for(ResourcePack rp : activeResourcePacks) {
-				rp.getColorMaps(colorMaps);
+			isLoading.set(true);
+			try {
+				colorMaps.clear();
+				for(ResourcePack rp : activeResourcePacks) {
+					rp.getColorMaps(colorMaps);
+				}
+				
+				for(int i = activeResourcePacks.size()-1; i >= 0; --i)
+					activeResourcePacks.get(i).load();
+				
+				for(int i = activeResourcePacks.size()-1; i >= 0; --i)
+					activeResourcePacks.get(i).postLoad();
+			}catch(Exception ex) {
+				ex.printStackTrace();
 			}
-			
-			for(int i = activeResourcePacks.size()-1; i >= 0; --i)
-				activeResourcePacks.get(i).load();
+			isLoading.set(false);
 		}
 	}
 	
@@ -119,7 +133,9 @@ public class ResourcePacks {
 			for(File f : resourcePacksFolder.listFiles()) {
 				if(!f.isDirectory())
 					continue;
-				if(ResourcePackBedrockEdition.supportsResourcePack(f))
+				if(ResourcePackHytale.supportsResourcePack(f))
+					resourcePacks.add(new ResourcePackHytale(f));
+				else if(ResourcePackBedrockEdition.supportsResourcePack(f))
 					resourcePacks.add(new ResourcePackBedrockEdition(f));
 				else
 					resourcePacks.add(new ResourcePackJavaEdition(f));
@@ -139,13 +155,16 @@ public class ResourcePacks {
 			// changed regarding the active resource packs, so we
 			// can just replace the list so that we have the new instances
 			// of the resource pack classes.
-			if(newActiveResourcePacks.size() == activeResourcePacks.size()) {
+			/*if(newActiveResourcePacks.size() == activeResourcePacks.size()) {
 				activeResourcePacks = newActiveResourcePacks;
 				for(int i = activeResourcePacks.size()-1; i >= 0; --i)
 					activeResourcePacks.get(i).load();
-			}else {
+				
+				for(int i = activeResourcePacks.size()-1; i >= 0; --i)
+					activeResourcePacks.get(i).postLoad();
+			}else {*/
 				setActiveResourcePacks(newActiveResourcePacks);
-			}
+			//}
 		}
 	}
 	
@@ -160,54 +179,75 @@ public class ResourcePacks {
 	}
 	
 	public static void setActiveResourcePacks(List<ResourcePack> packs) {
-		ResourcePackBedrockEdition.reset();
-		activeResourcePacks.clear();
-		for(ResourcePack pack : packs) {
-			if(pack == null)
-				continue;
-			// The base resource pack should always be at the very end.
-			// So we skip it here and add it later.
-			if (pack.getName().equals("base_resource_pack"))
-				continue;
-			// Make sure that it's the right instance.
-			// pack could be an old invalid instance.
-			ResourcePack pack2 = getResourcePack(pack.getUUID());
-			activeResourcePacks.add(pack2);
-		}
-		ResourcePack baseResourcePack = getResourcePack("base_resource_pack");
-		if(baseResourcePack != null)
-			activeResourcePacks.add(baseResourcePack);
-		
-		colorMaps.clear();
-		for(ResourcePack rp : activeResourcePacks) {
-			rp.getColorMaps(colorMaps);
-		}
-		
-		MCWorldExporter.getApp().getUI().getProgressBar().setText("Loading resource packs");
-		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
-		int progressCounter = 0;
+		isLoading.set(true);
 		boolean hasLoadError = false;
-		for(int i = activeResourcePacks.size()-1; i >= 0; --i) {
-			try {
-				activeResourcePacks.get(i).load();
-			}catch(Exception ex) {
-				hasLoadError = true;
-				System.out.println("Failed to load resource pack " + activeResourcePacks.get(i).getFolder().getName());
-				ex.printStackTrace();
+		try {
+			System.out.println("Setting Active Resource Packs (thread: " + Thread.currentThread().getName() + "):");
+			for(ResourcePack rp : packs)
+				System.out.println("  " + rp.getUUID());
+			ResourcePackBedrockEdition.reset();
+			activeResourcePacks.clear();
+			for(ResourcePack pack : packs) {
+				if(pack == null)
+					continue;
+				// The base resource pack should always be at the very end.
+				// So we skip it here and add it later.
+				if (pack.getName().equals("base_resource_pack"))
+					continue;
+				// Make sure that it's the right instance.
+				// pack could be an old invalid instance.
+				ResourcePack pack2 = getResourcePack(pack.getUUID());
+				activeResourcePacks.add(pack2);
 			}
-			progressCounter++;
-			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(
-					((float) progressCounter) / ((float) activeResourcePacks.size()));
+			ResourcePack baseResourcePack = getResourcePack("base_resource_pack");
+			if(baseResourcePack != null)
+				activeResourcePacks.add(baseResourcePack);
+			
+			colorMaps.clear();
+			for(ResourcePack rp : activeResourcePacks) {
+				rp.getColorMaps(colorMaps);
+			}
+			
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Loading resource packs");
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+			int progressCounter = 0;
+			for(int i = activeResourcePacks.size()-1; i >= 0; --i) {
+				try {
+					activeResourcePacks.get(i).load();
+				}catch(Exception ex) {
+					hasLoadError = true;
+					System.out.println("Failed to load resource pack " + activeResourcePacks.get(i).getFolder().getName());
+					ex.printStackTrace();
+				}
+				progressCounter++;
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(
+						((float) progressCounter) / ((float) activeResourcePacks.size()));
+			}
+			
+			synchronized(mutex) {
+				defaultColours.clear();
+			}
+			Atlas.readAtlasConfig();
+			Config.load();
+			BlockStateRegistry.clearBlockStateRegistry();
+			ModelRegistry.clearModelRegistry();
+			BiomeRegistry.recalculateTints();
+			
+			for(int i = activeResourcePacks.size()-1; i >= 0; --i) {
+				try {
+					activeResourcePacks.get(i).postLoad();
+				}catch(Exception ex) {
+					hasLoadError = true;
+					System.out.println("Failed to load resource pack " + activeResourcePacks.get(i).getFolder().getName());
+					ex.printStackTrace();
+				}
+			}
+		}catch(Exception ex) {
+			isLoading.set(false);
+			throw ex;
 		}
+		isLoading.set(false);
 		
-		synchronized(mutex) {
-			defaultColours.clear();
-		}
-		Atlas.readAtlasConfig();
-		Config.load();
-		BlockStateRegistry.clearBlockStateRegistry();
-		ModelRegistry.clearModelRegistry();
-		BiomeRegistry.recalculateTints();
 		MCWorldExporter.getApp().getUI().update();
 		MCWorldExporter.getApp().getUI().fullReRender();
 		if(MCWorldExporter.getApp().getWorld() != null)
@@ -219,6 +259,17 @@ public class ResourcePacks {
 			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), 
 					"One or more of the resource packs failed to load properly. Please check the log.", 
 					"Warning", JOptionPane.WARNING_MESSAGE);
+		}
+	}
+	
+	public static void doPostLoad() {
+		for(int i = activeResourcePacks.size()-1; i >= 0; --i) {
+			try {
+				activeResourcePacks.get(i).postLoad();
+			}catch(Exception ex) {
+				System.out.println("Failed to load resource pack " + activeResourcePacks.get(i).getFolder().getName());
+				ex.printStackTrace();
+			}
 		}
 	}
 	
@@ -242,6 +293,62 @@ public class ResourcePacks {
 				return pack;
 		}
 		return null;
+	}
+	
+	/**
+	 * Returns a list of resource packs that together hold
+	 * all resource pack data specified by the given sourceUuids.
+	 * 
+	 * If it could not find a resource pack for one or more sourceUuid,
+	 * then it returns null.
+	 */
+	public static List<ResourcePack> getResourcePacksForSources(List<String> sourceUuids){
+		// We want to prioritise resource packs that cover the most sourceUuids,
+		// so we are going with a "peeling" approach, where we loop through all
+		// resource packs and just pick the best one, then update sourceUuids
+		// to contain only the left over sourceUuids, and repeat.
+		if(sourceUuids.isEmpty())
+			// Nothing needed, so return empty list to indicate all is good.
+			return new ArrayList<ResourcePack>();
+		
+		List<String> remainingSourceUuids = new ArrayList<String>(sourceUuids);
+		
+		List<ResourcePack> packs = new ArrayList<ResourcePack>();
+		while(true) {
+			ResourcePack bestRP = null;
+			int bestRPScore = 0;
+			for(ResourcePack pack : resourcePacks) {
+				if(packs.contains(pack))
+					continue;
+				
+				int score = 0;
+				List<String> uuids = pack.getSourceUuids();
+				for(String uuid : uuids) {
+					if(remainingSourceUuids.contains(uuid)) {
+						score++;
+					}
+				}
+				
+				if(score > bestRPScore) {
+					bestRP = pack;
+					bestRPScore = score;
+				}
+			}
+			
+			if(bestRP != null) {
+				packs.add(bestRP);
+				remainingSourceUuids.removeAll(bestRP.getSourceUuids());
+			}else {
+				// Couldn't find a good pack, so let's end the loop
+				break;
+			}
+			if(remainingSourceUuids.isEmpty())
+				break; // We've got everything, so break
+		}
+		
+		if(!remainingSourceUuids.isEmpty())
+			return null; // Couldn't cover all sourceUuids, so return null to indicate that.
+		return packs;
 	}
 	
 	public static File getFile(String resource, String type, String extension, String category) {
@@ -335,6 +442,17 @@ public class ResourcePacks {
 			ModelHandler modelHandler = pack.getModelHandler(name);
 			if(modelHandler != null)
 				return modelHandler;
+		}
+		return null;
+	}
+
+	public static BlockAnimationHandler getBlockAnimationHandler(String name) {
+		ResourcePack pack = null;
+		for(int i = 0; i < activeResourcePacks.size(); ++i) {
+			pack = activeResourcePacks.get(i);
+			BlockAnimationHandler blockAnimationHandler = pack.getBlockAnimationHandler(name);
+			if(blockAnimationHandler != null)
+				return blockAnimationHandler;
 		}
 		return null;
 	}

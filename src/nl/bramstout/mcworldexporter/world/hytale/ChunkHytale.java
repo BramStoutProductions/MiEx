@@ -31,16 +31,20 @@
 
 package nl.bramstout.mcworldexporter.world.hytale;
 
+import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.Region;
 
 public class ChunkHytale extends Chunk{
 
 	private Object mutex;
+	private float[] biomeTints;
 	
 	public ChunkHytale(Region region, int chunkX, int chunkZ) {
 		super(region, chunkX, chunkZ);
 		this.mutex = new Object();
+		this.biomeTints = null;
 	}
 
 	@Override
@@ -101,6 +105,19 @@ public class ChunkHytale extends Chunk{
 				}
 			}
 			
+			this.biomeTints = new float[16*16*3];
+			Color color = new Color();
+			for(int bz = 0; bz < 16; ++bz) {
+				for(int bx = 0; bx < 16; ++bx) {
+					int tint = hytaleChunk.getTint(bx + localOffsetX, bz + localOffsetZ);
+					color.setFromInt(tint);
+					
+					this.biomeTints[(bz * 16 + bx) * 3] = color.getR();
+					this.biomeTints[(bz * 16 + bx) * 3 + 1] = color.getG();
+					this.biomeTints[(bz * 16 + bx) * 3 + 2] = color.getB();
+				}
+			}
+			
 			calculateHeightmap();
 			this.lastAccess = System.currentTimeMillis();
 		}
@@ -117,7 +134,19 @@ public class ChunkHytale extends Chunk{
 			blocks = null;
 			biomes = null;
 			chunkSectionOffset = 0;
+			biomeTints = null;
 		}
+	}
+	
+	@Override
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {
+		if(this.biomeTints == null)
+			return;
+		
+		biome.setColor("hytale:tint", 
+				this.biomeTints[(z * 16 + x) * 3],
+				this.biomeTints[(z * 16 + x) * 3 + 1],
+				this.biomeTints[(z * 16 + x) * 3 + 2]);
 	}
 
 }

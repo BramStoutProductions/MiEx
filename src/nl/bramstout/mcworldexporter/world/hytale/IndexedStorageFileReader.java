@@ -129,7 +129,9 @@ public class IndexedStorageFileReader {
 			//this.fileChannel.read(buffer, position);
 			buffer = this.fileChannel.map(MapMode.READ_ONLY, position, fullSize);
 		}
-		buffer.position(8);
+		//buffer.position(8);
+		buffer.getInt();
+		buffer.getInt();
 		
 		byte[] byteBuffer = new byte[compressedSize];
 		buffer.get(byteBuffer, 0, compressedSize);

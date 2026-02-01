@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.world.hytale;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,10 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.export.IndexCache;
+import nl.bramstout.mcworldexporter.launcher.Launcher;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
+import nl.bramstout.mcworldexporter.world.Player;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -50,8 +54,8 @@ public class WorldHytale extends World{
 	private Map<String, String> dimensionNameToFolder = new HashMap<String, String>();
 	private Object regionMutex;
 	
-	public WorldHytale(File worldDir) {
-		super(worldDir);
+	public WorldHytale(File worldDir, String name, Launcher launcher) {
+		super(worldDir, name, launcher);
 		regionMutex = new Object();
 		blockConnectionsTranslation = new BlockConnectionsTranslation("hytale");
 		blockConnectionsTranslation.load();
@@ -63,7 +67,89 @@ public class WorldHytale extends World{
 	}
 
 	@Override
-	protected void loadWorldSettings() {}
+	protected void loadWorldSettings() {
+		players.clear();
+		
+		File playersFolder = new File(worldDir, "universe/players");
+		if(playersFolder.exists() && playersFolder.isDirectory()) {
+			for(File playerFile : playersFolder.listFiles()) {
+				if(!playerFile.getName().endsWith(".json"))
+					continue;
+				
+				JsonObject data = Json.read(playerFile).getAsJsonObject();
+				if(!data.has("Components"))
+					continue;
+				data = data.getAsJsonObject("Components");
+				
+				// Get rid of .json at the end
+				String playerUuid = playerFile.getName().substring(0, playerFile.getName().length()-4);
+				String playerName = playerUuid;
+				String playerDimension = "";
+				double playerX = 0f;
+				double playerY = 0f;
+				double playerZ = 0f;
+				
+				if(data.has("Nameplate")) {
+					JsonObject nameplate = data.getAsJsonObject("Nameplate");
+					if(nameplate.has("Text"))
+						playerName = nameplate.get("Text").getAsString();
+				}
+				if(data.has("DisplayName")) {
+					JsonObject displayName = data.getAsJsonObject("DisplayName");
+					if(displayName.has("DisplayName"))
+						displayName = displayName.getAsJsonObject("DisplayName");
+					if(displayName.has("RawText"))
+						playerName = displayName.get("RawText").getAsString();
+				}
+				
+				if(data.has("Transform")) {
+					JsonObject transform = data.getAsJsonObject("Transform");
+					if(transform.has("Position")) {
+						JsonObject position = transform.getAsJsonObject("Position");
+						if(position.has("X"))
+							playerX = position.get("X").getAsDouble();
+						if(position.has("Y"))
+							playerY = position.get("Y").getAsDouble();
+						if(position.has("Z"))
+							playerZ = position.get("Z").getAsDouble();
+					}
+				}
+				
+				if(data.has("Player")) {
+					JsonObject player = data.getAsJsonObject("Player");
+					if(player.has("PlayerData")) {
+						JsonObject playerData = player.getAsJsonObject("PlayerData");
+						
+						if(playerData.has("World")) {
+							playerDimension = playerData.get("World").getAsString();
+						}
+						
+						if(playerData.has("PerWorldData")) {
+							JsonObject perWorldData = playerData.getAsJsonObject("PerWorldData");
+							if(perWorldData.has(playerDimension)) {
+								JsonObject worldData = perWorldData.getAsJsonObject(playerDimension);
+								
+								if(worldData.has("LastPosition")) {
+									JsonObject lastPosition = worldData.getAsJsonObject("LastPosition");
+									if(lastPosition.has("X"))
+										playerX = lastPosition.get("X").getAsDouble();
+									if(lastPosition.has("Y"))
+										playerY = lastPosition.get("Y").getAsDouble();
+									if(lastPosition.has("Z"))
+										playerZ = lastPosition.get("Z").getAsDouble();
+								}
+							}
+						}
+					}
+				}
+				
+				if(playerDimension.isEmpty())
+					continue;
+				
+				players.add(new Player(playerUuid, playerName, null, playerX, playerY, playerZ, playerDimension, paused));
+			}
+		}
+	}
 
 	@Override
 	protected void findDimensions() {
@@ -239,6 +325,35 @@ public class WorldHytale extends World{
 		loadWorldSettings();
 		findDimensions();
 		findRegions();
+	}
+	
+	@Override
+	public List<String> getRequiredResourcePacks() {
+		return Arrays.asList("base_resource_pack_hytale");
+	}
+	
+	@Override
+	public List<ResourcePackSource> getDependentResourcePacks() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		File modsFolder = new File(getWorldDir(), "mods");
+		if(modsFolder.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's Mods");
+			for(File modFile : modsFolder.listFiles()) {
+				if(!modFile.isDirectory() || !new File(modFile, "manifest.json").exists())
+					continue;
+				
+				source.addSource(ResourcePackSource.getHash(modFile), modFile);
+			}
+			
+			if(!source.isEmpty())
+				sources.add(source);
+		}
+		
+		if(launcher != null)
+			sources.addAll(launcher.getResourcePackSourcesForWorld(this));
+		
+		return sources;
 	}
 
 }

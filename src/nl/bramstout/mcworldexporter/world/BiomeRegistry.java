@@ -101,7 +101,7 @@ public class BiomeRegistry {
 	}
 	
 	public static Biome getBiome(int id) {
-		return registeredBiomes.get(id);
+		return registeredBiomes.get(id < 0 ? 0 : id);
 	}
 	
 }

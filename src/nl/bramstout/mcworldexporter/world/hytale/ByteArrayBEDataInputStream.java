@@ -113,11 +113,29 @@ public class ByteArrayBEDataInputStream implements DataInput{
 		int val1 = read();
 		return val1 | (val2 << 8);
 	}
+	
+	public short readShortLE() throws IOException {
+		int val1 = read();
+		int val2 = read();
+		return (short) (val1 | (val2 << 8));
+	}
+
+	public int readUnsignedShortLE() throws IOException {
+		int val1 = read();
+		int val2 = read();
+		return val1 | (val2 << 8);
+	}
 
 	@Override
 	public char readChar() throws IOException {
 		int val2 = read();
 		int val1 = read();
+		return (char) (val1 | (val2 << 8));
+	}
+	
+	public char readCharLE() throws IOException {
+		int val1 = read();
+		int val2 = read();
 		return (char) (val1 | (val2 << 8));
 	}
 
@@ -127,6 +145,14 @@ public class ByteArrayBEDataInputStream implements DataInput{
 		int val3 = read();
 		int val2 = read();
 		int val1 = read();
+		return val1 | (val2 << 8) | (val3 << 16) | (val4 << 24);
+	}
+	
+	public int readIntLE() throws IOException {
+		int val1 = read();
+		int val2 = read();
+		int val3 = read();
+		int val4 = read();
 		return val1 | (val2 << 8) | (val3 << 16) | (val4 << 24);
 	}
 
@@ -140,6 +166,19 @@ public class ByteArrayBEDataInputStream implements DataInput{
 		long val3 = read();
 		long val2 = read();
 		long val1 = read();
+		return val1 | (val2 << 8) | (val3 << 16) | (val4 << 24) | 
+				(val5 << 32) | (val6 << 40) | (val7 << 48) | (val8 << 54);
+	}
+	
+	public long readLongLE() throws IOException {
+		long val1 = read();
+		long val2 = read();
+		long val3 = read();
+		long val4 = read();
+		long val5 = read();
+		long val6 = read();
+		long val7 = read();
+		long val8 = read();
 		return val1 | (val2 << 8) | (val3 << 16) | (val4 << 24) | 
 				(val5 << 32) | (val6 << 40) | (val7 << 48) | (val8 << 54);
 	}

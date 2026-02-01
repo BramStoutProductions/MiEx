@@ -32,11 +32,14 @@
 package nl.bramstout.mcworldexporter.resourcepack;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
@@ -49,22 +52,40 @@ public abstract class ResourcePack {
 	private String uuid;
 	private File folder;
 	private int worldVersion;
+	/**
+	 * A list of uuids of the source files that
+	 * this resource pack was extracted from,
+	 * if that was the case.
+	 */
+	private List<String> sourceUuids;
 	
 	public ResourcePack(String name, String uuid, File folder) {
 		this.name = name;
 		this.uuid = uuid;
 		this.folder = folder;
 		this.worldVersion = 0;
+		this.sourceUuids = new ArrayList<String>();
 		File packInfoFile = new File(folder, "packInfo.json");
 		if(packInfoFile.exists()) {
 			try {
 				JsonObject obj = Json.read(packInfoFile).getAsJsonObject();
 				if(obj.has("worldVersion"))
 					worldVersion = obj.get("worldVersion").getAsInt();
+				if(obj.has("sources")) {
+					JsonArray sources = obj.getAsJsonArray("sources");
+					for(JsonElement el : sources.asList()) {
+						sourceUuids.add(el.getAsString());
+					}
+				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return uuid;
 	}
 	
 	public String getName() {
@@ -87,7 +108,13 @@ public abstract class ResourcePack {
 		return worldVersion;
 	}
 	
+	public List<String> getSourceUuids(){
+		return sourceUuids;
+	}
+	
 	public abstract void load();
+	
+	public void postLoad() {}
 	
 	/**
 	 * Gets the file in this resource pack with the given resource identifier.
@@ -121,6 +148,15 @@ public abstract class ResourcePack {
 	 * @return A ModelHandler instance for the model, or null if this resource pack doesn't handle it.
 	 */
 	public abstract ModelHandler getModelHandler(String name);
+	
+	/**
+	 * Returns a BlockAnimationHandler for the animation with the given name.
+	 * If this resource pack does not handle this animation, it returns null.
+	 * 
+	 * @param name The resource identifier of the animation.
+	 * @return A BlockAnimationHandler instance for the animation, or null if this resource pack doesn't handle it.
+	 */
+	public abstract BlockAnimationHandler getBlockAnimationHandler(String name);
 	
 	/**
 	 * Returns an EntityHandler for the entity with the given name.

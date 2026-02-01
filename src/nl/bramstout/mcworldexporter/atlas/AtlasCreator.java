@@ -70,6 +70,7 @@ public class AtlasCreator {
 	public List<String> utilityTextures;
 	public int repeats;
 	public int padding;
+	public List<ResourcePack> sourceResourcePacks;
 	
 	public AtlasCreator() {
 		resourcePack = "base_resource_pack";
@@ -77,6 +78,7 @@ public class AtlasCreator {
 		utilityTextures = new ArrayList<String>();
 		repeats = 4;
 		padding = 1;
+		sourceResourcePacks = new ArrayList<ResourcePack>();
 	}
 	
 	private static class AtlasData{
@@ -425,6 +427,7 @@ public class AtlasCreator {
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Generating atlases: Reading existing atlas data");
+		System.out.println("Generating atlases into resource pack " + resourcePack);
 		
 		// If we already have atlasses generated for the resource pack,
 		// then we don't want to generate new ones that put the textures
@@ -433,6 +436,7 @@ public class AtlasCreator {
 		// the atlas items.
 		if(atlasJsonFile.exists()) {
 			try {
+				System.out.println("Existing miex_atlas.json, reading in.");
 				JsonObject data = Json.read(atlasJsonFile).getAsJsonObject();
 				for (Entry<String, JsonElement> entry : data.entrySet()) {
 					try {
@@ -535,7 +539,7 @@ public class AtlasCreator {
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.2f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Generating atlases: Finding textures");
 		
-		List<ResourcePack> resourcePacks = ResourcePacks.getActiveResourcePacks();
+		List<ResourcePack> resourcePacks = sourceResourcePacks;
 		for(int i = resourcePacks.size() - 1; i >= 0; --i) {
 			for(File rootFolder : resourcePacks.get(i).getFoldersReversed()) {
 				File assetsFolder = new File(rootFolder, "assets");
@@ -554,16 +558,28 @@ public class AtlasCreator {
 					// Bedrock Edition resource packs
 					File blocksFolder = new File(texturesFolder, "blocks");
 					if(blocksFolder.exists())
-						processFolder("blocks", "minecraft:", texturesFolder, "blocks");
+						processFolder("blocks", "minecraft", texturesFolder, "blocks");
 					
 					File customFolder = new File(texturesFolder, "custom");
 					if(customFolder.exists())
-						processFolder("custom", "minecraft:", texturesFolder, "blocks");
+						processFolder("custom", "minecraft", texturesFolder, "blocks");
 					
 	
 					File itemsFolder = new File(texturesFolder, "items");
 					if(itemsFolder.exists())
-						processFolder("items", "minecraft:", texturesFolder, "items");
+						processFolder("items", "minecraft", texturesFolder, "items");
+				}
+				File commonFolder = new File(rootFolder, "Common");
+				if(commonFolder.exists() && commonFolder.isDirectory()) {
+					File blocksFolder = new File(commonFolder, "Blocks");
+					if(blocksFolder.exists())
+						processFolder("Blocks", "hytale", commonFolder, "blocks");
+					File blockTexturesFolder = new File(commonFolder, "BlockTextures");
+					if(blockTexturesFolder.exists())
+						processFolder("BlockTextures", "hytale", commonFolder, "blocks");
+					File resourcesFolder = new File(commonFolder, "Resources");
+					if(resourcesFolder.exists())
+						processFolder("Resources", "hytale", commonFolder, "blocks");
 				}
 			}
 		}
@@ -783,6 +799,7 @@ public class AtlasCreator {
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+		System.out.println("Atlases generated successfully.");
 	}
 	
 	private void finishUpAtlas(AtlasData atlas, File resourcePackFolder) {

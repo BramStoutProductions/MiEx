@@ -45,8 +45,10 @@ import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
 import nl.bramstout.mcworldexporter.expression.ExprValue;
 import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueDict;
@@ -73,12 +75,15 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagLong;
 import nl.bramstout.mcworldexporter.nbt.NbtTagLongArray;
 import nl.bramstout.mcworldexporter.nbt.NbtTagShort;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
+import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.text.TextMeshCreator;
+import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -190,7 +195,7 @@ public abstract class BuiltInGenerator {
 			if(arguments.containsKey("properties")) {
 				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
 				if(propertiesTag instanceof NbtTagCompound)
-					properties = (NbtTagCompound) propertiesTag;
+					properties = (NbtTagCompound) propertiesTag.copy();
 			}
 			if(arguments.containsKey("x"))
 				x = (int) arguments.get("x").eval(context).asInt();
@@ -200,14 +205,30 @@ public abstract class BuiltInGenerator {
 				z = (int) arguments.get("z").eval(context).asInt();
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
-			int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
+			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
+			
+			List<Color> tints = null;
+			if(state.getTint() != null) {
+				int tintIndex = 0;
+				TintValue tintValue = state.getTint().getLayer(tintIndex);
+				if(tintValue != null) {
+					int biomeId = MCWorldExporter.getApp().getWorld().getBiomeId(x, y, z);
+					Biome biome = BiomeRegistry.getBiome(biomeId);
+					BlendedBiome blendedBiome = new BlendedBiome();
+					blendedBiome.addBiome(biome, 1f);
+					blendedBiome.normalise();
+					Color tint = tintValue.getColor(blendedBiome);
+					tints = new ArrayList<Color>();
+					tints.add(tint);
+				}
+			}
 			
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(x, y, z, models);
 			
 			for(Model model : models)
-				context.model.addModel(model);
+				context.model.addModel(model, tints);
 		}
 		
 	}

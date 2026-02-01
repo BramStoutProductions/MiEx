@@ -37,4 +37,6 @@ public abstract class ModelHandler {
 
 	public abstract void getGeometry(Model model);
 	
+	public abstract void getGeometry(Model model, BlockAnimationHandler handler, float frame);
+	
 }

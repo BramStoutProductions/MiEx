@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.resourcepack.bedrock;
 
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
 public class ModelHandlerCross extends ModelHandler{
@@ -77,6 +78,11 @@ public class ModelHandlerCross extends ModelHandler{
 			};
 			model.addFace(points, uvs, Direction.WEST, "#west");
 		}
+	}
+	
+	@Override
+	public void getGeometry(Model model, BlockAnimationHandler handler, float frame) {
+		this.getGeometry(model);
 	}
 	
 }

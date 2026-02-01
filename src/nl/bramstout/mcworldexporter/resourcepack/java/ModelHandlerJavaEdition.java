@@ -45,6 +45,7 @@ import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
 public class ModelHandlerJavaEdition extends ModelHandler{
@@ -267,6 +268,11 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void getGeometry(Model model, BlockAnimationHandler handler, float frame) {
+		this.getGeometry(model);
 	}
 
 }

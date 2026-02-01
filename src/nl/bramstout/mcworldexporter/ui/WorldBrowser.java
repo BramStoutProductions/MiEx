@@ -33,12 +33,18 @@ package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -55,12 +61,15 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
@@ -80,9 +89,10 @@ public class WorldBrowser extends JDialog {
 	private Tab activeTab;
 	private JScrollPane savesScrollPane;
 	private JPanel savesPanel;
+	private String searchString;
 	
 	public WorldBrowser() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BorderLayout());
 		add(root);
@@ -99,13 +109,42 @@ public class WorldBrowser extends JDialog {
 		tabPanel.add(new BrowseTab(this));
 		root.add(tabPanel, BorderLayout.NORTH);
 		
+		JPanel centerPanel = new JPanel();
+		centerPanel.setLayout(new BorderLayout(0, 0));
+		root.add(centerPanel, BorderLayout.CENTER);
+		
+		SearchField searchField = new SearchField();
+		searchField.setPlaceholder("Search");
+		searchField.setPreferredSize(new Dimension(150, 28));
+		searchField.setFont(searchField.getFont().deriveFont(15F));
+		searchField.setMargin(new Insets(2, 8, 2, 8));
+		searchField.setBorder(new EmptyBorder(2, 8, 6, 8));
+		centerPanel.add(searchField, BorderLayout.NORTH);
+		searchField.getDocument().addDocumentListener(new DocumentListener() {
+			
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+		});
+		
 		savesPanel = new JPanel();
 		savesPanel.setLayout(new BoxLayout(savesPanel, BoxLayout.Y_AXIS));
 		savesScrollPane = new JScrollPane(savesPanel);
 		savesScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		savesScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		savesScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-		root.add(savesScrollPane, BorderLayout.CENTER);
+		centerPanel.add(savesScrollPane, BorderLayout.CENTER);
 		
 		setSize(600, 600);
 		setTitle("Open World");
@@ -129,6 +168,23 @@ public class WorldBrowser extends JDialog {
 		for(MinecraftSave save : tab.launcher.getSaves()) {
 			savesPanel.add(new Save(this, save));
 		}
+		
+		setSearchString(searchString);
+	}
+	
+	private void setSearchString(String searchString) {
+		this.searchString = searchString;
+		
+		for(Component comp : savesPanel.getComponents()) {
+			if(comp instanceof Save) {
+				if(((Save)comp).matchesSearchString(searchString)) {
+					comp.setVisible(true);
+				}else {
+					comp.setVisible(false);
+				}
+			}
+		}
+		
 		savesPanel.invalidate();
 		savesScrollPane.invalidate();
 		validate();
@@ -144,10 +200,10 @@ public class WorldBrowser extends JDialog {
 		});
 	}
 	
-	private void openWorld(File worldFolder) {
+	private void openWorld(File worldFolder, String name, Launcher launcher) {
 		setVisible(false);
 		MCWorldExporter.getApp().setLastExportFileOpened(null);
-		MCWorldExporter.getApp().setWorld(worldFolder);
+		MCWorldExporter.getApp().setWorld(worldFolder, name, launcher);
 	}
 	
 	private static class Tab extends JPanel{
@@ -243,7 +299,7 @@ public class WorldBrowser extends JDialog {
 					int result = chooser.showOpenDialog(browser);
 					currentDir = chooser.getCurrentDirectory();
 					if (result == JFileChooser.APPROVE_OPTION) {
-						browser.openWorld(chooser.getSelectedFile());
+						browser.openWorld(chooser.getSelectedFile(), chooser.getSelectedFile().getName(), null);
 					}
 				}
 
@@ -269,9 +325,11 @@ public class WorldBrowser extends JDialog {
 		private static final long serialVersionUID = 1L;
 
 		private static BufferedImage noIcon = new BufferedImage(52, 52, BufferedImage.TYPE_INT_ARGB);
+		private MinecraftSave save;
 		
 		public Save(WorldBrowser browser, MinecraftSave save) {
 			super();
+			this.save = save;
 			
 			setPreferredSize(new Dimension(250, 64));
 			setMinimumSize(new Dimension(0, 64));
@@ -321,10 +379,58 @@ public class WorldBrowser extends JDialog {
 
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					browser.openWorld(save.getWorldFolder());
+					browser.openWorld(save.getWorldFolder(), save.getLabel(), save.getLauncher());
 				}
 				
 			});
+		}
+		
+		public boolean matchesSearchString(String searchString) {
+			if(searchString == null || searchString.isEmpty())
+				return true;
+			
+			return save.getLabel().contains(searchString);
+		}
+		
+	}
+	
+	private static class SearchField extends JTextField{
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private String placeholder;
+		
+		public SearchField() {
+			super();
+			addFocusListener(new FocusListener() {
+				
+				@Override
+				public void focusLost(FocusEvent e) {}
+				
+				@Override
+				public void focusGained(FocusEvent e) {
+					selectAll();
+				}
+			});
+		}
+		
+		public void setPlaceholder(String placeholder) {
+			this.placeholder = placeholder;
+		}
+		
+		@Override
+		protected void paintComponent(Graphics g) {
+			super.paintComponent(g);
+			
+			if(this.getText().isEmpty()) {
+				Graphics2D g2d = (Graphics2D) g;
+				g2d.setFont(getFont());
+				g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2d.setColor(getDisabledTextColor());
+				g2d.drawString(placeholder, getInsets().left, g.getFontMetrics().getMaxAscent() + getInsets().top);
+			}
 		}
 		
 	}

@@ -48,6 +48,7 @@ import javax.swing.JOptionPane;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
@@ -96,6 +97,7 @@ public class Exporter {
 		if(MCWorldExporter.getApp().getWorld() == null) {
 			throw new RuntimeException("No valid world loaded.");
 		}
+		System.out.println("Exporting world to " + usdFile.getPath());
 		
 		MCWorldExporter.getApp().getUI().getEntityDialog().load();
 		
@@ -124,20 +126,9 @@ public class Exporter {
 		float memoryScalingFactor = ((float) chunkSize) / 16f;
 		threadPool.setNumThreads(Math.max((int) (((float) Config.memoryPerThread) * memoryScalingFactor), 64));
 		
-		int chunkStartX = MCWorldExporter.getApp().getExportBounds().getMinX() >> 4;
-		int chunkStartZ = MCWorldExporter.getApp().getExportBounds().getMinZ() >> 4;
-		int chunkEndX = MCWorldExporter.getApp().getExportBounds().getMaxX() >> 4;
-		int chunkEndZ = MCWorldExporter.getApp().getExportBounds().getMaxZ() >> 4;
-		
-		int centerX = MCWorldExporter.getApp().getExportBounds().getCenterX();
-		int centerZ = MCWorldExporter.getApp().getExportBounds().getCenterZ();
-		if(MCWorldExporter.getApp().getExportBounds().hasLod()) {
-			centerX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
-			centerZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
-		}
-		MCWorldExporter.getApp().getExportBounds().setOffsetX(centerX);
+		//MCWorldExporter.getApp().getExportBounds().setOffsetX(centerX);
 		//MCWorldExporter.getApp().getExportBounds().setOffsetY(MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ) + 1);
-		MCWorldExporter.getApp().getExportBounds().setOffsetZ(centerZ);
+		//MCWorldExporter.getApp().getExportBounds().setOffsetZ(centerZ);
 		
 		LargeDataOutputStream dos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 		dos.writeInt(2); // Version
@@ -145,11 +136,12 @@ public class Exporter {
 		
 		// Export settings
 		ExportData exportData = ExportData.fromApp();
+		exportData.print();
 		exportData.write(dos);
 		
 
 		// Export entities
-		EntityExporter entityExporter = new EntityExporter(MCWorldExporter.getApp().getExportBounds(), MCWorldExporter.getApp().getWorld());
+		EntityExporter entityExporter = new EntityExporter(MCWorldExporter.getApp().getExportBoundsList().get(0), MCWorldExporter.getApp().getWorld());
 		entityExporter.generateEntityInstances();
 		String entityFilename = file.getName().replace(".miex", "_entities.miex");
 		File entityFile = new File(file.getParentFile(), entityFilename);
@@ -159,45 +151,56 @@ public class Exporter {
 		dos.writeUTF(entityFilename);
 		
 		// Export chunks
-		int numChunksX = (chunkEndX - chunkStartX + 1 + chunkSize - 1) / chunkSize;
-		int numChunksZ = (chunkEndZ - chunkStartZ + 1 + chunkSize - 1) / chunkSize;
+		List<File> chunkFiles = new ArrayList<File>();
+		individualBlockIds = new HashSet<IndividualBlockId>();
 		int numChunks = 0;
-		for(int i = 0; i < numChunksX; ++i) {
-			for(int j = 0; j < numChunksZ; ++j) {
-				if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(i, j))
-					numChunks++;
+		for(ExportBounds exportBounds : MCWorldExporter.getApp().getExportBoundsList()) {
+			int chunkStartX = exportBounds.getMinX() >> 4;
+			int chunkStartZ = exportBounds.getMinZ() >> 4;
+			int chunkEndX = exportBounds.getMaxX() >> 4;
+			int chunkEndZ = exportBounds.getMaxZ() >> 4;
+			
+			int numChunksX = (chunkEndX - chunkStartX + 1 + exportBounds.getChunkSize() - 1) / exportBounds.getChunkSize();
+			int numChunksZ = (chunkEndZ - chunkStartZ + 1 + exportBounds.getChunkSize() - 1) / exportBounds.getChunkSize();
+			for(int i = 0; i < numChunksX; ++i) {
+				for(int j = 0; j < numChunksZ; ++j) {
+					if(exportBounds.isChunkEnabled(i, j))
+						numChunks++;
+				}
 			}
 		}
 		NUM_CHUNKS = numChunks;
-		
+			
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Exporting");
-		MCWorldExporter.getApp().getUI().getProgressBar().setNumChunks(numChunks);
+		MCWorldExporter.getApp().getUI().getProgressBar().setNumChunks(NUM_CHUNKS);
 		
-		individualBlockIds = new HashSet<IndividualBlockId>();
-		
-		List<File> chunkFiles = new ArrayList<File>();
-		
-		dos.writeInt(numChunks);
-		
-		int j = 0;
-		for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += chunkSize) {
-			int i = 0;
-			for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += chunkSize) {
-				if(MCWorldExporter.getApp().getExportBounds().isChunkEnabled(i, j)) {
-					String chunkName = "chunk_" + (i + 1) + "_" + (j + 1);
-					String chunkFilename = file.getName().replace(".miex", "_" + chunkName + ".miex");
-					File chunkFile = new File(file.getParentFile(), chunkFilename);
-					LargeDataOutputStream chunkDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(chunkFile)));
-					futures.add(threadPool.submit(new ExportChunkTask(new ChunkExporter(MCWorldExporter.getApp().getExportBounds(), 
-							MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, chunkSize, chunkName), chunkDos)));
-					
-					dos.writeUTF(chunkFilename);
-					chunkFiles.add(chunkFile);
+		dos.writeInt(NUM_CHUNKS);
+		for(ExportBounds exportBounds : MCWorldExporter.getApp().getExportBoundsList()) {
+			int chunkStartX = exportBounds.getMinX() >> 4;
+			int chunkStartZ = exportBounds.getMinZ() >> 4;
+			int chunkEndX = exportBounds.getMaxX() >> 4;
+			int chunkEndZ = exportBounds.getMaxZ() >> 4;
+			
+			int j = 0;
+			for(int chunkZ = chunkStartZ; chunkZ <= chunkEndZ; chunkZ += exportBounds.getChunkSize()) {
+				int i = 0;
+				for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += exportBounds.getChunkSize()) {
+					if(exportBounds.isChunkEnabled(i, j)) {
+						String chunkName = exportBounds.getSafeName() +  "_chunk_" + (i + 1) + "_" + (j + 1);
+						String chunkFilename = file.getName().replace(".miex", "_" + chunkName + ".miex");
+						File chunkFile = new File(file.getParentFile(), chunkFilename);
+						LargeDataOutputStream chunkDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(chunkFile)));
+						futures.add(threadPool.submit(new ExportChunkTask(new ChunkExporter(exportBounds, 
+								MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, exportBounds.getChunkSize(), chunkName), chunkDos)));
+						
+						dos.writeUTF(chunkFilename);
+						chunkFiles.add(chunkFile);
+					}
+					++i;
 				}
-				++i;
+				++j;
 			}
-			++j;
 		}
 		
 		for(Task future : futures) {
@@ -208,6 +211,8 @@ public class Exporter {
 			}
 		}
 		
+		int centerX = MCWorldExporter.getApp().getActiveExportBounds().getCenterX();
+		int centerZ = MCWorldExporter.getApp().getActiveExportBounds().getCenterZ();
 		int defaultBiomeId = MCWorldExporter.getApp().getWorld().getBiomeId(
 													centerX, 
 													MCWorldExporter.getApp().getWorld().getHeight(centerX, centerZ), 
@@ -370,7 +375,7 @@ public class Exporter {
 			}
 			message += ". Check the log for more information";
 		}
-		System.out.println("Exported:" + usdFile.getPath());
+		System.out.println("Exported: " + usdFile.getPath());
 		
 		// Make sure to unload the entities.
 		// The entity exporter modifies the entities during simulation.
@@ -394,10 +399,6 @@ public class Exporter {
 		public void run() {
 			try {
 				chunk.generateMeshes();
-				//NbtTag.freeMemoryFromPools();
-				//if(Config.runOptimiser)
-				//	chunk.optimiseMeshes();
-				//chunk.writeMeshes(dos);
 				chunk.optimiseAndWriteMeshes(dos);
 				dos.close();
 				synchronized(mutex) {

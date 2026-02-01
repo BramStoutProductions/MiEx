@@ -114,10 +114,10 @@ public class Player {
 	protected double z;
 	protected String dimension;
 	
-	public Player(String uuid, NbtTagCompound data, double x, double y, double z, 
+	public Player(String uuid, String name, NbtTagCompound data, double x, double y, double z, 
 						String dimension, boolean tryResolveName) {
 		this.uuid = uuid;
-		this.name = uuid;
+		this.name = name;
 		this.data = data;
 		this.x = x;
 		this.y = y;

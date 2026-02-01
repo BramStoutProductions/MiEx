@@ -164,8 +164,26 @@ public class VertexColorSet {
 	}
 	
 	public void expandComponentCount(int newComponentCount) {
-		throw new RuntimeException("expandComponentCount not yet supported");
-		// TODO: Implement
+		if(componentCount == newComponentCount)
+			return;
+		if(newComponentCount < 1 || newComponentCount > 4)
+			throw new RuntimeException("Invalid component count");
+		int oldComponentCount = componentCount;
+		componentCount = newComponentCount;
+		FloatArray oldValues = values;
+		values = new FloatArray(oldValues.size() / oldComponentCount * newComponentCount);
+		cache.clear();
+		int numItems = oldValues.size() / oldComponentCount;
+		for(int i = 0; i < numItems; ++i) {
+			_vertexColor[0] = 0f;
+			_vertexColor[1] = 0f;
+			_vertexColor[2] = 0f;
+			_vertexColor[3] = 0f;
+			for(int j = 0; j < oldComponentCount; ++j) {
+				_vertexColor[j] = oldValues.get(i * oldComponentCount + j);
+			}
+			addValue(_vertexColor);
+		}
 	}
 	
 	private float _vertexColor[] = new float[4];

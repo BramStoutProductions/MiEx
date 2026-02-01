@@ -33,7 +33,9 @@ package nl.bramstout.mcworldexporter.world.bedrock;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,8 +46,10 @@ import org.iq80.leveldb.Options;
 import org.iq80.leveldb.impl.Iq80DBFactory;
 
 import nl.bramstout.mcworldexporter.export.IndexCache;
+import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
@@ -58,8 +62,8 @@ public class WorldBedrock extends World{
 	private DB worldDB;
 	private Object dbMutex;
 	
-	public WorldBedrock(File worldDir) {
-		super(worldDir);
+	public WorldBedrock(File worldDir, String name, Launcher launcher) {
+		super(worldDir, name, launcher);
 		this.worldVersion = 0;
 		regionId = new AtomicInteger(0);
 		regionIdCache = new IndexCache();
@@ -306,6 +310,49 @@ public class WorldBedrock extends World{
 			}
 			worldDB = null;
 		}
+	}
+	
+	@Override
+	public List<String> getRequiredResourcePacks() {
+		return Arrays.asList("base_resource_pack");
+	}
+	
+	@Override
+	public List<ResourcePackSource> getDependentResourcePacks() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		File resourcepacksFolder = new File(getWorldDir(), "resource_packs");
+		if(resourcepacksFolder.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's Resource Packs");
+			for(File resourcepackFile : resourcepacksFolder.listFiles()) {
+				if(!resourcepackFile.isDirectory() || !new File(resourcepackFile, "manifest.json").exists())
+					continue;
+				
+				source.addSource(ResourcePackSource.getHash(resourcepackFile), resourcepackFile);
+			}
+			
+			if(!source.isEmpty())
+				sources.add(source);
+		}
+		
+		File behaviorpacksFolder = new File(getWorldDir(), "behavior_packs");
+		if(behaviorpacksFolder.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's Behavior Packs");
+			for(File behaviorpackFile : behaviorpacksFolder.listFiles()) {
+				if(!behaviorpackFile.isDirectory() || !new File(behaviorpackFile, "manifest.json").exists())
+					continue;
+				
+				source.addSource(ResourcePackSource.getHash(behaviorpackFile), behaviorpackFile);
+			}
+			
+			if(!source.isEmpty())
+				sources.add(source);
+		}
+		
+		if(launcher != null)
+			sources.addAll(launcher.getResourcePackSourcesForWorld(this));
+		
+		return sources;
 	}
 
 }

@@ -37,10 +37,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.model.BlockState;
-import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
-import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
-import nl.bramstout.mcworldexporter.world.Block;
 
 public abstract class Biome {
 
@@ -76,7 +72,7 @@ public abstract class Biome {
 		return biomeColours.entrySet();
 	}
 	
-	public TintLayers getBiomeColor(BlockState state, Block block) {
+	/*public TintLayers getBiomeColor(BlockState state, Block block) {
 		Tint tint = Tints.getTint(block.getName());
 		if(tint == null)
 			return null;
@@ -93,6 +89,6 @@ public abstract class Biome {
 		else if(state.isWaterColormap())
 			return getWaterColour();
 		return new Color();*/
-	}
+	//}
 	
 }

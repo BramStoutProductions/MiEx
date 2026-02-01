@@ -39,6 +39,9 @@ public abstract class BlockStateHandler {
 	
 	public abstract BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state);
 	
+	public abstract BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, 
+										BlockState state, BlockAnimationHandler animationHandler, float frame);
+	
 	public abstract String getDefaultTexture();
 	
 	public abstract boolean needsConnectionInfo();

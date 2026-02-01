@@ -306,31 +306,59 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValue(String value) throws IOException{
-		fw.write(" = " + value);
+		writeAttributeValue(value, false);
+	}
+	
+	public void writeAttributeValue(String value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " " : " = ") + value);
 	}
 	
 	public void writeAttributeValueString(String value) throws IOException{
-		fw.write(" = \"" + value.replace("\"", "\\\"").replace("\n", "\\n") + "\"");
+		writeAttributeValueString(value, false);
+	}
+	
+	public void writeAttributeValueString(String value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " \"" : " = \"") + value.replace("\"", "\\\"").replace("\n", "\\n") + "\"");
 	}
 	
 	public void writeAttributeValuePath(String value) throws IOException{
-		fw.write(" = @" + value.replace("\"", "\\\"").replace("\n", "\\n") + "@");
+		writeAttributeValuePath(value, false);
+	}
+	
+	public void writeAttributeValuePath(String value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " @" : " = @") + value.replace("\"", "\\\"").replace("\n", "\\n") + "@");
 	}
 	
 	public void writeAttributeValueInt(int value) throws IOException{
-		fw.write(" = " + Integer.toString(value));
+		writeAttributeValueInt(value, false);
+	}
+	
+	public void writeAttributeValueInt(int value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " " : " = ") + Integer.toString(value));
 	}
 	
 	public void writeAttributeValueFloat(float value) throws IOException{
-		fw.write(" = " + Float.toString(value));
+		writeAttributeValueFloat(value, false);
+	}
+	
+	public void writeAttributeValueFloat(float value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " " : " = ") + Float.toString(value));
 	}
 	
 	public void writeAttributeValueBoolean(boolean value) throws IOException{
-		fw.write(" = " + (value ? "true" : "false"));
+		writeAttributeValueBoolean(value, false);
+	}
+	
+	public void writeAttributeValueBoolean(boolean value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " " : " = ") + (value ? "true" : "false"));
 	}
 	
 	public void writeAttributeValuePoint3f(float x, float y, float z) throws IOException{
-		fw.write(" = (" + x + "," + y + "," + z + ")");
+		writeAttributeValuePoint3f(x, y, z, false);
+	}
+	
+	public void writeAttributeValuePoint3f(float x, float y, float z, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " (" : " = (") + x + "," + y + "," + z + ")");
 	}
 	
 	public void writeAttributeValueAnimation(AnimationChannel value, float timeScale) throws IOException{
@@ -379,7 +407,11 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValueIntArray(int[] value, int count) throws IOException{
-		fw.write(" = [");
+		writeAttributeValueIntArray(value, count, false);
+	}
+	
+	public void writeAttributeValueIntArray(int[] value, int count, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
 		int num = count - 1;
 		for(int i = 0; i <= num; ++i) {
 			fw.write(Integer.toString(value[i]));
@@ -394,11 +426,15 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValuePointNfArray(float[] value, int size, int componentCount) throws IOException{
+		writeAttributeValuePointNfArray(value, size, componentCount, false);
+	}
+	
+	public void writeAttributeValuePointNfArray(float[] value, int size, int componentCount, boolean noEqual) throws IOException{
 		if(componentCount <= 1) {
-			writeAttributeValueFloatArray(value, size);
+			writeAttributeValueFloatArray(value, size, noEqual);
 			return;
 		}
-		fw.write(" = [");
+		fw.write(noEqual ? " [" : " = [");
 		int num = size - componentCount;
 		for(int i = 0; i <= num; i += componentCount) {
 			fw.write("(");
@@ -420,7 +456,11 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValueFloatArray(float[] value, int count) throws IOException{
-		fw.write(" = [");
+		writeAttributeValueFloatArray(value, count, false);
+	}
+	
+	public void writeAttributeValueFloatArray(float[] value, int count, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
 		for(int i = 0; i < count - 1; ++i)
 			fw.write(value[i] + ",");
 		if(count > 0)
@@ -429,7 +469,11 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValueFloatCompound(float[] value) throws IOException{
-		fw.write(" = (");
+		writeAttributeValueFloatCompound(value, false);
+	}
+	
+	public void writeAttributeValueFloatCompound(float[] value, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " (" : " = (");
 		for(int i = 0; i < value.length - 1; ++i)
 			fw.write(value[i] + ",");
 		if(value.length > 0)
@@ -442,7 +486,11 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValuePoint3fArray(float[] value, int size) throws IOException{
-		fw.write(" = [");
+		writeAttributeValuePoint3fArray(value, size, false);
+	}
+	
+	public void writeAttributeValuePoint3fArray(float[] value, int size, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
 		int num = size - 3;
 		for(int i = 0; i <= num; i += 3) {
 			fw.write("(");
@@ -464,7 +512,11 @@ public class USDWriter {
 	}
 	
 	public void writeAttributeValuePoint2fArray(float[] value, int size) throws IOException{
-		fw.write(" = [");
+		writeAttributeValuePoint2fArray(value, size, false);
+	}
+	
+	public void writeAttributeValuePoint2fArray(float[] value, int size, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
 		for(int i = 0; i < size - 2; i += 2)
 			fw.write("(" + value[i] + "," + value[i+1] + "),");
 		if(size > 1)
@@ -474,6 +526,15 @@ public class USDWriter {
 	
 	public void writeAttributeValuePoint2fArray(float[] valueX, float[] valueY, int size) throws IOException{
 		fw.write(" = [");
+		for(int i = 0; i < size - 1; i++)
+			fw.write("(" + valueX[i] + "," + valueY[i] + "),");
+		if(size > 0)
+			fw.write("(" + valueX[size - 1] + "," + valueY[size - 1] + ")");
+		fw.write("]");
+	}
+	
+	public void writeAttributeValuePoint2fArray(float[] valueX, float[] valueY, int size, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
 		for(int i = 0; i < size - 1; i++)
 			fw.write("(" + valueX[i] + "," + valueY[i] + "),");
 		if(size > 0)
@@ -505,6 +566,41 @@ public class USDWriter {
 		}
 		indent--;
 		fw.write("}");
+	}
+	
+	public void writeAttributeValueTimeSamplesFloatCompound(float[] timeCodes, float[] values, int compoundLength) throws IOException{
+		fw.write(".timeSamples = {\n");
+		indent++;
+		for(int i = 0; i < Math.min(timeCodes.length, values.length/compoundLength); ++i) {
+			fw.write(getIndent() + timeCodes[i] + ": (");
+			for(int j = 0; j < compoundLength - 1; ++j) {
+				fw.write(values[i*compoundLength + j] + ",");
+			}
+			if(compoundLength > 0)
+				fw.write(values[i*compoundLength + compoundLength - 1] + "");
+			fw.write("),\n");
+		}
+		indent--;
+		fw.write("}");
+	}
+	
+	private boolean hasWrittenTimeSamples = false;
+	public void beginTimeSamples() throws IOException{
+		fw.write(".timeSamples = {\n");
+		indent++;
+		hasWrittenTimeSamples = false;
+	}
+	
+	public void endTimeSamples() throws IOException{
+		indent--;
+		fw.write("}");
+	}
+	
+	public void writeTimeSampleTime(float timeCode) throws IOException{
+		if(hasWrittenTimeSamples)
+			fw.write(",");
+		fw.write("\n" + getIndent() + timeCode + ": ");
+		hasWrittenTimeSamples = true;
 	}
 	
 }

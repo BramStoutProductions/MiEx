@@ -109,6 +109,8 @@ public class Environment {
 			new EnvironmentVariable("MIEX_TECHNIC_ROOT_DIR", VariableType.FOLDER, null,
 					"The path to the Technic launcher root directory. This allows MiEx to find Minecraft versions and saves from the " + 
 					"Technic launcher."),
+			new EnvironmentVariable("MIEX_HYTALE_ROOT_DIR", VariableType.FOLDER, null,
+					"The path to the Hytale launcher root directory. This allows MiEx to find versions and saves from the Hytale launcher."),
 			new EnvironmentVariable("MIEX_NUM_UI_THREADS", VariableType.INTEGER, "4",
 					"The number of threads that MiEx should leave, at the minimum, for the user interface, other programs, and your OS."),
 			new EnvironmentVariable("MIEX_PORTABLE_EXPORTS", VariableType.BOOLEAN, "0",

@@ -81,6 +81,12 @@ public class PbrGenerator {
 	
 	public void process() {
 		try {
+			System.out.println("Running PBR Generator.");
+			if(saveToResourcePack != null) {
+				System.out.println("Saving to resource pack: " + saveToResourcePack.getUUID());
+			}else {
+				System.out.println("Saving next to original textures.");
+			}
 			// Find all textures in the resource packs
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Finding textures");
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
@@ -141,6 +147,7 @@ public class PbrGenerator {
 		}
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+		System.out.println("PBR Generator finished running.");
 	}
 	
 	private static class Texture{

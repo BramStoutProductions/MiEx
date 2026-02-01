@@ -178,7 +178,7 @@ public class EntityExporter {
 					Mesh mesh = meshes.getOrDefault(texture, null);
 					if(mesh == null) {
 						mesh = new Mesh(boneGroup.getName() + "_" + Util.makeSafeName(texture), MeshPurpose.UNDEFINED,
-										texture, texture, false, true, 32, 16);
+										texture, texture, false, face.isDoubleSided(), 32, 16);
 						meshes.put(texture, mesh);
 					}
 					mesh.addFace(face, 0, 0, 0, atlas, null, 0, null);
@@ -288,20 +288,23 @@ public class EntityExporter {
 		
 		// Get all entities in the export bounds.
 		List<Entity> entities = new ArrayList<Entity>();
-		for(List<Entity> entities2 : world.getEntitiesInRegion(MCWorldExporter.getApp().getExportBounds())) {
-			for(Entity entity : entities2) {
-				if(entity.getX() < boundsMinX || entity.getX() > boundsMaxX ||
-						entity.getY() < boundsMinY || entity.getY() > boundsMaxY ||
-						entity.getZ() < boundsMinZ || entity.getZ() > boundsMaxZ)
-					continue;
-				if(!MCWorldExporter.getApp().getExportBounds().isBlockInEnabledChunk((int) entity.getX(), (int) entity.getZ()))
-					continue;
-				if(!enabledEntityExports.contains(entity.getId()))
-					continue;
-				if(entity.getUniqueId() == 0)
-					entity.setUniqueId(random.nextLong());
-				entity.setGlobalRandomSeed(globalSeed);
-				entities.add(entity);
+		for(ExportBounds exportBounds : MCWorldExporter.getApp().getExportBoundsList()) {
+			for(List<Entity> entities2 : world.getEntitiesInRegion(exportBounds)) {
+				for(Entity entity : entities2) {
+					if(entity.getX() < boundsMinX || entity.getX() > boundsMaxX ||
+							entity.getY() < boundsMinY || entity.getY() > boundsMaxY ||
+							entity.getZ() < boundsMinZ || entity.getZ() > boundsMaxZ)
+						continue;
+					if(!exportBounds.isBlockInEnabledChunk((int) entity.getX(), (int) entity.getZ()))
+						continue;
+					if(!enabledEntityExports.contains(entity.getId()))
+						continue;
+					if(entity.getUniqueId() == 0)
+						entity.setUniqueId(random.nextLong());
+					entity.setGlobalRandomSeed(globalSeed);
+					if(!entities.contains(entity))
+						entities.add(entity);
+				}
 			}
 		}
 		
@@ -323,7 +326,14 @@ public class EntityExporter {
 				int blockY = random.nextInt(boundsMinY, boundsMaxY + 1);
 				int blockZ = random.nextInt(boundsMinZ, boundsMaxZ + 1);
 				
-				if(!MCWorldExporter.getApp().getExportBounds().isBlockInEnabledChunk(blockX, blockZ))
+				boolean isInDisabledChunk = false;
+				for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList()) {
+					if(!bounds.isBlockInEnabledChunk(blockX, blockZ)) {
+						isInDisabledChunk = true;
+						break;
+					}
+				}
+				if(isInDisabledChunk)
 					continue;
 				int worldHeight = MCWorldExporter.getApp().getWorld().getHeight(blockX, blockZ);
 				if((blockY - 32) > worldHeight)

@@ -62,12 +62,9 @@ public class Tints {
 			this.biomeColor = biomeColor;
 		}
 		
-		public Color getColor(Biome biome) {
-			if(color != null)
-				return color;
-			if(biomeColor != null)
-				return biome.getColor(biomeColor);
-			return null;
+		public TintValue(TintValue other) {
+			this.color = other.color;
+			this.biomeColor = other.biomeColor;
 		}
 		
 		public Color getColor(BlendedBiome biome) {
@@ -99,6 +96,20 @@ public class Tints {
 		public TintLayers() {
 			layers = null;
 			defaultValue = null;
+		}
+		
+		public TintLayers(TintLayers other) {
+			layers = null;
+			defaultValue = null;
+			if(other.layers != null) {
+				layers = new TintValue[other.layers.length];
+				for(int i = 0; i < layers.length; ++i) {
+					if(other.layers[i] != null)
+						layers[i] = new TintValue(other.layers[i]);
+				}
+			}
+			if(other.defaultValue != null)
+				defaultValue = new TintValue(other.defaultValue);
 		}
 		
 		public TintValue getLayer(int layerId) {
@@ -143,6 +154,10 @@ public class Tints {
 			}
 			return defaultValue;
 		}
+		
+		public boolean isEmpty() {
+			return defaultValue == null;
+		}
 	}
 	
 	public static class Tint{
@@ -153,6 +168,8 @@ public class Tints {
 		public Tint(JsonObject data) {
 			baseTint = new TintLayers();
 			stateTints = null;
+			if(data == null)
+				return;
 			if(data.has("tint")) {
 				JsonElement tintData = data.get("tint");
 				if(tintData.isJsonObject()) {
@@ -205,6 +222,21 @@ public class Tints {
 						layers.setDefaultValue(getColorFromElement(entry.getValue()));
 					}
 					stateTints.put(checks, layers);
+				}
+			}
+		}
+		
+		public Tint(Tint other) {
+			baseTint = new TintLayers(other.baseTint);
+			stateTints = null;
+			
+			if(other.stateTints != null) {
+				stateTints = new HashMap<List<Map<String, String>>, TintLayers>();
+				for(Entry<List<Map<String, String>>, TintLayers> state : stateTints.entrySet()) {
+					if(state.getValue() == null)
+						stateTints.put(state.getKey(), null);
+					else
+						stateTints.put(state.getKey(), new TintLayers(state.getValue()));
 				}
 			}
 		}
@@ -276,6 +308,16 @@ public class Tints {
 			return true;
 		}
 		
+		public void setBaseTint(TintLayers tint) {
+			this.baseTint = tint;
+		}
+		
+		public void setStateTint(List<Map<String, String>> key, TintLayers tint) {
+			if(this.stateTints == null)
+				this.stateTints = new HashMap<List<Map<String, String>>, TintLayers>();
+			this.stateTints.put(key, tint);
+		}
+		
 	}
 	
 	private static Map<String, Tint> tintRegistry = new HashMap<String, Tint>();
@@ -316,6 +358,29 @@ public class Tints {
 	
 	public static Tint getTint(String name) {
 		return tintRegistry.getOrDefault(name, null);
+	}
+	
+	public static void setTint(String name, Tint tint, boolean mergeBehindIfExists) {
+		if(tintRegistry.containsKey(name) && mergeBehindIfExists) {
+			// Tint already exists, so let's merge it.
+			Tint tint2 = tintRegistry.get(name);
+			
+			if(tint2.baseTint.isEmpty() && tint.baseTint != null)
+				tint2.baseTint = tint.baseTint;
+			
+			if(tint.stateTints != null) {
+				for(Entry<List<Map<String, String>>, TintLayers> state : tint.stateTints.entrySet()) {
+					if(tint2.stateTints == null) {
+						tint2.stateTints = new HashMap<List<Map<String, String>>, TintLayers>();
+					}
+					if(!tint2.stateTints.containsKey(state.getKey())) {
+						tint2.stateTints.put(state.getKey(), state.getValue());
+					}
+				}
+			}
+		}else {
+			tintRegistry.put(name, tint);
+		}
 	}
 	
 	public static BufferedImage getColorMap(String name) {

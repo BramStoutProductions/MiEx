@@ -44,11 +44,14 @@ import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.IndexCache;
+import nl.bramstout.mcworldexporter.launcher.Launcher;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 
 public abstract class World {
 
 	protected File worldDir;
+	protected String name;
 	protected List<String> dimensions;
 	protected String currentDimension;
 	protected Region[] regions;
@@ -61,10 +64,13 @@ public abstract class World {
 	protected List<Player> players;
 	protected BlockConnectionsTranslation blockConnectionsTranslation;
 	protected int worldVersion;
+	protected Launcher launcher;
 	
 	protected boolean paused;
 
-	public World(File worldDir) {
+	public World(File worldDir, String name, Launcher launcher) {
+		this.worldDir = worldDir;
+		this.name = name;
 		dimensions = new ArrayList<String>();
 		players = new ArrayList<Player>();
 		currentDimension = "";
@@ -73,6 +79,7 @@ public abstract class World {
 		blockConnectionsTranslation = null;
 		worldVersion = 0;
 		paused = false;
+		this.launcher = launcher;
 	}
 
 	protected abstract void loadWorldSettings();
@@ -86,6 +93,18 @@ public abstract class World {
 	protected abstract void _pause();
 	
 	protected abstract void _unpause();
+	
+	/**
+	 * Returns a list of resource pack UUIDs that are required for
+	 * this world to be able to load in.
+	 */
+	public abstract List<String> getRequiredResourcePacks();
+	
+	/**
+	 * Returns a list of resource pack sources that this world depends on,
+	 * but is not necessarily required to be able to load in.
+	 */
+	public abstract List<ResourcePackSource> getDependentResourcePacks();
 	
 	public void reloadFromResourcepack() {
 	}
@@ -263,6 +282,7 @@ public abstract class World {
 			return;
 		if (this.currentDimension.equals(dimension))
 			return;
+		System.out.println("Loading dimension " + dimension);
 		MCWorldExporter.getApp().getUI().getEntityDialog().noDefaultSelection = false;
 		this.currentDimension = dimension;
 		this.paused = false;

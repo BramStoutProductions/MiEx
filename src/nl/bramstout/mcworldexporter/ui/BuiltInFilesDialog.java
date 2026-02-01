@@ -35,6 +35,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.LayoutManager;
@@ -81,7 +82,7 @@ public class BuiltInFilesDialog extends JDialog implements ComponentListener{
 	private AtomicBoolean doneFlag;
 	
 	public BuiltInFilesDialog() {
-		super(MCWorldExporter.getApp().getUI());
+		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		doneFlag = new AtomicBoolean(false);
 		

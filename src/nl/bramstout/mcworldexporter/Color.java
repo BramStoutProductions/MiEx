@@ -107,6 +107,33 @@ public class Color {
 		this.a = a;
 	}
 	
+	public void setFromInt(int RGB) {
+		setFromInt(RGB, false, true);
+	}
+	
+	public void setFromInt(int RGB, boolean hasAlpha, boolean toRenderGamut) {
+		int aI = (RGB >> 24) & 0xFF;
+		int rI = (RGB >> 16) & 0xFF;
+		int gI = (RGB >> 8) & 0xFF;
+		int bI = RGB & 0xFF;
+		float rF = ((float) rI) / 255.0f;
+		float gF = ((float) gI) / 255.0f;
+		float bF = ((float) bI) / 255.0f;
+		rF = (float) Math.pow(rF, 2.2f);
+		gF = (float) Math.pow(gF, 2.2f);
+		bF = (float) Math.pow(bF, 2.2f);
+		if(toRenderGamut) {
+			r = rF * GAMUT.r0 + gF * GAMUT.r1 + bF * GAMUT.r2;
+	        g = rF * GAMUT.g0 + gF * GAMUT.g1 + bF * GAMUT.g2;
+	        b = rF * GAMUT.b0 + gF * GAMUT.b1 + bF * GAMUT.b2;
+		}else {
+			r = rF;
+			g = gF;
+			b = bF;
+		}
+        a = hasAlpha ? (((float) aI) / 255.0f) : 1.0f;
+	}
+	
 	public void set(float r, float g, float b) {
 		this.r = r;
 		this.g = g;

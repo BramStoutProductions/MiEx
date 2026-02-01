@@ -46,7 +46,7 @@ import com.google.gson.stream.JsonReader;
 
 public class ReleaseChecker {
 	
-	public static final String CURRENT_VERSION = "v2.0.0.experimental-12";
+	public static final String CURRENT_VERSION = "v2.0.0.experimental-13";
 	public static String LATEST_VERSION = CURRENT_VERSION;
 	public static String LATEST_VERSION_URL = "https://github.com/BramStoutProductions/MiEx/releases";
 	
@@ -85,6 +85,10 @@ public class ReleaseChecker {
 			if(connection != null)
 				connection.disconnect();
 		}catch(Exception ex) {}
+		
+		if(hasNewRelease()) {
+			System.out.println("Found new release for MiEx, version: " + LATEST_VERSION);
+		}
 	}
 	
 	public static boolean hasNewRelease() {

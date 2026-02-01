@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.ui;
 
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -82,7 +83,7 @@ public class EntityDialog extends JDialog{
 	public boolean noDefaultSelection = false;
 	
 	public EntityDialog(Frame owner) {
-		super(owner);
+		super(owner, Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
 		root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
 		root.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -220,7 +221,7 @@ public class EntityDialog extends JDialog{
 				
 				if(MCWorldExporter.getApp().getWorld() != null) {
 					List<List<Entity>> entities = MCWorldExporter.getApp().getWorld().getEntitiesInRegion(
-							MCWorldExporter.getApp().getExportBounds());
+							MCWorldExporter.getApp().getActiveExportBounds());
 					for(List<Entity> entities2 : entities) {
 						for(Entity entity : entities2) {
 							entityNamesSet.add(entity.getId());
@@ -331,8 +332,6 @@ public class EntityDialog extends JDialog{
 	
 	@Override
 	public void setVisible(boolean b) {
-		super.setVisible(b);
-		
 		if(b) {
 			SwingUtilities.invokeLater(new Runnable() {
 	
@@ -343,6 +342,7 @@ public class EntityDialog extends JDialog{
 				
 			});
 		}
+		super.setVisible(b);
 	}
 	
 	public ToggleList getSpawnRules() {

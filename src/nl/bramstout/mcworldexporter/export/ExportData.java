@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.export;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +41,8 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.ExportBounds;
+import nl.bramstout.mcworldexporter.ExportBounds.ExcludeRegion;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Pair;
 import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
@@ -51,26 +54,12 @@ public class ExportData {
 	public String world;
 	public String dimension;
 	public int chunkSize;
-	public int exportMinX;
-	public int exportMinY;
-	public int exportMinZ;
-	public int exportMaxX;
-	public int exportMaxY;
-	public int exportMaxZ;
-	public int exportOffsetY;
-	public boolean hasLOD;
-	public int lodCenterX;
-	public int lodCenterZ;
-	public int lodWidth;
-	public int lodDepth;
-	public int lodYDetail;
-	public List<String> fgChunks;
-	public List<Pair<Integer, Integer>> disabledChunks;
+	public List<ExportBounds> exportRegions;
 	public List<ResourcePack> resourcePacks;
 	public boolean runOptimiser;
 	public boolean removeCaves;
 	public boolean fillInCaves;
-	public boolean onlyIndividualBlocks;
+	public boolean exportBlockAnimations;
 	
 	public int entityStartFrame;
 	public int entityEndFrame;
@@ -85,8 +74,7 @@ public class ExportData {
 	public ExportData() {
 		world = "";
 		dimension = "";
-		fgChunks = new ArrayList<String>();
-		disabledChunks = new ArrayList<Pair<Integer, Integer>>();
+		exportRegions = new ArrayList<ExportBounds>();
 		resourcePacks = new ArrayList<ResourcePack>();
 		entitySpawnRules = new ArrayList<String>();
 		entityExport = new ArrayList<String>();
@@ -99,28 +87,14 @@ public class ExportData {
 		data.world = MCWorldExporter.getApp().getWorld().getWorldDir().getPath();
 		data.dimension = MCWorldExporter.getApp().getWorld().getCurrentDimensions();
 		data.chunkSize = Config.chunkSize;
-		data.exportMinX = MCWorldExporter.getApp().getExportBounds().getMinX();
-		data.exportMinY = MCWorldExporter.getApp().getExportBounds().getMinY();
-		data.exportMinZ = MCWorldExporter.getApp().getExportBounds().getMinZ();
-		data.exportMaxX = MCWorldExporter.getApp().getExportBounds().getMaxX();
-		data.exportMaxY = MCWorldExporter.getApp().getExportBounds().getMaxY();
-		data.exportMaxZ = MCWorldExporter.getApp().getExportBounds().getMaxZ();
-		data.exportOffsetY = MCWorldExporter.getApp().getExportBounds().getOffsetY();
-		data.hasLOD = MCWorldExporter.getApp().getExportBounds().hasLod();
-		data.lodCenterX = MCWorldExporter.getApp().getExportBounds().getLodCenterX();
-		data.lodCenterZ = MCWorldExporter.getApp().getExportBounds().getLodCenterZ();
-		data.lodWidth = MCWorldExporter.getApp().getExportBounds().getLodWidth();
-		data.lodDepth = MCWorldExporter.getApp().getExportBounds().getLodDepth();
-		data.lodYDetail = MCWorldExporter.getApp().getExportBounds().getLodYDetail();
-		data.fgChunks = new ArrayList<String>(MCWorldExporter.getApp().getFGChunks());
-		data.disabledChunks.clear();
-		for(Pair<Integer, Integer> chunk : MCWorldExporter.getApp().getExportBounds().getDisabledChunks())
-			data.disabledChunks.add(new Pair<Integer, Integer>(chunk.getKey(), chunk.getValue()));
+		data.exportRegions = new ArrayList<ExportBounds>();
+		for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList())
+			data.exportRegions.add(bounds.copy());
 		data.resourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 		data.runOptimiser = Config.runOptimiser;
 		data.removeCaves = Config.removeCaves;
 		data.fillInCaves = Config.fillInCaves;
-		data.onlyIndividualBlocks = Config.onlyIndividualBlocks;
+		data.exportBlockAnimations = Config.exportBlockAnimations;
 		
 		data.entityStartFrame = MCWorldExporter.getApp().getUI().getEntityDialog().getStartFrame();
 		data.entityEndFrame = MCWorldExporter.getApp().getUI().getEntityDialog().getEndFrame();
@@ -145,29 +119,47 @@ public class ExportData {
 		data.world = dis.readUTF();
 		data.dimension = dis.readUTF();
 		data.chunkSize = dis.readInt();
-		data.exportMinX = dis.readInt();
-		data.exportMinY = dis.readInt();
-		data.exportMinZ = dis.readInt();
-		data.exportMaxX = dis.readInt();
-		data.exportMaxY = dis.readInt();
-		data.exportMaxZ = dis.readInt();
-		data.exportOffsetY = dis.readInt();
-		data.hasLOD = dis.readBoolean();
-		data.lodCenterX = dis.readInt();
-		data.lodCenterZ = dis.readInt();
-		data.lodWidth = dis.readInt();
-		data.lodDepth = dis.readInt();
-		data.lodYDetail = dis.readInt();
-		int numFGChunks = dis.readInt();
-		data.fgChunks = new ArrayList<String>();
-		for(int i = 0; i < numFGChunks; ++i)
-			data.fgChunks.add(dis.readUTF());
-		int numDisabledChunks = dis.readInt();
-		data.disabledChunks = new ArrayList<Pair<Integer, Integer>>();
-		for(int i = 0; i < numDisabledChunks; ++i) {
-			int chunkX = dis.readInt();
-			int chunkZ = dis.readInt();
-			data.disabledChunks.add(new Pair<Integer, Integer>(chunkX, chunkZ));
+		data.exportRegions = new ArrayList<ExportBounds>();
+		if(dataVersion >= 2) {
+			int numExportRegions = dis.readInt();
+			for(int i = 0; i < numExportRegions; ++i) {
+				ExportBounds bounds = new ExportBounds("");
+				bounds.read(dis);
+				data.exportRegions.add(bounds);
+			}
+		}else {
+			int exportMinX = dis.readInt();
+			int exportMinY = dis.readInt();
+			int exportMinZ = dis.readInt();
+			int exportMaxX = dis.readInt();
+			int exportMaxY = dis.readInt();
+			int exportMaxZ = dis.readInt();
+			int exportOffsetY = dis.readInt();
+			boolean hasLOD = dis.readBoolean();
+			int lodCenterX = dis.readInt();
+			int lodCenterZ = dis.readInt();
+			int lodWidth = dis.readInt();
+			int lodDepth = dis.readInt();
+			int lodYDetail = dis.readInt();
+			int numFGChunks = dis.readInt();
+			ArrayList<String> fgChunks = new ArrayList<String>();
+			for(int i = 0; i < numFGChunks; ++i)
+				fgChunks.add(dis.readUTF());
+			int numDisabledChunks = dis.readInt();
+			ArrayList<Pair<Integer, Integer>> disabledChunks = new ArrayList<Pair<Integer, Integer>>();
+			for(int i = 0; i < numDisabledChunks; ++i) {
+				int chunkX = dis.readInt();
+				int chunkZ = dis.readInt();
+				disabledChunks.add(new Pair<Integer, Integer>(chunkX, chunkZ));
+			}
+			
+			data.exportRegions.add(new ExportBounds("Region 1", 
+					exportMinX, exportMinY, exportMinZ, 
+					exportMaxX, exportMaxY, exportMaxZ, 
+					(exportMinX + exportMaxX)/2, exportOffsetY, (exportMinZ + exportMaxZ)/2, 
+					lodCenterX, lodCenterZ, 
+					lodWidth, lodDepth, lodYDetail, 0, hasLOD, 
+					disabledChunks, fgChunks, data.chunkSize, new ArrayList<ExcludeRegion>(), false, false));
 		}
 		int numResourcePacks = dis.readInt();
 		data.resourcePacks = new ArrayList<ResourcePack>();
@@ -180,7 +172,7 @@ public class ExportData {
 		data.runOptimiser = dis.readBoolean();
 		data.removeCaves = dis.readBoolean();
 		data.fillInCaves = dis.readBoolean();
-		data.onlyIndividualBlocks = dis.readBoolean();
+		data.exportBlockAnimations = dis.readBoolean();
 		
 		data.entityStartFrame = dis.readInt();
 		data.entityEndFrame = dis.readInt();
@@ -202,30 +194,13 @@ public class ExportData {
 	}
 	
 	public void write(LargeDataOutputStream dos) throws IOException{
-		dos.writeInt(1); // Data version, in case additional data gets added later on.
+		dos.writeInt(2); // Data version, in case additional data gets added later on.
 		dos.writeUTF(world);
 		dos.writeUTF(dimension);
 		dos.writeInt(chunkSize);
-		dos.writeInt(exportMinX);
-		dos.writeInt(exportMinY);
-		dos.writeInt(exportMinZ);
-		dos.writeInt(exportMaxX);
-		dos.writeInt(exportMaxY);
-		dos.writeInt(exportMaxZ);
-		dos.writeInt(exportOffsetY);
-		dos.writeBoolean(hasLOD);
-		dos.writeInt(lodCenterX);
-		dos.writeInt(lodCenterZ);
-		dos.writeInt(lodWidth);
-		dos.writeInt(lodDepth);
-		dos.writeInt(lodYDetail);
-		dos.writeInt(fgChunks.size());
-		for(String val : fgChunks)
-			dos.writeUTF(val);
-		dos.writeInt(disabledChunks.size());
-		for(Pair<Integer, Integer> chunk : disabledChunks) {
-			dos.writeInt(chunk.getKey().intValue());
-			dos.writeInt(chunk.getValue().intValue());
+		dos.writeInt(exportRegions.size());
+		for(int i = 0; i < exportRegions.size(); ++i) {
+			exportRegions.get(i).write(dos);
 		}
 		dos.writeInt(resourcePacks.size());
 		for(ResourcePack val : resourcePacks)
@@ -233,7 +208,7 @@ public class ExportData {
 		dos.writeBoolean(runOptimiser);
 		dos.writeBoolean(removeCaves);
 		dos.writeBoolean(fillInCaves);
-		dos.writeBoolean(onlyIndividualBlocks);
+		dos.writeBoolean(exportBlockAnimations);
 		
 		dos.writeInt(entityStartFrame);
 		dos.writeInt(entityEndFrame);
@@ -264,7 +239,7 @@ public class ExportData {
 			});
 			return;
 		}
-		//ResourcePack.setActiveResourcePacks(resourcePacks);
+		MCWorldExporter.getApp().setWorld(null, null, null);
 		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
 		List<String> resourcePackUUIDS = new ArrayList<String>();
 		for(ResourcePack pack : resourcePacks)
@@ -274,7 +249,7 @@ public class ExportData {
 		BackgroundThread.waitUntilDoneWithBackgroundTasks();
 		
 		if(!onlySettings) {
-			MCWorldExporter.getApp().setWorld(new File(world));
+			MCWorldExporter.getApp().setWorld(new File(world), new File(world).getName(), null);
 			MCWorldExporter.getApp().getWorld().loadDimension(dimension);
 		}
 		
@@ -282,24 +257,13 @@ public class ExportData {
 		Config.runOptimiser = runOptimiser;
 		Config.removeCaves = removeCaves;
 		Config.fillInCaves = fillInCaves;
-		Config.onlyIndividualBlocks = onlyIndividualBlocks;
+		Config.exportBlockAnimations = exportBlockAnimations;
 		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().setExportBounds(exportRegions);
 		
-		MCWorldExporter.getApp().getExportBounds().set(exportMinX, exportMinY, exportMinZ, exportMaxX, exportMaxY, exportMaxZ);
-		MCWorldExporter.getApp().getExportBounds().setOffsetY(exportOffsetY);
-		MCWorldExporter.getApp().getExportBounds().disableLod();
-		if(hasLOD) {
-			MCWorldExporter.getApp().getExportBounds().enableLod();
-			MCWorldExporter.getApp().getExportBounds().setLodCenterX(lodCenterX);
-			MCWorldExporter.getApp().getExportBounds().setLodCenterZ(lodCenterZ);
-			MCWorldExporter.getApp().getExportBounds().setLodWidth(lodWidth);
-			MCWorldExporter.getApp().getExportBounds().setLodDepth(lodDepth);
-			MCWorldExporter.getApp().getExportBounds().setLodYDetail(lodYDetail);
-		}
-		MCWorldExporter.getApp().setFGChunks(fgChunks);
-		MCWorldExporter.getApp().getExportBounds().setDisabledChunks(disabledChunks);
-		
-		MCWorldExporter.getApp().getUI().getViewer().teleport((exportMinX + exportMaxX)/2, (exportMinZ + exportMaxZ) / 2);
+		MCWorldExporter.getApp().getUI().getViewer().teleport(
+				MCWorldExporter.getApp().getActiveExportBounds().getCenterX(), 
+				MCWorldExporter.getApp().getActiveExportBounds().getCenterZ());
 		
 		BackgroundThread.waitUntilDoneWithBackgroundTasks();
 		
@@ -314,6 +278,30 @@ public class ExportData {
 		MCWorldExporter.getApp().getUI().getEntityDialog().getSpawnRules().setSelection(entitySpawnRules);
 		MCWorldExporter.getApp().getUI().getEntityDialog().getExportEntities().setSelection(entityExport);
 		MCWorldExporter.getApp().getUI().getEntityDialog().getSimulateEntities().setSelection(entitySimulate);
+	}
+	
+	public void print() {
+		System.out.println("Exporting out using settings:");
+		for(Field field : this.getClass().getFields()) {
+			if(List.class.isAssignableFrom(field.getType())) {
+				try {
+					System.out.println("  " + field.getName() + ":");
+					List<?> data = (List<?>) field.get(this);
+					for(Object obj : data) {
+						System.out.println("    " + obj.toString());
+					}
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			}else{
+				try {
+					System.out.println("  " + field.getName() + ": " + field.get(this).toString());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		System.out.println();
 	}
 	
 }

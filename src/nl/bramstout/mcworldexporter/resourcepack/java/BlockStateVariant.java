@@ -72,16 +72,19 @@ public class BlockStateVariant extends BlockStatePart{
 				int modelId = ModelRegistry.getIdForName(el.getAsJsonObject().get("model").getAsString(), doubleSided);
 				int rotX = 0;
 				int rotY = 0;
+				int rotZ = 0;
 				boolean uvLock = false;
 				if(el.getAsJsonObject().has("x"))
 					rotX = el.getAsJsonObject().get("x").getAsInt();
 				if(el.getAsJsonObject().has("y"))
 					rotY = el.getAsJsonObject().get("y").getAsInt();
+				if(el.getAsJsonObject().has("z"))
+					rotZ = el.getAsJsonObject().get("z").getAsInt();
 				if(el.getAsJsonObject().has("uvlock"))
 					uvLock = el.getAsJsonObject().get("uvlock").getAsBoolean();
 				Model model = new Model(ModelRegistry.getModel(modelId));
-				if(rotX != 0 || rotY != 0)
-					model.rotate(rotX, rotY, uvLock);
+				if(rotX != 0 || rotY != 0 || rotZ != 0)
+					model.rotate(rotX, rotY, rotZ, uvLock);
 				if(el.getAsJsonObject().has("weight"))
 					model.setWeight(el.getAsJsonObject().get("weight").getAsInt());
 				models.add(model);
@@ -90,16 +93,19 @@ public class BlockStateVariant extends BlockStatePart{
 			int modelId = ModelRegistry.getIdForName(data.getAsJsonObject().get("model").getAsString(), doubleSided);
 			int rotX = 0;
 			int rotY = 0;
+			int rotZ = 0;
 			boolean uvLock = false;
 			if(data.getAsJsonObject().has("x"))
 				rotX = data.getAsJsonObject().get("x").getAsInt();
 			if(data.getAsJsonObject().has("y"))
 				rotY = data.getAsJsonObject().get("y").getAsInt();
+			if(data.getAsJsonObject().has("z"))
+				rotZ = data.getAsJsonObject().get("z").getAsInt();
 			if(data.getAsJsonObject().has("uvlock"))
 				uvLock = data.getAsJsonObject().get("uvlock").getAsBoolean();
 			Model model = new Model(ModelRegistry.getModel(modelId));
-			if(rotX != 0 || rotY != 0)
-				model.rotate(rotX, rotY, uvLock);
+			if(rotX != 0 || rotY != 0 || rotZ != 0)
+				model.rotate(rotX, rotY, rotZ, uvLock);
 			models.add(model);
 		}
 	}

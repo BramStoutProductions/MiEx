@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class LauncherMultiMC extends Launcher{
 	
@@ -86,6 +88,54 @@ public class LauncherMultiMC extends Launcher{
 			}
 		}
 		return saves;
+	}
+	
+	@Override
+	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		File instanceFolder = getInstanceFolderForWorld(world);
+		if(instanceFolder != null) {
+			File modsFolder = new File(instanceFolder, "minecraft/mods");
+			if(!modsFolder.exists())
+				modsFolder = new File(instanceFolder, ".minecraft/mods");
+			if(modsFolder.exists()) {
+				ResourcePackSource source = new ResourcePackSource("MultiMC " + instanceFolder.getName() + " Mods");
+				findSources(modsFolder, source);
+				sources.add(source);
+			}
+		}
+		
+		return sources;
+	}
+	
+	private File getInstanceFolderForWorld(World world) {
+		File instacesFolder = new File(rootFile, "instances");
+		if(instacesFolder.exists() && instacesFolder.isDirectory()) {
+			for(File f : instacesFolder.listFiles()) {
+				if(world.getWorldDir().getAbsolutePath().startsWith(f.getAbsolutePath())) {
+					return f;
+				}
+			}
+		}
+		return null;
+	}
+	
+	private void findSources(File file, ResourcePackSource source) {
+		if(file.isDirectory()) {
+			for(File f : file.listFiles()) {
+				findSources(f, source);
+			}
+		}else if(file.isFile()) {
+			if(file.getName().endsWith(".jar")) {
+				source.addSource(ResourcePackSource.getHash(file), file);
+			}
+		}
+	}
+	
+	@Override
+	public boolean ownsWorld(File worldFolder) {
+		return worldFolder.getAbsolutePath().startsWith(rootFile.getAbsolutePath());
 	}
 
 }

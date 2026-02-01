@@ -35,6 +35,7 @@ import java.util.List;
 
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 
 public class BakedBlockState {
@@ -47,6 +48,7 @@ public class BakedBlockState {
 	private boolean detailedOcclusion;
 	private boolean individualBlocks;
 	private boolean liquid;
+	private String liquidName;
 	private boolean caveBlock;
 	private boolean randomOffset;
 	private boolean randomYOffset;
@@ -55,16 +57,19 @@ public class BakedBlockState {
 	private boolean randomAnimationXZOffset;
 	private boolean randomAnimationYOffset;
 	private boolean lodNoUVScale;
+	private boolean lodNoScale;
 	private int lodPriority;
 	private TintLayers tint;
 	private boolean needsConnectionInfo;
+	private BlockAnimationHandler animationHandler;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
 							boolean transparentOcclusion, boolean leavesOcclusion, boolean detailedOcclusion,
-							boolean individualBlocks, boolean liquid, boolean caveBlock,
+							boolean individualBlocks, boolean liquid, String liquidName, boolean caveBlock,
 							boolean randomOffset, boolean randomYOffset,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, int lodPriority, TintLayers tint, boolean needsConnectionInfo) {
+							boolean lodNoUVScale, boolean lodNoScale, int lodPriority, TintLayers tint, 
+							boolean needsConnectionInfo, BlockAnimationHandler animationHandler) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -82,6 +87,7 @@ public class BakedBlockState {
 		this.detailedOcclusion = detailedOcclusion;
 		this.individualBlocks = individualBlocks;
 		this.liquid = liquid;
+		this.liquidName = liquidName;
 		this.caveBlock = caveBlock;
 		this.randomOffset = randomOffset;
 		this.randomYOffset = randomYOffset;
@@ -90,9 +96,11 @@ public class BakedBlockState {
 		this.randomAnimationXZOffset = randomAnimationXZOffset;
 		this.randomAnimationYOffset = randomAnimationYOffset;
 		this.lodNoUVScale = lodNoUVScale;
+		this.lodNoScale = lodNoScale;
 		this.lodPriority = lodPriority;
 		this.tint = tint;
 		this.needsConnectionInfo = needsConnectionInfo;
+		this.animationHandler = animationHandler;
 	}
 	
 	public long getOccludes() {
@@ -108,12 +116,13 @@ public class BakedBlockState {
 		List<Model> modelList;
 		Model m;
 		for(int i = 0; i < models.size(); ++i) {
+			random = -1.0f;
 			modelList = models.get(i);
 			if(modelList.size() == 1) {
 				res.add(modelList.get(0));
 			} else if(modelList.size() > 1) {
 				if(random == -1.0f)
-					random = Noise.get(x, y, z);
+					random = Noise.get(x, y+i, z+i);
 				float totalWeight = 0;
 				for(int j = 0; j < modelList.size(); ++j)
 					totalWeight += modelList.get(j).getWeight();
@@ -121,7 +130,7 @@ public class BakedBlockState {
 				for(int j = 0; j < modelList.size(); ++j) {
 					m = modelList.get(j);
 					index -= m.getWeight();
-					if(index < 0) {
+					if(index <= 0f) {
 						res.add(m);
 						break;
 					}
@@ -185,8 +194,14 @@ public class BakedBlockState {
 	
 	public static BakedBlockStateLiquid BAKED_WATER_STATE = new BakedBlockStateLiquid("minecraft:water");
 	public BakedBlockStateLiquid getLiquidState() {
-		if(liquid)
+		if(liquid) {
+			if(liquidName != null) {
+				int stateId = BlockStateRegistry.getIdForName(liquidName, 0);
+				BlockState state = BlockStateRegistry.getState(stateId);
+				return (BakedBlockStateLiquid) state.getBakedBlockState(null, 0, 0, 0, false);
+			}
 			return BAKED_WATER_STATE;
+		}
 		return null;
 	}
 	
@@ -206,6 +221,10 @@ public class BakedBlockState {
 		return lodNoUVScale;
 	}
 	
+	public boolean isLodNoScale() {
+		return lodNoScale;
+	}
+	
 	public int getLodPriority() {
 		return lodPriority;
 	}
@@ -220,6 +239,10 @@ public class BakedBlockState {
 	
 	public boolean isSolidBlock() {
 		return (this.occludes & 0xFFFFFFL) == 0xFFFFFFL && !this.transparentOcclusion && !this.leavesOcclusion;
+	}
+	
+	public BlockAnimationHandler getAnimationHandler() {
+		return animationHandler;
 	}
 
 }

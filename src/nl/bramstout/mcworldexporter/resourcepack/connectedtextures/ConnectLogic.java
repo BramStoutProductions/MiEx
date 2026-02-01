@@ -36,10 +36,13 @@ import java.util.List;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
+import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTextures.MatchBlock;
+import nl.bramstout.mcworldexporter.resourcepack.hytale.BlockStateHandlerHytale;
+import nl.bramstout.mcworldexporter.resourcepack.hytale.BlockStateVariant;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
@@ -117,11 +120,68 @@ public abstract class ConnectLogic {
 	public static class ConnectLogicBlockNames extends ConnectLogic{
 		
 		public List<MatchBlock> blocks = new ArrayList<MatchBlock>();
+		public boolean ignoreSameBlock = false;
+		public boolean hytaleSpecificLogic = false;
 		
 		@Override
 		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
 			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
 			Block otherBlock = BlockRegistry.getBlock(otherId);
+			
+			if(ignoreSameBlock) {
+				int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+				Block thisBlock = BlockRegistry.getBlock(thisId);
+				if(thisBlock.getName().equals(otherBlock.getName()))
+					return false;
+			}
+			if(hytaleSpecificLogic) {
+				int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+				Block thisBlock = BlockRegistry.getBlock(thisId);
+				
+				int thisBlockStateId = BlockStateRegistry.getIdForName(thisBlock.getName(), thisBlock.getDataVersion());
+				int otherBlockStateId = BlockStateRegistry.getIdForName(otherBlock.getName(), otherBlock.getDataVersion());
+				BlockState thisBlockState = BlockStateRegistry.getState(thisBlockStateId);
+				BlockState otherBlockState = BlockStateRegistry.getState(otherBlockStateId);
+				
+				if(thisBlockState.getHandler() instanceof BlockStateHandlerHytale && 
+						otherBlockState.getHandler() instanceof BlockStateHandlerHytale) {
+					// It can be that both blocks have transition textures set up for each other.
+					// If that is the case, then we should only allow one of the two.
+					// Each block contains a list of block groups to provide transition textures for.
+					// If the group of thisBlock is higher up or equal on the list of otherBlock,
+					// then we allow the connection. Otherwise, we don't.
+					BlockStateHandlerHytale thisBlockState2 = (BlockStateHandlerHytale) thisBlockState.getHandler();
+					BlockStateHandlerHytale otherBlockState2 = (BlockStateHandlerHytale) otherBlockState.getHandler();
+					BlockStateVariant thisBlockVariant = thisBlockState2.getVariants().getOrDefault("", null);
+					BlockStateVariant otherBlockVariant = otherBlockState2.getVariants().getOrDefault("", null);
+					
+					if(thisBlockVariant.getTransitionTexture() != null && otherBlockVariant.getTransitionTexture() != null && 
+							thisBlockVariant.getTransitionToGroups() != null && otherBlockVariant.getTransitionToGroups() != null) {
+						// Both of them have transition textures.
+						int thisIndex = -1;
+						for(int i = 0; i < thisBlockVariant.getTransitionToGroups().length; ++i) {
+							if(thisBlockVariant.getTransitionToGroups()[i].equals(otherBlockState2.getGroup())) {
+								thisIndex = i;
+								break;
+							}
+						}
+						int otherIndex = -1;
+						for(int i = 0; i < otherBlockVariant.getTransitionToGroups().length; ++i) {
+							if(otherBlockVariant.getTransitionToGroups()[i].equals(thisBlockState2.getGroup())) {
+								otherIndex = i;
+								break;
+							}
+						}
+						if(thisIndex != -1 && otherIndex != -1) {
+							// Both blocks have each other's groups in their lists,
+							// so we have clashing transition textures.
+							// So now only make sure that one of them shows up.
+							if(otherIndex > thisIndex)
+								return false;
+						}
+					}
+				}
+			}
 			
 			for(MatchBlock block : blocks) {
 				if(otherBlock.getName().equals(block.name) && block.state.meetsConstraint(otherBlock.getProperties())) {

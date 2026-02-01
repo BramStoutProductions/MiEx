@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JOptionPane;
@@ -50,9 +51,12 @@ import nl.bramstout.mcworldexporter.launcher.MinecraftSave;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.parallel.ReadWriteMutex;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.ui.MainWindow;
+import nl.bramstout.mcworldexporter.ui.ResourcePackSourcesExtractorDialog;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 import nl.bramstout.mcworldexporter.world.anvil.WorldAnvil;
@@ -81,8 +85,8 @@ public class MCWorldExporter {
 	private World world;
 	private File lastExportFileOpened;
 	private MainWindow ui;
-	private ExportBounds exportBounds;
-	private List<String> fgChunks;
+	private List<ExportBounds> exportBounds;
+	private int activeExportBoundsIndex;
 	
 	public MCWorldExporter() {
 		instance = this;
@@ -90,8 +94,9 @@ public class MCWorldExporter {
 		
 		world = null;
 		lastExportFileOpened = null;
-		exportBounds = new ExportBounds();
-		fgChunks = new ArrayList<String>();
+		exportBounds = new ArrayList<ExportBounds>();
+		exportBounds.add(new ExportBounds("Region 1"));
+		activeExportBoundsIndex = 0;
 		ui = new MainWindow();
 		ui.setLocationRelativeTo(null);
 		ui.setVisible(true);
@@ -105,9 +110,12 @@ public class MCWorldExporter {
 			Config.load();
 			Atlas.readAtlasConfig();
 			
+			resetExportBounds();
+			
 			BlockStateRegistry.clearBlockStateRegistry();
 			ModelRegistry.clearModelRegistry();
 			BiomeRegistry.recalculateTints();
+			ResourcePacks.doPostLoad();
 			MCWorldExporter.getApp().getUI().update();
 			MCWorldExporter.getApp().getUI().fullReRender();
 			MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
@@ -123,14 +131,14 @@ public class MCWorldExporter {
 				if(forceOpenWorld != null) {
 					File worldFolder = new File(forceOpenWorld);
 					if(worldFolder.exists() && worldFolder.isDirectory())
-						setWorld(worldFolder);
+						setWorld(worldFolder, worldFolder.getName(), null);
 				}
 			}
 			
 		});
 	}
 	
-	public void setWorld(File worldFolder) {
+	public void setWorld(File worldFolder, String name, Launcher launcher) {
 		MCWorldExporter.getApp().getUI().getEntityDialog().noDefaultSelection = false;
 		worldMutex.acquireWrite();
 		
@@ -138,44 +146,211 @@ public class MCWorldExporter {
 			if(world != null)
 				world.unload();
 			world = null;
-			World tmpWorld = null;
-			if(WorldAnvil.supportsWorld(worldFolder))
-				tmpWorld = new WorldAnvil(worldFolder);
-			else if(WorldBedrock.supportsWorld(worldFolder))
-				tmpWorld = new WorldBedrock(worldFolder);
-			else if(WorldHytale.supportsWorld(worldFolder))
-				tmpWorld = new WorldHytale(worldFolder);
-			else {
-				SwingUtilities.invokeLater(new Runnable() {
-	
-					@Override
-					public void run() {
-						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "The selected folder does not contain a world.", "Error", JOptionPane.ERROR_MESSAGE);
-					}
-					
-				});
-				ui.reset();
-				worldMutex.releaseWrite();
-				return;
-			}
-			
-			int resourcePackVersion = ResourcePacks.getBaseResourcePack().getWorldVersion();
-			int worldVersion = tmpWorld.getWorldVersion();
-			if(worldVersion > resourcePackVersion && worldVersion > 0) {
-				int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
-						"The base resource pack is outdated. Please update the base resource pack via the Tools button. Are you sure you still want to load the world?", 
-						"Warning", JOptionPane.YES_NO_OPTION);
-				
-				if(option != 0) {
+			if(worldFolder != null) {
+				if(launcher == null)
+					launcher = LauncherRegistry.getLauncherForWorld(worldFolder);
+				World tmpWorld = null;
+				if(WorldAnvil.supportsWorld(worldFolder)) {
+					System.out.println("Opening world as Minecraft Anvil format: " + worldFolder.getPath());
+					tmpWorld = new WorldAnvil(worldFolder, name, launcher);
+				}else if(WorldBedrock.supportsWorld(worldFolder)) {
+					System.out.println("Opening world as Minecraft Bedrock Edition format: " + worldFolder.getPath());
+					tmpWorld = new WorldBedrock(worldFolder, name, launcher);
+				}else if(WorldHytale.supportsWorld(worldFolder)) {
+					System.out.println("Opening world as Hytale format: " + worldFolder.getPath());
+					tmpWorld = new WorldHytale(worldFolder, name, launcher);
+				}else {
+					System.out.println("Opening world as unknown format: " + worldFolder.getPath());
+					SwingUtilities.invokeLater(new Runnable() {
+		
+						@Override
+						public void run() {
+							JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "The selected folder does not contain a world.", "Error", JOptionPane.ERROR_MESSAGE);
+						}
+						
+					});
 					ui.reset();
 					worldMutex.releaseWrite();
 					return;
 				}
+				
+				
+				List<String> requiredResourcePacks = tmpWorld.getRequiredResourcePacks();
+				for(String rp : requiredResourcePacks) {
+					System.out.println("World requires resource pack: " + rp);
+				}
+				List<String> missingRequired = new ArrayList<String>(requiredResourcePacks);
+				for(ResourcePack pack : ResourcePacks.getActiveResourcePacks()) {
+					if(requiredResourcePacks.contains(pack.getUUID()))
+						missingRequired.remove(pack.getUUID());
+				}
+				if(!missingRequired.isEmpty()) {
+					// We have some resource packs that are absolutely required, so let's load them.
+					List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+					Iterator<String> it = missingRequired.iterator();
+					while(it.hasNext()) {
+						String packUuid = it.next();
+						ResourcePack pack = ResourcePacks.getResourcePack(packUuid);
+						if(pack != null) {
+							it.remove();
+							activeResourcePacks.add(pack);
+						}
+					}
+					// If the missing resource packs are certain base_resource_packs, then try setting them up.
+					if(missingRequired.contains("base_resource_pack_hytale")) {
+						// No base_resource_pack_hytale, so make it.
+						int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+								"No base_resource_pack_hytale so this world cannot be loaded. Would you like to install the base_resource_pack_hytale?", 
+								"Error", JOptionPane.YES_NO_OPTION);
+						
+						if(option == 0) {
+							ResourcePackDefaults.updateBaseResourcePackHytale(true);
+							ResourcePacks.load();
+							MCWorldExporter.getApp().getUI().getResourcePackManager().syncWithResourcePacks();
+							
+							ResourcePack pack = ResourcePacks.getResourcePack("base_resource_pack_hytale");
+							if(pack != null) {
+								activeResourcePacks.add(pack);
+								missingRequired.remove("base_resource_pack_hytale");
+							}
+						}
+					}
+					
+					
+					if(missingRequired.isEmpty()) {
+						// We got all required resource packs, so set those as active.
+						System.out.println("Setting active resource packs to:");
+						for(ResourcePack rp : activeResourcePacks)
+							System.out.println("  " + rp.getUUID());
+						ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+						getUI().getResourcePackManager().syncWithResourcePacks();
+					}else {
+						// We are still missing some resource packs,
+						// so let's refuse to load this world.
+						String listStr = "";
+						for(String missingUuid : missingRequired) {
+							System.out.println("Missing required resource pack: " + missingUuid);
+							if(!listStr.isEmpty())
+								listStr += ", ";
+							listStr += missingUuid;
+						}
+						final String finalListStr = listStr;
+						
+						SwingUtilities.invokeLater(new Runnable() {
+							
+							@Override
+							public void run() {
+								JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world requires the following resource packs to be installed: " + finalListStr, "Error", JOptionPane.ERROR_MESSAGE);
+							}
+							
+						});
+						ui.reset();
+						worldMutex.releaseWrite();
+						return;
+					}
+				}
+				
+				
+				
+				// Handle dependent resource packs.
+				// The world might have been created using certain resource packs,
+				// data packs, mods, etc. If so, let's ask the user if they want MiEx
+				// to load it.
+				List<ResourcePackSource> dependentRPs = tmpWorld.getDependentResourcePacks();
+				if(!dependentRPs.isEmpty()) {
+					System.out.println("World contains dependent resource packs:");
+					for(ResourcePackSource rp : dependentRPs) {
+						System.out.println("  " + rp.getName() + ": ");
+						for(int i = 0; i < rp.getSources().size(); ++i) {
+							System.out.println("    " + rp.getSourceUuids().get(i) + ": " + rp.getSources().get(i));
+						}
+					}
+					System.out.println();
+					
+					int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+							"This world makes use of resource packs and/or mods. Would you like to enable the resource packs for it?", 
+							"Load Resource Packs?", JOptionPane.YES_NO_OPTION);
+					
+					if(option == 0) {
+						List<String> sourceUuids = new ArrayList<String>();
+						for(ResourcePackSource source : dependentRPs)
+							sourceUuids.addAll(source.getSourceUuids());
+						List<ResourcePack> neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
+						
+						if(neededResourcePacks != null) {
+							List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+							for(ResourcePack rp : neededResourcePacks) {
+								boolean hasAlready = false;
+								for(ResourcePack rp2 : activeResourcePacks) {
+									if(rp2.getUUID() == rp.getUUID()) {
+										hasAlready = true;
+										break;
+									}
+								}
+								if(hasAlready)
+									continue;
+								activeResourcePacks.add(0, rp);
+							}
+							ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+							getUI().getResourcePackManager().syncWithResourcePacks();
+						}else {
+							// We don't have all of the resource packs needed, so let's show the user the dialog
+							// so that they can extract it.
+							ResourcePackSourcesExtractorDialog dialog = new ResourcePackSourcesExtractorDialog(tmpWorld, dependentRPs);
+							dialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+							dialog.setVisible(true);
+							
+							ResourcePacks.load();
+							MCWorldExporter.getApp().getUI().getResourcePackManager().syncWithResourcePacks();
+							
+							// Let's try it again, in the hopes that we now have everything.
+							// Otherwise, just load in the world.
+							neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
+							if(neededResourcePacks != null) {
+								List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+								for(ResourcePack rp : neededResourcePacks) {
+									boolean hasAlready = false;
+									for(ResourcePack rp2 : activeResourcePacks) {
+										if(rp2.getUUID() == rp.getUUID()) {
+											hasAlready = true;
+											break;
+										}
+									}
+									if(hasAlready)
+										continue;
+									activeResourcePacks.add(0, rp);
+								}
+								ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+								getUI().getResourcePackManager().syncWithResourcePacks();
+							}
+						}
+					}
+				}
+				
+				
+				
+				
+				
+				int resourcePackVersion = ResourcePacks.getBaseResourcePack().getWorldVersion();
+				int worldVersion = tmpWorld.getWorldVersion();
+				System.out.println("World version: " + Integer.toString(worldVersion));
+				if(worldVersion > resourcePackVersion && worldVersion > 0) {
+					int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+							"The base resource pack is outdated. Please update the base resource pack via the Tools button. Are you sure you still want to load the world?", 
+							"Warning", JOptionPane.YES_NO_OPTION);
+					
+					if(option != 0) {
+						ui.reset();
+						worldMutex.releaseWrite();
+						return;
+					}
+				}
+				
+				if(tmpWorld != null)
+					tmpWorld.setWorldDir(worldFolder);
+				world = tmpWorld;
+				System.out.println("World loaded.");
 			}
-			
-			if(tmpWorld != null)
-				tmpWorld.setWorldDir(worldFolder);
-			world = tmpWorld;
 			ui.reset();
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -191,16 +366,101 @@ public class MCWorldExporter {
 		return ui;
 	}
 	
-	public ExportBounds getExportBounds() {
+	public List<ExportBounds> getExportBoundsList() {
 		return exportBounds;
 	}
 	
-	public List<String> getFGChunks(){
-		return fgChunks;
+	public void setExportBounds(List<ExportBounds> bounds) {
+		this.exportBounds.clear();
+		for(ExportBounds bound : bounds) {
+			this.exportBounds.add(bound.copy());
+		}
+		setActiveExportBoundsIndex(activeExportBoundsIndex);
 	}
 	
-	public void setFGChunks(List<String> fgChunks) {
-		this.fgChunks = fgChunks;
+	public void resetExportBounds() {
+		exportBounds = new ArrayList<ExportBounds>();
+		exportBounds.add(new ExportBounds("Region 1"));
+		activeExportBoundsIndex = 0;
+		this.getUI().update();
+	}
+	
+	public ExportBounds getActiveExportBounds() {
+		if(exportBounds.size() == 0)
+			exportBounds.add(new ExportBounds("Region 1"));
+		if(activeExportBoundsIndex < 0 || activeExportBoundsIndex >= exportBounds.size())
+			activeExportBoundsIndex = 0;
+		return exportBounds.get(activeExportBoundsIndex);
+	}
+	
+	public int getActiveExportBoundsIndex() {
+		if(exportBounds.size() == 0)
+			exportBounds.add(new ExportBounds("Region 1"));
+		if(activeExportBoundsIndex < 0 || activeExportBoundsIndex >= exportBounds.size())
+			activeExportBoundsIndex = 0;
+		return activeExportBoundsIndex;
+	}
+	
+	public void setActiveExportBoundsIndex(int activeExportBoundsIndex) {
+		if(exportBounds.size() == 0)
+			exportBounds.add(new ExportBounds("Region 1"));
+		if(activeExportBoundsIndex < 0 || activeExportBoundsIndex >= exportBounds.size())
+			activeExportBoundsIndex = 0;
+		this.activeExportBoundsIndex = activeExportBoundsIndex;
+		this.getUI().update();
+	}
+	
+	public void setActiveExportBounds(String name) {
+		int index = -1;
+		for(int i = 0; i < exportBounds.size(); ++i) {
+			if(exportBounds.get(i).getName().equals(name)) {
+				index = i;
+				break;
+			}
+		}
+		if(index == -1)
+			return;
+		setActiveExportBoundsIndex(index);
+	}
+	
+	public void addExportBounds() {
+		String name = "";
+		for(int i = this.exportBounds.size()+1; i < 10000; i++) {
+			name = "Region " + Integer.toString(i);
+			if(!hasExportBounds(name))
+				break;
+		}
+		this.exportBounds.add(new ExportBounds(name));
+		this.setActiveExportBoundsIndex(exportBounds.size()-1);
+		this.getUI().update();
+	}
+	
+	public void deleteExportBounds(String name) {
+		int index = -1;
+		for(int i = 0; i < exportBounds.size(); ++i) {
+			if(exportBounds.get(i).getName().equals(name)) {
+				index = i;
+				break;
+			}
+		}
+		if(index == -1)
+			return;
+		exportBounds.remove(index);
+		if(activeExportBoundsIndex >= index)
+			// We removed an export bounds in front of your active one,
+			// meaning that the index of our active one changed, so
+			// make sure to update the index to compensate.
+			setActiveExportBoundsIndex(activeExportBoundsIndex-1);
+		this.getUI().update();
+	}
+	
+	public boolean hasExportBounds(String name) {
+		for(ExportBounds bounds : exportBounds) {
+			if(bounds.getName().equals(name)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public File getLastExportFileOpened() {
@@ -303,6 +563,10 @@ public class MCWorldExporter {
 					FileUtil.resourcePackJSONPrefix = args[i+1];
 					if(!FileUtil.resourcePackJSONPrefix.endsWith("/"))
 						FileUtil.resourcePackJSONPrefix = FileUtil.resourcePackJSONPrefix + "/";
+				}else if(args[i].equalsIgnoreCase("-mcRootDir")) {
+					FileUtil.multiMCRootDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.multiMCRootDir.endsWith("/"))
+						FileUtil.multiMCRootDir = FileUtil.multiMCRootDir + "/";
 				}else if(args[i].equalsIgnoreCase("-multimcRootDir")) {
 					FileUtil.multiMCRootDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.multiMCRootDir.endsWith("/"))
@@ -315,6 +579,10 @@ public class MCWorldExporter {
 					FileUtil.modrinthRootDir = args[i+1].replace('\\', '/');
 					if(!FileUtil.modrinthRootDir.endsWith("/"))
 						FileUtil.modrinthRootDir = FileUtil.modrinthRootDir + "/";
+				}else if(args[i].equalsIgnoreCase("-hytaleRootDir")) {
+					FileUtil.hytaleRootDir = args[i+1].replace('\\', '/');
+					if(!FileUtil.hytaleRootDir.endsWith("/"))
+						FileUtil.hytaleRootDir = FileUtil.hytaleRootDir + "/";
 				}else if(args[i].equalsIgnoreCase("-additionalSaveDirs")) {
 					FileUtil.additionalSaveDirs = new String[] {};
 					

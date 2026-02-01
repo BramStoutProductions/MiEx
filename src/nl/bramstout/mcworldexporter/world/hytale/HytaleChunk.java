@@ -78,6 +78,7 @@ public class HytaleChunk {
 	private volatile boolean loading;
 	private Section[] sections;
 	private EnvironmentChunk environmentChunk;
+	private BlockChunk blockChunk;
 	
 	public HytaleChunk(int x, int z) {
 		this.x = x;
@@ -87,6 +88,7 @@ public class HytaleChunk {
 		this.loading = false;
 		this.sections = null;
 		this.environmentChunk = null;
+		this.blockChunk = null;
 	}
 	
 	public int getX() {
@@ -137,10 +139,24 @@ public class HytaleChunk {
 			BsonDocument environmentChunk = components.getDocument("EnvironmentChunk");
 			int version = environmentChunk.getInt32("Version", new BsonInt32(0)).getValue();
 			this.environmentChunk = EnvironmentChunk.getEnvironmentChunk(version);
-			try {
-				this.environmentChunk.read(environmentChunk);
-			}catch(Exception ex) {
-				World.handleError(ex);
+			if(this.environmentChunk != null) {
+				try {
+					this.environmentChunk.read(environmentChunk);
+				}catch(Exception ex) {
+					World.handleError(ex);
+				}
+			}
+		}
+		if(components.containsKey("BlockChunk")) {
+			BsonDocument blockChunk = components.getDocument("BlockChunk");
+			int version = blockChunk.getInt32("Version", new BsonInt32(0)).getValue();
+			this.blockChunk = BlockChunk.getBlockChunk(version);
+			if(this.blockChunk != null) {
+				try {
+					this.blockChunk.read(blockChunk);
+				}catch(Exception ex) {
+					World.handleError(ex);
+				}
 			}
 		}
 		
@@ -264,6 +280,12 @@ public class HytaleChunk {
 		return this.environmentChunk.getBiomeId(localX, localY, localZ);
 	}
 	
+	public int getTint(int localX, int localZ) {
+		if(this.blockChunk == null)
+			return 0xFFFFFFFF;
+		return this.blockChunk.getTint(localX, localZ);
+	}
+	
 	public boolean canLoad() {
 		return !this.loaded;
 	}
@@ -350,7 +372,7 @@ public class HytaleChunk {
 			
 			// Block names
 			int blockNamePaletteTypeId = bis.readByte();
-			Palette blockNamePalette = Palette.getPallet(blockNamePaletteTypeId);
+			SectionPalette blockNamePalette = SectionPalette.getPallet(blockNamePaletteTypeId);
 			if(blockNamePalette != null)
 				blockNamePalette.read(PaletteDataDecoder.UTF, bis);
 			
@@ -368,14 +390,14 @@ public class HytaleChunk {
 			
 			// Filler data
 			int fillerPaletteTypeId = bis.readByte();
-			Palette fillerPalette = Palette.getPallet(fillerPaletteTypeId);
+			SectionPalette fillerPalette = SectionPalette.getPallet(fillerPaletteTypeId);
 			if(fillerPalette != null)
 				fillerPalette.read(PaletteDataDecoder.UNSIGNED_SHORT, bis);
 			
 			
 			// Rotation data
 			int rotationPaletteTypeId = bis.readByte();
-			Palette rotationPalette = Palette.getPallet(rotationPaletteTypeId);
+			SectionPalette rotationPalette = SectionPalette.getPallet(rotationPaletteTypeId);
 			if(rotationPalette != null)
 				rotationPalette.read(PaletteDataDecoder.UNSIGNED_BYTE, bis);
 			
@@ -392,6 +414,18 @@ public class HytaleChunk {
 					
 					int filler = fillerPalette != null ? 
 									((Integer) fillerPalette.get(i)).intValue() : 0;
+					
+					// Some blocks in Hytale can be multiple blocks big.
+					// In those cases, all cells encompassed by the block
+					// are set to that block type, but a filler value is set,
+					// which encodes the offset from the current cell to
+					// the cell which contains the main block.
+					// Since the model already spans the multiple blocks, there
+					// is no need for filler blocks and so we skip filler blocks,
+					// and they will just have the block id of 0 which means air.
+					if(filler != 0)
+						continue;
+					
 					int rotation = rotationPalette != null ? 
 							((Integer) rotationPalette.get(i)).intValue() : 0;
 					
@@ -478,13 +512,13 @@ public class HytaleChunk {
 			
 			// Fluid names
 			int blockNamePaletteTypeId = bis.readByte();
-			Palette blockNamePalette = Palette.getPallet(blockNamePaletteTypeId);
+			SectionPalette blockNamePalette = SectionPalette.getPallet(blockNamePaletteTypeId);
 			if(blockNamePalette != null)
 				blockNamePalette.read(PaletteDataDecoder.UTF, bis);
 			
 			byte[] fluidLevels = null;
 			if(bis.readBoolean()) {
-				fluidLevels = new byte[32*32*32];
+				fluidLevels = new byte[32*32*16];
 				bis.readFully(fluidLevels);
 			}
 			
@@ -502,8 +536,10 @@ public class HytaleChunk {
 					String blockName = (String) blockNamePalette.get(i);
 					
 					int fluidLevel = 0;
-					if(fluidLevels != null)
-						fluidLevel = fluidLevels[i];
+					if(fluidLevels != null) {
+						fluidLevel = fluidLevels[i >> 1];
+						fluidLevel = (fluidLevel >> ((i & 1) * 4)) & 0xF;
+					}
 					
 					NbtTagCompound properties = null;
 					
@@ -563,6 +599,8 @@ public class HytaleChunk {
 						if(needsMerge && existingBlock != null) {
 							blockName = existingBlock.getName();
 							properties.addAllElements(existingBlock.getProperties());
+							properties.addElement(NbtTagString.newNonPooledInstance("waterlogged", "true"));
+							properties.addElement(NbtTagString.newNonPooledInstance("waterblock", "hytale:Water_Source"));
 						}
 						
 						int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
@@ -600,7 +638,7 @@ public class HytaleChunk {
 		}
 	}
 	
-	private static abstract class Palette{
+	private static abstract class SectionPalette{
 		
 		protected Object[] palette = null;
 		protected short[] data = null;
@@ -622,18 +660,18 @@ public class HytaleChunk {
 		
 		public abstract void read(PaletteDataDecoder dataDecoder, ByteArrayBEDataInputStream bis) throws IOException;
 		
-		public static Palette getPallet(int typeId) {
+		public static SectionPalette getPallet(int typeId) {
 			if(typeId == 1)
-				return new HalfBytePalette();
+				return new HalfByteSectionPalette();
 			else if(typeId == 2)
-				return new BytePalette();
+				return new ByteSectionPalette();
 			else if(typeId == 3)
-				return new ShortPalette();
+				return new ShortSectionPalette();
 			return null;
 		}
 	}
 	
-	private static class HalfBytePalette extends Palette{
+	private static class HalfByteSectionPalette extends SectionPalette{
 		
 		@Override
 		public void read(PaletteDataDecoder dataDecoder, ByteArrayBEDataInputStream bis) throws IOException {
@@ -660,7 +698,7 @@ public class HytaleChunk {
 			data = new short[32*32*32];
 			for(int i = 0; i < data.length; ++i) {
 				int index = i >> 1;
-				int shift = (index & 1) * 4;
+				int shift = (1-(i & 1)) * 4;
 				int paletteIndex = (ids[index] >> shift) & 0xF;
 				
 				if(paletteIndex < palette.length) {
@@ -670,7 +708,7 @@ public class HytaleChunk {
 		}
 	}
 	
-	private static class BytePalette extends Palette{
+	private static class ByteSectionPalette extends SectionPalette{
 		@Override
 		public void read(PaletteDataDecoder dataDecoder, ByteArrayBEDataInputStream bis) throws IOException {
 			int blockCount = bis.readShort();
@@ -704,7 +742,7 @@ public class HytaleChunk {
 		}
 	}
 	
-	private static class ShortPalette extends Palette{
+	private static class ShortSectionPalette extends SectionPalette{
 		@Override
 		public void read(PaletteDataDecoder dataDecoder, ByteArrayBEDataInputStream bis) throws IOException {
 			int blockCount = bis.readShort();
@@ -849,6 +887,132 @@ public class HytaleChunk {
 					ids[i] = bis.readInt();
 			}
 			
+		}
+		
+	}
+	
+	private static class ShortBytePalette{
+		protected short[] palette = null;
+		protected short[] data = null;
+		
+		@SuppressWarnings("unused")
+		public short get(int index) {
+			if(palette == null || data == null)
+				return 0;
+			return palette[data[index]];
+		}
+		
+		public void read(ByteArrayBEDataInputStream bis) throws IOException{
+			int paletteSize = bis.readShortLE();
+			this.palette = new short[paletteSize];
+			for(int i = 0; i < paletteSize; ++i)
+				this.palette[i] = bis.readShortLE();
+			
+			int dataSize = bis.readIntLE();
+			byte[] tmpData = new byte[dataSize];
+			bis.readFully(tmpData);
+			
+			this.data = new short[32*32];
+			for(int i = 0; i < this.data.length; ++i) {
+				int bitIndexStart = i * 10;
+				
+				short value = 0;
+				for(int bitI = 0; bitI < 10; ++bitI) {
+					int bitIndex = bitIndexStart + bitI;
+					int byteIndex = bitIndex / 8;
+					int byteSubIndex = bitIndex % 8;
+					
+					value |= ((tmpData[byteIndex] >>> byteSubIndex) & 1) << bitI;
+				}
+				
+				this.data[i] = value;
+			}
+		}
+		
+	}
+	
+	private static class IntBytePalette{
+		protected int[] palette = null;
+		protected short[] data = null;
+		
+		public int get(int index) {
+			if(palette == null || data == null)
+				return 0;
+			return palette[data[index]];
+		}
+		
+		public void read(ByteArrayBEDataInputStream bis) throws IOException{
+			int paletteSize = bis.readShortLE();
+			this.palette = new int[paletteSize];
+			for(int i = 0; i < paletteSize; ++i)
+				this.palette[i] = bis.readIntLE();
+			
+			int dataSize = bis.readIntLE();
+			byte[] tmpData = new byte[dataSize];
+			bis.readFully(tmpData);
+			
+			this.data = new short[32*32];
+			for(int i = 0; i < this.data.length; ++i) {
+				int bitIndexStart = i * 10;
+				
+				short value = 0;
+				for(int bitI = 0; bitI < 10; ++bitI) {
+					int bitIndex = bitIndexStart + bitI;
+					int byteIndex = bitIndex / 8;
+					int byteSubIndex = bitIndex % 8;
+					
+					value |= ((tmpData[byteIndex] >>> byteSubIndex) & 1) << bitI;
+				}
+				
+				this.data[i] = value;
+			}
+		}
+		
+	}
+	
+	private static abstract class BlockChunk{
+		
+		public abstract void read(BsonDocument data) throws IOException;
+		
+		public abstract int getTint(int localX, int localZ);
+		
+		public static BlockChunk getBlockChunk(int version) {
+			if(version == 3)
+				return new BlockChunkV3();
+			return null;
+		}
+		
+	}
+	
+	private static class BlockChunkV3 extends BlockChunk{
+		
+		private ShortBytePalette height;
+		private IntBytePalette tint;
+		
+		public BlockChunkV3() {
+			this.height = new ShortBytePalette();
+			this.tint = new IntBytePalette();
+		}
+		
+		
+		@Override
+		public void read(BsonDocument bson) throws IOException {
+			BsonBinary data = bson.getBinary("Data", null);
+			if(data == null)
+				return;
+			
+			ByteArrayBEDataInputStream bis = new ByteArrayBEDataInputStream(data.getData());
+			@SuppressWarnings("unused")
+			boolean needsPhysics = bis.readBoolean();
+			
+			this.height.read(bis);
+			
+			this.tint.read(bis);
+		}
+		
+		@Override
+		public int getTint(int localX, int localZ) {
+			return tint.get(localZ * 32 + localX);
 		}
 		
 	}

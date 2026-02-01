@@ -52,6 +52,8 @@ import nl.bramstout.mcworldexporter.ui.BuiltInFilesDialog;
 public class BuiltInFiles {
 	
 	public static void setupBuiltInFiles(boolean forceUpdate) {
+		System.out.println("Checking built-in files.");
+		
 		List<BuiltInFile> files = findBuiltInFiles();
 		
 		File manifestFile = new File(FileUtil.getResourcePackDir(), "manifest.json");
@@ -180,6 +182,7 @@ public class BuiltInFiles {
 		}
 		
 		Json.writeJson(manifestFile, manifestObject);
+		System.out.println("Built-in files up to date.");
 	}
 	
 	public static class BuiltInFile{
@@ -205,6 +208,8 @@ public class BuiltInFiles {
 		if(gotFromGitHub)
 			return files;
 		
+
+		System.out.println("Searching for built-in files in Jar file.");
 		URL jarLocation = BuiltInFiles.class.getProtectionDomain().getCodeSource().getLocation();
 		File jarFile = new File(jarLocation.getPath());
 		if(jarFile.isDirectory()) {
@@ -330,6 +335,7 @@ public class BuiltInFiles {
 	private static boolean checkGitHubForBuiltInFiles(List<BuiltInFile> files) {
 		if(MCWorldExporter.offlineMode)
 			return false;
+		System.out.println("Searching for built-in files in GitHub repository " + MCWorldExporter.GitHubRepository);
 		try{
 			String builtin_filesTreeURL = null;
 			JsonElement rootTree = Json.read(new URI("https://api.github.com/repos/" + MCWorldExporter.GitHubRepository + 

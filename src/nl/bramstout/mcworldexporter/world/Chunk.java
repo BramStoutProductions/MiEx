@@ -39,12 +39,14 @@ import java.util.List;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.parallel.Queue;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 
@@ -193,7 +195,7 @@ public abstract class Chunk {
 	}
 
 	public void load() throws Exception {
-		if(this.loadError || this.blocks != null)
+		if(this.loadError || this.blocks != null || this.region.getWorld().isPaused())
 			return;
 		
 		loadLock.aqcuire();
@@ -227,6 +229,8 @@ public abstract class Chunk {
 	protected abstract void _loadEntities() throws Exception;
 
 	public abstract void unload();
+	
+	public abstract void addBiomeTints(BlendedBiome biome, int x, int y, int z);
 	
 	public void unloadEntities() {
 		loadLock.aqcuire();
@@ -324,12 +328,12 @@ public abstract class Chunk {
 				World.handleError(e);
 			}
 		if (biomes == null || blocks == null)
-			return 0;
+			return -1;
 		int sectionY = (y >> 4) - chunkSectionOffset;
 		if (sectionY < 0 || sectionY >= blocks.length)
-			return 0;
+			return -1;
 		if (biomes[sectionY] == null)
-			return 0;
+			return -1;
 		x = x / 4;
 		y = ((y - chunkSectionOffset * 16) & 15) / 4;
 		z = z / 4;
@@ -405,8 +409,9 @@ public abstract class Chunk {
 			renderRequested = false;
 	}
 	
-	private int getColourForBlock(Block block, BlockState state, int x, int y, int z) {
+	private int getColourForBlock(Block block, BlockState state, int x, int y, int z, BlendedBiome blendedBiome) {
 		int colour = 0;
+		blendedBiome.clear();
 		String defaultTexture = state.getDefaultTexture();
 		if (defaultTexture != "") {
 			colour = ResourcePacks.getDefaultColour(defaultTexture);
@@ -414,18 +419,26 @@ public abstract class Chunk {
 			if (state.hasTint()) {
 				int biomeId = getBiomeIdLocal(x, y, z);
 				Biome biome = BiomeRegistry.getBiome(biomeId);
-				TintLayers tintLayers = biome.getBiomeColor(state, block);
-				if(tintLayers != null) {
-					TintValue tintVal = tintLayers.getGenericTint();
-					nl.bramstout.mcworldexporter.Color tint = tintVal.getColor(biome);
-					if(tint != null) {
-						int r = (colour >>> 16) & 0xFF;
-						int g = (colour >>> 8) & 0xFF;
-						int b = (colour) & 0xFF;
-						r = (int) (((float) r) * tint.getR());
-						g = (int) (((float) g) * tint.getG());
-						b = (int) (((float) b) * tint.getB());
-						colour = (r << 16) | (g << 8) | b;
+				blendedBiome.addBiome(biome, 1f);
+				blendedBiome.normalise();
+				addBiomeTints(blendedBiome, x, y, z);
+				Tint blockTint = state.getTint();
+				if(blockTint != null) {
+					TintLayers tintLayers = blockTint.getTint(block.getProperties());
+					if(tintLayers != null) {
+						TintValue tintVal = tintLayers.getGenericTint();
+						if(tintVal != null) {
+							nl.bramstout.mcworldexporter.Color tint = tintVal.getColor(blendedBiome);
+							if(tint != null) {
+								int r = (colour >>> 16) & 0xFF;
+								int g = (colour >>> 8) & 0xFF;
+								int b = (colour) & 0xFF;
+								r = (int) (((float) r) * tint.getR());
+								g = (int) (((float) g) * tint.getG());
+								b = (int) (((float) b) * tint.getB());
+								colour = (r << 16) | (g << 8) | b;
+							}
+						}
 					}
 				}
 			}
@@ -466,19 +479,20 @@ public abstract class Chunk {
 			BufferedImage tmpChunkImgSmaller = new BufferedImage(4, 4, BufferedImage.TYPE_INT_ARGB);
 			BufferedImage tmpChunkImgSmaller2 = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
 			BufferedImage tmpChunkImgSmallest = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+			BlendedBiome blendedBiome = new BlendedBiome();
 			for (int z = 0; z < 16; ++z) {
 				for (int x = 0; x < 16; ++x) {
 					int height = getHeightLocal(x, z);
 					int blockId = getBlockIdLocal(x, height, z);
 					int colour = 0;
-					if(MCWorldExporter.getApp().getExportBounds().getMaxY() < 320) {
+					if(MCWorldExporter.getApp().getActiveExportBounds().getMaxY() < 320) {
 						// Cave mode. If the block at maxY equals blockId, then keep moving
 						// down until we find an air block and then pick the next non-air block.
 						if((height+1) >= heightMapMaxVal) {
 							// Do cave mode
 							blockId = 0;
 							boolean foundAir = false;
-							for(int sampleY = height; sampleY >= MCWorldExporter.getApp().getExportBounds().getMinY(); --sampleY) {
+							for(int sampleY = height; sampleY >= MCWorldExporter.getApp().getActiveExportBounds().getMinY(); --sampleY) {
 								int sampleBlockId = getBlockIdLocal(x, sampleY, z);
 								Block block = BlockRegistry.getBlock(sampleBlockId);
 								if(sampleBlockId == 0) {
@@ -498,13 +512,13 @@ public abstract class Chunk {
 						Block block = BlockRegistry.getBlock(blockId);
 						int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 						BlockState state = BlockStateRegistry.getState(stateId);
-						colour = getColourForBlock(block, state, x, height, z);
+						colour = getColourForBlock(block, state, x, height, z, blendedBiome);
 						
 						if(block.isLiquid()) {
 							// Let's make water transparent. We keep going down until we find
 							// a block that's not water. We get that block's colour
 							// and blend it with the water colour.
-							for(int sampleY = height - 1; sampleY >= MCWorldExporter.getApp().getExportBounds().getMinY(); --sampleY) {
+							for(int sampleY = height - 1; sampleY >= MCWorldExporter.getApp().getActiveExportBounds().getMinY(); --sampleY) {
 								blockId = getBlockIdLocal(x, sampleY, z);
 								block = BlockRegistry.getBlock(blockId);
 								stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
@@ -513,7 +527,7 @@ public abstract class Chunk {
 									continue;
 								
 								// We have found a non-water block!
-								int bgColour = getColourForBlock(block, state, x, sampleY, z);
+								int bgColour = getColourForBlock(block, state, x, sampleY, z, blendedBiome);
 								if(bgColour == 0)
 									bgColour = colour;
 								Color fgColor = new Color(colour);
@@ -632,8 +646,8 @@ public abstract class Chunk {
 		int z = 0;
 		int minY = chunkSectionOffset * 16;
 		int maxY = minY + blocks.length * 16;
-		minY = Math.max(minY, MCWorldExporter.getApp().getExportBounds().getMinY());
-		maxY = Math.min(maxY, MCWorldExporter.getApp().getExportBounds().getMaxY());
+		minY = Math.max(minY, MCWorldExporter.getApp().getActiveExportBounds().getMinY());
+		maxY = Math.min(maxY, MCWorldExporter.getApp().getActiveExportBounds().getMaxY());
 		heightMapMaxVal = (short) maxY;
 		int sectionIndex = ((maxY - 1) >> 4) - chunkSectionOffset;
 		int sectionY = (maxY - 1) % 16;
