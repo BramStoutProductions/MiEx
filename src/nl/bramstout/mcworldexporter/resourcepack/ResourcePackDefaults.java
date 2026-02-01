@@ -207,7 +207,7 @@ public class ResourcePackDefaults {
 				return;
 			}
 			// Take index 1 to prefer the release over pre-release
-			Object selectedValue = versionLabels.get(Math.min(1, versionLabels.size()));
+			Object selectedValue = versionLabels.get(Math.min(1, versionLabels.size() - 1));
 			
 			if(!updateToNewest) {
 				// We're not doing a forced update to the latest version,
