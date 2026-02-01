@@ -111,6 +111,11 @@ class SetupMaterials:
                                     node.image.colorspace_settings.name = data['attributes']['colorspace_settings']['value']
                                 except:
                                     pass
+                        if 'alpha_mode' in data['attributes']:
+                            try:
+                                node.image.alpha_mode = data['attributes']['alpha_mode']['value']
+                            except:
+                                pass
                             
                     elif 'value' in attrData:
                         if hasattr(node, attrName):
