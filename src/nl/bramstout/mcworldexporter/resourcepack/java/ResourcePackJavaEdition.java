@@ -50,6 +50,7 @@ import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
@@ -438,6 +439,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 
 	@Override
 	public void parseTags(Map<String, List<String>> tagToResourceIdentifiers) {
+		AsyncGroup asyncGroup = new AsyncGroup();
 		for(File rootFolder : getFolders()) {
 			File dataFolder = new File(rootFolder, "/data");
 			if(!dataFolder.exists())
@@ -445,29 +447,34 @@ public class ResourcePackJavaEdition extends ResourcePack{
 			for(File namespace : dataFolder.listFiles()) {
 				if(!namespace.isDirectory())
 					continue;
-				processNamespace(namespace.getName(), namespace, tagToResourceIdentifiers);
+				processNamespace(namespace.getName(), namespace, tagToResourceIdentifiers, asyncGroup);
 			}
 		}
+		asyncGroup.waitUntilDone();
 	}
 	
 	private void processNamespace(String namespace, File namespaceFolder, 
-									Map<String, List<String>> tagToResourceIdentifiers) {
+									Map<String, List<String>> tagToResourceIdentifiers, AsyncGroup asyncGroup) {
 		File tagsFolder = new File(namespaceFolder, "tags");
 		if(!tagsFolder.exists())
 			return;
-		processFolder(namespace, "", tagsFolder, tagToResourceIdentifiers);
+		processFolder(namespace, "", tagsFolder, tagToResourceIdentifiers, asyncGroup);
 	}
 	
 	private void processFolder(String namespace, String parent, File folder, 
-									Map<String, List<String>> tagToResourceIdentifiers) {
+									Map<String, List<String>> tagToResourceIdentifiers, AsyncGroup asyncGroup) {
 		for(File file : folder.listFiles()) {
 			if(file.isDirectory()) {
-				processFolder(namespace, parent + file.getName() + "/", file, tagToResourceIdentifiers);
+				asyncGroup.runTask(()->{
+					processFolder(namespace, parent + file.getName() + "/", file, tagToResourceIdentifiers, asyncGroup);
+				});
 			}else if(file.isFile()) {
 				if(!file.getName().endsWith(".json"))
 					continue;
-				processTagsFile(namespace + ":" + parent + file.getName().split("\\.")[0], 
-								file, tagToResourceIdentifiers);
+				asyncGroup.runTask(()->{
+					processTagsFile(namespace + ":" + parent + file.getName().split("\\.")[0], 
+							file, tagToResourceIdentifiers);
+				});
 			}
 		}
 	}
@@ -509,14 +516,16 @@ public class ResourcePackJavaEdition extends ResourcePack{
 				}
 			}
 			
-			if(replace) {
-				tagToResourceIdentifiers.put(resourceIdentifier, values);
-			}else {
-				List<String> existingList = tagToResourceIdentifiers.getOrDefault(resourceIdentifier, null);
-				if(existingList == null) {
+			synchronized(tagToResourceIdentifiers) {
+				if(replace) {
 					tagToResourceIdentifiers.put(resourceIdentifier, values);
 				}else {
-					existingList.addAll(values);
+					List<String> existingList = tagToResourceIdentifiers.getOrDefault(resourceIdentifier, null);
+					if(existingList == null) {
+						tagToResourceIdentifiers.put(resourceIdentifier, values);
+					}else {
+						existingList.addAll(values);
+					}
 				}
 			}
 		} catch (Exception e) {

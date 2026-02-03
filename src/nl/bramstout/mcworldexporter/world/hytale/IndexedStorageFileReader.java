@@ -120,7 +120,7 @@ public class IndexedStorageFileReader {
 		int compressedSize = buffer.getInt(4);
 		int fullSize = compressedSize + 8;
 		if(fullSize > this.segmentSize) {
-			if((position + fullSize) >= this.fileSize) {
+			if((position + fullSize) > this.fileSize) {
 				//throw new IOException("EOF");
 				return null;
 			}

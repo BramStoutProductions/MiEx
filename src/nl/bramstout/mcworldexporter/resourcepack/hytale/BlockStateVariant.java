@@ -228,6 +228,7 @@ public class BlockStateVariant {
 	private String transitionTexture;
 	private String[] transitionToGroups;
 	private BlockAnimationHandler animationHandler;
+	private boolean looping;
 	
 	public BlockStateVariant(String name, JsonObject data) {
 		this.name = name;
@@ -256,6 +257,7 @@ public class BlockStateVariant {
 		this.transitionTexture = null;
 		this.transitionToGroups = null;
 		this.animationHandler = null;
+		this.looping = false;
 		
 		this.load(data);
 	}
@@ -293,6 +295,7 @@ public class BlockStateVariant {
 		if(other.transitionToGroups != null)
 			this.transitionToGroups = Arrays.copyOf(other.transitionToGroups, other.transitionToGroups.length);
 		this.animationHandler = other.animationHandler;
+		this.looping = other.looping;
 	}
 	
 	public void load(JsonObject data) {
@@ -350,17 +353,25 @@ public class BlockStateVariant {
 		if(data.has("CustomModelScale"))
 			this.customModelScale = data.get("CustomModelScale").getAsFloat();
 		
-		if(data.has("CustomModelAnimation") && data.has("Looping") && data.get("Looping").getAsBoolean()) {
+		if(data.has("CustomModelAnimation")) {
 			// We only want looping animations. It wouldn't make much sense to export out single fire animations.
-			String animationId = data.get("CustomModelAnimation").getAsString();
-			int sep = animationId.lastIndexOf('.');
-			if(sep != -1)
-				animationId = animationId.substring(0, sep);
-			if(animationId.indexOf(':') == -1)
-				animationId = "hytale:" + animationId;
-			
-			this.animationHandler = ResourcePacks.getBlockAnimationHandler(animationId);
+			JsonElement animationEl = data.get("CustomModelAnimation");
+			if(animationEl.isJsonNull()) {
+				this.animationHandler = null;
+			}else if(animationEl.isJsonPrimitive()) {
+				String animationId = animationEl.getAsString();
+				int sep = animationId.lastIndexOf('.');
+				if(sep != -1)
+					animationId = animationId.substring(0, sep);
+				if(animationId.indexOf(':') == -1)
+					animationId = "hytale:" + animationId;
+				
+				this.animationHandler = ResourcePacks.getBlockAnimationHandler(animationId);
+			}
 		}
+		
+		if(data.has("Looping"))
+			this.looping = data.get("Looping").getAsBoolean();
 		
 		if(data.has("RandomRotation")) {
 			String val = data.get("RandomRotation").getAsString();
@@ -629,6 +640,15 @@ public class BlockStateVariant {
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, 
 										BlockState state, BlockAnimationHandler animationHandler, float frame) {
+		BlockAnimationHandler animationHandler2 = animationHandler;
+		if(animationHandler == null && this.animationHandler != null && this.looping == false) {
+			// This variant has an animation applied on it, but not looping.
+			// In that case it was a transition animation, so we do want to apply it, but
+			// just at the end frame.
+			animationHandler2 = this.animationHandler;
+			frame = animationHandler2.getDuration();
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		List<Model> modelsCube = new ArrayList<Model>();
 		List<Model> modelsCustom = new ArrayList<Model>();
@@ -652,7 +672,7 @@ public class BlockStateVariant {
 				modelsCube.add(model);
 			}
 			if((this.drawType.equals("Model") || this.drawType.equals("CubeWithModel")) && customModelId != null) {
-				Model model = createCustomModel(x, y, z, permutation, animationHandler, frame);
+				Model model = createCustomModel(x, y, z, permutation, animationHandler2, frame);
 				if(transform != null)
 					model.transform(transform);
 				model.calculateOcclusions();
@@ -671,7 +691,7 @@ public class BlockStateVariant {
 				state.hasLiquid(properties), state.getLiquidName(properties), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				tintColor, state.needsConnectionInfo(), animationHandler == null ? this.animationHandler : animationHandler);
+				tintColor, state.needsConnectionInfo(), animationHandler == null ? (this.looping ? this.animationHandler : null) : animationHandler);
 	}
 	
 	private Model createCubeModel(int x, int y, int z, int permutation) {

@@ -65,7 +65,7 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 			for(Entry<String, JsonElement> entry : data.getAsJsonObject("nodeAnimations").entrySet()) {
 				if(entry.getValue().isJsonObject()) {
 					nodeAnimations.put(entry.getKey(), new NodeAnimation(entry.getKey(), 
-											entry.getValue().getAsJsonObject(), duration));
+											entry.getValue().getAsJsonObject(), duration, holdLastKeyframe));
 				}
 			}
 		}
@@ -76,7 +76,8 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 	}
 	
 	public NodeAnimation getNodeAnimation(String name) {
-		return nodeAnimations.getOrDefault(name, null);
+		NodeAnimation anim = nodeAnimations.getOrDefault(name, null);		
+		return anim;
 	}
 	
 	public static class NodeAnimation{
@@ -89,7 +90,7 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 		private AnimationChannel shapeVisible;
 		private AnimationChannel shapeUvOffset;
 		
-		public NodeAnimation(String name, JsonObject data, float duration) {
+		public NodeAnimation(String name, JsonObject data, float duration, boolean holdLastKeyframe) {
 			this.name = name;
 			position = null;
 			orientation = null;
@@ -100,27 +101,27 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 			if(data.has("position")) {
 				JsonArray keyframes = data.getAsJsonArray("position");
 				if(keyframes.size() > 0)
-					position = new AnimationChannel(keyframes, duration);
+					position = new AnimationChannel(keyframes, duration, holdLastKeyframe);
 			}
 			if(data.has("orientation")) {
 				JsonArray keyframes = data.getAsJsonArray("orientation");
 				if(keyframes.size() > 0)
-					orientation = new AnimationChannel(keyframes, duration);
+					orientation = new AnimationChannel(keyframes, duration, holdLastKeyframe);
 			}
 			if(data.has("shapeStretch")) {
 				JsonArray keyframes = data.getAsJsonArray("shapeStretch");
 				if(keyframes.size() > 0)
-					shapeStretch = new AnimationChannel(keyframes, duration);
+					shapeStretch = new AnimationChannel(keyframes, duration, holdLastKeyframe);
 			}
 			if(data.has("shapeVisible")) {
 				JsonArray keyframes = data.getAsJsonArray("shapeVisible");
 				if(keyframes.size() > 0)
-					shapeVisible = new AnimationChannel(keyframes, duration);
+					shapeVisible = new AnimationChannel(keyframes, duration, holdLastKeyframe);
 			}
 			if(data.has("shapeUvOffset")) {
 				JsonArray keyframes = data.getAsJsonArray("shapeUvOffset");
 				if(keyframes.size() > 0)
-					shapeUvOffset = new AnimationChannel(keyframes, duration);
+					shapeUvOffset = new AnimationChannel(keyframes, duration, holdLastKeyframe);
 			}
 		}
 		
@@ -150,10 +151,12 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 		
 		private List<Keyframe> keyframes;
 		private float duration;
+		private boolean holdLastKeyframe;
 		
-		public AnimationChannel(JsonArray data, float duration) {
+		public AnimationChannel(JsonArray data, float duration, boolean holdLastKeyframe) {
 			keyframes = new ArrayList<Keyframe>();
 			this.duration = duration;
+			this.holdLastKeyframe = holdLastKeyframe;
 			for(JsonElement el : data.asList()) {
 				if(el.isJsonObject()) {
 					keyframes.add(new Keyframe(el.getAsJsonObject()));
@@ -164,6 +167,11 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 		public void eval(float frame, Vector3f out) {
 			if(keyframes.isEmpty())
 				return;
+			
+			if(holdLastKeyframe && frame >= keyframes.get(keyframes.size()-1).time) {
+				interpolateHold(frame, out, keyframes.get(keyframes.size()-1));
+				return;
+			}
 			
 			// Wrap it
 			frame %= duration;
@@ -209,6 +217,11 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 		public void eval(float frame, Quaternion out) {
 			if(keyframes.isEmpty())
 				return;
+			
+			if(holdLastKeyframe && frame >= keyframes.get(keyframes.size()-1).time) {
+				interpolateHold(frame, out, keyframes.get(keyframes.size()-1));
+				return;
+			}
 			
 			// Wrap it
 			frame %= duration;

@@ -52,6 +52,7 @@ import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry.IBlockStateConstructor;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.Animation;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
@@ -118,33 +119,38 @@ public class ResourcePackHytale extends ResourcePack{
 
 	@Override
 	public void load() {
+		AsyncGroup asyncGroup = new AsyncGroup();
 		this.textureFilesCache.clear();
 		File commonFolder = new File(getFolder(), "Common");
 		if(commonFolder.exists()) {
-			searchBlockAnimations(commonFolder, "");
+			searchBlockAnimations(commonFolder, "", asyncGroup, 0);
 		}
 		
 		File blockStateFolder = new File(getFolder(), "Server/Item/Items");
 		if(blockStateFolder.exists()) {
-			searchBlockStates(blockStateFolder);
+			searchBlockStates(blockStateFolder, asyncGroup, 0);
 		}
 		
 		File biomeFolder = new File(getFolder(), "Server/Environments");
 		if(biomeFolder.exists()) {
 			searchBiomes(biomeFolder);
 		}
+		
+		asyncGroup.waitUntilDone();
 	}
 	
 	@Override
 	public void postLoad() {
+		AsyncGroup asyncGroup = new AsyncGroup();
 		File fluidBlockStateFolder = new File(getFolder(), "Server/Item/Block/Fluids");
 		if(fluidBlockStateFolder.exists()) {
 			searchFluidBlockStates(fluidBlockStateFolder);
 		}
 		
 		for(Entry<String, File> blockStateFile : blockStateFiles.entrySet()) {
-			parseBlockState(blockStateFile.getKey(), blockStateFile.getValue());
+			parseBlockState(blockStateFile.getKey(), blockStateFile.getValue(), asyncGroup);
 		}
+		asyncGroup.waitUntilDone();
 		
 		Tint waterTint = new Tint((JsonObject)null);
 		TintLayers waterBaseTint = new TintLayers();
@@ -155,22 +161,39 @@ public class ResourcePackHytale extends ResourcePack{
 		Tints.setTint("hytale:Water_Source", waterTint, true);
 	}
 	
-	private void searchBlockAnimations(File folder, String parent) {
+	private void searchBlockAnimations(File folder, String parent, AsyncGroup asyncGroup, int depth) {
 		for(File f : folder.listFiles()) {
 			if(f.isDirectory()) {
-				searchBlockAnimations(f, parent + f.getName() + "/");
+				if(depth == 1) {
+					asyncGroup.runTask(()->{
+						searchBlockAnimations(f, parent + f.getName() + "/", asyncGroup, depth+1);
+					});
+				}else {
+					searchBlockAnimations(f, parent + f.getName() + "/", asyncGroup, depth+1);
+				}
 			}else if(f.isFile() && f.getName().endsWith(".blockyanim")) {
-				String animName = parent + f.getName().substring(0, f.getName().length()-11);
-				animName = "hytale:" + animName;
-				blockAnimationFiles.put(animName, new BlockAnimationHandlerHytale(Json.read(f).getAsJsonObject()));
+				asyncGroup.runTask(()->{
+					String animName = parent + f.getName().substring(0, f.getName().length()-11);
+					animName = "hytale:" + animName;
+					BlockAnimationHandlerHytale handler = new BlockAnimationHandlerHytale(Json.read(f).getAsJsonObject());
+					synchronized(blockAnimationFiles) {
+						blockAnimationFiles.put(animName, handler);
+					}
+				});
 			}
 		}
 	}
 	
-	private void searchBlockStates(File folder) {
+	private void searchBlockStates(File folder, AsyncGroup asyncGroup, int depth) {
 		for(File f : folder.listFiles()) {
 			if(f.isDirectory()) {
-				searchBlockStates(f);
+				if(depth == 0) {
+					asyncGroup.runTask(()->{
+						searchBlockStates(f, asyncGroup, depth+1);
+					});
+				}else {
+					searchBlockStates(f, asyncGroup, depth+1);
+				}
 			}else if(f.isFile() && f.getName().endsWith(".json")) {
 				String blockName = f.getName().substring(0, f.getName().length()-5);
 				blockName = "hytale:" + blockName;
@@ -179,28 +202,34 @@ public class ResourcePackHytale extends ResourcePack{
 		}
 	}
 	
-	private void parseBlockState(String blockName, File f) {
+	private void parseBlockState(String blockName, File f, AsyncGroup asyncGroup) {
 		// The block state file will indicate what biome tints there are
 		// on the block, so we need to add them to the tints registry.
 		
-		BlockStateHandler blockStateHandler = ResourcePacks.getBlockStateHandler(blockName);
-		if(blockStateHandler != null && blockStateHandler instanceof BlockStateHandlerHytale) {
-			if(((BlockStateHandlerHytale)blockStateHandler).hasBiomeTint()) {
-				Tint tint = new Tint((JsonObject)null);
-				TintLayers tintLayers = new TintLayers();
-				tintLayers.setLayer(0, new TintValue(null, "hytale:tint"));
-				tint.setBaseTint(tintLayers);
-				Tints.setTint(blockName, tint, true);
+		asyncGroup.runTask(()->{
+			BlockStateHandler blockStateHandler = ResourcePacks.getBlockStateHandler(blockName);
+			if(blockStateHandler != null && blockStateHandler instanceof BlockStateHandlerHytale) {
+				if(((BlockStateHandlerHytale)blockStateHandler).hasBiomeTint()) {
+					Tint tint = new Tint((JsonObject)null);
+					TintLayers tintLayers = new TintLayers();
+					tintLayers.setLayer(0, new TintValue(null, "hytale:tint"));
+					tint.setBaseTint(tintLayers);
+					Tints.setTint(blockName, tint, true);
+				}
+				if(((BlockStateHandlerHytale)blockStateHandler).isTransparent()) {
+					synchronized(Config.transparentOcclusion) {
+						Config.transparentOcclusion.add(blockName);
+					}
+				}
+				
+				synchronized(asyncGroup) {
+					for(Entry<String, BlockStateVariant> variant : ((BlockStateHandlerHytale)blockStateHandler).getVariants().entrySet()) {
+						addTransitionTextures(blockName, variant.getKey(), variant.getValue(), 
+								((BlockStateHandlerHytale)blockStateHandler).getVariants().size());
+					}
+				}
 			}
-			if(((BlockStateHandlerHytale)blockStateHandler).isTransparent()) {
-				Config.transparentOcclusion.add(blockName);
-			}
-			
-			for(Entry<String, BlockStateVariant> variant : ((BlockStateHandlerHytale)blockStateHandler).getVariants().entrySet()) {
-				addTransitionTextures(blockName, variant.getKey(), variant.getValue(), 
-						((BlockStateHandlerHytale)blockStateHandler).getVariants().size());
-			}
-		}
+		});
 	}
 	
 	private void addTransitionTextures(String blockName, String variantName, BlockStateVariant variant, int numVariants) {
@@ -492,24 +521,32 @@ public class ResourcePackHytale extends ResourcePack{
 
 	@Override
 	public void parseTags(Map<String, List<String>> tagToResourceIdentifiers) {
+		AsyncGroup asyncGroup = new AsyncGroup();
 		for(Entry<String, File> blockStateFile : blockStateFiles.entrySet()) {
 			
-			BlockStateHandler blockStateHandler = ResourcePacks.getBlockStateHandler(blockStateFile.getKey());
-			if(blockStateHandler != null && blockStateHandler instanceof BlockStateHandlerHytale) {
-				String group = ((BlockStateHandlerHytale) blockStateHandler).getGroup();
-				if(group.isEmpty())
-					continue;
-				if(group.indexOf(':') == -1)
-					group = "hytale:" + group;
-				
-				List<String> blockList = tagToResourceIdentifiers.getOrDefault(group, null);
-				if(blockList == null) {
-					blockList = new ArrayList<String>();
-					tagToResourceIdentifiers.put(group, blockList);
+			final String blockStateName = blockStateFile.getKey();
+			
+			asyncGroup.runTask(()->{
+				BlockStateHandler blockStateHandler = ResourcePacks.getBlockStateHandler(blockStateName);
+				if(blockStateHandler != null && blockStateHandler instanceof BlockStateHandlerHytale) {
+					String group = ((BlockStateHandlerHytale) blockStateHandler).getGroup();
+					if(group.isEmpty())
+						return;
+					if(group.indexOf(':') == -1)
+						group = "hytale:" + group;
+					
+					synchronized(tagToResourceIdentifiers) {
+						List<String> blockList = tagToResourceIdentifiers.getOrDefault(group, null);
+						if(blockList == null) {
+							blockList = new ArrayList<String>();
+								tagToResourceIdentifiers.put(group, blockList);
+						}
+						blockList.add(blockStateFile.getKey());
+					}
 				}
-				blockList.add(blockStateFile.getKey());
-			}
+			});
 		}
+		asyncGroup.waitUntilDone();
 	}
 
 	@Override

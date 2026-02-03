@@ -204,6 +204,16 @@ public class ModelHandlerHytale extends ModelHandler{
 			NodeAnimation animation = null;
 			if(animationHandler != null)
 				animation = animationHandler.getNodeAnimation(name);
+			
+			if(animation != null && animation.getShapeVisible() != null) {
+				Vector3f animVisible = new Vector3f();
+				animation.getShapeVisible().eval(frame, animVisible);
+				if(animVisible.x < 0.999f)
+					return;
+			}
+			if(this.shape != null && this.shape.visible == false)
+				return;
+			
 			Matrix transform = parentTransform.mult(getTransform(animation, frame));
 			if(this.shape != null) {
 				this.shape.addGeometry(model, transform, forceSingleSided, animation, frame);
@@ -384,15 +394,8 @@ public class ModelHandlerHytale extends ModelHandler{
 		
 		public void addGeometry(Model model, Matrix transform, boolean forceSingleSided, 
 								NodeAnimation animation, float frame) {
-			if(animation != null && animation.getShapeVisible() != null) {
-				Vector3f animVisible = new Vector3f();
-				animation.getShapeVisible().eval(frame, animVisible);
-				if(animVisible.x < 0.999f)
-					return;
-			}else {
-				if(this.visible == false)
-					return;
-			}
+			if(this.visible == false)
+				return;
 			
 			float stretchX = this.stretch.x;
 			float stretchY = this.stretch.y;
@@ -533,8 +536,52 @@ public class ModelHandlerHytale extends ModelHandler{
 				}
 			}
 			
+			if(this.size.x < 0.001f) {
+				removeFace(Faces.NORTH);
+				removeFace(Faces.SOUTH);
+				removeFace(Faces.TOP);
+				removeFace(Faces.BOTTOM);
+			}
+			if(this.size.y < 0.001f) {
+				removeFace(Faces.NORTH);
+				removeFace(Faces.SOUTH);
+				removeFace(Faces.EAST);
+				removeFace(Faces.WEST);
+			}
+			if(this.size.z < 0.001f) {
+				removeFace(Faces.EAST);
+				removeFace(Faces.WEST);
+				removeFace(Faces.TOP);
+				removeFace(Faces.BOTTOM);
+			}
 			if(this.size.x < 0.001f || this.size.y < 0.001f || this.size.z < 0.001f) {
-				throw new RuntimeException("Zero size");
+				if(this.faces.length >= 2) {
+					// This must mean that we have opposite faces,
+					// so to prevent z-fighting, let's make sure to set
+					// this as single sided.
+					this.doubleSided = false;
+				}
+			}else {
+				if(this.faces.length < 6) {
+					// Looks like doubleSidedness isn't being taken into account for
+					// models in Hytale. So, to make sure that it shows up correcty,
+					// have doubleSided set to true.
+					this.doubleSided = true;
+				}
+			}
+		}
+		
+		private void removeFace(Faces face) {
+			for(int i = 0; i < this.faces.length; i++) {
+				if(this.faces[i] == face) {
+					Faces[] newFaces = new Faces[this.faces.length-1];
+					for(int j = 0; j < i; ++j)
+						newFaces[j] = this.faces[j];
+					for(int j = i+1; j < this.faces.length; ++j)
+						newFaces[j-1] = this.faces[j];
+					this.faces = newFaces;
+					break;
+				}
 			}
 		}
 		

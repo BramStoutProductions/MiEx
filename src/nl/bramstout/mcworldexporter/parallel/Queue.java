@@ -33,18 +33,18 @@ package nl.bramstout.mcworldexporter.parallel;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public class Queue<T> {
 
 	private static class Block<T>{
-		private T[] data;
+		private AtomicReferenceArray<T> data;
 		private long startAddress;
-		public Block<T> nextBlock;
+		public AtomicReference<Block<T>> nextBlock;
 		
-		@SuppressWarnings("unchecked")
 		public Block(long startAddress) {
-			data = (T[]) new Object[1024];
-			nextBlock = null;
+			data = new AtomicReferenceArray<T>(1024);
+			nextBlock = new AtomicReference<Queue.Block<T>>(null);
 			this.startAddress = startAddress;
 		}
 		
@@ -53,30 +53,33 @@ public class Queue<T> {
 			if(localIndex >= 1024) {
 				if(nextBlock == null)
 					return null;
-				return nextBlock.get(index);
+				return nextBlock.get().get(index);
 			}
-			return data[(int) localIndex];
+			return data.get((int) localIndex);
 		}
 		
 		public void set(long index, T value) {
 			long localIndex = index - startAddress;
 			if(localIndex >= 1024) {
-				nextBlock.set(index, value);
+				nextBlock.get().set(index, value);
 			}else {
-				if(localIndex == 0)
-					nextBlock = new Block<T>(startAddress + 1024);
-				data[(int) localIndex] = value;
+				if(localIndex == 0) {
+					nextBlock.set(new Block<T>(startAddress + 1024));
+				}
+				data.set((int) localIndex, value);
 			}
 		}
 	}
 	
 	private AtomicLong readIndex;
+	private AtomicLong readableIndex;
 	private AtomicLong writeIndex;
 	private AtomicReference<Block<T>> readBlock;
 	private AtomicReference<Block<T>> writeBlock;
 	
 	public Queue() {
 		this.readIndex = new AtomicLong(0);
+		this.readableIndex = new AtomicLong(0);
 		this.writeIndex = new AtomicLong(0);
 		this.readBlock = new AtomicReference<Block<T>>(new Block<T>(0));
 		this.writeBlock = new AtomicReference<Block<T>>(this.readBlock.get());
@@ -90,7 +93,11 @@ public class Queue<T> {
 		// Set the value
 		try {
 			block.set(index, value);
-		}catch(Exception ex) {}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		readableIndex.incrementAndGet();
 		// If we've reached the next block, then update
 		// the writeBlock value to the next block.
 		// If we are going really fast, nextBlock might still be
@@ -100,27 +107,37 @@ public class Queue<T> {
 			Thread.yield();
 		}
 		if(index - block.startAddress == 1152)
-			writeBlock.set(block.nextBlock);
+			writeBlock.set(block.nextBlock.get());
 	}
 	
 	public T pop() {
 		// Get the block
 		Block<T> block = readBlock.get();
 		
-		long _writeIndex = writeIndex.get();
-		// Get the current index for reading.
-		long index = readIndex.getAndIncrement();
-		// If we are at the end of the queue, return null;
-		if(index >= _writeIndex) {
-			readIndex.decrementAndGet();
-			return null;
+		long _writeIndex = readableIndex.get();
+		long index = -1;
+		while(true) {
+			// Get the current index for reading.
+			index = readIndex.get();
+			// If we are at the end of the queue, return null;
+			if(index >= _writeIndex) {
+				return null;
+			}
+			boolean success = readIndex.compareAndSet(index, index+1);
+			// If it wasn't a success, that meant that another thread
+			// beat us and got this index first.
+			if(success)
+				break;
 		}
 		// Get the value
 		T value = block.get(index);
+		if(value == null) {
+			throw new RuntimeException();
+		}
 		// If we've reached the next block, then update
 		// the readBlock value to the next block.
 		if(index - block.startAddress == 1152)
-			readBlock.set(block.nextBlock);
+			readBlock.set(block.nextBlock.get());
 		return value;
 	}
 	

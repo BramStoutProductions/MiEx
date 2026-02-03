@@ -851,7 +851,12 @@ public class USDConverter extends Converter{
 			
 			FloatArray times = new FloatArray();
 			
-			float stageDuration = (Config.animationEndFrame - Config.animationEndFrame) / fps;
+			Map<String, Mesh> baseMeshes = animatedBlockBaseMeshes.get(animatedBlock.getId());
+			if(baseMeshes == null)
+				return;
+			Map<String, String> mats = animatedBlockMats.get(animatedBlock.getId());
+			
+			float stageDuration = (Config.animationEndFrame - Config.animationStartFrame) / fps;
 			for(int blockIndex = 0; blockIndex < numBlocks; ++blockIndex) {
 				int numLoops = (int) ((stageDuration / animatedBlock.getDuration())+1);
 				float timeOffset = animatedBlock.getTimeOffsets().get(blockIndex);
@@ -866,9 +871,6 @@ public class USDConverter extends Converter{
 					times.add(time);
 					times.add(animatedBlock.getDuration() * fps);
 				}
-				
-				Map<String, Mesh> baseMeshes = animatedBlockBaseMeshes.get(animatedBlock.getId());
-				Map<String, String> mats = animatedBlockMats.get(animatedBlock.getId());
 				
 				chunkWriter.beginDef(baseMeshes.size() <= 1 ? "Mesh" : "Xform", blockName + "_" + Integer.toString(blockIndex));
 				chunkWriter.beginMetaData();
@@ -970,27 +972,29 @@ public class USDConverter extends Converter{
 						Integer.toHexString(animatedBlock.getId().z) + "_";
 				blockName = Util.makeSafeName(blockName);
 				Map<String, Mesh> baseMeshes = animatedBlockBaseMeshes.get(animatedBlock.getId());
-				topologyWriter.beginDef(baseMeshes.size() <= 1 ? "Mesh" : "Xform", blockName);
-				topologyWriter.beginChildren();
-				if(baseMeshes.size() <= 1) {
-					for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
-						writeAnimatedBaseMesh(animatedBlock.getId(), entry.getKey(), entry.getValue(), topologyWriter);
+				if(baseMeshes != null) {
+					topologyWriter.beginDef(baseMeshes.size() <= 1 ? "Mesh" : "Xform", blockName);
+					topologyWriter.beginChildren();
+					if(baseMeshes.size() <= 1) {
+						for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
+							writeAnimatedBaseMesh(animatedBlock.getId(), entry.getKey(), entry.getValue(), topologyWriter);
+						}
+					}else {
+						for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
+							topologyWriter.beginDef("Mesh", entry.getKey());
+							topologyWriter.beginMetaData();
+							topologyWriter.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
+							topologyWriter.endMetaData();
+							topologyWriter.beginChildren();
+							writeAnimatedBaseMesh(animatedBlock.getId(), entry.getKey(), entry.getValue(), topologyWriter);
+							topologyWriter.endChildren();
+							topologyWriter.endDef();
+						}
 					}
-				}else {
-					for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
-						topologyWriter.beginDef("Mesh", entry.getKey());
-						topologyWriter.beginMetaData();
-						topologyWriter.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
-						topologyWriter.endMetaData();
-						topologyWriter.beginChildren();
-						writeAnimatedBaseMesh(animatedBlock.getId(), entry.getKey(), entry.getValue(), topologyWriter);
-						topologyWriter.endChildren();
-						topologyWriter.endDef();
-					}
+					
+					topologyWriter.endChildren();
+					topologyWriter.endDef();
 				}
-				
-				topologyWriter.endChildren();
-				topologyWriter.endDef();
 			}
 			
 			writer.close(false);

@@ -267,45 +267,33 @@ public class MCWorldExporter {
 					}
 					System.out.println();
 					
-					int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
-							"This world makes use of resource packs and/or mods. Would you like to enable the resource packs for it?", 
-							"Load Resource Packs?", JOptionPane.YES_NO_OPTION);
+					List<String> sourceUuids = new ArrayList<String>();
+					for(ResourcePackSource source : dependentRPs)
+						sourceUuids.addAll(source.getSourceUuids());
+					List<ResourcePack> neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
 					
-					if(option == 0) {
-						List<String> sourceUuids = new ArrayList<String>();
-						for(ResourcePackSource source : dependentRPs)
-							sourceUuids.addAll(source.getSourceUuids());
-						List<ResourcePack> neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
-						
-						if(neededResourcePacks != null) {
-							List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
-							for(ResourcePack rp : neededResourcePacks) {
-								boolean hasAlready = false;
-								for(ResourcePack rp2 : activeResourcePacks) {
-									if(rp2.getUUID() == rp.getUUID()) {
-										hasAlready = true;
-										break;
-									}
+					boolean hasLoadedEverything = false;
+					if(neededResourcePacks != null) {
+						hasLoadedEverything = true;
+						for(ResourcePack rp : neededResourcePacks) {
+							boolean isActive = false;
+							for(ResourcePack rp2 : ResourcePacks.getActiveResourcePacks()) {
+								if(rp2.getUUID().equals(rp.getUUID())) {
+									isActive = true;
+									break;
 								}
-								if(hasAlready)
-									continue;
-								activeResourcePacks.add(0, rp);
 							}
-							ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-							getUI().getResourcePackManager().syncWithResourcePacks();
-						}else {
-							// We don't have all of the resource packs needed, so let's show the user the dialog
-							// so that they can extract it.
-							ResourcePackSourcesExtractorDialog dialog = new ResourcePackSourcesExtractorDialog(tmpWorld, dependentRPs);
-							dialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
-							dialog.setVisible(true);
-							
-							ResourcePacks.load();
-							MCWorldExporter.getApp().getUI().getResourcePackManager().syncWithResourcePacks();
-							
-							// Let's try it again, in the hopes that we now have everything.
-							// Otherwise, just load in the world.
-							neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
+							if(!isActive)
+								hasLoadedEverything = false;
+						}
+					}
+					
+					if(!hasLoadedEverything) {
+						int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+								"This world makes use of resource packs and/or mods. Would you like to enable the resource packs for it?", 
+								"Load Resource Packs?", JOptionPane.YES_NO_OPTION);
+						
+						if(option == 0) {
 							if(neededResourcePacks != null) {
 								List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 								for(ResourcePack rp : neededResourcePacks) {
@@ -322,6 +310,36 @@ public class MCWorldExporter {
 								}
 								ResourcePacks.setActiveResourcePacks(activeResourcePacks);
 								getUI().getResourcePackManager().syncWithResourcePacks();
+							}else {
+								// We don't have all of the resource packs needed, so let's show the user the dialog
+								// so that they can extract it.
+								ResourcePackSourcesExtractorDialog dialog = new ResourcePackSourcesExtractorDialog(tmpWorld, dependentRPs);
+								dialog.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+								dialog.setVisible(true);
+								
+								ResourcePacks.load();
+								MCWorldExporter.getApp().getUI().getResourcePackManager().syncWithResourcePacks();
+								
+								// Let's try it again, in the hopes that we now have everything.
+								// Otherwise, just load in the world.
+								neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
+								if(neededResourcePacks != null) {
+									List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+									for(ResourcePack rp : neededResourcePacks) {
+										boolean hasAlready = false;
+										for(ResourcePack rp2 : activeResourcePacks) {
+											if(rp2.getUUID() == rp.getUUID()) {
+												hasAlready = true;
+												break;
+											}
+										}
+										if(hasAlready)
+											continue;
+										activeResourcePacks.add(0, rp);
+									}
+									ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+									getUI().getResourcePackManager().syncWithResourcePacks();
+								}
 							}
 						}
 					}

@@ -95,18 +95,31 @@ public class ThreadPool {
 		queue.push(task);
 		return task;
 	}
+	
+	public void submit(Task task) {
+		queue.push(task);
+	}
 
 	public static class Task {
 		public Runnable runnable;
 		private AtomicInteger future;
+		private AtomicInteger taskCounter;
 
 		public Task(Runnable runnable) {
 			this.runnable = runnable;
 			this.future = new AtomicInteger();
+			this.taskCounter = null;
+		}
+		
+		public void setTaskCounter(AtomicInteger taskCounter) {
+			this.taskCounter = taskCounter;
+			this.taskCounter.incrementAndGet();
 		}
 
 		public void done() {
 			this.future.addAndGet(1);
+			if(taskCounter != null)
+				taskCounter.decrementAndGet();
 		}
 
 		public void waitUntilTaskIsDone() {
@@ -115,6 +128,23 @@ public class ThreadPool {
 					Thread.sleep(5);
 				}catch(Exception ex) {
 					ex.printStackTrace();
+				}
+			}
+		}
+		
+		public void waitUntilTaskIsDoneFast() {
+			int counter = 0;
+			while(this.future.get() == 0) {
+				counter++;
+				if(counter < 20) {
+					for(int i = 0; i < (counter*counter); ++i)
+						Thread.yield();
+				}else {
+					try {
+						Thread.sleep(5);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 			}
 		}
