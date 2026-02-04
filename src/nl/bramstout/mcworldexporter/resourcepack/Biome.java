@@ -72,23 +72,4 @@ public abstract class Biome {
 		return biomeColours.entrySet();
 	}
 	
-	/*public TintLayers getBiomeColor(BlockState state, Block block) {
-		Tint tint = Tints.getTint(block.getName());
-		if(tint == null)
-			return null;
-		TintLayers layers = tint.getTint(block.getProperties());
-		return layers;
-		
-		/*Tint tint = Tints.getTint(block.getName());
-		if(tint != null)
-			return tint.getTint(block.getProperties());
-		if(state.isGrassColormap())
-			return getGrassColour();
-		else if(state.isFoliageColormap())
-			return getFoliageColour();
-		else if(state.isWaterColormap())
-			return getWaterColour();
-		return new Color();*/
-	//}
-	
 }

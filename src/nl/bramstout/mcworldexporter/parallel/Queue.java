@@ -51,8 +51,9 @@ public class Queue<T> {
 		public T get(long index) {
 			long localIndex = index - startAddress;
 			if(localIndex >= 1024) {
-				if(nextBlock == null)
-					return null;
+				while(nextBlock.get() == null) {
+					Thread.yield();
+				}
 				return nextBlock.get().get(index);
 			}
 			return data.get((int) localIndex);
@@ -113,6 +114,7 @@ public class Queue<T> {
 	public T pop() {
 		// Get the block
 		Block<T> block = readBlock.get();
+		T value = null;
 		
 		long _writeIndex = readableIndex.get();
 		long index = -1;
@@ -123,17 +125,23 @@ public class Queue<T> {
 			if(index >= _writeIndex) {
 				return null;
 			}
+			// Get the value
+			value = block.get(index);
+			if(value == null) {
+				// Not yet set
+				return null;
+			}
+			
 			boolean success = readIndex.compareAndSet(index, index+1);
 			// If it wasn't a success, that meant that another thread
 			// beat us and got this index first.
 			if(success)
 				break;
+			try {
+				Thread.sleep(0);
+			}catch(Exception ex) {}
 		}
-		// Get the value
-		T value = block.get(index);
-		if(value == null) {
-			throw new RuntimeException();
-		}
+		
 		// If we've reached the next block, then update
 		// the readBlock value to the next block.
 		if(index - block.startAddress == 1152)

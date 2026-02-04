@@ -176,6 +176,7 @@ public class MCWorldExporter {
 				
 				
 				List<String> requiredResourcePacks = tmpWorld.getRequiredResourcePacks();
+				List<ResourcePackSource> dependentRPs = tmpWorld.getDependentResourcePacks();
 				for(String rp : requiredResourcePacks) {
 					System.out.println("World requires resource pack: " + rp);
 				}
@@ -184,9 +185,10 @@ public class MCWorldExporter {
 					if(requiredResourcePacks.contains(pack.getUUID()))
 						missingRequired.remove(pack.getUUID());
 				}
+				List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+				boolean changedActiveResourcePacks = false;
 				if(!missingRequired.isEmpty()) {
 					// We have some resource packs that are absolutely required, so let's load them.
-					List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 					Iterator<String> it = missingRequired.iterator();
 					while(it.hasNext()) {
 						String packUuid = it.next();
@@ -194,6 +196,7 @@ public class MCWorldExporter {
 						if(pack != null) {
 							it.remove();
 							activeResourcePacks.add(pack);
+							changedActiveResourcePacks = true;
 						}
 					}
 					// If the missing resource packs are certain base_resource_packs, then try setting them up.
@@ -211,6 +214,7 @@ public class MCWorldExporter {
 							ResourcePack pack = ResourcePacks.getResourcePack("base_resource_pack_hytale");
 							if(pack != null) {
 								activeResourcePacks.add(pack);
+								changedActiveResourcePacks = true;
 								missingRequired.remove("base_resource_pack_hytale");
 							}
 						}
@@ -218,12 +222,9 @@ public class MCWorldExporter {
 					
 					
 					if(missingRequired.isEmpty()) {
-						// We got all required resource packs, so set those as active.
-						System.out.println("Setting active resource packs to:");
-						for(ResourcePack rp : activeResourcePacks)
-							System.out.println("  " + rp.getUUID());
-						ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-						getUI().getResourcePackManager().syncWithResourcePacks();
+						// We got all required resource packs, so set those as active,
+						// which happens later on in case the world also has dependent resource packs.
+						// That way we avoid loading resource packs twice.
 					}else {
 						// We are still missing some resource packs,
 						// so let's refuse to load this world.
@@ -256,7 +257,6 @@ public class MCWorldExporter {
 				// The world might have been created using certain resource packs,
 				// data packs, mods, etc. If so, let's ask the user if they want MiEx
 				// to load it.
-				List<ResourcePackSource> dependentRPs = tmpWorld.getDependentResourcePacks();
 				if(!dependentRPs.isEmpty()) {
 					System.out.println("World contains dependent resource packs:");
 					for(ResourcePackSource rp : dependentRPs) {
@@ -295,7 +295,6 @@ public class MCWorldExporter {
 						
 						if(option == 0) {
 							if(neededResourcePacks != null) {
-								List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 								for(ResourcePack rp : neededResourcePacks) {
 									boolean hasAlready = false;
 									for(ResourcePack rp2 : activeResourcePacks) {
@@ -307,9 +306,8 @@ public class MCWorldExporter {
 									if(hasAlready)
 										continue;
 									activeResourcePacks.add(0, rp);
+									changedActiveResourcePacks = true;
 								}
-								ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-								getUI().getResourcePackManager().syncWithResourcePacks();
 							}else {
 								// We don't have all of the resource packs needed, so let's show the user the dialog
 								// so that they can extract it.
@@ -324,7 +322,6 @@ public class MCWorldExporter {
 								// Otherwise, just load in the world.
 								neededResourcePacks = ResourcePacks.getResourcePacksForSources(sourceUuids);
 								if(neededResourcePacks != null) {
-									List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
 									for(ResourcePack rp : neededResourcePacks) {
 										boolean hasAlready = false;
 										for(ResourcePack rp2 : activeResourcePacks) {
@@ -336,15 +333,17 @@ public class MCWorldExporter {
 										if(hasAlready)
 											continue;
 										activeResourcePacks.add(0, rp);
+										changedActiveResourcePacks = true;
 									}
-									ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-									getUI().getResourcePackManager().syncWithResourcePacks();
 								}
 							}
 						}
 					}
 				}
-				
+				if(changedActiveResourcePacks) {
+					ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+					getUI().getResourcePackManager().syncWithResourcePacks();
+				}
 				
 				
 				

@@ -459,9 +459,13 @@ public class ModelHandlerHytale extends ModelHandler{
 				float tmp = minV;
 				minV = maxV;
 				maxV = tmp;
-				if(minU == maxU || minV == maxV) {
-					throw new RuntimeException("UVs are zero");
-				}
+				//if(minU == maxU || minV == maxV) {
+					//throw new RuntimeException("UVs are zero");
+				//}
+				if(minU == maxU)
+					maxU = minU + 1;
+				if(minV == maxV)
+					maxV = minV + 1;
 
 				modelFace.getUVs()[0] = minU;
 				modelFace.getUVs()[1] = minV;

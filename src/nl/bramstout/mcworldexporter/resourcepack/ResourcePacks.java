@@ -59,6 +59,7 @@ import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
 import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
+import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -407,6 +408,12 @@ public class ResourcePacks {
 			if(biome != null)
 				resBiome.getSubBiomes().add(biome);
 		}
+		if(name.equals("minecraft:the_void") && resBiome.getSubBiomes().isEmpty()) {
+			// minecraft:the_void is used as the default fallback biome,
+			// but it could be that it's not defined. If so, just add in
+			// some placeholder biome.
+			resBiome.getSubBiomes().add(new BiomeCombined("minecraft:the_void", 0));
+		}
 		resBiome.calculateTints();
 		if(resBiome.getSubBiomes().isEmpty())
 			World.handleError(new Exception("No biome file available for " + name));
@@ -431,6 +438,12 @@ public class ResourcePacks {
 			BlockStateHandler blockStateHandler = pack.getBlockStateHandler(name);
 			if(blockStateHandler != null)
 				return blockStateHandler;
+		}
+		if(name.equals("minecraft:air")) {
+			// minecraft:air is used as the default fallback block,
+			// but it could be that it's not defined. If so, just return
+			// a placeholder blockstate handler.
+			return new BlockStateHandlerJavaEdition("minecraft:air", null);
 		}
 		return null;
 	}

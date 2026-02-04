@@ -36,13 +36,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ReadWriteMutex {
 	
 	private AtomicInteger lock;
+	private AtomicInteger wantsWrite;
 	
 	public ReadWriteMutex() {
 		lock = new AtomicInteger(0);
+		wantsWrite = new AtomicInteger(0);
 	}
 	
 	public void acquireRead() {
+		int counter = 0;
 		while(true) {
+			if(wantsWrite.get() > 0) {
+				counter++;
+				if(counter < 20) {
+					for(int i = 0; i < counter*counter; ++i)
+						Thread.yield();
+				}else {
+					try {
+						Thread.sleep(1);
+					}catch(Exception ex) {}
+				}
+				continue;
+			}
 			int val = lock.incrementAndGet();
 			if(val > 0)
 				return;
@@ -51,10 +66,21 @@ public class ReadWriteMutex {
 			// It could be that the write lock got released
 			// just now, so we use a compare and set.
 			lock.compareAndSet(val, -100000000);
+			
+			counter++;
+			if(counter < 20) {
+				for(int i = 0; i < counter*counter; ++i)
+					Thread.yield();
+			}else {
+				try {
+					Thread.sleep(1);
+				}catch(Exception ex) {}
+			}
 		}
 	}
 	
 	public void acquireWrite() {
+		wantsWrite.incrementAndGet();
 		while(true) {
 			int val = lock.get();
 			if(val != 0) { // Write or read lock already acquired
@@ -68,6 +94,7 @@ public class ReadWriteMutex {
 			}
 			break;
 		}
+		wantsWrite.decrementAndGet();
 	}
 	
 	public void releaseRead() {

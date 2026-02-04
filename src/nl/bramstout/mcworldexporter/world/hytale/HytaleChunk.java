@@ -680,7 +680,7 @@ public class HytaleChunk {
 			palette = new Object[blockCount];
 			
 			for(int i = 0; i < blockCount; ++i) {
-				int paletteIndex = bis.readByte();
+				int paletteIndex = ((int) bis.readByte()) & 0xFF;
 				if(paletteIndex >= palette.length)
 					palette = Arrays.copyOf(palette, paletteIndex+1);
 				
@@ -716,7 +716,7 @@ public class HytaleChunk {
 			palette = new Object[blockCount];
 			
 			for(int i = 0; i < blockCount; ++i) {
-				int paletteIndex = bis.readByte();
+				int paletteIndex = ((int) bis.readByte()) & 0xFF;
 				if(paletteIndex >= palette.length)
 					palette = Arrays.copyOf(palette, paletteIndex+1);
 				
@@ -733,7 +733,7 @@ public class HytaleChunk {
 			
 			data = new short[32*32*32];
 			for(int i = 0; i < data.length; ++i) {
-				int paletteIndex = ids[i];
+				int paletteIndex = ((int) ids[i]) & 0xFF;
 				
 				if(paletteIndex < palette.length) {
 					data[i] = (short) paletteIndex;
@@ -750,7 +750,7 @@ public class HytaleChunk {
 			palette = new Object[blockCount];
 			
 			for(int i = 0; i < blockCount; ++i) {
-				int paletteIndex = bis.readByte();
+				int paletteIndex = ((int) bis.readShort()) & 0xFFFF;
 				if(paletteIndex >= palette.length)
 					palette = Arrays.copyOf(palette, paletteIndex+1);
 				
@@ -820,6 +820,8 @@ public class HytaleChunk {
 				
 				if(biomeName.indexOf(':') == -1)
 					biomeName = "hytale:" + biomeName;
+				if(biomeName.equals("hytale:Unknown"))
+					biomeName = "hytale:Env_Default_Void";
 				
 				biomeName = biomeTranslatorManager.map(biomeName);
 				
