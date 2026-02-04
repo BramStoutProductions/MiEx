@@ -450,10 +450,17 @@ public class HytaleChunk {
 							}
 							
 							if(stateStr != null) {
-								String[] tokens = stateStr.split("_");
+								/*String[] tokens = stateStr.split("_");
 								for(int tokenI = 0; tokenI < tokens.length/2; ++tokenI) {
 									NbtTagString propTag = NbtTagString.newNonPooledInstance(
 															tokens[tokenI*2], tokens[tokenI*2+1]);
+									properties.addElement(propTag);
+								}*/
+								sep = stateStr.indexOf('_');
+								if(sep != -1) {
+									String name = stateStr.substring(0, sep);
+									String val = stateStr.substring(sep + 1);
+									NbtTagString propTag = NbtTagString.newNonPooledInstance(name, val);
 									properties.addElement(propTag);
 								}
 							}

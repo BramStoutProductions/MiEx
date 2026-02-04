@@ -31,6 +31,9 @@
 
 package nl.bramstout.mcworldexporter.model;
 
+import nl.bramstout.mcworldexporter.math.Matrix;
+import nl.bramstout.mcworldexporter.math.Vector3f;
+
 public enum Direction {
 
 	DOWN(0, 0, -1, 0, -90, 0), UP(1, 0, 1, 0, 90, 180), 
@@ -81,6 +84,42 @@ public enum Direction {
 			return WEST;
 		}
 		return DOWN;
+	}
+	
+	public Direction getRight() {
+		switch(this) {
+		case DOWN:
+			return EAST;
+		case UP:
+			return EAST;
+		case NORTH:
+			return EAST;
+		case SOUTH:
+			return WEST;
+		case WEST:
+			return NORTH;
+		case EAST:
+			return SOUTH;
+		}
+		return NORTH;
+	}
+	
+	public Direction getLeft() {
+		return getRight().getOpposite();
+	}
+	
+	public Direction transform(Matrix matrix) {
+		Vector3f vec = matrix.transformDirection(new Vector3f(x, y, z));
+		Direction closestDir = null;
+		float closestDot = -2f;
+		for(Direction dir : CACHED_VALUES) {
+			float dot = ((float) dir.x) * vec.x + ((float) dir.y) * vec.y + ((float) dir.z) * vec.z;
+			if(dot > closestDot) {
+				closestDir = dir;
+				closestDot = dot;
+			}
+		}
+		return closestDir;
 	}
 	
 	public static Direction getDirection(String name) {

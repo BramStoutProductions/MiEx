@@ -52,10 +52,12 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 	
 	private Map<String, BlockStateVariant> variants;
 	private String group;
+	private ConnectedBlockRuleSet connectedBlockRuleSet;
 	
 	public BlockStateHandlerHytale(String name, JsonObject data, ResourcePackHytale rp) {
 		this.variants = new HashMap<String, BlockStateVariant>();
 		this.group = "";
+		this.connectedBlockRuleSet = null;
 		if(data == null)
 			return;
 		
@@ -98,6 +100,13 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 					}
 				}
 			}
+			
+			if(blockType.has("ConnectedBlockRuleSet")) {
+				JsonElement cbrsData = blockType.get("ConnectedBlockRuleSet");
+				if(cbrsData.isJsonObject()) {
+					this.connectedBlockRuleSet = ConnectedBlockRuleSet.parse(cbrsData.getAsJsonObject());
+				}
+			}
 		}
 	}
 
@@ -113,6 +122,12 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 		NbtTag variantProp = properties.get("Definitions");
 		if(variantProp != null)
 			variantName = variantProp.asString();
+		
+		/*if(this.connectedBlockRuleSet != null) {
+			String newVariantName = this.connectedBlockRuleSet.getVariant(properties, x, y, z);
+			if(newVariantName != null)
+				variantName = newVariantName;
+		}*/
 		
 		BlockStateVariant variant = this.variants.getOrDefault(variantName, null);
 		if(variant == null)
@@ -143,7 +158,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 			if(variant.needsConnectionInfo())
 				return true;
 		}
-		return false;
+		return connectedBlockRuleSet != null;
 	}
 	
 	public boolean hasBiomeTint() {
@@ -168,6 +183,10 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 	
 	public Map<String, BlockStateVariant> getVariants(){
 		return variants;
+	}
+	
+	public ConnectedBlockRuleSet getConnectedBlockRuleSet() {
+		return connectedBlockRuleSet;
 	}
 
 }

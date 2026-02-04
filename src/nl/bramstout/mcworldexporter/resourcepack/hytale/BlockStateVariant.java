@@ -892,6 +892,23 @@ public class BlockStateVariant {
 		return model;
 	}
 	
+	public static Matrix getRotationMatrix(NbtTagCompound properties) {
+		int rotation = 0;
+		NbtTag rotTag = properties.get("rotation");
+		if(rotTag != null)
+			rotation = rotTag.asInt();
+		
+		if(rotation != 0) {
+			int yawIndex = rotation % 4;
+			int pitchIndex = (rotation / 4) % 4;
+			int rollIndex = (rotation / 16) % 4;
+			
+			return Matrix.rotate(pitchIndex * -90f, yawIndex * -90f, rollIndex * -90f, new Vector3f(8f, 8f, 8f));
+		}
+		
+		return new Matrix();
+	}
+	
 	private Matrix getTransform(NbtTagCompound properties, int x, int y, int z, int permutation) {
 		int rotation = 0;
 		NbtTag rotTag = properties.get("rotation");
@@ -901,11 +918,7 @@ public class BlockStateVariant {
 		Matrix mat = null;
 		
 		if(rotation != 0) {
-			int yawIndex = rotation % 4;
-			int pitchIndex = (rotation / 4) % 4;
-			int rollIndex = (rotation / 16) % 4;
-			
-			Matrix rotMatrix = Matrix.rotate(pitchIndex * -90f, yawIndex * -90f, rollIndex * -90f, new Vector3f(8f, 8f, 8f));
+			Matrix rotMatrix = getRotationMatrix(properties);
 			mat = rotMatrix;
 		}
 		
