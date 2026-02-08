@@ -112,7 +112,7 @@ public class AIComponentBehaviourInspectBookshelf extends AIComponent{
 			for(int sampleY = -searchHeight; sampleY <= searchHeight; ++sampleY) {
 				for(int sampleZ = -searchRange; sampleZ <= searchRange; ++sampleZ) {
 					for(int sampleX = -searchRange; sampleX <= searchRange; ++sampleX) {
-						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, sampleY + blockY, sampleZ + blockZ);
+						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, sampleY + blockY, sampleZ + blockZ, 0);
 						Block block = BlockRegistry.getBlock(blockId);
 						if(block.getName().equals("minecraft:bookshelf") || block.getName().equals("minecraft:chiseled_bookshelf")) {
 							bookshelfX = sampleX + blockX;
@@ -134,7 +134,7 @@ public class AIComponentBehaviourInspectBookshelf extends AIComponent{
 				int sampleY = entity.getRandom().nextInt(-searchHeight, searchHeight + 1) + blockY;
 				int sampleZ = entity.getRandom().nextInt(-searchRange, searchRange + 1) + blockZ;
 				
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ);
+				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ, 0);
 				Block block = BlockRegistry.getBlock(blockId);
 				if(block.getName().equals("minecraft:bookshelf") || block.getName().equals("minecraft:chiseled_bookshelf")) {
 					bookshelfX = sampleX;

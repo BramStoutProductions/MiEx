@@ -44,10 +44,10 @@ public class ConnectedTextureFull extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		
-		int connectionBits = calcConnectionBits(x, y, z, face, up, innerSeams);
+		int connectionBits = calcConnectionBits(x, y, z, layer, face, up, innerSeams);
 		int tile = CtmUtils.ConnectionDataToTile[connectionBits];
 		
 		if(tile < 0 || tile >= tiles.size())

@@ -42,10 +42,10 @@ import nl.bramstout.mcworldexporter.world.World;
 
 public class LauncherBedrockEdition extends Launcher{
 	
-	private File rootFolder;
+	private List<String> rootFolders;
 	
-	public LauncherBedrockEdition(File rootFolder) {
-		this.rootFolder = rootFolder;
+	public LauncherBedrockEdition(List<String> rootFolders) {
+		this.rootFolders = rootFolders;
 	}
 
 	@Override
@@ -60,30 +60,33 @@ public class LauncherBedrockEdition extends Launcher{
 
 	@Override
 	public List<MinecraftSave> getSaves() {
-		File savesFolder = new File(rootFolder, "minecraftWorlds");
-		if(!savesFolder.exists() || !savesFolder.isDirectory())
-			return new ArrayList<MinecraftSave>();
-		
 		List<MinecraftSave> saves = new ArrayList<MinecraftSave>();
-		
-		for(File f : savesFolder.listFiles()) {
-			File levelName = new File(f, "levelname.txt");
-			if(!levelName.exists())
+
+		for(String rootFolder : rootFolders) {
+			File savesFolder = new File(rootFolder, "minecraftWorlds");
+			if(!savesFolder.exists() || !savesFolder.isDirectory())
 				continue;
-			BufferedReader reader = null;
-			try {
-				reader = new BufferedReader(new FileReader(levelName));
-				String name = reader.readLine();
-				saves.add(new MinecraftSave(name, f, new File(f, "world_icon.jpeg"), this));
-				reader.close();
-			}catch(Exception ex) {
-				ex.printStackTrace();
-			}
-			try {
-				if(reader != null)
+			
+			
+			for(File f : savesFolder.listFiles()) {
+				File levelName = new File(f, "levelname.txt");
+				if(!levelName.exists())
+					continue;
+				BufferedReader reader = null;
+				try {
+					reader = new BufferedReader(new FileReader(levelName));
+					String name = reader.readLine();
+					saves.add(new MinecraftSave(name, f, new File(f, "world_icon.jpeg"), this));
 					reader.close();
-			}catch(Exception ex) {
-				ex.printStackTrace();
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				try {
+					if(reader != null)
+						reader.close();
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 		}
 		
@@ -97,7 +100,11 @@ public class LauncherBedrockEdition extends Launcher{
 	
 	@Override
 	public boolean ownsWorld(File worldFolder) {
-		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
+		for(String rootFolder : rootFolders) {
+			if(worldFolder.getAbsolutePath().startsWith(new File(rootFolder).getAbsolutePath()))
+				return true;
+		}
+		return false;
 	}
 
 }

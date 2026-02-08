@@ -55,7 +55,7 @@ public class BiomeCombined extends Biome{
 		biomeColours.clear();
 		
 		for(Biome biome : subBiomes) {
-			for(Entry<String, Color> entry : biome.biomeColours.entrySet()) {
+			for(Entry<String, Color> entry : biome.biomeColours) {
 				if(entry.getValue() != null && getColor(entry.getKey()) == null)
 					setColor(entry.getKey(), entry.getValue());
 			}

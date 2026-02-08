@@ -45,20 +45,26 @@ import nl.bramstout.mcworldexporter.resourcepack.hytale.BlockStateHandlerHytale;
 import nl.bramstout.mcworldexporter.resourcepack.hytale.BlockStateVariant;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public abstract class ConnectLogic {
 	
-	public abstract boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz);
+	public abstract boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz);
 	
 	public static class ConnectLogicSameBlock extends ConnectLogic{
 		
 		@Override
-		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
-			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
+		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
+			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+			LayeredBlock otherBlocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
 			Block thisBlock = BlockRegistry.getBlock(thisId);
-			Block otherBlock = BlockRegistry.getBlock(otherId);
-			return thisBlock.getName().equals(otherBlock.getName());
+			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); ++layer2) {
+				Block otherBlock = BlockRegistry.getBlock(otherBlocks.getBlock(layer2));
+				if(thisBlock.getName().equals(otherBlock.getName()))
+					return true;
+			}
+			return false;
 		}
 		
 	}
@@ -66,10 +72,14 @@ public abstract class ConnectLogic {
 	public static class ConnectLogicSameState extends ConnectLogic{
 		
 		@Override
-		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
-			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
-			return thisId == otherId;
+		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
+			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+			LayeredBlock otherBlocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
+			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); ++layer2)
+				if(thisId == otherBlocks.getBlock(layer2))
+					return true;
+			return false;
 		}
 		
 	}
@@ -77,13 +87,10 @@ public abstract class ConnectLogic {
 	public static class ConnectLogicSameTile extends ConnectLogic{
 		
 		@Override
-		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
-			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
-			BakedBlockState thisState = BlockStateRegistry.getBakedStateForBlock(thisId, x, y, z);
-			BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherId, x + dx, y + dy, z + dz);
+		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
+			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+			BakedBlockState thisState = BlockStateRegistry.getBakedStateForBlock(thisId, x, y, z, layer);
 			String thisTex = null;
-			String otherTex = null;
 			List<Model> models = new ArrayList<Model>();
 			thisState.getDefaultModels(models);
 			for(Model model : models) {
@@ -98,21 +105,30 @@ public abstract class ConnectLogic {
 			}
 			if(thisTex == null)
 				return false;
-			models.clear();
-			otherState.getDefaultModels(models);
-			for(Model model : models) {
-				for(ModelFace face2 : model.getFaces()) {
-					if(face2.getDirection() == face.getDirection()) {
-						otherTex = model.getTexture(face2.getTexture());
-						break;
+
+			LayeredBlock otherBlocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
+			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); layer2++) {
+				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
+				String otherTex = null;
+				models.clear();
+				otherState.getDefaultModels(models);
+				for(Model model : models) {
+					for(ModelFace face2 : model.getFaces()) {
+						if(face2.getDirection() == face.getDirection()) {
+							otherTex = model.getTexture(face2.getTexture());
+							break;
+						}
 					}
+					if(otherTex != null)
+						break;
 				}
-				if(otherTex != null)
-					break;
+				if(otherTex == null)
+					continue;
+				if(thisTex.equals(otherTex))
+					return true;
 			}
-			if(otherTex == null)
-				return false;
-			return thisTex.equals(otherTex);
+			return false;
 		}
 		
 	}
@@ -124,69 +140,72 @@ public abstract class ConnectLogic {
 		public boolean hytaleSpecificLogic = false;
 		
 		@Override
-		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
-			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
-			Block otherBlock = BlockRegistry.getBlock(otherId);
-			
-			if(ignoreSameBlock) {
-				int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-				Block thisBlock = BlockRegistry.getBlock(thisId);
-				if(thisBlock.getName().equals(otherBlock.getName()))
-					return false;
-			}
-			if(hytaleSpecificLogic) {
-				int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-				Block thisBlock = BlockRegistry.getBlock(thisId);
+		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
+			LayeredBlock otherBlocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
+			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); layer2++) {
+				Block otherBlock = BlockRegistry.getBlock(otherBlocks.getBlock(layer2));
 				
-				int thisBlockStateId = BlockStateRegistry.getIdForName(thisBlock.getName(), thisBlock.getDataVersion());
-				int otherBlockStateId = BlockStateRegistry.getIdForName(otherBlock.getName(), otherBlock.getDataVersion());
-				BlockState thisBlockState = BlockStateRegistry.getState(thisBlockStateId);
-				BlockState otherBlockState = BlockStateRegistry.getState(otherBlockStateId);
-				
-				if(thisBlockState.getHandler() != null && thisBlockState.getHandler() instanceof BlockStateHandlerHytale && 
-						otherBlockState.getHandler() != null && otherBlockState.getHandler() instanceof BlockStateHandlerHytale) {
-					// It can be that both blocks have transition textures set up for each other.
-					// If that is the case, then we should only allow one of the two.
-					// Each block contains a list of block groups to provide transition textures for.
-					// If the group of thisBlock is higher up or equal on the list of otherBlock,
-					// then we allow the connection. Otherwise, we don't.
-					BlockStateHandlerHytale thisBlockState2 = (BlockStateHandlerHytale) thisBlockState.getHandler();
-					BlockStateHandlerHytale otherBlockState2 = (BlockStateHandlerHytale) otherBlockState.getHandler();
-					BlockStateVariant thisBlockVariant = thisBlockState2.getVariants().getOrDefault("", null);
-					BlockStateVariant otherBlockVariant = otherBlockState2.getVariants().getOrDefault("", null);
-					if(thisBlockVariant != null && otherBlockVariant != null) {
-						if(thisBlockVariant.getTransitionTexture() != null && otherBlockVariant.getTransitionTexture() != null && 
-								thisBlockVariant.getTransitionToGroups() != null && otherBlockVariant.getTransitionToGroups() != null) {
-							// Both of them have transition textures.
-							int thisIndex = -1;
-							for(int i = 0; i < thisBlockVariant.getTransitionToGroups().length; ++i) {
-								if(thisBlockVariant.getTransitionToGroups()[i].equals(otherBlockState2.getGroup())) {
-									thisIndex = i;
-									break;
+				if(ignoreSameBlock) {
+					int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+					Block thisBlock = BlockRegistry.getBlock(thisId);
+					if(thisBlock.getName().equals(otherBlock.getName()))
+						continue;
+				}
+				if(hytaleSpecificLogic) {
+					int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+					Block thisBlock = BlockRegistry.getBlock(thisId);
+					
+					int thisBlockStateId = BlockStateRegistry.getIdForName(thisBlock.getName(), thisBlock.getDataVersion());
+					int otherBlockStateId = BlockStateRegistry.getIdForName(otherBlock.getName(), otherBlock.getDataVersion());
+					BlockState thisBlockState = BlockStateRegistry.getState(thisBlockStateId);
+					BlockState otherBlockState = BlockStateRegistry.getState(otherBlockStateId);
+					
+					if(thisBlockState.getHandler() != null && thisBlockState.getHandler() instanceof BlockStateHandlerHytale && 
+							otherBlockState.getHandler() != null && otherBlockState.getHandler() instanceof BlockStateHandlerHytale) {
+						// It can be that both blocks have transition textures set up for each other.
+						// If that is the case, then we should only allow one of the two.
+						// Each block contains a list of block groups to provide transition textures for.
+						// If the group of thisBlock is higher up or equal on the list of otherBlock,
+						// then we allow the connection. Otherwise, we don't.
+						BlockStateHandlerHytale thisBlockState2 = (BlockStateHandlerHytale) thisBlockState.getHandler();
+						BlockStateHandlerHytale otherBlockState2 = (BlockStateHandlerHytale) otherBlockState.getHandler();
+						BlockStateVariant thisBlockVariant = thisBlockState2.getVariants().getOrDefault("", null);
+						BlockStateVariant otherBlockVariant = otherBlockState2.getVariants().getOrDefault("", null);
+						if(thisBlockVariant != null && otherBlockVariant != null) {
+							if(thisBlockVariant.getTransitionTexture() != null && otherBlockVariant.getTransitionTexture() != null && 
+									thisBlockVariant.getTransitionToGroups() != null && otherBlockVariant.getTransitionToGroups() != null) {
+								// Both of them have transition textures.
+								int thisIndex = -1;
+								for(int i = 0; i < thisBlockVariant.getTransitionToGroups().length; ++i) {
+									if(thisBlockVariant.getTransitionToGroups()[i].equals(otherBlockState2.getGroup())) {
+										thisIndex = i;
+										break;
+									}
 								}
-							}
-							int otherIndex = -1;
-							for(int i = 0; i < otherBlockVariant.getTransitionToGroups().length; ++i) {
-								if(otherBlockVariant.getTransitionToGroups()[i].equals(thisBlockState2.getGroup())) {
-									otherIndex = i;
-									break;
+								int otherIndex = -1;
+								for(int i = 0; i < otherBlockVariant.getTransitionToGroups().length; ++i) {
+									if(otherBlockVariant.getTransitionToGroups()[i].equals(thisBlockState2.getGroup())) {
+										otherIndex = i;
+										break;
+									}
 								}
-							}
-							if(thisIndex != -1 && otherIndex != -1) {
-								// Both blocks have each other's groups in their lists,
-								// so we have clashing transition textures.
-								// So now only make sure that one of them shows up.
-								if(otherIndex > thisIndex)
-									return false;
+								if(thisIndex != -1 && otherIndex != -1) {
+									// Both blocks have each other's groups in their lists,
+									// so we have clashing transition textures.
+									// So now only make sure that one of them shows up.
+									if(otherIndex > thisIndex)
+										return false;
+								}
 							}
 						}
 					}
 				}
-			}
-			
-			for(MatchBlock block : blocks) {
-				if(otherBlock.getName().equals(block.name) && block.state.meetsConstraint(otherBlock.getProperties())) {
-					return true;
+				
+				for(MatchBlock block : blocks) {
+					if(otherBlock.getName().equals(block.name) && block.state.meetsConstraint(otherBlock.getProperties())) {
+						return true;
+					}
 				}
 			}
 			
@@ -200,26 +219,31 @@ public abstract class ConnectLogic {
 		public List<String> textures = new ArrayList<String>();
 		
 		@Override
-		public boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
-			int otherId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
-			BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherId, x + dx, y + dy, z + dz);
-			String otherTex = null;
-			List<Model> models = new ArrayList<Model>();
-			otherState.getDefaultModels(models);
-			for(Model model : models) {
-				for(ModelFace face2 : model.getFaces()) {
-					if(face2.getDirection() == face.getDirection()) {
-						otherTex = model.getTexture(face2.getTexture());
-						break;
+		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
+			LayeredBlock otherBlocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
+			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); ++layer2) {
+				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
+				String otherTex = null;
+				List<Model> models = new ArrayList<Model>();
+				otherState.getDefaultModels(models);
+				for(Model model : models) {
+					for(ModelFace face2 : model.getFaces()) {
+						if(face2.getDirection() == face.getDirection()) {
+							otherTex = model.getTexture(face2.getTexture());
+							break;
+						}
 					}
+					if(otherTex != null)
+						break;
 				}
-				if(otherTex != null)
-					break;
+				if(otherTex == null)
+					continue;
+				
+				if(textures.contains(otherTex))
+					return true;
 			}
-			if(otherTex == null)
-				return false;
-			
-			return textures.contains(otherTex);
+			return false;
 		}
 		
 	}

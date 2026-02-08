@@ -688,7 +688,7 @@ public class BlockStateVariant {
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
 				state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
-				state.hasLiquid(properties), state.getLiquidName(properties), state.isCaveBlock(), state.hasRandomOffset(), 
+				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
 				tintColor, state.needsConnectionInfo(), animationHandler == null ? (this.looping ? this.animationHandler : null) : animationHandler);

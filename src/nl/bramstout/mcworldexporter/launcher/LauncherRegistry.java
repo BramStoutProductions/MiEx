@@ -51,10 +51,12 @@ public class LauncherRegistry {
 			launchers.add(new LauncherJavaEdition(javaEditionRootDir));
 		}
 		
-		File bedrockEditionRootDir = new File(FileUtil.getMinecraftBedrockRootDir());
-		if(bedrockEditionRootDir.exists() && bedrockEditionRootDir.isDirectory()) {
-			System.out.println("Found Minecraft Bedrock Edition launcher at " + bedrockEditionRootDir.getPath());
-			launchers.add(new LauncherBedrockEdition(bedrockEditionRootDir));
+		List<String> bedrockEditionRootDirs = FileUtil.getMinecraftBedrockRootDir();
+		if(!bedrockEditionRootDirs.isEmpty()) {
+			System.out.println("Found Minecraft Bedrock Edition launcher at:");
+			for(String str : bedrockEditionRootDirs)
+				System.out.println("    " + str);
+			launchers.add(new LauncherBedrockEdition(bedrockEditionRootDirs));
 		}
 		
 		File multiMCRootDir = new File(FileUtil.getMultiMCRootDir());

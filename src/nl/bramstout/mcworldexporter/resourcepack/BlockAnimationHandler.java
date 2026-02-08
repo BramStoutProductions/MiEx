@@ -38,6 +38,8 @@ public abstract class BlockAnimationHandler {
 	 */
 	protected float duration;
 	protected boolean positionDependent;
+	protected boolean randomOffsetXZ;
+	protected boolean randomOffsetY;
 	
 	public float getDuration() {
 		return duration;
@@ -45,6 +47,14 @@ public abstract class BlockAnimationHandler {
 	
 	public boolean isPositionDependent() {
 		return positionDependent;
+	}
+	
+	public boolean hasRandomOffsetXZ() {
+		return randomOffsetXZ;
+	}
+	
+	public boolean hasRandomOffsetY() {
+		return randomOffsetY;
 	}
 	
 }

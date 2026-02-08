@@ -89,12 +89,14 @@ public class AmbientOcclusion {
 			}
 		}
 		
-		private int sampleCorner(BakedBlockState[] blocks, int x, int y, int z) {
+		private int sampleCorner(BakedBlockState[][] blocks, int x, int y, int z) {
 			int contribution = 0;
 			long occlusion = 0;
-			BakedBlockState state = blocks[(z>>1)*9+(y>>1)*3+(x>>1)];
-			if(state != null)
-				occlusion = state.getOccludes();
+			BakedBlockState[] states = blocks[(z>>1)*9+(y>>1)*3+(x>>1)];
+			for(BakedBlockState state : states) {
+				if(state != null)
+					occlusion |= state.getOccludes();
+			}
 			
 			int corner = (y&1)*4+(z&1)*2+(x&1);
 			if(corner == 0) {
@@ -150,7 +152,7 @@ public class AmbientOcclusion {
 			return contribution;
 		}
 		
-		public void calculateAmbientOcclusion(BakedBlockState[] blocks) {
+		public void calculateAmbientOcclusion(BakedBlockState[][] blocks) {
 			occlusion = 0;
 			for(int i = 0; i < corners.size(); ++i) {
 				Corner corner = corners.get(i);
@@ -219,7 +221,7 @@ public class AmbientOcclusion {
 			}
 		}
 		
-		public void calculateAmbientOcclusion(BakedBlockState[] blocks) {
+		public void calculateAmbientOcclusion(BakedBlockState[][] blocks) {
 			corner00.calculateAmbientOcclusion(blocks);
 			corner01.calculateAmbientOcclusion(blocks);
 			corner02.calculateAmbientOcclusion(blocks);
@@ -283,7 +285,7 @@ public class AmbientOcclusion {
 			}
 		}
 		
-		public void calculateAmbientOcclusion(BakedBlockState[] blocks) {
+		public void calculateAmbientOcclusion(BakedBlockState[][] blocks) {
 			face0.calculateAmbientOcclusion(blocks);
 			face1.calculateAmbientOcclusion(blocks);
 			face2.calculateAmbientOcclusion(blocks);
@@ -309,7 +311,7 @@ public class AmbientOcclusion {
 	AmbientOcclusionDirection dirWest;
 	AmbientOcclusionDirection dirUp;
 	AmbientOcclusionDirection dirDown;
-	BakedBlockState[] blocks;
+	BakedBlockState[][] blocks;
 	int[] blockId;
 	boolean hasCalculated;
 	ChunkExporter exporter;
@@ -327,7 +329,9 @@ public class AmbientOcclusion {
 		dirWest = new AmbientOcclusionDirection(Direction.WEST);
 		dirUp = new AmbientOcclusionDirection(Direction.UP);
 		dirDown = new AmbientOcclusionDirection(Direction.DOWN);
-		blocks = new BakedBlockState[3*3*3];
+		blocks = new BakedBlockState[3*3*3][];
+		for(int i = 0; i < 3*3*3; ++i)
+			blocks[i] = new BakedBlockState[2];
 		blockId = new int[4];
 		hasCalculated = false;
 	}
@@ -356,17 +360,21 @@ public class AmbientOcclusion {
 		for(int z = 0; z < 3; ++z) {
 			for(int y = 0; y < 3; ++y) {
 				for(int x = 0; x < 3; ++x) {
-					int ox = (x-1) * lodSize;
-					int oy = (y-1) * lodYSize;
-					int oz = (z-1) * lodSize;
-					exporter.getLODBlockId(chunk, cx + ox, cy + oy, cz + oz, lodSize, lodYSize, blockId);
-					
-					if(blockId[0] <= 0)
-						blocks[z*9+y*3+x] = null;
-					else {
-						blocks[z*9+y*3+x] = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3]);
-						if(blocks[z*9+y*3+x].isTransparentOcclusion())
-							blocks[z*9+y*3+x] = null;
+					if(chunk.getLayerCount() > blocks[z*9+y*3+x].length)
+						blocks[z*9+y*3+x] = new BakedBlockState[chunk.getLayerCount()];
+					for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
+						int ox = (x-1) * lodSize;
+						int oy = (y-1) * lodYSize;
+						int oz = (z-1) * lodSize;
+						exporter.getLODBlockId(chunk, cx + ox, cy + oy, cz + oz, layer, lodSize, lodYSize, blockId);
+						
+						if(blockId[0] <= 0)
+							blocks[z*9+y*3+x][layer] = null;
+						else {
+							blocks[z*9+y*3+x][layer] = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer);
+							if(blocks[z*9+y*3+x][layer].isTransparentOcclusion())
+								blocks[z*9+y*3+x][layer] = null;
+						}
 					}
 				}
 			}

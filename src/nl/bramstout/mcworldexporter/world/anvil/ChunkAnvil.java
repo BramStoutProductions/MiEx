@@ -211,6 +211,6 @@ public class ChunkAnvil extends Chunk {
 	}
 	
 	@Override
-	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {}
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z, int index) {}
 
 }

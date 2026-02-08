@@ -103,7 +103,7 @@ public class AIComponentBehaviourRandomHover extends AIComponent{
 			// Find the surface
 			int surfaceY = sampleY;
 			for(; surfaceY > sampleY - ((int) maxHoverHeight) - 2; --surfaceY) {
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, surfaceY, sampleZ);
+				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, surfaceY, sampleZ, 0);
 				if(blockId != 0)
 					break;
 			}

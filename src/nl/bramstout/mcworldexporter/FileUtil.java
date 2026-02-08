@@ -36,8 +36,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -313,13 +315,22 @@ public class FileUtil {
 		return "NOT FOUND";
 	}
 	
-	public static String getMinecraftBedrockRootDir() {
-		if(isWindows())
-			return Environment.getEnv("LOCALAPPDATA") + "/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang";
-		// Return a placeholder value
-		// to avoid erroring out on 
-		// niche systems
-		return "NOT FOUND";
+	public static List<String> getMinecraftBedrockRootDir() {
+		List<String> rootDirs = new ArrayList<String>();
+		if(isWindows()) {
+			String envPath = Environment.getEnv("APPDATA") + "/Minecraft Bedrock/Users";
+			if(new File(envPath).exists()) {
+				for(File user : new File(envPath).listFiles()) {
+					File gamesFolder = new File(user, "games/com.mojang");
+					if(gamesFolder.exists())
+						rootDirs.add(gamesFolder.getPath());
+				}
+			}
+			envPath = Environment.getEnv("LOCALAPPDATA") + "/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang";
+			if(new File(envPath).exists())
+				rootDirs.add(envPath);
+		}
+		return rootDirs;
 	}
 	
 	protected static String multiMCRootDir = null;

@@ -44,7 +44,7 @@ public class ConnectedTextureTransitionHytale extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		Direction left = getLeft(up, face);
 		Direction down = up.getOpposite();
@@ -58,13 +58,14 @@ public class ConnectedTextureTransitionHytale extends ConnectedTexture{
 		else if(Math.abs(getUVRotation() - 270f) < 45f)
 			sampleDir = left;
 		
-		int sampleAboveId = MCWorldExporter.getApp().getWorld().getBlockId(x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z);
-		BakedBlockState sampleAboveState = BlockStateRegistry.getBakedStateForBlock(sampleAboveId, x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z);
+		int sampleAboveId = MCWorldExporter.getApp().getWorld().getBlockId(x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z, 0);
+		BakedBlockState sampleAboveState = BlockStateRegistry.getBakedStateForBlock(
+											sampleAboveId, x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z, 0);
 		if(!sampleAboveState.isAir() && !sampleAboveState.isTransparentOcclusion())
 			// Require air above the neighbouring block, so that we can actually see it.
 			return DELETE_FACE;
 		
-		boolean connects = this.connects(face, x, y, z, sampleDir.x, sampleDir.y, sampleDir.z);
+		boolean connects = this.connects(face, x, y, z, layer, sampleDir.x, sampleDir.y, sampleDir.z);
 		
 		if(!connects || tiles.isEmpty())
 			return DELETE_FACE;

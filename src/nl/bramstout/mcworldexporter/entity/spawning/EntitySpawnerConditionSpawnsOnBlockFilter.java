@@ -38,6 +38,7 @@ import java.util.Random;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class EntitySpawnerConditionSpawnsOnBlockFilter extends EntitySpawnerCondition{
 
@@ -49,9 +50,14 @@ public class EntitySpawnerConditionSpawnsOnBlockFilter extends EntitySpawnerCond
 	
 	@Override
 	public boolean test(EntitySpawner spawner, int x, int y, int z, int sunLightLevel, Random random) {
-		int blockIdBelow = MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z);
-		Block block = BlockRegistry.getBlock(blockIdBelow);
-		return blocks.contains(block.getName());
+		LayeredBlock blocks = new LayeredBlock();
+		MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, blocks);
+		for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+			Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+			if(this.blocks.contains(block.getName()))
+				return true;
+		}
+		return false;
 	}
 	
 }

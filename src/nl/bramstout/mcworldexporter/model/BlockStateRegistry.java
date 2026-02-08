@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
-import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
@@ -106,11 +105,11 @@ public class BlockStateRegistry {
 		return new BlockState(name, dataVersion, handler);
 	}
 	
-	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z) {
-		return getBakedStateForBlock(blockId, x, y, z, true);
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer) {
+		return getBakedStateForBlock(blockId, x, y, z, layer, true);
 	}
 	
-	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, boolean runBlockConnections) {
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer, boolean runBlockConnections) {
 		if(blockId < 0)
 			blockId = 0;
 		
@@ -118,7 +117,7 @@ public class BlockStateRegistry {
 			Block block = BlockRegistry.getBlock(blockId);
 			int stateId = getIdForName(block.getName(), block.getDataVersion());
 			BlockState state = getState(stateId);
-			return state.getBakedBlockState(block.getProperties(), x, y, z, false);
+			return state.getBakedBlockState(block.getProperties(), x, y, z, layer, false);
 		}
 		
 		if(blockId >= bakedBlockStates.size()) {
@@ -132,7 +131,7 @@ public class BlockStateRegistry {
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
 				
-				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, true);
+				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
 				if(!state.needsConnectionInfo())
 					bakedBlockStates.set(blockId, bakedState);
 				needsConnectionInfo.set(blockId, state.needsConnectionInfo());
@@ -149,7 +148,7 @@ public class BlockStateRegistry {
 				Block block = BlockRegistry.getBlock(blockId);
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z, true);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
 			}
 		}catch(Exception ex) {} // Empty catch because due to race condition it could fail, but that's fine.
 		
@@ -162,14 +161,14 @@ public class BlockStateRegistry {
 				Block block = BlockRegistry.getBlock(blockId);
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z, true);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
 			}
 			
 			Block block = BlockRegistry.getBlock(blockId);
 			int stateId = getIdForName(block.getName(), block.getDataVersion());
 			BlockState state = getState(stateId);
 			
-			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, true);
+			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
 			if(!state.needsConnectionInfo())
 				bakedBlockStates.set(blockId, bakedState);
 			needsConnectionInfo.set(blockId, state.needsConnectionInfo());
@@ -186,7 +185,6 @@ public class BlockStateRegistry {
 		synchronized(mutex2) {
 			bakedBlockStates.clear();
 			needsConnectionInfo.clear();
-			BakedBlockState.BAKED_WATER_STATE = new BakedBlockStateLiquid("minecraft:water");
 		}
 		synchronized(missingBlockStates) {
 			missingBlockStates.clear();

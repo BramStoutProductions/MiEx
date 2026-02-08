@@ -71,7 +71,12 @@ public class ChunkHytale extends Chunk{
 			int minSectionY = 0;
 			int maxSectionY = 20;
 			chunkSectionOffset = minSectionY;
-			blocks = new int[maxSectionY - chunkSectionOffset + 1][];
+			/*blocks = new int[][][] { 
+				new int[maxSectionY - chunkSectionOffset + 1][],   // Blocks
+				new int[maxSectionY - chunkSectionOffset + 1][] }; // Fluids*/
+			// Don't yet put in the fluid layer. We're only going to add it in
+			// if needed. This is to help speed things up a bit.
+			blocks = new int[][][] { new int[maxSectionY - chunkSectionOffset + 1][] };
 			biomes = new int[maxSectionY - chunkSectionOffset + 1][];
 			
 			int localOffsetX = ((this.chunkX - region.getXCoordinate() * 64) & 1) * 16;
@@ -79,7 +84,8 @@ public class ChunkHytale extends Chunk{
 			
 			for(int sectionY = minSectionY; sectionY < maxSectionY; ++sectionY) {
 				int[] sectionBlocks = new int[16*16*16];
-				blocks[sectionY - chunkSectionOffset] = sectionBlocks;
+				blocks[0][sectionY - chunkSectionOffset] = sectionBlocks;
+				int[] sectionFluids = null;
 				
 				int localOffsetY = sectionY * 16;
 				
@@ -88,6 +94,18 @@ public class ChunkHytale extends Chunk{
 						for(int bx = 0; bx < 16; ++bx) {
 							int blockId = hytaleChunk.getBlock(bx + localOffsetX, by + localOffsetY, bz + localOffsetZ);
 							sectionBlocks[by * 16 * 16 + bz * 16 + bx] = blockId;
+							
+							int fluidId = hytaleChunk.getFluid(bx + localOffsetX, by + localOffsetY, bz + localOffsetZ);
+							if(fluidId > 0) {
+								if(sectionFluids == null) {
+									sectionFluids = new int[16*16*16];
+									if(blocks.length == 1) {
+										blocks = new int[][][] { blocks[0], new int[maxSectionY - chunkSectionOffset + 1][] };
+									}
+									blocks[1][sectionY - chunkSectionOffset] = sectionFluids;
+								}
+								sectionFluids[by * 16 * 16 + bz * 16 + bx] = fluidId;
+							}
 						}
 					}
 				}
@@ -139,11 +157,11 @@ public class ChunkHytale extends Chunk{
 	}
 	
 	@Override
-	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z, int index) {
 		if(this.biomeTints == null)
 			return;
 		
-		biome.setColor("hytale:tint", 
+		biome.setColor("hytale:tint", index,
 				this.biomeTints[(z * 16 + x) * 3],
 				this.biomeTints[(z * 16 + x) * 3 + 1],
 				this.biomeTints[(z * 16 + x) * 3 + 2]);

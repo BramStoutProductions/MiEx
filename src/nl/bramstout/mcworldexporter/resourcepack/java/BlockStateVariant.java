@@ -116,21 +116,21 @@ public class BlockStateVariant extends BlockStatePart{
 	}
 
 	@Override
-	public boolean usePart(NbtTagCompound properties, int x, int y, int z) {
+	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer) {
 		if(checks.isEmpty())
 			return true;
 		
 		Map<String, String> check = null;
 		for(int i = 0; i < checks.size(); ++i) {
 			check = checks.get(i);
-			boolean res = doCheck(properties, check, x, y, z);
+			boolean res = doCheck(properties, check, x, y, z, layer);
 			if(res)
 				return true;
 		}
 		return false;
 	}
 	
-	private boolean doCheck(NbtTagCompound properties, Map<String, String> check, int x, int y, int z) {
+	private boolean doCheck(NbtTagCompound properties, Map<String, String> check, int x, int y, int z, int layer) {
 		int numItems = properties.getSize();
 		for(int i = 0; i < numItems; ++i) {
 			NbtTag tag = properties.get(i);
@@ -150,7 +150,7 @@ public class BlockStateVariant extends BlockStatePart{
 			for(Entry<String, String> entry : check.entrySet()) {
 				if(entry.getKey().startsWith("miex_connect")) {
 					// Test the neighbouring block.
-					boolean res = testMiExConnection(entry.getKey(), entry.getValue(), x, y, z);
+					boolean res = testMiExConnection(entry.getKey(), entry.getValue(), x, y, z, layer);
 					// If it doesn't match, then we shouldn't use this part.
 					if(!res)
 						return false;

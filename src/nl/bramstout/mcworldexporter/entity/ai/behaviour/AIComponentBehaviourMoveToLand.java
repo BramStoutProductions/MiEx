@@ -35,10 +35,11 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.entity.ai.AIComponent;
 import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetBlock;
-import nl.bramstout.mcworldexporter.entity.ai.EntityUtil.CollisionResult;
 import nl.bramstout.mcworldexporter.entity.ai.EntityUtil;
+import nl.bramstout.mcworldexporter.entity.ai.EntityUtil.CollisionResult;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class AIComponentBehaviourMoveToLand extends AIComponent{
 
@@ -108,10 +109,18 @@ public class AIComponentBehaviourMoveToLand extends AIComponent{
 			for(int sampleY = -searchHeight; sampleY <= searchHeight; ++sampleY) {
 				for(int sampleZ = -searchRange; sampleZ <= searchRange; ++sampleZ) {
 					for(int sampleX = -searchRange; sampleX <= searchRange; ++sampleX) {
-						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
-																	sampleY + blockY - 1, sampleZ + blockZ);
-						Block block = BlockRegistry.getBlock(blockId);
-						if(block.hasLiquid())
+						LayeredBlock blocks = new LayeredBlock();
+						MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
+																	sampleY + blockY - 1, sampleZ + blockZ, blocks);
+						boolean isLiquid = false;
+						for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+							Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+							if(block.isLiquid()) {
+								isLiquid = true;
+								break;
+							}
+						}
+						if(isLiquid)
 							continue;
 						if(EntityUtil.isCollidingWithWorld(entity, ((float) (sampleX + blockX)) + 0.5f, (float) (sampleY + blockY), 
 																	((float) (sampleZ + blockZ)) + 0.5f, res))
@@ -131,9 +140,17 @@ public class AIComponentBehaviourMoveToLand extends AIComponent{
 				int sampleY = entity.getRandom().nextInt(-searchHeight, searchHeight + 1) + blockY;
 				int sampleZ = entity.getRandom().nextInt(-searchRange, searchRange + 1) + blockZ;
 				
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY - 1, sampleZ);
-				Block block = BlockRegistry.getBlock(blockId);
-				if(block.hasLiquid())
+				LayeredBlock blocks = new LayeredBlock();
+				MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY - 1, sampleZ, blocks);
+				boolean isLiquid = false;
+				for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+					Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+					if(block.isLiquid()) {
+						isLiquid = true;
+						break;
+					}
+				}
+				if(isLiquid)
 					continue;
 				if(EntityUtil.isCollidingWithWorld(entity, ((float) sampleX) + 0.5f, (float) sampleY, ((float) sampleZ) + 0.5f, res))
 					continue;

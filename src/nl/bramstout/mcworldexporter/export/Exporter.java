@@ -52,6 +52,7 @@ import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
+import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
@@ -219,7 +220,7 @@ public class Exporter {
 													centerZ);
 		Biome defaultBiome = BiomeRegistry.getBiome(defaultBiomeId);
 		BlendedBiome defaultBlendedBiome = new BlendedBiome();
-		defaultBlendedBiome.addBiome(defaultBiome, 1.0f);
+		defaultBlendedBiome.addBiome(defaultBiome, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f);
 		
 		long individualBlocksOffset = dos.size();
 		dos.writeInt(individualBlockIds.size());
@@ -232,7 +233,7 @@ public class Exporter {
 			dos.writeInt(blockId.getY());
 			dos.writeInt(blockId.getZ());
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId.getBlockId(), 
-											blockId.getX(), blockId.getY(), blockId.getZ());
+											blockId.getX(), blockId.getY(), blockId.getZ(), blockId.getLayer());
 			dos.writeUTF(state.getName());
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();
@@ -256,8 +257,11 @@ public class Exporter {
 						if(tintIndex < 0 && Config.forceBiomeColor.contains(texture))
 							tintIndex = 0;
 						TintValue tintValue = tintLayers.getLayer(tintIndex);
-						if(tintValue != null)
-							faceTint = tintValue.getColor(defaultBlendedBiome);
+						if(tintValue != null) {
+							WeightedColor color = tintValue.getColor(defaultBlendedBiome);
+							if(color != null)
+								faceTint = color.get(0);
+						}
 					}
 					if((face.getTintIndex() < 0 && !Config.forceBiomeColor.contains(texture)) || 
 							Config.forceNoBiomeColor.contains(state.getName()))

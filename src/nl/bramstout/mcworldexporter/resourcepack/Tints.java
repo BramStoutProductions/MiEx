@@ -47,6 +47,7 @@ import com.google.gson.JsonPrimitive;
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
+import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
@@ -54,11 +55,11 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 public class Tints {
 	
 	public static class TintValue{
-		public Color color;
+		public WeightedColor color;
 		public String biomeColor;
 		
 		public TintValue(Color color, String biomeColor) {
-			this.color = color;
+			this.color = color == null ? null : new WeightedColor(color);
 			this.biomeColor = biomeColor;
 		}
 		
@@ -67,7 +68,7 @@ public class Tints {
 			this.biomeColor = other.biomeColor;
 		}
 		
-		public Color getColor(BlendedBiome biome) {
+		public WeightedColor getColor(BlendedBiome biome) {
 			if(color != null)
 				return color;
 			if(biomeColor != null)

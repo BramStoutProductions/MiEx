@@ -41,18 +41,18 @@ public class ConnectedTextureHorizontalVertical extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		Direction left = getLeft(up, face);
 		Direction right = left.getOpposite();
 		Direction down = up.getOpposite();
 		
-		int tile = getTile(face, x, y, z, left, right);
+		int tile = getTile(face, x, y, z, layer, left, right);
 		
 		if(tile == 3) {
 			// Check if we can connect vertically.
-			int tileUp = getTile(face, x + up.x, y + up.y, z + up.z, left, right);
-			int tileDown = getTile(face, x + down.x, y + down.y, z + down.z, left, right);
+			int tileUp = getTile(face, x + up.x, y + up.y, z + up.z, layer, left, right);
+			int tileDown = getTile(face, x + down.x, y + down.y, z + down.z, layer, left, right);
 			
 			boolean upConnected = tileUp == 3;
 			boolean downConnected = tileDown == 3;
@@ -70,9 +70,9 @@ public class ConnectedTextureHorizontalVertical extends ConnectedTexture{
 		return tiles.get(tile);
 	}
 	
-	private int getTile(ModelFace face, int x, int y, int z, Direction left, Direction right) {
-		boolean leftConnected = connects(face, x, y, z, left.x, left.y, left.z);
-		boolean rightConnected = connects(face, x, y, z, right.x, right.y, right.z);
+	private int getTile(ModelFace face, int x, int y, int z, int layer, Direction left, Direction right) {
+		boolean leftConnected = connects(face, x, y, z, layer, left.x, left.y, left.z);
+		boolean rightConnected = connects(face, x, y, z, layer, right.x, right.y, right.z);
 		
 		int tile = 3;
 		

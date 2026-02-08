@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
@@ -52,6 +53,7 @@ public abstract class ConnectedTexture {
 	private ConnectLogic connectLogic;
 	private Integer tintIndex;
 	private String tintBlock;
+	private Color tint;
 	private List<BlockConstraints> blockConstraints;
 	private float uvRotation;
 	
@@ -63,11 +65,12 @@ public abstract class ConnectedTexture {
 		this.connectLogic = null;
 		this.tintIndex = null;
 		this.tintBlock = null;
+		this.tint = null; 
 		this.blockConstraints = new ArrayList<BlockConstraints>();
 		this.uvRotation = 0f;
 	}
 	
-	public abstract String getTexture(int x, int y, int z, ModelFace face);
+	public abstract String getTexture(int x, int y, int z, int layer, ModelFace face);
 	
 	public boolean testConstraints(Block block, int x, int y, int z, Biome biome) {
 		for(BlockConstraints constraint : blockConstraints) {
@@ -81,15 +84,15 @@ public abstract class ConnectedTexture {
 		return false;
 	}
 	
-	protected boolean connects(ModelFace face, int x, int y, int z, int dx, int dy, int dz) {
+	protected boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
 		if(!facesToConnect.contains(face.getDirection()))
 			return false;
 		if(connectLogic == null)
 			return false;
-		return connectLogic.connects(face, x, y, z, dx, dy, dz);
+		return connectLogic.connects(face, x, y, z, layer, dx, dy, dz);
 	}
 	
-	protected int calcConnectionBits(int x, int y, int z, ModelFace face, Direction up, boolean innerSeams) {
+	protected int calcConnectionBits(int x, int y, int z, int layer, ModelFace face, Direction up, boolean innerSeams) {
 		Direction left = getLeft(up, face);
 		Direction down = up.getOpposite();
 		Direction right = left.getOpposite();
@@ -97,55 +100,55 @@ public abstract class ConnectedTexture {
 		
 		int res = 0;
 		
-		if(connects(face, x, y, z, up.x + left.x, up.y + left.y, up.z + left.z))
+		if(connects(face, x, y, z, layer, up.x + left.x, up.y + left.y, up.z + left.z))
 			res |= 1 << 7;
 		
-		if(connects(face, x, y, z, up.x, up.y, up.z))
+		if(connects(face, x, y, z, layer, up.x, up.y, up.z))
 			res |= 1 << 6;
 		
-		if(connects(face, x, y, z, up.x + right.x, up.y + right.y, up.z + right.z))
+		if(connects(face, x, y, z, layer, up.x + right.x, up.y + right.y, up.z + right.z))
 			res |= 1 << 5;
 		
-		if(connects(face, x, y, z, right.x, right.y, right.z))
+		if(connects(face, x, y, z, layer, right.x, right.y, right.z))
 			res |= 1 << 4;
 		
-		if(connects(face, x, y, z, down.x + right.x, down.y + right.y, down.z + right.z))
+		if(connects(face, x, y, z, layer, down.x + right.x, down.y + right.y, down.z + right.z))
 			res |= 1 << 3;
 		
-		if(connects(face, x, y, z, down.x, down.y, down.z))
+		if(connects(face, x, y, z, layer, down.x, down.y, down.z))
 			res |= 1 << 2;
 		
-		if(connects(face, x, y, z, down.x + left.x, down.y + left.y, down.z + left.z))
+		if(connects(face, x, y, z, layer, down.x + left.x, down.y + left.y, down.z + left.z))
 			res |= 1 << 1;
 		
-		if(connects(face, x, y, z, left.x, left.y, left.z))
+		if(connects(face, x, y, z, layer, left.x, left.y, left.z))
 			res |= 1;
 		
 		if(!innerSeams) {
 			// To avoid additional work, only check connects if we're not already connecting
 			// in that direction.
-			if((res&(1<<7))==0 && connects(face, x, y, z, up.x + left.x + forward.x, up.y + left.y + forward.y, up.z + left.z + forward.z))
+			if((res&(1<<7))==0 && connects(face, x, y, z, layer, up.x + left.x + forward.x, up.y + left.y + forward.y, up.z + left.z + forward.z))
 				res |= 1 << 7;
 			
-			if((res&(1<<6))==0 && connects(face, x, y, z, up.x + forward.x, up.y + forward.y, up.z + forward.z))
+			if((res&(1<<6))==0 && connects(face, x, y, z, layer, up.x + forward.x, up.y + forward.y, up.z + forward.z))
 				res |= 1 << 6;
 			
-			if((res&(1<<5))==0 && connects(face, x, y, z, up.x + right.x + forward.x, up.y + right.y + forward.y, up.z + right.z + forward.z))
+			if((res&(1<<5))==0 && connects(face, x, y, z, layer, up.x + right.x + forward.x, up.y + right.y + forward.y, up.z + right.z + forward.z))
 				res |= 1 << 5;
 			
-			if((res&(1<<4))==0 && connects(face, x, y, z, right.x + forward.x, right.y + forward.y, right.z + forward.z))
+			if((res&(1<<4))==0 && connects(face, x, y, z, layer, right.x + forward.x, right.y + forward.y, right.z + forward.z))
 				res |= 1 << 4;
 			
-			if((res&(1<<3))==0 && connects(face, x, y, z, down.x + right.x + forward.x, down.y + right.y + forward.y, down.z + right.z + forward.z))
+			if((res&(1<<3))==0 && connects(face, x, y, z, layer, down.x + right.x + forward.x, down.y + right.y + forward.y, down.z + right.z + forward.z))
 				res |= 1 << 3;
 			
-			if((res&(1<<2))==0 && connects(face, x, y, z, down.x + forward.x, down.y + forward.y, down.z + forward.z))
+			if((res&(1<<2))==0 && connects(face, x, y, z, layer, down.x + forward.x, down.y + forward.y, down.z + forward.z))
 				res |= 1 << 2;
 			
-			if((res&(1<<1))==0 && connects(face, x, y, z, down.x + left.x + forward.x, down.y + left.y + forward.y, down.z + left.z + forward.z))
+			if((res&(1<<1))==0 && connects(face, x, y, z, layer, down.x + left.x + forward.x, down.y + left.y + forward.y, down.z + left.z + forward.z))
 				res |= 1 << 1;
 			
-			if((res&1)==0 && connects(face, x, y, z, left.x + forward.x, left.y + forward.y, left.z + forward.z))
+			if((res&1)==0 && connects(face, x, y, z, layer, left.x + forward.x, left.y + forward.y, left.z + forward.z))
 				res |= 1;
 		}
 		
@@ -376,6 +379,14 @@ public abstract class ConnectedTexture {
 	
 	public void setTintBlock(String tintBlock) {
 		this.tintBlock = tintBlock;
+	}
+	
+	public Color getTint() {
+		return tint;
+	}
+	
+	public void setTint(Color tint) {
+		this.tint = tint;
 	}
 	
 	public List<BlockConstraints> getBlockConstraints(){

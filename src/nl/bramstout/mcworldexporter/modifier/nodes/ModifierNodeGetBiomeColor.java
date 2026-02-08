@@ -56,7 +56,7 @@ public class ModifierNodeGetBiomeColor extends ModifierNode{
 		if(colormapName.indexOf(':') == -1)
 			colormapName = "minecraft:" + colormapName;
 		
-		Color color = context.biome[0].getColor(colormapName);
+		Color color = context.biome.getColor(colormapName).get(0);
 		if(color != null)
 			return new Value(color.getR(), color.getG(), color.getB());
 		return new Value();

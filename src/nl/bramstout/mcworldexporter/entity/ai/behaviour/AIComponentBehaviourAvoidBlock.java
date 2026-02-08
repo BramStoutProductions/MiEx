@@ -41,6 +41,7 @@ import nl.bramstout.mcworldexporter.entity.ai.EntityEvent;
 import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetBlock;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class AIComponentBehaviourAvoidBlock extends AIComponent{
 
@@ -101,15 +102,18 @@ public class AIComponentBehaviourAvoidBlock extends AIComponent{
 		for(int dy = -searchHeight; dy <= searchHeight; ++dy) {
 			for(int dz = -searchRange; dz <= searchRange; ++dz) {
 				for(int dx = -searchRange; dx <= searchRange; ++dx) {
-					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(centerX + dx, centerY + dy, centerZ + dz);
-					Block block = BlockRegistry.getBlock(blockId);
-					if(blocks.contains(block.getName())) {
-						int distance = dx * dx + dy * dy + dz * dz;
-						if(distance < closestDistance) {
-							blockX = centerX + dx;
-							blockY = centerY + dy;
-							blockZ = centerZ + dz;
-							closestDistance = distance;
+					LayeredBlock blocks = new LayeredBlock();
+					MCWorldExporter.getApp().getWorld().getBlockId(centerX + dx, centerY + dy, centerZ + dz, blocks);
+					for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+						Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+						if(this.blocks.contains(block.getName())) {
+							int distance = dx * dx + dy * dy + dz * dz;
+							if(distance < closestDistance) {
+								blockX = centerX + dx;
+								blockY = centerY + dy;
+								blockZ = centerZ + dz;
+								closestDistance = distance;
+							}
 						}
 					}
 				}

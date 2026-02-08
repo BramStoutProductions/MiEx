@@ -57,7 +57,7 @@ public class BiomeBedrockEdition extends Biome{
 	public BiomeBedrockEdition(BiomeBedrockEdition other, int newId) {
 		super(other.getName(), newId);
 		this.data = other.data;
-		for(Entry<String, Color> entry : other.biomeColours.entrySet()) {
+		for(Entry<String, Color> entry : other.biomeColours) {
 			biomeColours.put(entry.getKey(), new Color(entry.getValue()));
 		}
 	}

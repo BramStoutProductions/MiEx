@@ -35,6 +35,7 @@ import java.util.Arrays;
 
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 
@@ -1186,6 +1187,38 @@ public class ModelFace {
 			this.vertexColors[i+1] = g;
 			this.vertexColors[i+2] = b;
 		}
+	}
+	
+	public void setFaceColour(float r, float g, float b, boolean combine) {
+		if(combine) {
+			if(this.vertexColors == null) {
+				this.vertexColors = new float[4 * 3];
+				this.vertexColors[0] = 1f; this.vertexColors[1] = 1f; this.vertexColors[2] = 1f;
+				this.vertexColors[3] = 1f; this.vertexColors[4] = 1f; this.vertexColors[5] = 1f;
+				this.vertexColors[6] = 1f; this.vertexColors[7] = 1f; this.vertexColors[8] = 1f;
+				this.vertexColors[9] = 1f; this.vertexColors[10] = 1f; this.vertexColors[11] = 1f;
+			}
+			for(int i = 0; i < this.vertexColors.length; i += 3) {
+				this.vertexColors[i] *= r;
+				this.vertexColors[i+1] *= g;
+				this.vertexColors[i+2] *= b;
+			}
+		}else {
+			this.vertexColors = new float[4 * 3];
+			for(int i = 0; i < this.vertexColors.length; i += 3) {
+				this.vertexColors[i] = r;
+				this.vertexColors[i+1] = g;
+				this.vertexColors[i+2] = b;
+			}
+		}
+	}
+	
+	public void setFaceColour(Color colour) {
+		setFaceColour(colour.getR(), colour.getG(), colour.getB());
+	}
+	
+	public void setFaceColour(Color colour, boolean combine) {
+		setFaceColour(colour.getR(), colour.getG(), colour.getB(), combine);
 	}
 	
 	public void setVertexColors(float[] vertexColors) {

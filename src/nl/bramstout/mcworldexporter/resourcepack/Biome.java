@@ -31,23 +31,19 @@
 
 package nl.bramstout.mcworldexporter.resourcepack;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.TokenMap;
 
 public abstract class Biome {
 
 	protected String name;
 	protected int id;
-	protected Map<String, Color> biomeColours;
+	protected TokenMap<Color> biomeColours;
 	
 	public Biome(String name, int id) {
 		this.name = name;
 		this.id = id;
-		this.biomeColours = new HashMap<String, Color>();
+		this.biomeColours = new TokenMap<Color>();
 	}
 	
 	public abstract void calculateTints();
@@ -68,8 +64,8 @@ public abstract class Biome {
 		biomeColours.put(name, color);
 	}
 	
-	public Set<Entry<String, Color>> getColors(){
-		return biomeColours.entrySet();
+	public TokenMap<Color> getColors(){
+		return biomeColours;
 	}
 	
 }

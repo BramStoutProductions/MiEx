@@ -83,11 +83,11 @@ public class EntitySpawnerSpawnerHerd extends EntitySpawnerSpawner{
 			
 			// Find a spot with an air block and non-air block below.
 			int spawnY = y;
-			int prevBlockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ);
+			int prevBlockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ, 0);
 			if(prevBlockId == 0) {
 				// This is air, so move down to find a spot.
 				for(spawnY = y - 1; spawnY >= y - radius; --spawnY) {
-					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ);
+					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ, 0);
 					if(prevBlockId == 0 && blockId != 0) {
 						// We've found a spot, so return it.
 						pos[0] = spawnX;
@@ -100,7 +100,7 @@ public class EntitySpawnerSpawnerHerd extends EntitySpawnerSpawner{
 			}else {
 				// This is not air, so move up to find a spot.
 				for(spawnY = y + 1; spawnY <= y + radius; ++spawnY) {
-					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ);
+					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(spawnX, spawnY, spawnZ, 0);
 					if(prevBlockId != 0 && blockId == 0) {
 						// We've found a spot, so return it.
 						pos[0] = spawnX;

@@ -172,7 +172,7 @@ public class MolangQuery extends MolangObject{
 			int x = (int) context.getTempDict().getField("arg_0").asNumber(context);
 			int y = (int) context.getTempDict().getField("arg_1").asNumber(context);
 			int z = (int) context.getTempDict().getField("arg_2").asNumber(context);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 			Block block = BlockRegistry.getBlock(blockId);
 			List<String> tags = Tags.getTagsForResourceId(block.getName());
 			for(Entry<String, MolangValue> entry : ((MolangDictionary)context.getTempDict().getImpl()).getFields().entrySet()) {
@@ -200,7 +200,7 @@ public class MolangQuery extends MolangObject{
 			int x = (int) context.getTempDict().getField("arg_0").asNumber(context);
 			int y = (int) context.getTempDict().getField("arg_1").asNumber(context);
 			int z = (int) context.getTempDict().getField("arg_2").asNumber(context);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 			Block block = BlockRegistry.getBlock(blockId);
 			List<String> tags = Tags.getTagsForResourceId(block.getName());
 			for(Entry<String, MolangValue> entry : ((MolangDictionary)context.getTempDict().getImpl()).getFields().entrySet()) {
@@ -227,7 +227,7 @@ public class MolangQuery extends MolangObject{
 			int bx = (int) context.getTempDict().getField("arg_0").asNumber(context);
 			int by = (int) context.getTempDict().getField("arg_1").asNumber(context);
 			int bz = (int) context.getTempDict().getField("arg_2").asNumber(context);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(((int) x) + bx, ((int) y) + by, ((int) z) + bz);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(((int) x) + bx, ((int) y) + by, ((int) z) + bz, 0);
 			Block block = BlockRegistry.getBlock(blockId);
 			List<String> tags = Tags.getTagsForResourceId(block.getName());
 			for(Entry<String, MolangValue> entry : ((MolangDictionary)context.getTempDict().getImpl()).getFields().entrySet()) {
@@ -255,7 +255,7 @@ public class MolangQuery extends MolangObject{
 			int bx = (int) context.getTempDict().getField("arg_0").asNumber(context);
 			int by = (int) context.getTempDict().getField("arg_1").asNumber(context);
 			int bz = (int) context.getTempDict().getField("arg_2").asNumber(context);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(((int) x) + bx, ((int) y) + by, ((int) z) + bz);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(((int) x) + bx, ((int) y) + by, ((int) z) + bz, 0);
 			Block block = BlockRegistry.getBlock(blockId);
 			List<String> tags = Tags.getTagsForResourceId(block.getName());
 			for(Entry<String, MolangValue> entry : ((MolangDictionary)context.getTempDict().getImpl()).getFields().entrySet()) {
@@ -352,7 +352,7 @@ public class MolangQuery extends MolangObject{
 		public GetBlockName() {super(null);}
 		@Override
 		public MolangValue eval(MolangContext context) {
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z), 0);
 			Block block = BlockRegistry.getBlock(blockId);
 			return new MolangValue(block.getName());
 		}
@@ -1405,9 +1405,13 @@ public class MolangQuery extends MolangObject{
 			for(int y = minBlockY; y <= maxBlockY; ++y) {
 				for(int z = minBlockZ; z <= maxBlockZ; ++z) {
 					for(int x = minBlockX; x <= maxBlockX; ++x) {
-						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 						Block block = BlockRegistry.getBlock(blockId);
-						if(block.isWaterlogged() || block.getName().equals("minecraft:water"))
+						if(block.getName().equals("minecraft:water"))
+							return new MolangValue(true);
+						blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 1);
+						block = BlockRegistry.getBlock(blockId);
+						if(block.getName().equals("minecraft:water"))
 							return new MolangValue(true);
 					}
 				}
@@ -1423,9 +1427,15 @@ public class MolangQuery extends MolangObject{
 			int blockX = (int) Math.floor(x);
 			int blockY = (int) Math.floor(y);
 			int blockZ = (int) Math.floor(z);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 0);
 			Block block = BlockRegistry.getBlock(blockId);
-			return new MolangValue(block.getName().equals("minecraft:lava"));
+			if(block.getName().equals("minecraft:lava"))
+				return new MolangValue(true);
+			blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 1);
+			block = BlockRegistry.getBlock(blockId);
+			if(block.getName().equals("minecraft:lava"))
+				return new MolangValue(true);
+			return new MolangValue(false);
 		}
 	}
 	private class IsInWater extends MolangScript{
@@ -1435,9 +1445,15 @@ public class MolangQuery extends MolangObject{
 			int blockX = (int) Math.floor(x);
 			int blockY = (int) Math.floor(y);
 			int blockZ = (int) Math.floor(z);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 0);
 			Block block = BlockRegistry.getBlock(blockId);
-			return new MolangValue(block.isWaterlogged() || block.getName().equals("minecraft:water"));
+			if(block.getName().equals("minecraft:water"))
+				return new MolangValue(true);
+			blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 1);
+			block = BlockRegistry.getBlock(blockId);
+			if(block.getName().equals("minecraft:water"))
+				return new MolangValue(true);
+			return new MolangValue(false);
 		}
 	}
 	private class IsInWaterOrRain extends MolangScript{
@@ -1447,9 +1463,15 @@ public class MolangQuery extends MolangObject{
 			int blockX = (int) Math.floor(x);
 			int blockY = (int) Math.floor(y);
 			int blockZ = (int) Math.floor(z);
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 0);
 			Block block = BlockRegistry.getBlock(blockId);
-			return new MolangValue(block.isWaterlogged() || block.getName().equals("minecraft:water"));
+			if(block.getName().equals("minecraft:water"))
+				return new MolangValue(true);
+			blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 1);
+			block = BlockRegistry.getBlock(blockId);
+			if(block.getName().equals("minecraft:water"))
+				return new MolangValue(true);
+			return new MolangValue(false);
 		}
 	}
 	private class IsJumping extends MolangScript{

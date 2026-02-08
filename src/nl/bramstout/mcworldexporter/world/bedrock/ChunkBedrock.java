@@ -100,7 +100,7 @@ public class ChunkBedrock extends Chunk{
 			if(minSectionY > maxSectionY)
 				return; // No chunk sections for this chunk.
 			chunkSectionOffset = minSectionY;
-			blocks = new int[maxSectionY - chunkSectionOffset + 1][];
+			blocks = new int[][][] { new int[maxSectionY - chunkSectionOffset + 1][] };
 			biomes = new int[maxSectionY - chunkSectionOffset + 1][];
 			
 			int[] paletteMap = null;
@@ -142,6 +142,7 @@ public class ChunkBedrock extends Chunk{
 				if(storageCount <= 0)
 					continue;
 				
+				
 				int y = y2;
 				if(versionNumber == 9) {
 					y = dis.readByte(); // Y index
@@ -149,10 +150,15 @@ public class ChunkBedrock extends Chunk{
 						continue;
 				}
 				
-				sectionBlocks = new int[16*16*16];
-				blocks[y - chunkSectionOffset] = sectionBlocks;
-				
+				if(storageCount > blocks.length)
+					blocks = Arrays.copyOf(blocks, storageCount);
+
 				for(int blockStorageI = 0; blockStorageI < storageCount; ++blockStorageI) {
+					sectionBlocks = new int[16*16*16];
+					if(blocks[blockStorageI] == null)
+						blocks[blockStorageI] = new int[maxSectionY - chunkSectionOffset + 1][];
+					blocks[blockStorageI][y - chunkSectionOffset] = sectionBlocks;
+					
 					int blockVersionNumber = dis.readUnsignedByte();
 					bitsPerId = blockVersionNumber >>> 1;
 					if(bitsPerId == 0)
@@ -207,58 +213,16 @@ public class ChunkBedrock extends Chunk{
 								blockProperties.free();
 						}
 					
-						if(blockStorageI == 0) {
-							int i = 0;
-							for(int bx = 0; bx < 16; ++bx) {
-								for(int bz = 0; bz < 16; ++bz) {
-									for(int by = 0; by < 16; ++by) {
-										intIndex = i / idsPerInt;
-										idIndex = i % idsPerInt;
-										paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
-										paletteIndex %= paletteSize;
-										sectionBlocks[by * 16 * 16 + bz * 16 + bx] = paletteMap[paletteIndex];
-										i++;
-									}
-								}
-							}
-						}else {
-							// The following blocks are on extra layers, so we need to combine them together
-							int i = 0;
-							int overlayBlockId = 0;
-							int currentBlockId = 0;
-							Block currentBlock = null;
-							Block overlayBlock = null;
-							NbtTagCompound newProperties = null;
-							NbtTagString waterloggedTag = null;
-							for(int bx = 0; bx < 16; ++bx) {
-								for(int bz = 0; bz < 16; ++bz) {
-									for(int by = 0; by < 16; ++by) {
-										intIndex = i / idsPerInt;
-										idIndex = i % idsPerInt;
-										paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
-										paletteIndex %= paletteSize;
-										currentBlockId = sectionBlocks[by * 16 * 16 + bz * 16 + bx];
-										overlayBlockId = paletteMap[paletteIndex];
-										if(currentBlockId <= 0) {
-											// We don't yet have a block there, so just set it.
-											sectionBlocks[by * 16 * 16 + bz * 16 + bx] = overlayBlockId;
-										}else {
-											// There is a block there, so if this overlay block is water
-											// set the waterlogged property
-											overlayBlock = BlockRegistry.getBlock(overlayBlockId);
-											if(overlayBlock.getName().equals("minecraft:water")) {
-												currentBlock = BlockRegistry.getBlock(currentBlockId);
-												newProperties = (NbtTagCompound) currentBlock.getProperties().copy();
-												waterloggedTag = NbtTagString.newInstance("waterlogged", "true");
-												newProperties.addElement(waterloggedTag);
-												currentBlockId = BlockRegistry.getIdForName(currentBlock.getName(), 
-																		newProperties, 0, charBuffer);
-												newProperties.free();
-											}
-											sectionBlocks[by * 16 * 16 + bz * 16 + bx] = currentBlockId;
-										}
-										i++;
-									}
+						int i = 0;
+						for(int bx = 0; bx < 16; ++bx) {
+							for(int bz = 0; bz < 16; ++bz) {
+								for(int by = 0; by < 16; ++by) {
+									intIndex = i / idsPerInt;
+									idIndex = i % idsPerInt;
+									paletteIndex = (sectionData[intIndex] >>> (idIndex * bitsPerId)) & (-1 >>> (32 - bitsPerId));
+									paletteIndex %= paletteSize;
+									sectionBlocks[by * 16 * 16 + bz * 16 + bx] = paletteMap[paletteIndex];
+									i++;
 								}
 							}
 						}
@@ -370,7 +334,7 @@ public class ChunkBedrock extends Chunk{
 						continue;
 					}
 					
-					currentBlockId = getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ);
+					currentBlockId = getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ, 0);
 					currentBlock = BlockRegistry.getBlock(currentBlockId);
 					blockEntity.addAllElements(currentBlock.getProperties());
 					if(currentBlockId > 0)
@@ -391,8 +355,8 @@ public class ChunkBedrock extends Chunk{
 							
 							blockEntitySectionY -= chunkSectionOffset;
 							if(blockEntitySectionY < blocks.length)
-								if(blocks[blockEntitySectionY] != null)
-									blocks[blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = 0;
+								if(blocks[0][blockEntitySectionY] != null)
+									blocks[0][blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = 0;
 							
 							tag.free();
 							continue;
@@ -445,10 +409,10 @@ public class ChunkBedrock extends Chunk{
 					blockEntitySectionY -= chunkSectionOffset;
 					if(blockEntitySectionY < 0 || blockEntitySectionY >= blocks.length)
 						continue;
-					if(blocks[blockEntitySectionY] == null)
-						blocks[blockEntitySectionY] = new int[16*16*16];
+					if(blocks[0][blockEntitySectionY] == null)
+						blocks[0][blockEntitySectionY] = new int[16*16*16];
 					
-					blocks[blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
+					blocks[0][blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
 				}
 			}
 			
@@ -562,6 +526,6 @@ public class ChunkBedrock extends Chunk{
 	}
 	
 	@Override
-	public void addBiomeTints(BlendedBiome biome, int x, int y, int z) {}
+	public void addBiomeTints(BlendedBiome biome, int x, int y, int z, int index) {}
 
 }

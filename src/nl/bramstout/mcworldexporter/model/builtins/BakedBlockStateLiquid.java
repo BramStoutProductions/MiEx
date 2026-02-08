@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class BakedBlockStateLiquid extends BakedBlockState{
 	
@@ -57,7 +58,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	protected String flowTexture;
 	
 	public BakedBlockStateLiquid(String name) {
-		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, name, false, false, false, 
+		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, 
 				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), 
 				false, false, 2, getTintLayers(name), true, null);
 		String[] nameTokens = getName().split(":");
@@ -85,17 +86,19 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		int level12 = getLevel(x  , y, z+1);
 		int level22 = getLevel(x+1, y, z+1);
 		int isWaterLogged = 0;
-		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 		Block currentBlock = BlockRegistry.getBlock(currentBlockId);
-		if(!currentBlock.isLiquid() || currentBlock.isWaterlogged()) {
+		if(!currentBlock.isLiquid()) {
 			isWaterLogged = 1;
 		}
 		
 		int blockBelow = 0;
-		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
+		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(
+											MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 0), 
+											x, y-1, z, 0);
 		if(blockBelowState == null || 
-				(!blockBelowState.hasLiquid() || blockBelowState.isTransparentOcclusion() ||
-				blockBelowState.isLeavesOcclusion()))
+				(!blockBelowState.hasLiquid() && (blockBelowState.isTransparentOcclusion() ||
+				blockBelowState.isLeavesOcclusion())))
 			blockBelow = 1;
 		
 		long l00 = level00 + 2;
@@ -292,30 +295,56 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		return model;
 	}
 	
+	private Block getLiquidBlock(int x, int y, int z) {
+		LayeredBlock blocks = new LayeredBlock();
+		MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, blocks);
+		
+		Block firstBlock = null;
+		Block liquidBlock = null;
+		
+		for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+			int blockId = blocks.getBlock(layer);
+			Block block = BlockRegistry.getBlock(blockId);
+			
+			if(firstBlock == null)
+				firstBlock = block;
+			
+			if(block == null)
+				continue;
+			if(!block.isLiquid())
+				continue;
+			
+			liquidBlock = block;
+		}
+		
+		return liquidBlock == null ? firstBlock : liquidBlock;
+	}
+	
 	private int getLevel(int x, int y, int z) {
-		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-		Block block = BlockRegistry.getBlock(blockId);
+		Block block = getLiquidBlock(x, y, z);
 		
 
-		int level = -2;
 		
 		if(block == null)
 			return -1; // -1 for air
 		if(block.getName().equals("minecraft:air"))
 			return -1;
-		if(!block.hasLiquid())
+		if(!block.isLiquid())
 			return -2; // -2 for non liquid blocks
-		
-		if(block.isWaterlogged())
-			level = 0; // Waterlogged blocks have a source block in them, which is 0
 		
 		// Check the block above. If there is a liquid block above, then this block should be
 		// a full liquid block. Which is the size of an entire block (a source block is less tall).
-		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z), x, y + 1, z);
-		if(blockAbove != null && blockAbove.hasLiquid()) {
+		Block blockAbove = getLiquidBlock(x, y + 1, z);
+		//BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z), x, y + 1, z);
+		if(blockAbove != null && blockAbove.isLiquid()) {
 			return 8;
 		}
+		BakedBlockState blockAboveState = null;
+		if(blockAbove != null)
+			blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), x, y + 1, z, 0);
 		
+		int level = 0;
+
 		NbtTag levelTag = block.getProperties().get("level");
 		if(levelTag != null) {
 			try {
@@ -325,8 +354,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			}
 		}
 		
-		if(level == 0 && (blockAbove == null || (!blockAbove.hasLiquid() && blockAbove.getOccludes() == 0 && 
-								!blockAbove.isTransparentOcclusion() && !blockAbove.isLeavesOcclusion()))) {
+		if(level == 0 && (blockAboveState == null || (!blockAboveState.hasLiquid() && blockAboveState.getOccludes() == 0 && 
+								!blockAboveState.isTransparentOcclusion() && !blockAboveState.isLeavesOcclusion()))) {
 			// A full source block is a block surrounded by either blocks or other source blocks.
 			// This is for oceans where there are underground structures. Otherwise, it would generate
 			// the top faces of the liquid, which we don't want since everything is under water.
@@ -334,9 +363,12 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			for(int j = y; j <= y+1; ++j) {
 				for(int k = z-1; k <= z+1; ++k) {
 					for(int i = x-1; i <= x+1; ++i) {
-						blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(i, j, k), i, j, k);
-						if(blockAbove == null || (!blockAbove.hasLiquid() && blockAbove.getOccludes() == 0 && 
-								!blockAbove.isTransparentOcclusion() && !blockAbove.isLeavesOcclusion())) {
+						blockAbove = getLiquidBlock(i, j, k);
+						blockAboveState = null;
+						if(blockAbove != null)
+							blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), i, j, k, 0);
+						if(blockAboveState == null || (!blockAboveState.hasLiquid() && blockAboveState.getOccludes() == 0 && 
+								!blockAboveState.isTransparentOcclusion() && !blockAboveState.isLeavesOcclusion())) {
 							fullSourceBlock = false;
 							break;
 						}
@@ -433,10 +465,6 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			return 0f;
 		
 		return res / totalWeight;
-	}
-	
-	public BakedBlockStateLiquid getLiquidState() {
-		return null;
 	}
 
 }

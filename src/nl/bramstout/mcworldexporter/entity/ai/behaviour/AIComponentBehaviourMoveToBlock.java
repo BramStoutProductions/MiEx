@@ -42,6 +42,7 @@ import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetPosition;
 import nl.bramstout.mcworldexporter.entity.ai.EntityUtil;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class AIComponentBehaviourMoveToBlock extends AIComponent{
 
@@ -181,15 +182,18 @@ public class AIComponentBehaviourMoveToBlock extends AIComponent{
 			for(int sampleY = -searchHeight; sampleY <= searchHeight; ++sampleY) {
 				for(int sampleZ = -searchRange; sampleZ <= searchRange; ++sampleZ) {
 					for(int sampleX = -searchRange; sampleX <= searchRange; ++sampleX) {
-						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
-																	sampleY + blockY, sampleZ + blockZ);
-						Block block = BlockRegistry.getBlock(blockId);
-						if(targetBlocks.contains(block.getName())) {
-							int distance = sampleX * sampleX + sampleY * sampleY + sampleZ * sampleZ;
-							if(distance < closestDistance) {
-								selectX = sampleX + blockX;
-								selectY = sampleY + blockY;
-								selectZ = sampleZ + blockZ;
+						LayeredBlock blocks = new LayeredBlock();
+						MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
+																	sampleY + blockY, sampleZ + blockZ, blocks);
+						for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+							Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+							if(targetBlocks.contains(block.getName())) {
+								int distance = sampleX * sampleX + sampleY * sampleY + sampleZ * sampleZ;
+								if(distance < closestDistance) {
+									selectX = sampleX + blockX;
+									selectY = sampleY + blockY;
+									selectZ = sampleZ + blockZ;
+								}
 							}
 						}
 					}
@@ -202,14 +206,17 @@ public class AIComponentBehaviourMoveToBlock extends AIComponent{
 				int sampleY = entity.getRandom().nextInt(-searchHeight, searchHeight + 1) + blockY;
 				int sampleZ = entity.getRandom().nextInt(-searchRange, searchRange + 1) + blockZ;
 				
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ);
-				Block block = BlockRegistry.getBlock(blockId);
-				if(targetBlocks.contains(block.getName())) {
-					// We've found a block
-					selectX = sampleX;
-					selectY = sampleY;
-					selectZ = sampleZ;
-					break;
+				LayeredBlock blocks = new LayeredBlock();
+				MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ, blocks);
+				for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+					Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+					if(targetBlocks.contains(block.getName())) {
+						// We've found a block
+						selectX = sampleX;
+						selectY = sampleY;
+						selectZ = sampleZ;
+						break;
+					}
 				}
 			}
 		}

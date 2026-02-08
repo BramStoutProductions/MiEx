@@ -41,6 +41,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public abstract class BlockStatePart {
 	
@@ -54,7 +55,7 @@ public abstract class BlockStatePart {
 		return models;
 	}
 
-	public abstract boolean usePart(NbtTagCompound properties, int x, int y, int z);
+	public abstract boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer);
 	
 	public abstract boolean needsConnectionInfo();
 	
@@ -72,7 +73,7 @@ public abstract class BlockStatePart {
 		return models.get(0).getDefaultTexture();
 	}
 	
-	protected boolean testMiExConnection(String key, String value, int x, int y, int z) {
+	protected boolean testMiExConnection(String key, String value, int x, int y, int z, int layer) {
 		// format: miex_connect_<x offset>_<y ofset>_<z ofset>
 		// where the x, y, and z offsets are the block position
 		// offsets from the current block to check.
@@ -84,43 +85,50 @@ public abstract class BlockStatePart {
 			int yOffset = Integer.parseInt(tokens[3]);
 			int zOffset = Integer.parseInt(tokens[4]);
 			
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x + xOffset, y + yOffset, z + zOffset);
-			Block block = BlockRegistry.getBlock(blockId);
-			
-			boolean match = false;
-			
-			for(String valueItem : value.split("\\|")) {
-				boolean invert = false;
-				if(valueItem.startsWith("!")) {
-					invert = true;
-					valueItem = valueItem.substring(1);
+			LayeredBlock blocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + xOffset, y + yOffset, z + zOffset, blocks);
+			for(int layer2 = 0; layer2 < blocks.getLayerCount(); ++layer2) {
+				int blockId = blocks.getBlock(layer2);
+				Block block = BlockRegistry.getBlock(blockId);
+				
+				boolean match = false;
+				
+				for(String valueItem : value.split("\\|")) {
+					boolean invert = false;
+					if(valueItem.startsWith("!")) {
+						invert = true;
+						valueItem = valueItem.substring(1);
+					}
+					
+					if(valueItem.equalsIgnoreCase("this")) {
+						// Check if the block is the same as the current block.
+						int thisBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
+						if(invert)
+							match |= blockId != thisBlockId;
+						else
+							match |= blockId == thisBlockId;
+					}else if(valueItem.startsWith("#")) {
+						// Check if the sampled block is in the specified tag.
+						List<String> blockNames = Tags.getNamesInTag(valueItem);
+						if(invert)
+							match |= !blockNames.contains(block.getName());
+						else
+							match |= blockNames.contains(block.getName());
+					}else {
+						// Check if the sampled block has the same name.
+						if(!valueItem.contains(":"))
+							valueItem = "minecraft:" + valueItem;
+						if(invert)
+							match |= !valueItem.equals(block.getName());
+						else
+							match |= valueItem.equals(block.getName());
+					}
 				}
 				
-				if(valueItem.equalsIgnoreCase("this")) {
-					// Check if the block is the same as the current block.
-					int thisBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-					if(invert)
-						match |= blockId != thisBlockId;
-					else
-						match |= blockId == thisBlockId;
-				}else if(valueItem.startsWith("#")) {
-					// Check if the sampled block is in the specified tag.
-					List<String> blockNames = Tags.getNamesInTag(valueItem);
-					if(invert)
-						match |= !blockNames.contains(block.getName());
-					else
-						match |= blockNames.contains(block.getName());
-				}else {
-					// Check if the sampled block has the same name.
-					if(!valueItem.contains(":"))
-						valueItem = "minecraft:" + valueItem;
-					if(invert)
-						match |= !valueItem.equals(block.getName());
-					else
-						match |= valueItem.equals(block.getName());
-				}
+				if(match)
+					return true;
 			}
-			return match;
+			return false;
 		}catch(Exception ex) {}
 		return false;
 	}

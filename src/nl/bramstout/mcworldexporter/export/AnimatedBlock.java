@@ -40,6 +40,7 @@ import java.util.Map;
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.export.ChunkExporter.AtlasKey;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
@@ -61,12 +62,14 @@ public class AnimatedBlock {
 		public int x;
 		public int y;
 		public int z;
+		public int layer;
 		
-		public AnimatedBlockId(int blockId, int x, int y, int z) {
+		public AnimatedBlockId(int blockId, int x, int y, int z, int layer) {
 			this.blockId = blockId;
 			this.x = x;
 			this.y = y;
 			this.z = z;
+			this.layer = layer;
 		}
 		
 		@Override
@@ -86,7 +89,8 @@ public class AnimatedBlock {
 				return ((AnimatedBlockId)obj).blockId == blockId && 
 						((AnimatedBlockId)obj).x == x && 
 						((AnimatedBlockId)obj).y == y && 
-						((AnimatedBlockId)obj).z == z;
+						((AnimatedBlockId)obj).z == z &&
+						((AnimatedBlockId)obj).layer == layer;
 			}
 			return false;
 		}
@@ -161,13 +165,13 @@ public class AnimatedBlock {
 		Block block = BlockRegistry.getBlock(id.blockId);
 		int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 		BlockState state = BlockStateRegistry.getState(stateId);
-		BlockAnimationHandler animationHandler = BlockStateRegistry.getBakedStateForBlock(id.blockId, id.x, id.y, id.z).getAnimationHandler();
+		BlockAnimationHandler animationHandler = BlockStateRegistry.getBakedStateForBlock(id.blockId, id.x, id.y, id.z, id.layer).getAnimationHandler();
 		if(animationHandler == null)
 			// Shouldn't ever happen.
 			return;
 		
 		BakedBlockState bakedState = state.getHandler().getAnimatedBakedBlockState(block.getProperties(), 
-				id.x, id.y, id.z, state, animationHandler, frame);
+				id.x, id.y, id.z, id.layer, state, animationHandler, frame);
 		
 		
 		List<Model> models = new ArrayList<Model>();
@@ -229,7 +233,12 @@ public class AnimatedBlock {
 			if(tintValue != null) {
 				tint = faceTint;
 				for(int i = 0; i < tint.length; ++i) {
-					tint[i] = tintValue.getColor(blendedBiome);
+					WeightedColor color = tintValue.getColor(blendedBiome);
+					if(color == null) {
+						tint = null;
+						break;
+					}
+					tint[i] = color.get(i);
 					if(tint[i] == null) {
 						tint = null;
 						break;
@@ -297,7 +306,7 @@ public class AnimatedBlock {
 	public void read(LargeDataInputStream dis) throws IOException{
 		name = dis.readUTF();
 		if(id == null)
-			id = new AnimatedBlockId(0,0,0,0);
+			id = new AnimatedBlockId(0,0,0,0, 0);
 		id.blockId = dis.readInt();
 		id.x = dis.readInt();
 		id.y = dis.readInt();

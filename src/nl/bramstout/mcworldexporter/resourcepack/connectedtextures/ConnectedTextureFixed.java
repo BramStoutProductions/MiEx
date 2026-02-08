@@ -40,7 +40,7 @@ public class ConnectedTextureFixed extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		if(tiles.size() <= 0)
 			return null;
 		return tiles.get(0);

@@ -29,62 +29,38 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package nl.bramstout.mcworldexporter.resourcepack.connectedtextures;
+package nl.bramstout.mcworldexporter.world;
 
-import nl.bramstout.mcworldexporter.model.Direction;
-import nl.bramstout.mcworldexporter.model.ModelFace;
+import java.util.Arrays;
 
-public class ConnectedTextureVerticalHorizontal extends ConnectedTexture{
+public class LayeredBlock {
 	
-	public ConnectedTextureVerticalHorizontal(String name, int priority) {
-		super(name, priority);
-	}
-
-	@Override
-	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
-		Direction up = getUp(face);
-		Direction down = up.getOpposite();
-		Direction left = getLeft(up, face);
-		Direction right = left.getOpposite();
-		
-		int tile = getTile(face, x, y, z, layer, up, down);
-		
-		if(tile == 3) {
-			// Check if we can connect vertically.
-			int tileLeft = getTile(face, x + left.x, y + left.y, z + left.z, layer, up, down);
-			int tileRight = getTile(face, x + right.x, y + right.y, z + right.z, layer, up, down);
-			
-			boolean leftConnected = tileLeft == 3;
-			boolean rightConnected = tileRight == 3;
-			
-			if(leftConnected && rightConnected)
-				tile = 5;
-			else if(leftConnected)
-				tile = 6;
-			else if(rightConnected)
-				tile = 4;
-		}
-		
-		if(tile < 0 || tile >= tiles.size())
-			return null;
-		
-		return tiles.get(tile);
+	private int[] blocks;
+	private int layerCount;
+	
+	public LayeredBlock() {
+		blocks = null;
+		layerCount = 0;
 	}
 	
-	private int getTile(ModelFace face, int x, int y, int z, int layer, Direction up, Direction down) {
-		boolean upConnected = connects(face, x, y, z, layer, up.x, up.y, up.z);
-		boolean downConnected = connects(face, x, y, z, layer, down.x, down.y, down.z);
-		
-		int tile = 3;
-		
-		if(upConnected && downConnected)
-			tile = 1;
-		else if(upConnected)
-			tile = 0;
-		else if(downConnected)
-			tile = 2;
-		
-		return tile;
+	public int getLayerCount() {
+		return layerCount;
 	}
 	
+	public int getBlock(int layer) {
+		return (blocks == null || layerCount == 0 || layer < 0 || layer >= layerCount) ? 0 : blocks[layer];
+	}
+	
+	public void setLayerCount(int layerCount) {
+		this.layerCount = layerCount;
+		if(blocks == null)
+			blocks = new int[layerCount];
+		if(layerCount > blocks.length)
+			blocks = Arrays.copyOf(blocks, layerCount);
+	}
+	
+	public void setBlock(int layer, int block) {
+		blocks[layer] = block;
+	}
+
 }

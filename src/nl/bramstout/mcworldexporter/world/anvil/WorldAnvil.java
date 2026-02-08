@@ -143,6 +143,16 @@ public class WorldAnvil extends World{
 				players.add(new PlayerAnvil(f.getName().replace(".dat", ""), f));
 			}
 		}
+		playerDataFolder = new File(worldDir, "players/data");
+		if(playerDataFolder.exists()) {
+			for(File f : playerDataFolder.listFiles()) {
+				if(!f.isFile())
+					continue;
+				if(!f.getName().endsWith(".dat"))
+					continue;
+				players.add(new PlayerAnvil(f.getName().replace(".dat", ""), f));
+			}
+		}
 	}
 
 	@Override
@@ -167,6 +177,8 @@ public class WorldAnvil extends World{
 				dim = "the_nether";
 			else if(dim.equals("DIM1"))
 				dim = "the_end";
+			if(parent.startsWith("dimensions/"))
+				parent = parent.substring("dimensions/".length());
 			dimensions.add(parent + dim);
 		}else if(folder.isDirectory()){
 			for(File f : folder.listFiles()) {
@@ -201,8 +213,11 @@ public class WorldAnvil extends World{
 		if(currentDimension.equals("the_end"))
 			regionFolder = new File(worldDir, "DIM1/region");
 		
-		if(!regionFolder.exists())
-			return;
+		if(!regionFolder.exists()) {
+			regionFolder = new File(worldDir, "dimensions/" + currentDimension + "/region");
+			if(!regionFolder.exists())
+				return;
+		}
 		
 		regionMinX = Integer.MAX_VALUE;
 		regionMinZ = Integer.MAX_VALUE;
@@ -276,6 +291,25 @@ public class WorldAnvil extends World{
 			sources.add(source);
 		}
 		
+		File resourcepacksFolder = new File(getWorldDir(), "resourcepacks");
+		if(resourcepacksFolder.exists()) {
+			ResourcePackSource source = new ResourcePackSource("World's resourcepacks");
+			for(File resourcepackFile : resourcepacksFolder.listFiles()) {
+				// We only care about the biome definitions in the datapacks right now.
+				// If a datapack doesn't contain any biome definitions, then no need to
+				// put it as a source.
+				if(resourcepackFile.isDirectory() && !new File(resourcepackFile, "pack.mcmeta").exists())
+					continue;
+				if(resourcepackFile.isFile() && !resourcepackFile.getName().endsWith(".zip"))
+					continue;
+				
+				source.addSource(ResourcePackSource.getHash(resourcepackFile), resourcepackFile);
+			}
+			
+			if(!source.isEmpty())
+				sources.add(source);
+		}
+		
 		File datapacksFolder = new File(getWorldDir(), "datapacks");
 		if(datapacksFolder.exists()) {
 			ResourcePackSource source = new ResourcePackSource("World's datapacks");
@@ -283,8 +317,7 @@ public class WorldAnvil extends World{
 				// We only care about the biome definitions in the datapacks right now.
 				// If a datapack doesn't contain any biome definitions, then no need to
 				// put it as a source.
-				if(!datapackFile.isDirectory() || !new File(datapackFile, "pack.mcmeta").exists() ||
-						!new File(datapackFile, "data/minecraft/worldgen/biome").exists())
+				if(datapackFile.isDirectory() && !new File(datapackFile, "data/minecraft/worldgen/biome").exists())
 					continue;
 				
 				source.addSource(ResourcePackSource.getHash(datapackFile), datapackFile);

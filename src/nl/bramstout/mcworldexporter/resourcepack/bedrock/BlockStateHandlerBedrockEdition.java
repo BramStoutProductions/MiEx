@@ -102,7 +102,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
 		String geometry = "minecraft:geometry.full_block";
 		Map<String, MolangExpression> boneVisibility = new HashMap<String, MolangExpression>();
 		Map<String, String> materialInstances = new HashMap<String, String>();
@@ -281,7 +281,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(name, models, state.isTransparentOcclusion(), 
 									state.isLeavesOcclusion(), state.isDetailedOcclusion(), 
-									state.isIndividualBlocks(), state.hasLiquid(properties), state.getLiquidName(properties),
+									state.isIndividualBlocks(), state.isLiquid(),
 									state.isCaveBlock(), state.hasRandomOffset(), 
 									state.hasRandomYOffset(),
 									state.isDoubleSided(), state.hasRandomAnimationXZOffset(), 
@@ -290,9 +290,9 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 	}
 	
 	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state,
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
 			BlockAnimationHandler animationHandler, float frame) {
-		return getBakedBlockState(properties, x, y, z, state);
+		return getBakedBlockState(properties, x, y, z, layer, state);
 	}
 
 	@Override

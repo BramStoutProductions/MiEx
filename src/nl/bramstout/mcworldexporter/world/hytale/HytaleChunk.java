@@ -259,7 +259,6 @@ public class HytaleChunk {
 	
 	public int getBlock(int localX, int localY, int localZ) {
 		if(this.sections == null) {
-			//System.out.println("Sections is null " + Boolean.toString(loading) + " " + Boolean.toString(loaded));
 			return 0;
 		}
 		
@@ -272,6 +271,22 @@ public class HytaleChunk {
 		if(section == null)
 			return 0;
 		return section.getBlockId(localX, sectionY, localZ);
+	}
+	
+	public int getFluid(int localX, int localY, int localZ) {
+		if(this.sections == null) {
+			return 0;
+		}
+		
+		int sectionIndex = localY >> 5;
+		int sectionY = localY & 31;
+		if(sectionIndex < 0 || sectionIndex >= this.sections.length)
+			return 0;
+		
+		Section section = this.sections[sectionIndex];
+		if(section == null)
+			return 0;
+		return section.getFluidId(localX, sectionY, localZ);
 	}
 	
 	public int getBiome(int localX, int localY, int localZ) {
@@ -293,9 +308,11 @@ public class HytaleChunk {
 	public static class Section{
 		
 		private int[] blocks;
+		private int[] fluids;
 		
 		public Section(BsonDocument data) {
 			blocks = null;
+			fluids = null;
 			
 			BsonDocument components = data.getDocument("Components");
 			
@@ -339,6 +356,12 @@ public class HytaleChunk {
 			if(blocks == null)
 				return 0;
 			return blocks[((localY * 32) + localZ) * 32 + localX];
+		}
+		
+		public int getFluidId(int localX, int localY, int localZ) {
+			if(fluids == null)
+				return 0;
+			return fluids[((localY * 32) + localZ) * 32 + localX];
 		}
 		
 	}
@@ -532,14 +555,14 @@ public class HytaleChunk {
 			// Create actual block data and write it to the block data.
 			// But skip is we only have Empty blocks or no blocks.
 			if(blockNamePalette != null && !blockNamePalette.isEmpty("Empty")) {
-				if(section.blocks == null) {
-					section.blocks = new int[32*32*32];
+				if(section.fluids == null) {
+					section.fluids = new int[32*32*32];
 				}
 				
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				BlockTranslatorManager blockTranslatorManager = TranslationRegistry.BLOCK_HYTALE.getTranslator(0);
 				
-				for(int i = 0; i < section.blocks.length; ++i) {
+				for(int i = 0; i < section.fluids.length; ++i) {
 					String blockName = (String) blockNamePalette.get(i);
 					
 					int fluidLevel = 0;
@@ -591,27 +614,8 @@ public class HytaleChunk {
 						if(blockName.equals("minecraft:air"))
 							continue;
 						
-						// Internally, each cell in the grid can only store one block,
-						// there is no concept of multiple layers like a fluid layer.
-						// So, if there currently is an air block then we can just overwrite it,
-						// but otherwise we need to merge the two blocks.
-						boolean needsMerge = false;
-						Block existingBlock = null;
-						if(section.blocks[i] != 0) {
-							existingBlock = BlockRegistry.getBlock(section.blocks[i]);
-							if(!existingBlock.getName().equals("minecraft:air"))
-								needsMerge = true;
-						}
-						
-						if(needsMerge && existingBlock != null) {
-							blockName = existingBlock.getName();
-							properties.addAllElements(existingBlock.getProperties());
-							properties.addElement(NbtTagString.newNonPooledInstance("waterlogged", "true"));
-							properties.addElement(NbtTagString.newNonPooledInstance("waterblock", "hytale:Water_Source"));
-						}
-						
 						int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
-						section.blocks[i] = blockId;
+						section.fluids[i] = blockId;
 					}
 				}
 			}

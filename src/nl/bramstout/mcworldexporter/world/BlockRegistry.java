@@ -50,6 +50,7 @@ public class BlockRegistry {
 	private static AtomicInteger changeCounter = new AtomicInteger();
 	
 	public static NbtTagCompound EMPTY_COMPOUND = NbtTagCompound.newNonPooledInstance("");
+	public static int MINECRAFT_WATER_SOURCE_BLOCK_ID = 0;
 	
 	private static final char[] INT_TO_CHAR = new char[] {
 			'0', '1', '2', '3', '4', '5', '6', '7', 
@@ -59,6 +60,7 @@ public class BlockRegistry {
 	static {
 		// Make sure that air always gets an id of 0
 		getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
+		MINECRAFT_WATER_SOURCE_BLOCK_ID = getIdForName("minecraft:water", null, Integer.MAX_VALUE, new Reference<char[]>());
 	}
 	
 	private static int getUniqueName(String name, NbtTagCompound properties, int dataVersion, Reference<char[]> buffer) {
@@ -147,6 +149,7 @@ public class BlockRegistry {
 		ModelRegistry.clearModelRegistry();
 		// Make sure that air always gets an id of 0
 		getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
+		MINECRAFT_WATER_SOURCE_BLOCK_ID = getIdForName("minecraft:water", null, Integer.MAX_VALUE, new Reference<char[]>());
 	}
 	
 	public static int getChangeCounter() {

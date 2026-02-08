@@ -46,7 +46,7 @@ public class ModifierContext {
 
 	private Map<ModifierNode, Value> evalCache = new HashMap<ModifierNode, Value>();
 	// [READ_WRITE, BLOCK/FACE] Biome colours
-	public BlendedBiome[] biome;
+	public BlendedBiome biome;
 	// [READ, BLOCK] Biome data
 	public Biome biomeInstance;
 	// [READ, BLOCK] Block data

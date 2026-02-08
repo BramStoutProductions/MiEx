@@ -76,6 +76,7 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class EntityExporter {
@@ -341,21 +342,30 @@ public class EntityExporter {
 				
 				// Make sure that the block can be spawned in.
 				// So it's either air or water.
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
-				if(blockId != 0) {
-					Block block = BlockRegistry.getBlock(blockId);
-					if(!block.getName().equals("minecraft:water"))
-						continue;
+				LayeredBlock blocks = new LayeredBlock();
+				MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, blocks);
+				boolean isAir = true;
+				boolean isLiquid = false;
+				for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+					int blockId = blocks.getBlock(layer);
+					if(blockId != 0) {
+						isAir = false;
+						Block block = BlockRegistry.getBlock(blockId);
+						if(block.getName().equals("minecraft:water"))
+							isLiquid = true;
+					}
 				}
+				if(!isAir && !isLiquid)
+					continue;
 				
 				// Now if the block is air, we need to find a spot with a non-air block below it.
-				if(blockId == 0) {
+				if(isAir) {
 					int minY = Math.max(boundsMinY, blockY - 32);
 					// Clamp blockY to just above the height map.
 					blockY = Math.min(blockY, worldHeight + 2);
 					boolean found = false;
 					for(; blockY >= minY; --blockY) {
-						int blockIdBelow = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY - 1, blockZ);
+						int blockIdBelow = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY - 1, blockZ, 0);
 						if(blockIdBelow != 0) {
 							found = true;
 							break;

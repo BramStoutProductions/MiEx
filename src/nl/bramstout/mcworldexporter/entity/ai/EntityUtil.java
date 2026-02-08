@@ -44,6 +44,7 @@ import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class EntityUtil {
 	
@@ -60,9 +61,14 @@ public class EntityUtil {
 		int blockX = (int) Math.floor(posX);
 		int blockY = (int) Math.floor(posY);
 		int blockZ = (int) Math.floor(posZ);
-		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
-		BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ);
-		return blockState.hasLiquid();
+		LayeredBlock blocks = new LayeredBlock();
+		MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, blocks);
+		for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+			BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blocks.getBlock(layer), blockX, blockY, blockZ, layer);
+			if(blockState.hasLiquid())
+				return true;
+		}
+		return false;
 	}
 	
 	public static boolean standingOnSolidBlock(Entity entity, float posX, float posY, float posZ) {
@@ -95,7 +101,7 @@ public class EntityUtil {
 		for(int y = minBlockY; y <= maxBlockY; ++y) {
 			for(int z = minBlockZ; z <= maxBlockZ; ++z) {
 				for(int x = minBlockX; x <= maxBlockX; ++x) {
-					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 					if(blockId != 0) {
 						// Get bounding box local to the block.
 						float ebbMinX = minX - ((float) x);
@@ -107,7 +113,7 @@ public class EntityUtil {
 						float eCenterY = (ebbMinY + ebbMaxY) / 2f;
 						
 						Block block = BlockRegistry.getBlock(blockId);
-						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
+						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
 						if(state.isAir() || block.isLiquid())
 							continue;
 						models.clear();
@@ -214,7 +220,7 @@ public class EntityUtil {
 		for(int y = minBlockY; y <= maxBlockY; ++y) {
 			for(int z = minBlockZ; z <= maxBlockZ; ++z) {
 				for(int x = minBlockX; x <= maxBlockX; ++x) {
-					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 					if(blockId != 0) {
 						// Get bounding box local to the block.
 						float ebbMinX = minX - ((float) x);
@@ -228,7 +234,7 @@ public class EntityUtil {
 						float eCenterZ = (ebbMinZ + ebbMaxZ) / 2f;
 						
 						Block block = BlockRegistry.getBlock(blockId);
-						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
+						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
 						if(state.isAir() || block.isLiquid())
 							continue;
 						models.clear();
@@ -341,7 +347,7 @@ public class EntityUtil {
 		int blockZ = (int) Math.floor(posZ);
 
 		for(int sampleY = blockY + 2; sampleY < blockY + 8; sampleY++) {
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, sampleY, blockZ);
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, sampleY, blockZ, 0);
 			if(blockId != 0)
 				return true;
 		}

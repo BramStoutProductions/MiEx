@@ -60,7 +60,7 @@ public class ConnectedTextureRandom extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		int rx = 0;
 		int ry = 0;
 		int rz = 0;
@@ -100,8 +100,8 @@ public class ConnectedTextureRandom extends ConnectedTexture{
 			// block, so all we have to do is check if
 			// below us is the same block and if so,
 			// use its position for the random number.
-			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-			int belowId = MCWorldExporter.getApp().getWorld().getBlockId(x, y-1, z);
+			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
+			int belowId = MCWorldExporter.getApp().getWorld().getBlockId(x, y-1, z, 0);
 			boolean match = thisId == belowId;
 			if(!match) {
 				// Check if the names match

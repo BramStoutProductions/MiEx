@@ -41,13 +41,13 @@ public class ConnectedTextureHorizontal extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		Direction left = getLeft(up, face);
 		Direction right = left.getOpposite();
 		
-		boolean leftConnected = connects(face, x, y, z, left.x, left.y, left.z);
-		boolean rightConnected = connects(face, x, y, z, right.x, right.y, right.z);
+		boolean leftConnected = connects(face, x, y, z, layer, left.x, left.y, left.z);
+		boolean rightConnected = connects(face, x, y, z, layer, right.x, right.y, right.z);
 		
 		int tile = 3;
 		

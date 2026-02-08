@@ -46,6 +46,7 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.export.AnimatedBlock.AnimatedBlockId;
+import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.export.processors.FaceOptimiser;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMergerMode;
@@ -62,6 +63,7 @@ import nl.bramstout.mcworldexporter.model.Subdivider;
 import nl.bramstout.mcworldexporter.modifier.ModifierContext;
 import nl.bramstout.mcworldexporter.modifier.Modifiers;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
@@ -182,11 +184,8 @@ public class ChunkExporter {
 		float offsetY = 0f;
 		float offsetZ = 0f;
 		float uvOffsetY = 0f;
-		BlendedBiome[] biome = new BlendedBiome[Config.smoothBiomeColors ? 8 : 1];
-		for(int i = 0; i < biome.length; ++i)
-			biome[i] = new BlendedBiome();
+		BlendedBiome biome = new BlendedBiome();
 		BakedBlockState state = null;
-		BakedBlockState liquidState = null;
 		List<Model> models = new ArrayList<Model>();
 		List<ModelFace> detailedOcclusionFaces = new ArrayList<ModelFace>();
 		boolean placeStone = false;
@@ -204,125 +203,119 @@ public class ChunkExporter {
 					if(bounds.isInExcludeRegion(wx, by, wz))
 						continue;
 					
-					getLODBlockId(chunk, bx, by, bz, lodSize, lodYSize, blockId);
-					if(blockId[0] < 0)
-						continue;
-					state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3]);
+					ambientOcclusion.calculateAmbientOcclusion(this, chunk, bx, by, bz, lodSize, lodYSize);
+					boolean calculatedBiome = false;
 					
-					if(state.isAir() || state.hasLiquid()) {
-						placeStone = false;
-						if(Config.fillInCaves) {
-							// We need to fill in the holes generated
-							// by the cave removal algorithm.
-							// Holes can occur in air or liquids.
-							
-							// We do this by checking if this air block
-							// would be considered in a cave. If so,
-							// we check the surrounding blocks to see
-							// if one wouldn't be in a cave. If so,
-							// we put in a stone block.
-							
-							if(isInCaveCached(wx, by, wz)) {
-								if(by == minY)
-									placeStone = true;
-								else {
-									for(Direction dir : Direction.CACHED_VALUES) {
-										if(!isInCaveCached(wx + dir.x, by + dir.y, wz + dir.z)) {
-											placeStone = true;
-											break;
+					for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {	
+						getLODBlockId(chunk, bx, by, bz, layer, lodSize, lodYSize, blockId);
+						if(blockId[0] < 0)
+							continue;
+						state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer);
+						
+						if(state.isAir() || state.hasLiquid()) {
+							placeStone = false;
+							if(Config.fillInCaves) {
+								// We need to fill in the holes generated
+								// by the cave removal algorithm.
+								// Holes can occur in air or liquids.
+								
+								// We do this by checking if this air block
+								// would be considered in a cave. If so,
+								// we check the surrounding blocks to see
+								// if one wouldn't be in a cave. If so,
+								// we put in a stone block.
+								
+								if(isInCaveCached(wx, by, wz)) {
+									if(by == minY)
+										placeStone = true;
+									else {
+										for(Direction dir : Direction.CACHED_VALUES) {
+											if(!isInCaveCached(wx + dir.x, by + dir.y, wz + dir.z)) {
+												placeStone = true;
+												break;
+											}
 										}
 									}
 								}
+								if(placeStone)
+									state = BlockStateRegistry.getBakedStateForBlock(
+											stoneBlockId, blockId[1], blockId[2], blockId[3], layer);
 							}
-							if(placeStone)
-								state = BlockStateRegistry.getBakedStateForBlock(
-										stoneBlockId, blockId[1], blockId[2], blockId[3]);
+							if(!placeStone && state.isAir())
+								continue; // No need to do anything with air
 						}
-						if(!placeStone && state.isAir())
-							continue; // No need to do anything with air
-					}
-					
-					occlusion = getOcclusion(chunk, bx, by, bz, state, detailedOcclusionFaces, lodSize, lodYSize);
-					if(occlusion == Long.MAX_VALUE)
-						continue; // Block is in cave
-					
-					//ambientOcclusion = getAmbientOcclusion(chunk, bx, by, bz, lodSize, lodYSize);
-					ambientOcclusion.calculateAmbientOcclusion(this, chunk, bx, by, bz, lodSize, lodYSize);
-					
-					liquidState = state.getLiquidState();
-					
-					offsetX = 0f;
-					offsetY = 0f;
-					offsetZ = 0f;
-					if(state.hasRandomOffset()) {
-						offsetX = (Noise.get(wx, 0, wz) - 0.5f) * 5f;
-						offsetZ = (Noise.get(wx, 1, wz) - 0.5f) * 5f;
-					} 
-					if(state.hasRandomYOffset()){
-						offsetY = Noise.get(wx, 2, wz) * -3.0f;
-					}
-					
-					uvOffsetY = 0f;
-					if(state.isRandomAnimationXZOffset() && state.isRandomAnimationYOffset()) 
-						uvOffsetY = (float) Math.floor(Noise.get(wx, by, wz) * 32.0f);
-					else if(state.isRandomAnimationXZOffset())
-						uvOffsetY = (float) Math.floor(Noise.get(wx, 0, wz) * 32.0f);
-					else if(state.isRandomAnimationYOffset())
-						uvOffsetY = (float) Math.floor(Noise.get(0, by, 0) * 32.0f);
-					
-					int biomeId = chunk.getBiomeIdLocal(bx, by, bz);
-					Biome biomeInstance = BiomeRegistry.getBiome(biomeId);
-					for(BlendedBiome biome2 : biome)
-						biome2.clear();
-					
-					if(liquidState != null || state.getTint() != null) {
-						getBlendedBiome(wx, by, wz, biome);
-					}
-					
-					
-					Modifiers modifiers = Modifiers.getModifiersForBlockId(blockId[0]);
-					if(modifiers != null && modifiers.hasModifiers()) {
-						modifierContext.clearEvalCache();
-						modifierContext.biome = biome;
-						modifierContext.biomeInstance = biomeInstance;
-						modifierContext.block = BlockRegistry.getBlock(blockId[0]);
-						modifierContext.blockX = wx;
-						modifierContext.blockY = by;
-						modifierContext.blockZ = wz;
-						modifierContext.vertexColors = null;
-						modifiers.runBlockModifiers(modifierContext);
-					}
-					
-					
-					if(state.getAnimationHandler() != null && Config.allowBlockAnimations && Config.exportBlockAnimations) {
-						handleAnimatedBlock(blockId, wx, by, wz, offsetX, uvOffsetY, offsetZ, state, biome[0]);
-					}else {
-						if(state.isIndividualBlocks() || bounds.isOnlyIndividualBlocks()) {
-							handleIndividualBlock(blockId, wx, by, wz, offsetX, offsetY, offsetZ, state.isNeedsConnectionInfo());
+						
+						occlusion = getOcclusion(chunk, bx, by, bz, state, detailedOcclusionFaces, lodSize, lodYSize);
+						if(occlusion == Long.MAX_VALUE)
+							continue; // Block is in cave
+						
+						offsetX = 0f;
+						offsetY = 0f;
+						offsetZ = 0f;
+						if(state.hasRandomOffset()) {
+							offsetX = (Noise.get(wx, 0, wz) - 0.5f) * 5f;
+							offsetZ = (Noise.get(wx, 1, wz) - 0.5f) * 5f;
+						} 
+						if(state.hasRandomYOffset()){
+							offsetY = Noise.get(wx, 2, wz) * -3.0f;
+						}
+						
+						uvOffsetY = 0f;
+						if(state.isRandomAnimationXZOffset() && state.isRandomAnimationYOffset()) 
+							uvOffsetY = (float) Math.floor(Noise.get(wx, by, wz) * 32.0f);
+						else if(state.isRandomAnimationXZOffset())
+							uvOffsetY = (float) Math.floor(Noise.get(wx, 0, wz) * 32.0f);
+						else if(state.isRandomAnimationYOffset())
+							uvOffsetY = (float) Math.floor(Noise.get(0, by, 0) * 32.0f);
+						
+						int biomeId = chunk.getBiomeIdLocal(bx, by, bz);
+						Biome biomeInstance = BiomeRegistry.getBiome(biomeId);
+						biome.clear();
+						
+						if(state.getTint() != null && !calculatedBiome) {
+							getBlendedBiome(wx, by, wz, biome);
+							calculatedBiome = true;
+						}
+						
+						
+						Modifiers modifiers = Modifiers.getModifiersForBlockId(blockId[0]);
+						if(modifiers != null && modifiers.hasModifiers()) {
+							modifierContext.clearEvalCache();
+							modifierContext.biome = biome;
+							modifierContext.biomeInstance = biomeInstance;
+							modifierContext.block = BlockRegistry.getBlock(blockId[0]);
+							modifierContext.blockX = wx;
+							modifierContext.blockY = by;
+							modifierContext.blockZ = wz;
+							modifierContext.vertexColors = null;
+							modifiers.runBlockModifiers(modifierContext);
+						}
+						
+						
+						if(state.getAnimationHandler() != null && Config.allowBlockAnimations && Config.exportBlockAnimations) {
+							handleAnimatedBlock(blockId, wx, by, wz, layer, offsetX, offsetY, offsetZ, state, biome);
 						}else {
-							handleBlock(models, state, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, detailedOcclusionFaces, 
-										wx, by, wz, offsetX, offsetY, offsetZ, uvOffsetY, biomeInstance, biome, lodSize, lodYSize, occlusionHandler,
-										modifierContext, modifiers, chunk);
+							if(state.isIndividualBlocks() || bounds.isOnlyIndividualBlocks()) {
+								handleIndividualBlock(blockId, wx, by, wz, layer, offsetX, offsetY, offsetZ, state.isNeedsConnectionInfo());
+							}else {
+								handleBlock(models, state, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, detailedOcclusionFaces, 
+											wx, by, wz, layer, offsetX, offsetY, offsetZ, uvOffsetY, biomeInstance, biome, 
+											lodSize, lodYSize, occlusionHandler, modifierContext, modifiers, chunk);
+							}
 						}
-					}
-					
-					
-					if(liquidState != null) {
-						handleLiquidState(models, state, liquidState, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, 
-									wx, by, wz, biomeInstance, biome, lodSize, lodYSize, occlusionHandler,
-									modifierContext, modifiers, chunk);
 					}
 				}
 			}
 		}
 	}
 	
-	private void handleIndividualBlock(int[] blockId, int wx, int by, int wz, float offsetX, float offsetY, float offsetZ,
+	private void handleIndividualBlock(int[] blockId, int wx, int by, int wz, int layer, float offsetX, float offsetY, float offsetZ,
 										boolean needsConnectionInfo) {
 		IndividualBlockId id = new IndividualBlockId(blockId[0], 
 										needsConnectionInfo ? blockId[1] : 0,
 										needsConnectionInfo ? blockId[2] : 0,
-										needsConnectionInfo ? blockId[3] : 0);
+										needsConnectionInfo ? blockId[3] : 0,
+										needsConnectionInfo ? layer : 0);
 		FloatArray array = individualBlocks.getOrDefault(id, null);
 		if(array == null) {
 			array = new FloatArray();
@@ -337,7 +330,7 @@ public class ChunkExporter {
 		}
 	}
 	
-	private void handleAnimatedBlock(int[] blockId, int wx, int wy, int wz, float offsetX, float offsetY, float offsetZ,
+	private void handleAnimatedBlock(int[] blockId, int wx, int wy, int wz, int layer, float offsetX, float offsetY, float offsetZ,
 									BakedBlockState state, BlendedBiome blendedBiome) {
 		boolean isPositionDependent = state.getAnimationHandler().isPositionDependent();
 		if(state.getTint() != null)
@@ -347,22 +340,32 @@ public class ChunkExporter {
 		AnimatedBlockId id = new AnimatedBlockId(blockId[0],
 												isPositionDependent ? blockId[1] : 0,
 												isPositionDependent ? blockId[2] : 0,
-												isPositionDependent ? blockId[3] : 0);
+												isPositionDependent ? blockId[3] : 0,
+												isPositionDependent ? layer : 0);
 		AnimatedBlock animatedBlock = animatedBlocks.getOrDefault(id, null);
 		if(animatedBlock == null) {
 			animatedBlock = new AnimatedBlock(state.getName(), id, blendedBiome, state.getAnimationHandler());
 			animatedBlocks.put(id, animatedBlock);
 		}
+		BlockAnimationHandler animHandler = state.getAnimationHandler();
+		boolean randomOffsetXZ = state.isRandomAnimationXZOffset();
+		boolean randomOffsetY = state.isRandomAnimationYOffset();
+		if(animHandler != null) {
+			if(animHandler.hasRandomOffsetXZ())
+				randomOffsetXZ = true;
+			if(animHandler.hasRandomOffsetY())
+				randomOffsetY = true;
+		}
 		animatedBlock.addBlock(wx*16 + offsetX - worldOffsetX * 16, 
 				wy*16 + offsetY - worldOffsetY * 16, 
 				wz*16 + offsetZ - worldOffsetZ * 16, wx, wy, wz, 
-				state.isRandomAnimationXZOffset(), state.isRandomAnimationYOffset());
+				randomOffsetXZ, randomOffsetY);
 	}
 	
 	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, int dataVersion, long occlusion, 
 							AmbientOcclusion ambientOcclusion, List<ModelFace> detailedOcclusionFaces, int wx, int by, int wz, 
-							float offsetX, float offsetY, float offsetZ, float uvOffsetY,
-							Biome biomeInstance, BlendedBiome[] biome, int lodSize, int lodYSize, Occlusion occlusionHandler,
+							int layer, float offsetX, float offsetY, float offsetZ, float uvOffsetY,
+							Biome biomeInstance, BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler,
 							ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
 		models.clear();
 		state.getModels(blockId[1], blockId[2], blockId[3], models);
@@ -400,7 +403,7 @@ public class ChunkExporter {
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
 				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
-						biomeInstance, biome, wx, by, wz, wx, by, wz, 
+						biomeInstance, biome, wx, by, wz, layer, wx, by, wz, 
 						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), state.getTint(), model.isDoubleSided(), 
 						lodSize, lodYSize, state.isLodNoUVScale(), state.isLodNoScale(), false, ambientOcclusion, cornerData,
 						modifierContext, modifiers, chunk);
@@ -410,42 +413,6 @@ public class ChunkExporter {
 		}
 	}
 	
-	private List<ModelFace> emptyFaceList = new ArrayList<ModelFace>();
-	
-	private void handleLiquidState(List<Model> models, BakedBlockState state, BakedBlockState liquidState, int[] blockId,
-									int dataVersion, long occlusion, AmbientOcclusion ambientOcclusion, int wx, int by, int wz, 
-									Biome biomeInstance, BlendedBiome[] biome, int lodSize, int lodYSize, Occlusion occlusionHandler,
-									ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
-		models.clear();
-		liquidState.getModels(blockId[1], blockId[2], blockId[3], models);
-		
-		occlusionHandler.calculateCornerDataForModel(models, state, occlusion, emptyFaceList);
-		
-		Model model;
-		ModelFace face;
-		int faceIndex = 0;
-		for(int i = 0; i < models.size(); ++i) {
-			model = models.get(i);
-			for(int j = 0; j < model.getFaces().size(); ++j) {
-				if(occlusionHandler.isFaceOccluded(faceIndex)) {
-					faceIndex++;
-					continue;
-				}
-				
-				face = model.getFaces().get(j);
-				
-				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
-				
-				addFace(meshes, "minecraft:water", blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
-						biomeInstance, biome, wx, by, wz, wx, by, wz, 
-						0f, 0f, 0f, 0f, model.getExtraData(), liquidState.getTint(), model.isDoubleSided(), lodSize, lodYSize, 
-						state.isLodNoUVScale(), state.isLodNoScale(), false, ambientOcclusion, cornerData,
-						modifierContext, modifiers, chunk);
-				
-				faceIndex++;
-			}
-		}
-	}
 	
 	private void prefetchChunks(int chunkX, int chunkZ) {
 		int i = 0;
@@ -513,18 +480,18 @@ public class ChunkExporter {
 		return Integer.highestOneBit(lodYSize);
 	}
 	
-	private int lodSampleBlockId(Chunk chunk, int cx, int cy, int cz) {
+	private int lodSampleBlockId(Chunk chunk, int cx, int cy, int cz,  int layer) {
 		if(cx < 0 || cx >= 16 || cz < 0 || cz >= 16)
-			return lodSampleBlockId(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16);
+			return lodSampleBlockId(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16, layer);
 		if(bounds.isExcludeRegionsAsAir() && bounds.isInExcludeRegion(chunk.getChunkX() * 16 + cx, cy, chunk.getChunkZ() * 16 + cz))
 			return 0;
-		return chunk.getBlockIdLocal(cx, cy, cz);
+		return chunk.getBlockIdLocal(cx, cy, cz, layer);
 	}
 	
-	private int lodSampleBlockId(int wx, int wy, int wz) {
+	private int lodSampleBlockId(int wx, int wy, int wz, int layer) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
 		if (chunk != null)
-			return lodSampleBlockId(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16);
+			return lodSampleBlockId(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, layer);
 		return -1;
 	}
 	
@@ -534,9 +501,9 @@ public class ChunkExporter {
 	 */
 	private int lod_blockIds[] = new int[16*16*16*5];
 	
-	public void getLODBlockId(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize, int[] out) {
+	public void getLODBlockId(Chunk chunk, int cx, int cy, int cz, int layer, int lodSize, int lodYSize, int[] out) {
 		if(lodSize <= 1) {
-			out[0] = lodSampleBlockId(chunk, cx, cy, cz);
+			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer);
 			out[1] = chunk.getChunkX() * 16 + cx;
 			out[2] = cy;
 			out[3] = chunk.getChunkZ() * 16 + cz;
@@ -569,7 +536,7 @@ public class ChunkExporter {
 		for(int y = cy; y < cy + lodYSize; y += stepY) {
 			for(int z = cz; z < cz + lodSize; z += stepXZ) {
 				for(int x = cx; x < cx + lodSize; x += stepXZ) {
-					blockId = lodSampleBlockId(chunk, x, y, z);
+					blockId = lodSampleBlockId(chunk, x, y, z, layer);
 					if(blockId < 0) {
 						out[0] = -1;
 						out[1] = 0;
@@ -578,7 +545,7 @@ public class ChunkExporter {
 						return;
 					}
 					allowed = true;
-					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ);
+					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ, layer);
 					if(state.isAir())
 						allowed = false;
 					blockPriority = state.getLodPriority();
@@ -641,9 +608,9 @@ public class ChunkExporter {
 		//lodCache.set(chunk, cx, cy, cz, lodSize, lodYSize, mostCommonBlockId, mostCommonX, mostCommonY, mostCommonZ);
 	}
 	
-	private void getLODBlockIdOcclusion(Chunk chunk, int cx, int cy, int cz, int lodSize, int lodYSize, Direction direction, int[] out) {
+	private void getLODBlockIdOcclusion(Chunk chunk, int cx, int cy, int cz, int layer, int lodSize, int lodYSize, Direction direction, int[] out) {
 		if(lodSize <= 1) {
-			out[0] = lodSampleBlockId(chunk, cx, cy, cz);
+			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer);
 			out[1] = chunk.getChunkX() * 16 + cx;
 			out[2] = cy;
 			out[3] = chunk.getChunkZ() * 16 + cz;
@@ -651,7 +618,7 @@ public class ChunkExporter {
 		}
 		
 		if(cx < 0 || cx >= 16 || cz < 0 || cz >= 16) {
-			getLODBlockIdOcclusion(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16, lodSize, lodYSize, direction, out);
+			getLODBlockIdOcclusion(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16, layer, lodSize, lodYSize, direction, out);
 			return;
 		}
 		
@@ -664,6 +631,7 @@ public class ChunkExporter {
 					(cx >> sampleLodLevel) << sampleLodLevel, 
 					(cy >> sampleLodYLevel) << sampleLodYLevel, 
 					(cz >> sampleLodLevel) << sampleLodLevel, 
+					layer,
 					sampleLodSize, sampleLodYSize, out);
 		}else {
 			out[0] = -2;
@@ -688,7 +656,7 @@ public class ChunkExporter {
 			for(int y = startY; y < cy + lodYSize; y += sampleLodYSize) {
 				for(int z = startZ; z < cz + lodZSize; z += sampleLodSize) {
 					for(int x = startX; x < cx + lodXSize; x += sampleLodSize) {
-						getLODBlockId(chunk, x, y, z, sampleLodSize, sampleLodYSize, out);
+						getLODBlockId(chunk, x, y, z, layer, sampleLodSize, sampleLodYSize, out);
 						if(out[0] <= 0) {
 							// Early out for performance.
 							//out[0] = 0;
@@ -697,7 +665,7 @@ public class ChunkExporter {
 							out[3] = 0;
 							return;
 						}
-						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3]);
+						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3], layer);
 						if(state.isTransparentOcclusion() || state.isLeavesOcclusion() || state.isAir()) {
 							return;
 						}
@@ -725,10 +693,10 @@ public class ChunkExporter {
 		}
 	}
 	
-	private void getLODBlockIdOcclusion(int wx, int wy, int wz, int lodSize, int lodYSize, Direction direction, int[] out) {
+	private void getLODBlockIdOcclusion(int wx, int wy, int wz, int layer, int lodSize, int lodYSize, Direction direction, int[] out) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
 		if (chunk != null && !chunk.hasLoadError()) {
-			getLODBlockIdOcclusion(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, 
+			getLODBlockIdOcclusion(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, layer, 
 									lodSize, lodYSize, direction, out);
 			return;
 		}
@@ -738,7 +706,19 @@ public class ChunkExporter {
 		out[3] = 0;
 	}
 	
-	private void getBlendedBiome(int wx, int wy, int wz, BlendedBiome[] res) {
+	private float calcBiomeWeight(int x, int y, int z, int dx, int dy, int dz,
+								int xMin, int yMin, int zMin, int xMax, int yMax, int zMax) {
+		int coverX = Math.min(Math.min(Math.max(4 - ((xMin+dx) - x), 0), 4), 
+				Math.min(Math.max((xMax+dx) - x, 0), 4));
+		int coverY = Math.min(Math.min(Math.max(4 - ((yMin+dy) - y), 0), 4), 
+				Math.min(Math.max((yMax+dy) - y, 0), 4));
+		int coverZ = Math.min(Math.min(Math.max(4 - ((zMin+dz) - z), 0), 4), 
+				Math.min(Math.max((zMax+dz) - z, 0), 4));
+		
+		return coverX * coverY * coverZ;
+	}
+	
+	private void getBlendedBiome(int wx, int wy, int wz, BlendedBiome res) {
 		// Make sure that the radius is a multiple of four
 		int radius = (Config.biomeBlendRadius / 4) * 4;
 		int x;
@@ -747,9 +727,6 @@ public class ChunkExporter {
 		int dx;
 		int dy;
 		int dz;
-		int coverX;
-		int coverY;
-		int coverZ;
 		int biomeId;
 		Chunk chunk;
 		Biome biome;
@@ -763,9 +740,9 @@ public class ChunkExporter {
 		int xMinS = xMin;
 		int yMinS = yMin;
 		int zMinS = zMin;
-		int xMaxS = xMax + (res.length > 1 ? 1 : 0);
-		int yMaxS = yMax + (res.length > 1 ? 1 : 0);
-		int zMaxS = zMax + (res.length > 1 ? 1 : 0);
+		int xMaxS = xMax + (Config.smoothBiomeColors ? 1 : 0);
+		int yMaxS = yMax + (Config.smoothBiomeColors ? 1 : 0);
+		int zMaxS = zMax + (Config.smoothBiomeColors ? 1 : 0);
 		// We are sampling every 4 blocks,
 		// so let's make sure that it's a multiple of 4
 		xMinS = xMinS & (~3);
@@ -774,6 +751,14 @@ public class ChunkExporter {
 		xMaxS = xMaxS & (~3);
 		yMaxS = yMaxS & (~3);
 		zMaxS = zMaxS & (~3);
+		float weight0 = 0f;
+		float weight1 = 0f;
+		float weight2 = 0f;
+		float weight3 = 0f;
+		float weight4 = 0f;
+		float weight5 = 0f;
+		float weight6 = 0f;
+		float weight7 = 0f;
 		
 		for(y = yMinS; y <= yMaxS; y += 4) {
 			for(z = zMinS; z <= zMaxS; z += 4) {
@@ -784,38 +769,33 @@ public class ChunkExporter {
 						if(biomeId == 0)
 							continue;
 						biome = BiomeRegistry.getBiome(biomeId);
-						
-						for(int i = 0; i < res.length; ++i) {
-							dy = i >> 2;
-							dz = (i >> 1) & 1;
-							dx = i & 1;
-							
-							coverX = Math.min(Math.min(Math.max(4 - ((xMin+dx) - x), 0), 4), 
-									Math.min(Math.max((xMax+dx) - x, 0), 4));
-							coverY = Math.min(Math.min(Math.max(4 - ((yMin+dy) - y), 0), 4), 
-									Math.min(Math.max((yMax+dy) - y, 0), 4));
-							coverZ = Math.min(Math.min(Math.max(4 - ((zMin+dz) - z), 0), 4), 
-									Math.min(Math.max((zMax+dz) - z, 0), 4));
-							
-							res[i].addBiome(biome, coverX * coverY * coverZ);
+						weight0 = calcBiomeWeight(x, y, z, 0, 0, 0, xMin, yMin, zMin, xMax, yMax, zMax);
+						if(Config.smoothBiomeColors) {
+							weight1 = calcBiomeWeight(x, y, z, 1, 0, 0, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight2 = calcBiomeWeight(x, y, z, 0, 0, 1, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight3 = calcBiomeWeight(x, y, z, 1, 0, 1, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight4 = calcBiomeWeight(x, y, z, 0, 1, 0, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight5 = calcBiomeWeight(x, y, z, 1, 1, 0, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight6 = calcBiomeWeight(x, y, z, 0, 1, 1, xMin, yMin, zMin, xMax, yMax, zMax);
+							weight7 = calcBiomeWeight(x, y, z, 1, 1, 1, xMin, yMin, zMin, xMax, yMax, zMax);
 						}
+						res.addBiome(biome, weight0, weight1, weight2, weight3, weight4, weight5, weight6, weight7);
 					}
 				}
 			}
 		}
-		for(int i = 0; i < res.length; ++i) {
+		for(int i = 0; i < (Config.smoothBiomeColors ? 8 : 1); ++i) {
 			dy = i >> 2;
 			dz = (i >> 1) & 1;
 			dx = i & 1;
 			
 			chunk = getPrefetchedChunkForBlockPos(wx + dx, wz + dz);
 			if(chunk != null) {
-				chunk.addBiomeTints(res[i], (wx + dx) & 15, wy + dy, (wz + dz) & 15);
+				chunk.addBiomeTints(res, (wx + dx) & 15, wy + dy, (wz + dz) & 15, i);
 			}
 		}
 		
-		for(BlendedBiome biome2 : res)
-			biome2.normalise();
+		res.normalise();
 	}
 	
 	public static class AtlasKey{
@@ -879,7 +859,7 @@ public class ChunkExporter {
 	private Color[] faceTint = null;
 	
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
-			Biome biome, BlendedBiome[] blendedBiome, int ix, int iy, int iz, float bx, float by, float bz, float ox, float oy, float oz, 
+			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, int layer, float bx, float by, float bz, float ox, float oy, float oz, 
 			float uvOffsetY, String extraData, TintLayers tintLayers, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale, boolean lodNoScale, boolean noConnectedTextures, AmbientOcclusion ambientOcclusion, int cornerData,
 			ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
@@ -895,7 +875,7 @@ public class ChunkExporter {
 				ConnectedTexture connectedTexture = connectedTextures.getKey();
 				if(connectedTexture != null) {
 					if(connectedTexture.getFacesToConnect().contains(face.getDirection())) {
-						String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, face);
+						String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, layer, face);
 						if(newTexture != null)
 							texture = newTexture;
 						if(newTexture == ConnectedTexture.DELETE_FACE)
@@ -907,7 +887,7 @@ public class ChunkExporter {
 					float faceOffset = 0.0125f;
 					for(ConnectedTexture overlayTexture : overlayTextures) {
 						if(overlayTexture.getFacesToConnect().contains(face.getDirection())) {
-							String newTexture = overlayTexture.getTexture((int) bx, (int) by, (int) bz, face);
+							String newTexture = overlayTexture.getTexture((int) bx, (int) by, (int) bz, layer, face);
 							if(newTexture != null && newTexture != ConnectedTexture.DELETE_FACE) {
 								ModelFace overlayFace = new ModelFace(face);
 								overlayFace.translate(((float) face.getDirection().x) * faceOffset, 
@@ -930,19 +910,22 @@ public class ChunkExporter {
 											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
 																					dataVersion, charBuffer);
 											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
-																						(int) bx, (int) by, (int) bz);
+																						(int) bx, (int) by, (int) bz, layer);
 											overlayTint = blockState.getTint();
 										}else {
 											overlayTint = tintLayers;
 										}
 									}
 								}
-								if(overlayTint != null && blendedBiome[0].isEmpty()) {
+								if(overlayTint != null && blendedBiome.isEmpty()) {
 									getBlendedBiome(ix, iy, iz, blendedBiome);
+								}
+								if(overlayTexture.getTint() != null) {
+									overlayFace.setFaceColour(overlayTexture.getTint(), true);
 								}
 								
 								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, blendedBiome,
-										ix, iy, iz, bx, by, bz, ox, oy, oz, 
+										ix, iy, iz, layer, bx, by, bz, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
 										lodNoUVScale, lodNoScale, true, ambientOcclusion, cornerData,
 										modifierContext, modifiers, chunk);
@@ -991,8 +974,8 @@ public class ChunkExporter {
 		
 		String matTexture = texture;
 		String meshName = texture;
-		if(faceTint == null || faceTint.length != blendedBiome.length) {
-			faceTint = new Color[blendedBiome.length];
+		if(faceTint == null || faceTint.length != (Config.smoothBiomeColors ? 8 : 1)) {
+			faceTint = new Color[Config.smoothBiomeColors ? 8 : 1];
 		}
 		Color[] tint = null;
 		if(tintLayers != null) {
@@ -1005,11 +988,16 @@ public class ChunkExporter {
 			TintValue tintValue = tintLayers.getLayer(tintIndex);
 			if(tintValue != null) {
 				tint = faceTint;
-				for(int i = 0; i < tint.length; ++i) {
-					tint[i] = tintValue.getColor(blendedBiome[i]);
-					if(tint[i] == null) {
-						tint = null;
-						break;
+				WeightedColor color = tintValue.getColor(blendedBiome);
+				if(color == null) {
+					tint = null;
+				}else {
+					for(int i = 0; i < tint.length; ++i) {
+						tint[i] = color.get(i);
+						if(tint[i] == null) {
+							tint = null;
+							break;
+						}
 					}
 				}
 			}
@@ -1063,21 +1051,21 @@ public class ChunkExporter {
 	private int[] OCCLUSION_BLOCK_ID = new int[4];
 	private List<Model> OCCLUSION_MODELS = new ArrayList<Model>();
 	
-	private long getOcclusionFromDirection(int wx, int wy, int wz, Direction dir, BakedBlockState currentState,
+	private long getOcclusionFromDirection(int wx, int wy, int wz, int layer, Direction dir, BakedBlockState currentState,
 											List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
 		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
 		if (chunk != null && !chunk.hasLoadError()) {
-			return getOcclusionFromDirection(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, 
+			return getOcclusionFromDirection(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, layer,
 									dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);
 		}
 		// No chunk, so return that it's occluded. This gets rid of the side of the world.
 		return 0b1111L;
 	}
 	
-	private long getOcclusionFromDirection(Chunk chunk, int bx, int by, int bz, Direction dir, BakedBlockState currentState,
+	private long getOcclusionFromDirection(Chunk chunk, int bx, int by, int bz, int layer, Direction dir, BakedBlockState currentState,
 										List<ModelFace> detailedOcclusionFaces, int lodSize, int lodYSize) {
 		if(bx < 0 || bx >= 16 || bz < 0 || bz >= 16) {
-			return getOcclusionFromDirection(bx + chunk.getChunkX() * 16, by, bz + chunk.getChunkZ() * 16, dir, 
+			return getOcclusionFromDirection(bx + chunk.getChunkX() * 16, by, bz + chunk.getChunkZ() * 16, layer, dir, 
 					currentState, detailedOcclusionFaces, lodSize, lodYSize);
 		}
 		
@@ -1093,6 +1081,7 @@ public class ChunkExporter {
 					(bx >> sampleLodLevel) << sampleLodLevel, 
 					(by >> sampleLodYLevel) << sampleLodYLevel, 
 					(bz >> sampleLodLevel) << sampleLodLevel, 
+					layer,
 					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
 			
 			if(OCCLUSION_BLOCK_ID[0] < 0) {
@@ -1103,7 +1092,7 @@ public class ChunkExporter {
 			}
 			
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
 
 			// Transparent blocks don't occlude non-transparent blocks or liquid blocks
 			if(state.isTransparentOcclusion() && (!currentState.isTransparentOcclusion() || currentState.hasLiquid()))
@@ -1155,6 +1144,7 @@ public class ChunkExporter {
 					(bx >> sampleLodLevel) << sampleLodLevel, 
 					(by >> sampleLodYLevel) << sampleLodYLevel, 
 					(bz >> sampleLodLevel) << sampleLodLevel, 
+					layer,
 					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
 			if(OCCLUSION_BLOCK_ID[0] < 0) {
 				// If the block id is less than 0, that means
@@ -1164,7 +1154,7 @@ public class ChunkExporter {
 			}
 			
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
 
 			// Transparent blocks don't occlude non-transparent blocks
 			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
@@ -1255,6 +1245,7 @@ public class ChunkExporter {
 							(x >> sampleLodLevel) << sampleLodLevel, 
 							(y >> sampleLodYLevel) << sampleLodYLevel, 
 							(z >> sampleLodLevel) << sampleLodLevel, 
+							layer,
 							sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
 					
 					if(OCCLUSION_BLOCK_ID[0] < 0) {
@@ -1266,7 +1257,7 @@ public class ChunkExporter {
 					}
 					
 					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-							OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3]);
+							OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
 
 					// Transparent blocks don't occlude non-transparent blocks
 					if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
@@ -1314,15 +1305,17 @@ public class ChunkExporter {
 			int by = cy + dir.y * lodYSize;
 			int bz = cz + dir.z * lodSize;
 			
-			occludes = getOcclusionFromDirection(chunk, bx, by, bz, dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);
-			if((occludes & (0b1L << 32)) != 0)
-				// Safe out that we have another leaf here.
-				// Used by the corner algorithm.
-				occlusion |= 0b1 << (dir.id + 32);
-			
-			occludes &= 0b1111;
-			occludes <<= dir.id * 4;
-			occlusion |= occludes;
+			for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
+				occludes = getOcclusionFromDirection(chunk, bx, by, bz, layer, dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);
+				if((occludes & (0b1L << 32)) != 0)
+					// Safe out that we have another leaf here.
+					// Used by the corner algorithm.
+					occlusion |= 0b1 << (dir.id + 32);
+				
+				occludes &= 0b1111;
+				occludes <<= dir.id * 4;
+				occlusion |= occludes;
+			}
 		}
 		
 		if(Config.removeCaves) {
@@ -1440,32 +1433,33 @@ public class ChunkExporter {
 		for(y = wy; yEnergy > 0; y += 2) {
 			foundLiquid = false;
 			foundAir = false;
-			blockId = lodSampleBlockId(x, y, z);
-			if(blockId < 0) {
-				yEnergy -= Config.removeCavesCaveBlockCost;
-				continue;
-			}
-			state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
-			if(sampleHeight(x, z) < y) {
-				// Surface reached, so we aren't in a cave
-				return false;
-			} else if(state.isAir()) {
-				foundAir = true;
-			} else if(state.hasLiquid()) {
-				foundLiquid = true;
-			} else if(state.isCaveBlock()) {
-			} else {
-				// Non-cave block that also isn't air or liquid
-				numNonCaveBlocks++;
-				if(numNonCaveBlocks > allowedNonCaveBlocks) {
-					return false;
+			for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
+				blockId = lodSampleBlockId(x, y, z, layer);
+				if(blockId < 0) {
+					yEnergy -= Config.removeCavesCaveBlockCost;
+					continue;
 				}
+				state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer);
+				if(sampleHeight(x, z) < y) {
+					// Surface reached, so we aren't in a cave
+					return false;
+				} else if(state.isAir()) {
+					foundAir = true;
+				} else if(state.hasLiquid()) {
+					foundLiquid = true;
+				} else if(state.isCaveBlock()) {
+				} else {
+					// Non-cave block that also isn't air or liquid
+					numNonCaveBlocks++;
+					if(numNonCaveBlocks > allowedNonCaveBlocks) {
+						return false;
+					}
+				}
+				if(!foundLiquid && foundAir)
+					yEnergy -= Config.removeCavesAirCost;
+				else if(!foundLiquid)
+					yEnergy -= Config.removeCavesCaveBlockCost;
 			}
-			if(!foundLiquid && foundAir)
-				yEnergy -= Config.removeCavesAirCost;
-			else if(!foundLiquid)
-				yEnergy -= Config.removeCavesCaveBlockCost;
-				
 		}
 		
 		minX = (minX >> 1) << 1;
@@ -1479,24 +1473,26 @@ public class ChunkExporter {
 			foundAir = false;
 			for(z = minZ; z <= maxZ; z += 2) {
 				for(x = minX; x <= maxX; x += 2) {
-					blockId = lodSampleBlockId(x, y, z);
-					if(blockId < 0) {
-						continue;
-					}
-					state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
-					if(sampleHeight(x, z) < y) {
-						// Surface reached, so we aren't in a cave
-						return false;
-					} else if(state.isAir()) {
-						foundAir = true;
-					} else if(state.hasLiquid()) {
-						foundLiquid = true;
-					} else if(state.isCaveBlock()) {
-					} else {
-						// Non-cave block that also isn't air or liquid
-						numNonCaveBlocks++;
-						if(numNonCaveBlocks > allowedNonCaveBlocks) {
+					for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
+						blockId = lodSampleBlockId(x, y, z, layer);
+						if(blockId < 0) {
+							continue;
+						}
+						state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer);
+						if(sampleHeight(x, z) < y) {
+							// Surface reached, so we aren't in a cave
 							return false;
+						} else if(state.isAir()) {
+							foundAir = true;
+						} else if(state.hasLiquid()) {
+							foundLiquid = true;
+						} else if(state.isCaveBlock()) {
+						} else {
+							// Non-cave block that also isn't air or liquid
+							numNonCaveBlocks++;
+							if(numNonCaveBlocks > allowedNonCaveBlocks) {
+								return false;
+							}
 						}
 					}
 				}

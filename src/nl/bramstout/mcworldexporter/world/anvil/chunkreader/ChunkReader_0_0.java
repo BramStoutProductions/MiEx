@@ -74,7 +74,10 @@ public class ChunkReader_0_0 extends ChunkReader{
 		
 		chunk._setChunkSectionOffset(minSectionY);
 
-		chunk._setBlocks(new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]);
+		int[][][] blocks = new int[][][] {
+			new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]
+		};
+		chunk._setBlocks(blocks);
 		chunk._setBiomes(new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]);
 
 		NbtTagByteArray biomesTag = (NbtTagByteArray) levelTag.get("Biomes");
@@ -85,6 +88,7 @@ public class ChunkReader_0_0 extends ChunkReader{
 		NbtTagByteArray addData;
 		NbtTagByteArray dataData;
 		int[] sectionBlocks = null;
+		int[] sectionFluids = null;
 		int[] sectionBiomes = null;
 
 		for (NbtTag tag : sections.getData()) {
@@ -95,7 +99,8 @@ public class ChunkReader_0_0 extends ChunkReader{
 			addData = (NbtTagByteArray) section.get("Add");
 			dataData = (NbtTagByteArray) section.get("Data");
 			sectionBlocks = new int[16*16*16];
-			chunk._getBlocks()[sectionY - chunk._getChunkSectionOffset()] = sectionBlocks;
+			chunk._getBlocks()[0][sectionY - chunk._getChunkSectionOffset()] = sectionBlocks;
+			sectionFluids = null;
 
 			if (blocksData == null) {
 				Arrays.fill(sectionBlocks, 0);
@@ -109,6 +114,21 @@ public class ChunkReader_0_0 extends ChunkReader{
 						data = (Byte.toUnsignedInt(dataData.getData()[i/2]) >> ((i%2) * 4)) & 0xF;
 					
 					sectionBlocks[i] = BlockIds.getRuntimeIdForId(id, data, dataVersion, blockTranslatorManager, charBuffer);
+					if(BlockRegistry.getBlock(sectionBlocks[i]).isWaterlogged()) {
+						// Block is waterlogged, so we need to add water on the second layer.
+						if(sectionFluids == null) {
+							sectionFluids = new int[16*16*16];
+							if(chunk._getBlocks().length == 1) {
+								blocks = new int[][][] {
+									chunk._getBlocks()[0],
+									new int[maxSectionY - chunk._getChunkSectionOffset() + 1][]
+								};
+								chunk._setBlocks(blocks);
+							}
+							chunk._getBlocks()[1][sectionY - chunk._getChunkSectionOffset()] = sectionFluids;
+						}
+						sectionFluids[i] = BlockRegistry.MINECRAFT_WATER_SOURCE_BLOCK_ID;
+					}
 				}
 			}
 			
@@ -156,7 +176,7 @@ public class ChunkReader_0_0 extends ChunkReader{
 				if(blockEntityX < 0 || blockEntityX > 15 || blockEntityZ < 0 || blockEntityZ > 15)
 					continue;
 				
-				currentBlockId = chunk.getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ);
+				currentBlockId = chunk.getBlockIdLocal(blockEntityX, blockEntityY, blockEntityZ, 0);
 				currentBlock = BlockRegistry.getBlock(currentBlockId);
 				blockEntity.addAllElements(currentBlock.getProperties());
 				if(currentBlockId > 0)
@@ -171,10 +191,10 @@ public class ChunkReader_0_0 extends ChunkReader{
 				blockEntitySectionY -= chunk._getChunkSectionOffset();
 				if(blockEntitySectionY >= chunk._getBlocks().length)
 					continue;
-				if(chunk._getBlocks()[blockEntitySectionY] == null)
-					chunk._getBlocks()[blockEntitySectionY] = new int[16*16*16];
+				if(chunk._getBlocks()[0][blockEntitySectionY] == null)
+					chunk._getBlocks()[0][blockEntitySectionY] = new int[16*16*16];
 				
-				chunk._getBlocks()[blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
+				chunk._getBlocks()[0][blockEntitySectionY][blockEntityY * 16 * 16 + blockEntityZ * 16 + blockEntityX] = blockId;
 			}
 		}
 	}

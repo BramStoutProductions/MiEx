@@ -32,8 +32,8 @@
 package nl.bramstout.mcworldexporter.world;
 
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 
 public class Block {
 	
@@ -41,9 +41,8 @@ public class Block {
 	private NbtTagCompound properties;
 	private int id;
 	private int dataVersion;
-	private boolean waterlogged;
-	private boolean liquid;
 	private boolean isLiquid;
+	private boolean waterlogged;
 	
 	public Block(String name, NbtTagCompound properties, int id, int dataVersion) {
 		this.name = name;
@@ -52,17 +51,10 @@ public class Block {
 		this.id = id;
 		this.dataVersion = dataVersion;
 		this.isLiquid = Config.liquid.contains(name);
-		waterlogged = false;
-		NbtTagString waterloggedTag = (NbtTagString) properties.get("waterlogged");
+		this.waterlogged = Config.waterlogged.contains(name);
+		NbtTag waterloggedTag = properties.get("waterlogged");
 		if(waterloggedTag != null)
-			waterlogged = waterloggedTag.getData().equalsIgnoreCase("true");
-		else if(Config.waterlogged.contains(name))
-			waterlogged = true;
-		if(waterlogged) {
-			liquid = true;
-		}else {
-			liquid = isLiquid;
-		}
+			waterlogged = waterloggedTag.asBoolean();
 	}
 	
 	public String getName() {
@@ -77,16 +69,12 @@ public class Block {
 		return id;
 	}
 	
-	public boolean isWaterlogged() {
-		return waterlogged;
-	}
-	
 	public boolean isLiquid() {
 		return isLiquid;
 	}
 	
-	public boolean hasLiquid() {
-		return liquid;
+	public boolean isWaterlogged() {
+		return waterlogged;
 	}
 	
 	public int getDataVersion() {

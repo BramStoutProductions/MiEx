@@ -261,6 +261,8 @@ public class ResourcePackHytale extends ResourcePack{
 			if(variant.getBiomeTintUp() >= 0) {
 				connectedTexture.setTintIndex(Integer.valueOf(variant.getBiomeTintUp()));
 				connectedTexture.setTintBlock(blockName);
+			}else if(variant.getTintUp() != null && variant.getTintUp().length > 0) {
+				connectedTexture.setTint(variant.getTintUp()[0]);
 			}
 			
 			for(String group : variant.getTransitionToGroups()) {

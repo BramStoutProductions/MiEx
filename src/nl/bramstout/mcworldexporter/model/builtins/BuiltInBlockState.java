@@ -42,23 +42,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
-import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
 import nl.bramstout.mcworldexporter.expression.ExprValue;
 import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueDict;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModel.ArrayPart;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModel.ObjectPart;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModel.Part;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
+import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
-import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class BuiltInBlockState extends BlockState{
@@ -130,16 +129,32 @@ public class BuiltInBlockState extends BlockState{
 		return null;
 	}
 	
-	public static class BuiltInBlockStateHandler{
+	public static class BuiltInBlockAnimationHandler extends BlockAnimationHandler{
+		
+		public BuiltInBlockAnimationHandler(float duration, boolean positionDependent,
+											boolean randomOffsetXZ, boolean randomOffsetY) {
+			this.duration = duration;
+			this.positionDependent = positionDependent;
+			this.randomOffsetXZ = randomOffsetXZ;
+			this.randomOffsetY = randomOffsetY;
+		}
+		
+	}
+	
+	public static class BuiltInBlockStateHandler extends BlockStateHandler{
 		
 		private List<String> blockNames;
 		private boolean isLocationDependent;
+		private boolean isAnimated;
 		private BuiltInModel model;
+		private BuiltInBlockAnimationHandler animationHandler;
 		
 		public BuiltInBlockStateHandler(String name, int resourcePackIndex, JsonObject data) {
 			blockNames = new ArrayList<String>();
 			isLocationDependent = false;
+			isAnimated = false;
 			model = new BuiltInModel();
+			animationHandler = null;
 			
 			if(data.has("include")) {
 				JsonArray includeArray = data.getAsJsonArray("include");
@@ -157,6 +172,9 @@ public class BuiltInBlockState extends BlockState{
 					if(includedHandler != null) {
 						blockNames.addAll(includedHandler.blockNames);
 						isLocationDependent = isLocationDependent || includedHandler.isLocationDependent;
+						isAnimated = isAnimated || includedHandler.isAnimated;
+						if(includedHandler.animationHandler != null)
+							animationHandler = includedHandler.animationHandler;
 						
 						if(model.rootPart == null)
 							model.rootPart = includedHandler.model.rootPart;
@@ -192,68 +210,90 @@ public class BuiltInBlockState extends BlockState{
 			if(data.has("isLocationDependent"))
 				isLocationDependent = data.get("isLocationDependent").getAsBoolean();
 			
+			if(data.has("isAnimated")) {
+				isAnimated = data.get("isAnimated").getAsBoolean();
+			}
+			if(isAnimated) {
+				float duration = 1f;
+				boolean randomOffsetXZ = false;
+				boolean randomOffsetY = false;
+				if(animationHandler != null) {
+					duration = animationHandler.getDuration();
+					randomOffsetXZ = animationHandler.hasRandomOffsetXZ();
+					randomOffsetY = animationHandler.hasRandomOffsetY();
+				}
+				
+				if(data.has("animationDuration"))
+					duration = data.get("animationDuration").getAsFloat();
+				if(data.has("animationRandomOffsetXZ"))
+					randomOffsetXZ = data.get("animationRandomOffsetXZ").getAsBoolean();
+				if(data.has("animationRandomOffsetY"))
+					randomOffsetY = data.get("animationRandomOffsetY").getAsBoolean();
+				
+				animationHandler = new BuiltInBlockAnimationHandler(duration, isLocationDependent, randomOffsetXZ, randomOffsetY);
+			}
+			
 			model.parse(data);
 		}
+
+		@Override
+		public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
+				BlockState state) {
+			return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
+		}
+
+		@Override
+		public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
+				BlockState state, BlockAnimationHandler animationHandler, float frame) {
+			List<List<Model>> models = new ArrayList<List<Model>>();
+			if(this.model.rootPart != null) {
+				Model model = new Model(state.getName(), null, state.isDoubleSided());
+				ExprContext context = new ExprContext(state.getName(), properties, needsConnectionInfo(), x, y, z, (float) x, (float) y, (float) z, 
+						frame, model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
+						this.model.localGenerators, this.model.localFunctions);
+				try {
+					this.model.rootPart.eval(context);
+				}catch(Exception ex) {
+					World.handleError(new RuntimeException("Error while evaluating block state " + state.getName(), ex));
+				}
+				if(!model.getFaces().isEmpty()) {
+					model.calculateOccludes();
+					List<Model> models2 = new ArrayList<Model>();
+					models2.add(model);
+					models.add(models2);
+				}
+			}
+			
+			Tint tint = Tints.getTint(state.getName());
+			TintLayers tintColor = null;
+			if(tint != null)
+				tintColor = tint.getTint(properties);
+			BakedBlockState bakedState = new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
+					state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
+					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
+					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
+					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
+					tintColor, state.needsConnectionInfo(), 
+					animationHandler == null ? (this.isAnimated ? this.animationHandler : null) : animationHandler);
+			
+			return bakedState;
+		}
+
+		@Override
+		public String getDefaultTexture() {
+			return model.defaultTexture;
+		}
+
+		@Override
+		public boolean needsConnectionInfo() {
+			return isLocationDependent;
+		}
 		
 	}
 	
-	
-	private BuiltInBlockStateHandler handler;
 	
 	public BuiltInBlockState(String name, int dataVersion, BuiltInBlockStateHandler handler) {
-		super(name, dataVersion, null);
-		this.handler = handler;
-		this._needsConnectionInfo = this._needsConnectionInfo || handler.isLocationDependent;
-	}
-	
-	@Override
-	public String getDefaultTexture() {
-		return handler.model.defaultTexture;
-	}
-	
-	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
-		if(blockConnections != null && runBlockConnections) {
-			properties = (NbtTagCompound) properties.copy();
-			String newName = blockConnections.map(name, properties, x, y, z);
-			if(newName != null && !newName.equals(name)) {
-				Reference<char[]> charBuffer = new Reference<char[]>();
-				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
-				properties.free();
-				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
-			}
-		}
-		List<List<Model>> models = new ArrayList<List<Model>>();
-		if(handler.model.rootPart != null) {
-			Model model = new Model(name, null, isDoubleSided());
-			ExprContext context = new ExprContext(name, properties, needsConnectionInfo(), x, y, z, (float) x, (float) y, (float) z, 
-					model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
-					handler.model.localGenerators, handler.model.localFunctions);
-			try {
-				handler.model.rootPart.eval(context);
-			}catch(Exception ex) {
-				World.handleError(new RuntimeException("Error while evaluating block state " + name, ex));
-			}
-			if(!model.getFaces().isEmpty()) {
-				model.calculateOccludes();
-				List<Model> models2 = new ArrayList<Model>();
-				models2.add(model);
-				models.add(models2);
-			}
-		}
-		
-		Tint tint = Tints.getTint(name);
-		TintLayers tintColor = null;
-		if(tint != null)
-			tintColor = tint.getTint(properties);
-		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), getLiquidName(properties), caveBlock, randomOffset, randomYOffset, doubleSided, 
-				randomAnimationXZOffset, randomAnimationYOffset, lodNoUVScale, lodNoScale, lodPriority, tintColor, 
-				needsConnectionInfo(), null);
-		if(blockConnections != null && runBlockConnections) {
-			properties.free(); // Free the copy that we made.
-		}
-		return bakedState;
+		super(name, dataVersion, handler);
 	}
 
 }

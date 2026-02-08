@@ -59,16 +59,22 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		int levelEast = getLevel(x+1, y, z);
 		int levelSouth = getLevel(x  , y, z+1);
 		int isWaterLogged = 0;
-		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 		Block currentBlock = BlockRegistry.getBlock(currentBlockId);
-		if(!currentBlock.isLiquid() || currentBlock.isWaterlogged()) {
+		if(!currentBlock.isLiquid()) {
 			isWaterLogged = 1;
 		}
 		int blockBelow = 0;
-		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
+		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(
+											MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 0), 
+											x, y-1, z, 0);
+		BakedBlockState blockBelowFluidState = BlockStateRegistry.getBakedStateForBlock(
+				MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 1), 
+				x, y-1, z, 1);
+		boolean blockBelowLiquid = blockBelowFluidState != null && blockBelowFluidState.hasLiquid();
 		if(blockBelowState == null || 
-				(!blockBelowState.hasLiquid() || blockBelowState.isTransparentOcclusion() ||
-				blockBelowState.isLeavesOcclusion()))
+				(!blockBelowLiquid && (blockBelowState.isTransparentOcclusion() ||
+				blockBelowState.isLeavesOcclusion())))
 			blockBelow = 1;
 		
 		float heightCenter = getHeight(levelCenter);
@@ -173,7 +179,7 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 	}
 	
 	private int getLevel(int x, int y, int z) {
-		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 1);
 		Block block = BlockRegistry.getBlock(blockId);
 		
 
@@ -183,15 +189,14 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 			return -1; // -1 for air
 		if(block.getName().equals("minecraft:air"))
 			return -1;
-		if(!block.hasLiquid())
+		if(!block.isLiquid())
 			return -2; // -2 for non liquid blocks
-		
-		if(block.isWaterlogged())
-			level = 8; // Waterlogged blocks have a source block in them, which is 8
 		
 		// Check the block above. If there is a liquid block above, then this block should be
 		// a full liquid block. Which is the size of an entire block (a source block is less tall).
-		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z), x, y + 1, z);
+		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(
+											MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z, 1), 
+											x, y + 1, z, 1);
 		if(blockAbove != null && blockAbove.hasLiquid()) {
 			return 9;
 		}

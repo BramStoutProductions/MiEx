@@ -522,11 +522,13 @@
     "minecraft:seagrass",
     "minecraft:tall_seagrass",
     "minecraft:fire",
-    "minecraft:soul_fire"
+    "minecraft:soul_fire",
+	"#minecraft:block/banners"
   ],
   "randomAnimationYOffset": [
     "minecraft:fire",
-    "minecraft:soul_fire"
+    "minecraft:soul_fire",
+	"#minecraft:block/banners"
   ],
   "ignoreAtlas": [
 	"minecraft:block/grass_block_side"

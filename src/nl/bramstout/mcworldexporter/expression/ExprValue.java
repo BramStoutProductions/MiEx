@@ -1256,6 +1256,9 @@ public class ExprValue {
 					throw new RuntimeException("Location may only be queried if block state is location dependent");
 				return new ExprValue(new ExprValueFloat(value.fz));
 			}
+			else if(name.equals("time")) {
+				return new ExprValue(new ExprValueFloat(value.time));
+			}
 			return new ExprValue(new ExprValueNull());
 		}
 		
@@ -1279,6 +1282,7 @@ public class ExprValue {
 			tag.addElement(NbtTagFloat.newNonPooledInstance("fy", value.fy));
 			tag.addElement(NbtTagFloat.newNonPooledInstance("fz", value.fz));
 			tag.addElement(NbtTagString.newNonPooledInstance("name", value.name));
+			tag.addElement(NbtTagFloat.newNonPooledInstance("time", value.time));
 			NbtTagCompound properties = NbtTagCompound.newNonPooledInstance("properties");
 			if(value.properties != null) {
 				properties.addAllElements(value.properties);
@@ -2080,6 +2084,7 @@ public class ExprValue {
 			int x = 0;
 			int y = 0;
 			int z = 0;
+			int layer = 0;
 			ExprValue arg0V = context.variables.getOrDefault("arg0", null);
 			if(arg0V != null)
 				x = (int) arg0V.asInt();
@@ -2089,7 +2094,10 @@ public class ExprValue {
 			ExprValue arg2V = context.variables.getOrDefault("arg2", null);
 			if(arg2V != null)
 				z = (int) arg2V.asInt();
-			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(context.x + x, context.y + y, context.z + z);
+			ExprValue arg3V = context.variables.getOrDefault("arg3", null);
+			if(arg3V != null)
+				layer = (int) arg3V.asInt();
+			int blockId = MCWorldExporter.getApp().getWorld().getBlockId(context.x + x, context.y + y, context.z + z, layer);
 			Block block = BlockRegistry.getBlock(blockId);
 			return new ExprValue(new ExprValueBlock(block, context.x + x, context.y + y, context.z + z));
 		}

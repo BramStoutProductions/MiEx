@@ -38,6 +38,7 @@ import nl.bramstout.mcworldexporter.entity.ai.EntityTarget.EntityTargetBlock;
 import nl.bramstout.mcworldexporter.entity.ai.EntityUtil;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class AIComponentBehaviourMoveToLava extends AIComponent{
 
@@ -106,16 +107,26 @@ public class AIComponentBehaviourMoveToLava extends AIComponent{
 			for(int sampleY = -searchHeight; sampleY <= searchHeight; ++sampleY) {
 				for(int sampleZ = -searchRange; sampleZ <= searchRange; ++sampleZ) {
 					for(int sampleX = -searchRange; sampleX <= searchRange; ++sampleX) {
-						int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
-																	sampleY + blockY, sampleZ + blockZ);
 						int blockIdAbove = MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
-																	sampleY + blockY + 1, sampleZ + blockZ);
+																	sampleY + blockY + 1, sampleZ + blockZ, 0);						
 						if(blockIdAbove != 0)
 							continue;
-						Block block = BlockRegistry.getBlock(blockId);
-						if(!block.hasLiquid())
-							continue;
-						if(!block.getName().equals("minecraft:lava"))
+						LayeredBlock blocks = new LayeredBlock();
+						MCWorldExporter.getApp().getWorld().getBlockId(sampleX + blockX, 
+								sampleY + blockY, sampleZ + blockZ, blocks);
+						boolean isLiquid = false;
+						for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+							Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+							if(!block.isLiquid()) {
+								isLiquid = true;
+								break;
+							}
+							if(!block.getName().equals("minecraft:lava")) {
+								isLiquid = true;
+								break;
+							}
+						}
+						if(!isLiquid)
 							continue;
 						
 						// We've found a block in lava to move to.
@@ -132,14 +143,24 @@ public class AIComponentBehaviourMoveToLava extends AIComponent{
 				int sampleY = entity.getRandom().nextInt(-searchHeight, searchHeight + 1) + blockY;
 				int sampleZ = entity.getRandom().nextInt(-searchRange, searchRange + 1) + blockZ;
 				
-				int blockId = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ);
-				int blockIdAbove = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY + 1, sampleZ);
+				int blockIdAbove = MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY + 1, sampleZ, 0);
 				if(blockIdAbove != 0)
 					continue;
-				Block block = BlockRegistry.getBlock(blockId);
-				if(!block.hasLiquid())
-					continue;
-				if(!block.getName().equals("minecraft:lava"))
+				LayeredBlock blocks = new LayeredBlock();
+				MCWorldExporter.getApp().getWorld().getBlockId(sampleX, sampleY, sampleZ, blocks);
+				boolean isLiquid = false;
+				for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+					Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+					if(!block.isLiquid()) {
+						isLiquid = true;
+						break;
+					}
+					if(!block.getName().equals("minecraft:lava")) {
+						isLiquid = true;
+						break;
+					}
+				}
+				if(!isLiquid)
 					continue;
 				
 				// We've found a block on land to move to.

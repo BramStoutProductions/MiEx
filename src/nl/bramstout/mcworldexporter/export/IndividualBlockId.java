@@ -37,12 +37,14 @@ public class IndividualBlockId {
 	private int x;
 	private int y;
 	private int z;
+	private int layer;
 	
-	public IndividualBlockId(int blockId, int x, int y, int z) {
+	public IndividualBlockId(int blockId, int x, int y, int z, int layer) {
 		this.blockId = blockId;
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.layer = layer;
 	}
 	
 	public int getBlockId() {
@@ -61,6 +63,10 @@ public class IndividualBlockId {
 		return z;
 	}
 	
+	public int getLayer() {
+		return layer;
+	}
+	
 	@Override
 	public int hashCode() {
 		return ((blockId * 31 + x) * 31 + y) * 31 + z;
@@ -73,7 +79,8 @@ public class IndividualBlockId {
 		return ((IndividualBlockId) obj).blockId == blockId && 
 				((IndividualBlockId) obj).x == x && 
 				((IndividualBlockId) obj).y == y && 
-				((IndividualBlockId) obj).z == z;
+				((IndividualBlockId) obj).z == z &&
+				((IndividualBlockId) obj).layer == layer;
 	}
 	
 }

@@ -37,9 +37,9 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public abstract class BlockStateHandler {
 	
-	public abstract BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state);
+	public abstract BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state);
 	
-	public abstract BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, 
+	public abstract BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
 										BlockState state, BlockAnimationHandler animationHandler, float frame);
 	
 	public abstract String getDefaultTexture();

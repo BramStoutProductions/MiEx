@@ -41,6 +41,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagFloat;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class AIComponentBuoyant extends AIComponent{
 
@@ -67,14 +68,15 @@ public class AIComponentBuoyant extends AIComponent{
 		int blockX = (int) Math.floor(entity.getAnimation().getAnimPosX().getKeyframeAtTime(time).value);
 		int blockY = (int) Math.floor(entity.getAnimation().getAnimPosY().getKeyframeAtTime(time).value - 0.5f);
 		int blockZ = (int) Math.floor(entity.getAnimation().getAnimPosZ().getKeyframeAtTime(time).value);
-		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
-		Block block = BlockRegistry.getBlock(blockId);
-		String blockName = block.getName();
-		if(block.isWaterlogged())
-			blockName = "minecraft:water";
+		LayeredBlock blocks = new LayeredBlock();
+		MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, blocks);
 		boolean applyBuoyancy = false;
-		if(liquidBlocks.contains(blockName)) {
-			applyBuoyancy = true;
+		for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+			Block block = BlockRegistry.getBlock(blocks.getBlock(layer));
+			String blockName = block.getName();
+			if(liquidBlocks.contains(blockName)) {
+				applyBuoyancy = true;
+			}
 		}
 		entity.getProperties().addElement(NbtTagByte.newNonPooledInstance("ApplyBuoyancy", applyBuoyancy ? ((byte) 1) : ((byte) 0)));
 		return true;

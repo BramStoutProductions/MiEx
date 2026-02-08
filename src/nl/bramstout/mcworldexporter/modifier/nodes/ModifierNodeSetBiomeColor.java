@@ -57,8 +57,8 @@ public class ModifierNodeSetBiomeColor extends ModifierNode{
 			colormapName = "minecraft:" + colormapName;
 		Value valueColor = context.getValue(color);
 		
-		for(int i = 0; i < context.biome.length; ++i)
-			context.biome[i].setColor(colormapName, valueColor.getR(), valueColor.getG(), valueColor.getB());
+		for(int i = 0; i < 8; ++i)
+			context.biome.setColor(colormapName, i, valueColor.getR(), valueColor.getG(), valueColor.getB());
 		return valueColor;
 	}
 

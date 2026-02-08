@@ -54,15 +54,15 @@ public class BlockStateSkull extends BlockState{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
 		if(blockConnections != null && runBlockConnections) {
 			properties = (NbtTagCompound) properties.copy();
-			String newName = blockConnections.map(name, properties, x, y, z);
+			String newName = blockConnections.map(name, properties, x, y, z, layer);
 			if(newName != null && !newName.equals(name)) {
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
 				properties.free();
-				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections);
 			}
 		}
 		
@@ -194,7 +194,7 @@ public class BlockStateSkull extends BlockState{
 		model.rotate(0, rotY, false);
 		
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, hasLiquid(properties), getLiquidName(properties), caveBlock, false, false, false, false, false, true, true, 0, null,
+				individualBlocks, isLiquid(), caveBlock, false, false, false, false, false, true, true, 0, null,
 				needsConnectionInfo(), null);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.

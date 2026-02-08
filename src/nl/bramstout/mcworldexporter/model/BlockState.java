@@ -35,7 +35,6 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
-import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
@@ -52,6 +51,7 @@ public class BlockState {
 	protected boolean leavesOcclusion;
 	protected boolean detailedOcclusion;
 	protected boolean individualBlocks;
+	protected boolean liquid;
 	protected boolean caveBlock;
 	protected boolean randomOffset;
 	protected boolean randomYOffset;
@@ -75,6 +75,7 @@ public class BlockState {
 		this.leavesOcclusion = Config.leavesOcclusion.contains(name);
 		this.detailedOcclusion = Config.detailedOcclusion.contains(name);
 		this.individualBlocks = Config.individualBlocks.contains(name);
+		this.liquid = Config.liquid.contains(name);
 		this.caveBlock = Config.caveBlocks.contains(name);
 		this.randomOffset = Config.randomOffset.contains(name);
 		this.randomYOffset = Config.randomYOffset.contains(name);
@@ -121,6 +122,10 @@ public class BlockState {
 	
 	public boolean isIndividualBlocks() {
 		return individualBlocks;
+	}
+	
+	public boolean isLiquid() {
+		return liquid;
 	}
 	
 	public boolean isCaveBlock() {
@@ -171,43 +176,23 @@ public class BlockState {
 		return tint;
 	}
 	
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, boolean runBlockConnections) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
 		if(blockConnections != null && runBlockConnections) {
 			properties = (NbtTagCompound) properties.copy();
-			String newName = blockConnections.map(name, properties, x, y, z);
+			String newName = blockConnections.map(name, properties, x, y, z, layer);
 			if(newName != null && !newName.equals(name)) {
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
 				properties.free();
-				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, runBlockConnections);
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections);
 			}
 		}
 		
-		BakedBlockState res = handler.getBakedBlockState(properties, x, y, z, this);
+		BakedBlockState res = handler.getBakedBlockState(properties, x, y, z, layer, this);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}
 		return res;
-	}
-	
-	public boolean hasLiquid(NbtTagCompound properties) {
-		NbtTagString waterloggedTag = (NbtTagString) properties.get("waterlogged");
-		
-		if(waterloggedTag == null) {
-			if(Config.waterlogged.contains(name))
-				return true;
-			return false;
-		}
-		return waterloggedTag.getData().equalsIgnoreCase("true");
-	}
-	
-	public String getLiquidName(NbtTagCompound properties) {
-		NbtTagString waterblockTag = (NbtTagString) properties.get("waterblock");
-		
-		if(waterblockTag == null)
-			return null;
-		
-		return waterblockTag.asString();
 	}
 	
 	public String getDefaultTexture() {

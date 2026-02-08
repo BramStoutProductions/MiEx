@@ -41,13 +41,13 @@ public class ConnectedTextureTop extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		
 		if(tiles.size() <= 0)
 			return null;
 		
-		if(connects(face, x, y, z, up.x, up.y, up.z))
+		if(connects(face, x, y, z, layer, up.x, up.y, up.z))
 			return tiles.get(0);
 		
 		return null;

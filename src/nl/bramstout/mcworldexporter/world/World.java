@@ -216,18 +216,37 @@ public abstract class World {
 		return region.getChunk(blockX, blockZ);
 	}
 
-	public int getBlockId(int blockX, int blockY, int blockZ) {
+	public int getBlockId(int blockX, int blockY, int blockZ, int layer) {
 		if(paused)
 			return 0;
 		
 		try {
 			Chunk chunk = getChunkFromBlockPosition(blockX, blockZ);
 			if (chunk != null)
-				return chunk.getBlockId(blockX, blockY, blockZ);
+				return chunk.getBlockId(blockX, blockY, blockZ, layer);
 		} catch (Exception e) {
 			handleError(e);
 		}
 		return 0;
+	}
+	
+	public void getBlockId(int blockX, int blockY, int blockZ, LayeredBlock blocks) {
+		if(paused) {
+			blocks.setLayerCount(0);
+			return;
+		}
+		
+		try {
+			Chunk chunk = getChunkFromBlockPosition(blockX, blockZ);
+			if (chunk != null) {
+				chunk.getBlockId(blockX, blockY, blockZ, blocks);
+				return;
+			}
+		} catch (Exception e) {
+			handleError(e);
+		}
+		blocks.setLayerCount(0);
+		return;
 	}
 
 	public int getBiomeId(int blockX, int blockY, int blockZ) {

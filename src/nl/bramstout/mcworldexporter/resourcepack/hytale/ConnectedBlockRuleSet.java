@@ -57,7 +57,7 @@ public abstract class ConnectedBlockRuleSet {
 	public abstract String getVariant(NbtTagCompound properties, int x, int y, int z);
 	
 	protected Block getOtherBlock(int x, int y, int z) {
-		int otherBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		int otherBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 		Block otherBlock = BlockRegistry.getBlock(otherBlockId);
 		int otherBlockStateId = BlockStateRegistry.getIdForName(otherBlock.getName(), otherBlock.getDataVersion());
 		BlockState otherBlockState = BlockStateRegistry.getState(otherBlockStateId);

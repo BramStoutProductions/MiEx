@@ -49,6 +49,7 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
+import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
 import nl.bramstout.mcworldexporter.expression.ExprValue;
 import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueDict;
@@ -206,7 +207,7 @@ public abstract class BuiltInGenerator {
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
-			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
 			
 			List<Color> tints = null;
 			if(state.getTint() != null) {
@@ -216,11 +217,16 @@ public abstract class BuiltInGenerator {
 					int biomeId = MCWorldExporter.getApp().getWorld().getBiomeId(x, y, z);
 					Biome biome = BiomeRegistry.getBiome(biomeId);
 					BlendedBiome blendedBiome = new BlendedBiome();
-					blendedBiome.addBiome(biome, 1f);
+					blendedBiome.addBiome(biome, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f);
 					blendedBiome.normalise();
-					Color tint = tintValue.getColor(blendedBiome);
-					tints = new ArrayList<Color>();
-					tints.add(tint);
+					WeightedColor color = tintValue.getColor(blendedBiome);
+					if(color != null) {
+						Color tint = color.get(0);
+						if(tint != null) {
+							tints = new ArrayList<Color>();
+							tints.add(tint);
+						}
+					}
 				}
 			}
 			

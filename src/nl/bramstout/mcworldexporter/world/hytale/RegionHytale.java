@@ -77,10 +77,15 @@ public class RegionHytale extends Region{
 			synchronized(chunk) {
 				if(chunk.canLoad()) {
 					try {
-						byte[] data = getReader().getBlob(localHytaleChunkPosToIndex(localX, localZ));
-						chunk.load(data);
+						IndexedStorageFileReader reader = getReader();
+						if(reader != null) {
+							byte[] data = reader.getBlob(localHytaleChunkPosToIndex(localX, localZ));
+							chunk.load(data);
+						}else {
+							chunk.load(null);
+						}
 					}catch(Exception ex) {
-						ex.printStackTrace();
+						World.handleError(ex);
 						chunk.load(null);
 					}
 				}

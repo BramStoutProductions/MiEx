@@ -54,6 +54,7 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class BlockConnectionsTranslation {
 	
@@ -108,7 +109,7 @@ public class BlockConnectionsTranslation {
 					if(matchesList(block, thisGroup, thisBlockName, thisGroup, x, y, z))
 						return true;
 				}else if(match.equals("minecraft:$solid_block")){
-					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(block.getId(), x, y, z, false);
+					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(block.getId(), x, y, z, 0, false);
 					return state.isSolidBlock();
 				} else if(match.equals(block.getName())) {
 					return true;
@@ -166,14 +167,19 @@ public class BlockConnectionsTranslation {
 		}
 		
 		public boolean matches(Block thisBlock, List<String> thisGroup, int x, int y, int z) {
-			int otherBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz);
-			Block otherBlock = BlockRegistry.getBlock(otherBlockId);
-			
-			boolean match = matchesList(otherBlock, thisBlock.getName(), thisGroup, x + dx, y + dy, z + dz);
-			if(invert)
-				match = !match;
-			
-			return match;
+			LayeredBlock blocks = new LayeredBlock();
+			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, blocks);
+			for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
+				Block otherBlock = BlockRegistry.getBlock(blocks.getBlock(layer));
+				
+				boolean match = matchesList(otherBlock, thisBlock.getName(), thisGroup, x + dx, y + dy, z + dz);
+				if(invert)
+					match = !match;
+				
+				if(match)
+					return true;
+			}
+			return false;
 		}
 		
 		private boolean matchesList(Block otherBlock, String thisBlockName, List<String> thisGroup,
@@ -296,8 +302,8 @@ public class BlockConnectionsTranslation {
 			this.maxDataVersion = Integer.MAX_VALUE;
 		}
 		
-		public String map(String name, NbtTagCompound properties, int x, int y, int z) {
-			int thisBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
+		public String map(String name, NbtTagCompound properties, int x, int y, int z, int layer) {
+			int thisBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
 			Block thisBlock = BlockRegistry.getBlock(thisBlockId);
 			
 			String newName = null;

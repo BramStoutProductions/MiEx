@@ -43,6 +43,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.resourcepack.Tags;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.Chunk;
 
 public class AIComponentNavigation extends AIComponent implements PathFinderHook{
 
@@ -191,108 +192,113 @@ public class AIComponentNavigation extends AIComponent implements PathFinderHook
 
 	@Override
 	public float getCost(int x, int y, int z, int dx, int dy, int dz) {
-		int blockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z);
-		int blockIdBelow = MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z);
-		int blockIdAbove = MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z);
-		Block block = BlockRegistry.getBlock(blockId);
-		Block blockBelow = BlockRegistry.getBlock(blockIdBelow);
-		Block blockAbove = BlockRegistry.getBlock(blockIdAbove);
 		float cost = 1f;
-		float maxFall = 1f;
-		if(preferredPathComponent != null) {
-			cost = preferredPathComponent.defaultBlockCost;
-			if(y > 0 && !block.hasLiquid()) {
-				cost += preferredPathComponent.jumpCost;
-			}
-			Float blockCost = preferredPathComponent.preferredPathBlocks.getOrDefault(blockBelow.getName(), cost);
-			cost = blockCost.floatValue();
-			maxFall = preferredPathComponent.maxFallBlocks;
-		}
-		
-		if(avoidSun) {
-			int height = MCWorldExporter.getApp().getWorld().getHeight(x, z);
-			if(height < y)
-				return -1f; // In the sun
-		}
-		if(avoidWater) {
-			if(block.hasLiquid() || blockBelow.hasLiquid())
-				return -1f; // In water.
-		}
-		if(blocksToAvoid.contains(block.getName()) || blocksToAvoid.contains(blockBelow.getName()))
-			return -1f; // Avoid these blocks.
-		if(!canBreach) {
-			if(blockBelow.hasLiquid() && !block.hasLiquid())
-				return -1f; // Can't be in the block just above water.
-			if(block.hasLiquid() && !blockAbove.hasLiquid() && blockBelow.hasLiquid())
-				return -1f; // Can't be in the top block of water, unless the water only one block deep.
-		}
-		if(canBreakDoors || canOpenDoors || canPassDoors) {
-			if(Tags.isInList(block.getName(), woodenDoors)) {
-				return 1f;
-			}
-		}
-		if(canOpenIronDoors) {
-			if(block.getName().equals("minecraft:iron_door")) {
-				return 1f;
-			}
-		}
-		if(!canJump) {
-			if(y > 0 && !block.hasLiquid()) {
-				float autoStepHeight = 0.5625f;
-				NbtTag autoStepHeightTag = currentEntity.getProperties().get("AutoStepHeight");
-				if(autoStepHeightTag != null)
-					autoStepHeight = autoStepHeightTag.asFloat();
-				
-				if(y > autoStepHeight)
-					return -1f;
-			}
-		}
-		if(!canPathOverLava) {
-			if(blockBelow.getName().equals("minecraft:lava") && !block.getName().equals("minecraft:lava"))
-				return -1f;
-		}
-		if(!canPathOverWater) {
-			if(blockBelow.getName().equals("minecraft:water") && !block.getName().equals("minecraft:water"))
-				return -1f;
-		}
-		if(canSink) {
-			if(block.getName().equals("minecraft:water") && blockBelow.getName().equals("minecraft:water")) {
-				if(y < 0)
-					cost *= 0.5f; // Prefer going down.
-			}
-		}
-		if(!canSwim) {
-			if(block.hasLiquid() && blockAbove.hasLiquid())
-				return -1f; // Only allow the top block of water.
-		}
-		if(!canWalk) {
-			// Must be in liquid
-			if(!block.hasLiquid())
-				return -1f;
-		}
-		if(canWalkInLava) {
-			if(block.getName().equals("minecraft:lava") && !blockBelow.getName().equals("minecraft:lava"))
-				cost *= 0.5f; // Prefer walking on the ground.
-		}
-		if(isAmphibious) {
-			if(block.getName().equals("minecraft:water") && !blockBelow.getName().equals("minecraft:water"))
-				cost *= 0.5f; // Prefer walking on the ground.
-		}
-		if(block.hasLiquid() || blockBelow.hasLiquid()) {
-			cost *= 0.85f; // Prefer not swimming since it's slower.
-		}
-		if(EntityUtil.isCollidingWithWorld(currentEntity, ((float) x) + 0.5f, (float) y, ((float) z) + 0.5f, new CollisionResult()))
-			return -1f; // Entity can't fit here.
-		if(!block.hasLiquid() && !blockBelow.hasLiquid()) {
-			if(!EntityUtil.standingOnSolidBlock(currentEntity, ((float) x) + 0.5f, (float) y, ((float) z) + 0.5f)) {
-				// Entity must be on solid block, but it may fall down, so check that first.
-				for(float sampleY = (float) y; sampleY >= (((float) y) - maxFall); sampleY -= 1f) {
-					if(EntityUtil.standingOnSolidBlock(currentEntity, ((float) x) + 0.5f, sampleY, ((float) z) + 0.5f))
-						return cost; // There's a block there to catch the entity, so it's fine to take this path.
+		try {
+			Chunk chunk = MCWorldExporter.getApp().getWorld().getChunkFromBlockPosition(x, z);
+			float maxFall = 1f;
+			for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
+				int blockId = chunk.getBlockId(x, y, z, layer);
+				int blockIdBelow = chunk.getBlockId(x, y - 1, z, layer);
+				int blockIdAbove = chunk.getBlockId(x, y + 1, z, layer);
+				Block block = BlockRegistry.getBlock(blockId);
+				Block blockBelow = BlockRegistry.getBlock(blockIdBelow);
+				Block blockAbove = BlockRegistry.getBlock(blockIdAbove);
+				if(preferredPathComponent != null) {
+					cost = preferredPathComponent.defaultBlockCost;
+					if(y > 0 && !block.isLiquid()) {
+						cost += preferredPathComponent.jumpCost;
+					}
+					Float blockCost = preferredPathComponent.preferredPathBlocks.getOrDefault(blockBelow.getName(), cost);
+					cost = blockCost.floatValue();
+					maxFall = preferredPathComponent.maxFallBlocks;
 				}
-				return -1f; // Entity must be on solid block.
+				
+				if(avoidSun) {
+					int height = MCWorldExporter.getApp().getWorld().getHeight(x, z);
+					if(height < y)
+						return -1f; // In the sun
+				}
+				if(avoidWater) {
+					if(block.isLiquid() || blockBelow.isLiquid())
+						return -1f; // In water.
+				}
+				if(blocksToAvoid.contains(block.getName()) || blocksToAvoid.contains(blockBelow.getName()))
+					return -1f; // Avoid these blocks.
+				if(!canBreach) {
+					if(blockBelow.isLiquid() && !block.isLiquid())
+						return -1f; // Can't be in the block just above water.
+					if(block.isLiquid() && !blockAbove.isLiquid() && blockBelow.isLiquid())
+						return -1f; // Can't be in the top block of water, unless the water only one block deep.
+				}
+				if(canBreakDoors || canOpenDoors || canPassDoors) {
+					if(Tags.isInList(block.getName(), woodenDoors)) {
+						return 1f;
+					}
+				}
+				if(canOpenIronDoors) {
+					if(block.getName().equals("minecraft:iron_door")) {
+						return 1f;
+					}
+				}
+				if(!canJump) {
+					if(y > 0 && !block.isLiquid()) {
+						float autoStepHeight = 0.5625f;
+						NbtTag autoStepHeightTag = currentEntity.getProperties().get("AutoStepHeight");
+						if(autoStepHeightTag != null)
+							autoStepHeight = autoStepHeightTag.asFloat();
+						
+						if(y > autoStepHeight)
+							return -1f;
+					}
+				}
+				if(!canPathOverLava) {
+					if(blockBelow.getName().equals("minecraft:lava") && !block.getName().equals("minecraft:lava"))
+						return -1f;
+				}
+				if(!canPathOverWater) {
+					if(blockBelow.getName().equals("minecraft:water") && !block.getName().equals("minecraft:water"))
+						return -1f;
+				}
+				if(canSink) {
+					if(block.getName().equals("minecraft:water") && blockBelow.getName().equals("minecraft:water")) {
+						if(y < 0)
+							cost *= 0.5f; // Prefer going down.
+					}
+				}
+				if(!canSwim) {
+					if(block.isLiquid() && blockAbove.isLiquid())
+						return -1f; // Only allow the top block of water.
+				}
+				if(!canWalk) {
+					// Must be in liquid
+					if(!block.isLiquid())
+						return -1f;
+				}
+				if(canWalkInLava) {
+					if(block.getName().equals("minecraft:lava") && !blockBelow.getName().equals("minecraft:lava"))
+						cost *= 0.5f; // Prefer walking on the ground.
+				}
+				if(isAmphibious) {
+					if(block.getName().equals("minecraft:water") && !blockBelow.getName().equals("minecraft:water"))
+						cost *= 0.5f; // Prefer walking on the ground.
+				}
+				if(block.isLiquid() || blockBelow.isLiquid()) {
+					cost *= 0.85f; // Prefer not swimming since it's slower.
+				}
+				if(EntityUtil.isCollidingWithWorld(currentEntity, ((float) x) + 0.5f, (float) y, ((float) z) + 0.5f, new CollisionResult()))
+					return -1f; // Entity can't fit here.
+				if(!block.isLiquid() && !blockBelow.isLiquid()) {
+					if(!EntityUtil.standingOnSolidBlock(currentEntity, ((float) x) + 0.5f, (float) y, ((float) z) + 0.5f)) {
+						// Entity must be on solid block, but it may fall down, so check that first.
+						for(float sampleY = (float) y; sampleY >= (((float) y) - maxFall); sampleY -= 1f) {
+							if(EntityUtil.standingOnSolidBlock(currentEntity, ((float) x) + 0.5f, sampleY, ((float) z) + 0.5f))
+								return cost; // There's a block there to catch the entity, so it's fine to take this path.
+						}
+						return -1f; // Entity must be on solid block.
+					}
+				}
 			}
-		}
+		}catch(Exception ex) {}
 		
 		return cost;
 	}

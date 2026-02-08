@@ -77,12 +77,12 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		BlockStatePart part = null;
 		for(int i = 0; i < parts.size(); ++i) {
 			part = parts.get(i);
-			if(part.usePart(properties, x, y, z)) {
+			if(part.usePart(properties, x, y, z, layer)) {
 				models.add(part.models);
 			}
 		}
@@ -92,16 +92,16 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 			tintColor = tint.getTint(properties);
 		return new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
 				state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
-				state.hasLiquid(properties), state.getLiquidName(properties), state.isCaveBlock(), state.hasRandomOffset(), 
+				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
 				tintColor, state.needsConnectionInfo(), null);
 	}
 	
 	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state,
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
 			BlockAnimationHandler animationHandler, float frame) {
-		return getBakedBlockState(properties, x, y, z, state);
+		return getBakedBlockState(properties, x, y, z, layer, state);
 	}
 
 	@Override

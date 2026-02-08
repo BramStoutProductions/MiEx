@@ -655,7 +655,7 @@ public class USDConverter extends Converter{
 				writer.endClass();
 				
 				
-				individualBlocksRegistry.put(new IndividualBlockId(baseMeshId, baseMeshX, baseMeshY, baseMeshZ), 
+				individualBlocksRegistry.put(new IndividualBlockId(baseMeshId, baseMeshX, baseMeshY, baseMeshZ, 0), 
 												new IndividualBlockInfo(primName));
 			}
 			writer.endChildren();
@@ -836,7 +836,7 @@ public class USDConverter extends Converter{
 				points.add(dis.readFloat());
 			}
 			
-			instancers.put(new IndividualBlockId(blockId, blockX, blockY, blockZ), points);
+			instancers.put(new IndividualBlockId(blockId, blockX, blockY, blockZ, 0), points);
 		}
 		
 		private void writeAnimatedBlockReferences(AnimatedBlock animatedBlock, USDWriter chunkWriter, String materialsPrim) throws IOException {
@@ -927,7 +927,7 @@ public class USDConverter extends Converter{
 					}
 				}else {
 					for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
-						chunkWriter.beginDef("Mesh", entry.getKey());
+						chunkWriter.beginDef("Mesh", Util.makeSafeName(entry.getKey()));
 						chunkWriter.beginMetaData();
 						chunkWriter.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
 						chunkWriter.endMetaData();
@@ -981,7 +981,7 @@ public class USDConverter extends Converter{
 						}
 					}else {
 						for(Entry<String, Mesh> entry : baseMeshes.entrySet()) {
-							topologyWriter.beginDef("Mesh", entry.getKey());
+							topologyWriter.beginDef("Mesh", Util.makeSafeName(entry.getKey()));
 							topologyWriter.beginMetaData();
 							topologyWriter.writeMetaDataStringArray("apiSchemas", new String[] { "MaterialBindingAPI" });
 							topologyWriter.endMetaData();
@@ -1299,10 +1299,10 @@ public class USDConverter extends Converter{
 			}
 			baseMeshes.put(meshName, mesh);
 			
-			writer.beginDef("Mesh", meshName);
+			writer.beginDef("Mesh", Util.makeSafeName(meshName));
 			writer.beginChildren();
 			
-			manifestWriter.beginDef("Mesh", meshName);
+			manifestWriter.beginDef("Mesh", Util.makeSafeName(meshName));
 			manifestWriter.beginChildren();
 			
 			writer.writeAttributeName("point3f[]", "points", false);

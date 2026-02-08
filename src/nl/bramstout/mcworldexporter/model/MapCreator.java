@@ -89,8 +89,11 @@ public class MapCreator {
 			File dataDir = new File(MCWorldExporter.getApp().getWorld().getWorldDir(), "data");
 			File mapFile = new File(dataDir, "map_" + mapId + ".dat");
 
-			if (!mapFile.exists())
-				return;
+			if (!mapFile.exists()) {
+				mapFile = new File(dataDir, "minecraft/maps/" + mapId + ".dat");
+				if(!mapFile.exists())
+					return;
+			}
 
 			GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(mapFile)));
 

@@ -107,19 +107,24 @@ public class IndexedStorageFileReader {
 		if(position <= 0)
 			return null;
 		
-		if((position + this.segmentSize) >= this.fileSize) {
+		long dataSize = Math.max(Math.min(this.segmentSize, this.fileSize-position), 0);
+		if((position + dataSize) > this.fileSize || dataSize == 0) {
 			//throw new IOException("EOF");
 			return null;
 		}
 		
 		//ByteBuffer buffer = ByteBuffer.allocate(this.segmentSize);
 		//this.fileChannel.read(buffer, position);
-		MappedByteBuffer buffer = this.fileChannel.map(MapMode.READ_ONLY, position, this.segmentSize);
+		MappedByteBuffer buffer = this.fileChannel.map(MapMode.READ_ONLY, position, dataSize);
 		
 		int decompressedSize = buffer.getInt(0);
 		int compressedSize = buffer.getInt(4);
+		if(decompressedSize <= 0 || compressedSize <= 0) {
+			// Corrupt chunk
+			return null;
+		}
 		int fullSize = compressedSize + 8;
-		if(fullSize > this.segmentSize) {
+		if(fullSize > dataSize) {
 			if((position + fullSize) > this.fileSize) {
 				//throw new IOException("EOF");
 				return null;

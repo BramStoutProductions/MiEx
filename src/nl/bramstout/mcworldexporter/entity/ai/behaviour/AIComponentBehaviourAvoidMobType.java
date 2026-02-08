@@ -197,7 +197,7 @@ public class AIComponentBehaviourAvoidMobType extends AIComponent{
 							int blockX = (int) Math.floor(sampleX);
 							int blockY = (int) Math.floor(sampleY);
 							int blockZ = (int) Math.floor(sampleZ);
-							int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ);
+							int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, 0);
 							if(blockId != 0) {
 								directLineOfSight = false;
 								break;

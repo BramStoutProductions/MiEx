@@ -124,27 +124,27 @@ public class BlockStateMultiPart extends BlockStatePart{
 	}
 
 	@Override
-	public boolean usePart(NbtTagCompound properties, int x, int y, int z) {
+	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer) {
 		if(check == null)
 			return true;
 		if(check.has("OR")) {
 			for(JsonElement checkObj : check.get("OR").getAsJsonArray().asList()) {
-				if(testProperties(properties, checkObj.getAsJsonObject(), x, y, z))
+				if(testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer))
 					return true;
 			}
 			return false;
 		} else if(check.has("AND")) {
 			for(JsonElement checkObj : check.get("AND").getAsJsonArray().asList()) {
-				if(!testProperties(properties, checkObj.getAsJsonObject(), x, y, z))
+				if(!testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer))
 					return false;
 			}
 			return true;
 		} else {
-			return testProperties(properties, check, x, y, z);
+			return testProperties(properties, check, x, y, z, layer);
 		}
 	}
 	
-	private boolean testProperties(NbtTagCompound properties, JsonObject checkObject, int x, int y, int z) {
+	private boolean testProperties(NbtTagCompound properties, JsonObject checkObject, int x, int y, int z, int layer) {
 		int numItems = properties.getSize();
 		for(int i = 0; i < numItems; ++i) {
 			NbtTag tag = properties.get(i);
@@ -174,7 +174,7 @@ public class BlockStateMultiPart extends BlockStatePart{
 			for(Entry<String, JsonElement> entry : checkObject.entrySet()) {
 				if(entry.getKey().startsWith("miex_connect")) {
 					// Test the neighbouring block.
-					boolean res = testMiExConnection(entry.getKey(), entry.getValue().getAsString(), x, y, z);
+					boolean res = testMiExConnection(entry.getKey(), entry.getValue().getAsString(), x, y, z, layer);
 					// If it doesn't match, then we shouldn't use this part.
 					if(!res)
 						return false;

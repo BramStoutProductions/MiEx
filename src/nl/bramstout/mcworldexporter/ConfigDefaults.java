@@ -217,9 +217,10 @@ public class ConfigDefaults {
 		        "jungle_leaves", "oak_leaves", "slime_block", "spawner", "spruce_leaves",
 		        "mangrove_leaves", "flowering_azalea_leaves"));
 		randomAnimationXZOffset.addAll(Arrays.asList(
-				"kelp", "kelp_plant", "seagrass", "tall_seagrass", "fire", "soul_fire"));
+				"kelp", "kelp_plant", "seagrass", "tall_seagrass", "fire", "soul_fire",
+				"#minecraft:block/banners"));
 		randomAnimationYOffset.addAll(Arrays.asList(
-				"fire", "soul_fire"));
+				"fire", "soul_fire", "#minecraft:block/banners"));
 		lodNoUVScale.addAll(Arrays.asList());
 		lodNoScale.addAll(Arrays.asList());
 		ignoreAtlas.addAll(Arrays.asList(

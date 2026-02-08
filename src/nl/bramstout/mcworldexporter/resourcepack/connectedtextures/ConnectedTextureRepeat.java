@@ -46,7 +46,7 @@ public class ConnectedTextureRepeat extends ConnectedTexture{
 	}
 
 	@Override
-	public String getTexture(int x, int y, int z, ModelFace face) {
+	public String getTexture(int x, int y, int z, int layer, ModelFace face) {
 		Direction up = getUp(face);
 		Direction left = getLeft(up, face);
 		

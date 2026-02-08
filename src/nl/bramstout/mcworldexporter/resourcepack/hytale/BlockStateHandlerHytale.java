@@ -111,12 +111,12 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 	}
 
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state) {
-		return getAnimatedBakedBlockState(properties, x, y, z, state, null, 0f);
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
+		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
 	}
 	
 	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, BlockState state,
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
 			BlockAnimationHandler animationHandler, float frame) {
 		String variantName = "";
 		NbtTag variantProp = properties.get("Definitions");
@@ -136,7 +136,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 		if(variant == null) {
 			return new BakedBlockState(state.getName(), new ArrayList<List<Model>>(), state.isTransparentOcclusion(), 
 					state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 
-					state.hasLiquid(properties), state.getLiquidName(properties), state.isCaveBlock(), state.hasRandomOffset(), 
+					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
 					null, state.needsConnectionInfo(), null);
@@ -158,7 +158,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 			if(variant.needsConnectionInfo())
 				return true;
 		}
-		return connectedBlockRuleSet != null;
+		return false;
 	}
 	
 	public boolean hasBiomeTint() {
