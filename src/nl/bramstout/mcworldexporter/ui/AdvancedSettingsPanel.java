@@ -225,7 +225,7 @@ public class AdvancedSettingsPanel extends JPanel{
 		
 		
 		JPanel settingsAndEntitiesPanel = new JPanel();
-		settingsAndEntitiesPanel.setMinimumSize(new Dimension(288, 160));
+		settingsAndEntitiesPanel.setMinimumSize(new Dimension(288, 140));
 		settingsAndEntitiesPanel.setMaximumSize(settingsAndEntitiesPanel.getMinimumSize());
 		settingsAndEntitiesPanel.setPreferredSize(settingsAndEntitiesPanel.getMinimumSize());
 		settingsAndEntitiesPanel.setLayout(new BoxLayout(settingsAndEntitiesPanel, BoxLayout.X_AXIS));
@@ -233,7 +233,7 @@ public class AdvancedSettingsPanel extends JPanel{
 		leftPanel.add(settingsAndEntitiesPanel);
 		
 		JPanel settingsPanel = new JPanel();
-		settingsPanel.setMinimumSize(new Dimension(144, 160));
+		settingsPanel.setMinimumSize(new Dimension(144, 140));
 		settingsPanel.setMaximumSize(settingsPanel.getMinimumSize());
 		settingsPanel.setPreferredSize(settingsPanel.getMinimumSize());
 		settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
@@ -279,13 +279,6 @@ public class AdvancedSettingsPanel extends JPanel{
 		settingsPanel.add(excludeRegionsAsAirCheckBox);
 		excludeRegionsAsAirCheckBox.setAlignmentX(0);
 		
-		exportRegionActAsExcludeRegion = new JCheckBox("Export Region act as Exclude Region");
-		exportRegionActAsExcludeRegion.setSelected(false);
-		exportRegionActAsExcludeRegion.setBorder(new EmptyBorder(4, 0, 4, 0));
-		ToolTips.registerTooltip(exportRegionActAsExcludeRegion, ToolTips.EXPORT_REGION_ACT_AS_EXCLUDE_REGION);
-		settingsPanel.add(exportRegionActAsExcludeRegion);
-		exportRegionActAsExcludeRegion.setAlignmentX(0);
-		
 		settingsPanel.setAlignmentY(0f);
 		
 		settingsAndEntitiesPanel.add(settingsPanel);
@@ -308,6 +301,13 @@ public class AdvancedSettingsPanel extends JPanel{
 		entityPanel.add(new JPanel());
 		entityPanel.setAlignmentY(0f);
 		settingsAndEntitiesPanel.add(entityPanel);
+		
+		exportRegionActAsExcludeRegion = new JCheckBox("Export Region act as Exclude Region");
+		exportRegionActAsExcludeRegion.setSelected(false);
+		exportRegionActAsExcludeRegion.setBorder(new EmptyBorder(4, 0, 4, 0));
+		ToolTips.registerTooltip(exportRegionActAsExcludeRegion, ToolTips.EXPORT_REGION_ACT_AS_EXCLUDE_REGION);
+		leftPanel.add(exportRegionActAsExcludeRegion);
+		exportRegionActAsExcludeRegion.setAlignmentX(0);
 		
 		leftPanel.add(new JPanel());
 		
