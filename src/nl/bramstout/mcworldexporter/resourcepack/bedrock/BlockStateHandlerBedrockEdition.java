@@ -103,6 +103,12 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 	
 	@Override
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
+		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
+	}
+	
+	@Override
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
+			BlockAnimationHandler animationHandler, float frame) {
 		String geometry = "minecraft:geometry.full_block";
 		Map<String, MolangExpression> boneVisibility = new HashMap<String, MolangExpression>();
 		Map<String, String> materialInstances = new HashMap<String, String>();
@@ -270,6 +276,10 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 				face.noOcclusion();
 		}
 		
+		if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+			state.getExtraAnimationHandler().applyAnimation(model, properties, x, y, z, layer, state, frame);
+		}
+		
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		List<Model> models2 = new ArrayList<Model>();
 		models2.add(model);
@@ -286,13 +296,8 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 									state.hasRandomYOffset(),
 									state.isDoubleSided(), state.hasRandomAnimationXZOffset(), 
 									state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(),
-									state.getLodPriority(), tintColor, state.needsConnectionInfo(), null);
-	}
-	
-	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
-			BlockAnimationHandler animationHandler, float frame) {
-		return getBakedBlockState(properties, x, y, z, layer, state);
+									state.getLodPriority(), tintColor, state.needsConnectionInfo(), 
+									animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
 	}
 
 	@Override

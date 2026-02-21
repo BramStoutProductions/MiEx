@@ -78,14 +78,35 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 	
 	@Override
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
+		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
+	}
+	
+	@Override
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
+			BlockAnimationHandler animationHandler, float frame) {
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		BlockStatePart part = null;
 		for(int i = 0; i < parts.size(); ++i) {
 			part = parts.get(i);
 			if(part.usePart(properties, x, y, z, layer)) {
-				models.add(part.models);
+				if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+					// Models get animated, which are changed in-place,
+					// so make sure to make a copy of the models.
+					List<Model> partModels = new ArrayList<Model>();
+					for(Model model : part.models) {
+						partModels.add(new Model(model));
+					}
+					models.add(partModels);
+				}else {
+					models.add(part.models);
+				}
 			}
 		}
+		
+		if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+			state.getExtraAnimationHandler().applyAnimation(models, properties, x, y, z, layer, state, frame);
+		}
+		
 		Tint tint = state.getTint();
 		TintLayers tintColor = null;
 		if(tint != null)
@@ -95,13 +116,8 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				tintColor, state.needsConnectionInfo(), null);
-	}
-	
-	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
-			BlockAnimationHandler animationHandler, float frame) {
-		return getBakedBlockState(properties, x, y, z, layer, state);
+				tintColor, state.needsConnectionInfo(), 
+				animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
 	}
 
 	@Override

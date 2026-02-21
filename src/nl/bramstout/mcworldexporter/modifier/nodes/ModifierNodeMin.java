@@ -31,39 +31,31 @@
 
 package nl.bramstout.mcworldexporter.modifier.nodes;
 
-import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.modifier.ModifierContext;
 import nl.bramstout.mcworldexporter.modifier.ModifierNode;
 
 /**
- * "getBiomeColor" node outputs the biome colour for
- * the specified colormap identifier.
- * It outputs null if no colormap exists of that name.
+ * "min" node which takes the value of a and b and returns the minimum of the two,
+ * outputting a value of the same type as a.
  */
-public class ModifierNodeGetBiomeColor extends ModifierNode{
+public class ModifierNodeMin extends ModifierNode{
 
-	public Attribute colormap;
+	public Attribute a;
+	public Attribute b;
 	
-	public ModifierNodeGetBiomeColor(String name) {
+	public ModifierNodeMin(String name) {
 		super(name);
-		this.colormap = new Attribute(this, new Value("minecraft:grass"));
+		
+		this.a = new Attribute(this, new Value(0f));
+		this.b = new Attribute(this, new Value(0f));
 	}
-	
+
 	@Override
 	public Value evaluate(ModifierContext context) {
-		Value valueColormap = context.getValue(colormap);
-		String colormapName = valueColormap.getString();
-		if(colormapName.indexOf(':') == -1)
-			colormapName = "minecraft:" + colormapName;
+		Value valueA = context.getValue(a);
+		Value valueB = context.getValue(b);
 		
-		WeightedColor wcolor = context.biome.getColor(colormapName);
-		if(wcolor != null) {
-			Color color = wcolor.get(0);
-			if(color != null)
-				return new Value(color.getR(), color.getG(), color.getB());
-		}
-		return new Value();
+		return valueA.min(valueB);
 	}
 
 }

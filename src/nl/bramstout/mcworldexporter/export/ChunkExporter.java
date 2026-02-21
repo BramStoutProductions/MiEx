@@ -66,6 +66,7 @@ import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler.RandomOffsetMethod;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
@@ -90,17 +91,19 @@ public class ChunkExporter {
 	private Map<IndividualBlockId, FloatArray> individualBlocks;
 	private Map<AnimatedBlockId, AnimatedBlock> animatedBlocks;
 	private String name;
+	private String fgChunkName;
 	//private LODCache lodCache;
 	private CaveCache caveCache;
 	private Reference<char[]> charBuffer;
 
 	
-	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name) {
+	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name, String fgChunkName) {
 		this.bounds = bounds;
 		this.world = world;
 		this.chunkX = chunkX;
 		this.chunkZ = chunkZ;
 		this.chunkSize = chunkSize;
+		this.fgChunkName = fgChunkName;
 		// All export regions share the same offset.
 		this.worldOffsetX = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX();
 		this.worldOffsetY = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY();
@@ -293,9 +296,19 @@ public class ChunkExporter {
 						
 						
 						if(state.getAnimationHandler() != null && Config.allowBlockAnimations && Config.exportBlockAnimations) {
+							if(Config.individualBlocksOcclusionCulling &&
+									occlusion == 0xFFFFFFL) {
+								// Block is occluded on all sides, so don't add it in.
+								continue;
+							}
 							handleAnimatedBlock(blockId, wx, by, wz, layer, offsetX, offsetY, offsetZ, state, biome);
 						}else {
 							if(state.isIndividualBlocks() || bounds.isOnlyIndividualBlocks()) {
+								if(Config.individualBlocksOcclusionCulling &&
+										occlusion == 0xFFFFFFL) {
+									// Block is occluded on all sides, so don't add it in.
+									continue;
+								}
 								handleIndividualBlock(blockId, wx, by, wz, layer, offsetX, offsetY, offsetZ, state.isNeedsConnectionInfo());
 							}else {
 								handleBlock(models, state, blockId, chunk.getDataVersion(), occlusion, ambientOcclusion, detailedOcclusionFaces, 
@@ -333,7 +346,7 @@ public class ChunkExporter {
 	private void handleAnimatedBlock(int[] blockId, int wx, int wy, int wz, int layer, float offsetX, float offsetY, float offsetZ,
 									BakedBlockState state, BlendedBiome blendedBiome) {
 		boolean isPositionDependent = state.getAnimationHandler().isPositionDependent();
-		if(state.getTint() != null)
+		if(state.getTint() != null && !state.getAnimationHandler().isIgnoreBiome())
 			// If we have biome colours, then it's position dependent since biome colours
 			// themselves are position dependent
 			isPositionDependent = true;
@@ -350,16 +363,24 @@ public class ChunkExporter {
 		BlockAnimationHandler animHandler = state.getAnimationHandler();
 		boolean randomOffsetXZ = state.isRandomAnimationXZOffset();
 		boolean randomOffsetY = state.isRandomAnimationYOffset();
+		RandomOffsetMethod randomOffsetMethod = RandomOffsetMethod.NOISE;
+		float randomOffsetNoiseScale = 1f;
 		if(animHandler != null) {
 			if(animHandler.hasRandomOffsetXZ())
 				randomOffsetXZ = true;
 			if(animHandler.hasRandomOffsetY())
 				randomOffsetY = true;
+			if(animHandler.getRandomOffsetMethod() != null) {
+				randomOffsetMethod = animHandler.getRandomOffsetMethod();
+				if(randomOffsetMethod == RandomOffsetMethod.NOISE) {
+					randomOffsetNoiseScale = animHandler.getRandomOffsetNoiseScale();
+				}
+			}
 		}
 		animatedBlock.addBlock(wx*16 + offsetX - worldOffsetX * 16, 
 				wy*16 + offsetY - worldOffsetY * 16, 
 				wz*16 + offsetZ - worldOffsetZ * 16, wx, wy, wz, 
-				randomOffsetXZ, randomOffsetY);
+				randomOffsetXZ, randomOffsetY, randomOffsetMethod, randomOffsetNoiseScale);
 	}
 	
 	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, int dataVersion, long occlusion, 
@@ -961,6 +982,8 @@ public class ChunkExporter {
 			modifierContext.faceDirection = face.getDirection();
 			
 			if(modifiers.hasFaceModifiers()) {
+				modifierContext.clearEvalCache();
+				
 				modifiers.runFaceModifiers(modifierContext);
 				
 				normal[0] = modifierContext.faceNormalX;
@@ -1522,7 +1545,7 @@ public class ChunkExporter {
 	}
 	
 	public void optimiseAndWriteMeshes(LargeDataOutputStream dos) throws Exception {
-		float threshold = (bounds.getFgChunks().contains(name) || bounds.getFgChunks().isEmpty()) ? 
+		float threshold = (bounds.getFgChunks().contains(fgChunkName) || bounds.getFgChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
 		MeshProcessors processors = new MeshProcessors("mesh_chunk_" + chunkX + "_" + chunkZ);
@@ -1550,7 +1573,7 @@ public class ChunkExporter {
 			meshMergerId = processors.beginMeshMerger(MeshMergerMode.MERGE);
 		
 		dos.writeUTF(name);
-		dos.writeByte((bounds.getFgChunks().contains(name) || bounds.getFgChunks().isEmpty()) ? 
+		dos.writeByte((bounds.getFgChunks().contains(fgChunkName) || bounds.getFgChunks().isEmpty()) ? 
 				1 : 0); // Is foreground chunk
 		
 		// Animated blocks
@@ -1561,6 +1584,7 @@ public class ChunkExporter {
 		
 		//dos.writeInt(meshes.size());
 		//dos.writeInt(meshes.size());
+		//System.out.println(name + ": " + meshes.size());
 		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
 			processors.process(mesh.getValue());
 

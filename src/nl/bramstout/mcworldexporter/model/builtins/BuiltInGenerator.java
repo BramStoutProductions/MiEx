@@ -130,8 +130,8 @@ public abstract class BuiltInGenerator {
 						color = new Color((int) tint.getValue().asInt());
 					}else {
 						ExprValue r = tint.getValue().member("0");
-						ExprValue g = tint.getValue().member("0");
-						ExprValue b = tint.getValue().member("0");
+						ExprValue g = tint.getValue().member("1");
+						ExprValue b = tint.getValue().member("2");
 						color = new Color(r.asFloat(), g.asFloat(), b.asFloat());
 					}
 					

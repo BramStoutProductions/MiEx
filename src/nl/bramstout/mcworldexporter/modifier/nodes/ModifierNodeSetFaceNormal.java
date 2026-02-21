@@ -34,6 +34,9 @@ package nl.bramstout.mcworldexporter.modifier.nodes;
 import nl.bramstout.mcworldexporter.modifier.ModifierContext;
 import nl.bramstout.mcworldexporter.modifier.ModifierNode;
 
+/**
+ * "setFaceNormal" node sets the normal of the face.
+ */
 public class ModifierNodeSetFaceNormal extends ModifierNode{
 	
 	public Attribute normal;

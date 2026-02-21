@@ -136,16 +136,6 @@ public class BakedBlockState {
 		}
 	}
 	
-	public void getDefaultModels(List<Model> res){
-		List<Model> modelList;
-		for(int i = 0; i < models.size(); ++i) {
-			modelList = models.get(i);
-			if(modelList.size() >= 1) {
-				res.add(modelList.get(0));
-			}
-		}
-	}
-	
 	public String getDefaultTexture() {
 		for(int i = 0; i < models.size(); ++i)
 			if(models.get(i).size() > 0)

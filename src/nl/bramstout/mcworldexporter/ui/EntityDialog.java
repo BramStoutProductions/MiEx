@@ -218,6 +218,9 @@ public class EntityDialog extends JDialog{
 				entityNamesSet.add("minecraft:painting");
 				entityNamesSet.add("minecraft:block_display");
 				entityNamesSet.add("minecraft:item_display");
+				entityNamesSet.add("hytale:BlockEntity");
+				entityNamesSet.add("hytale:ItemEntity");
+				entityNamesSet.add("hytale:ModelEntity");
 				
 				if(MCWorldExporter.getApp().getWorld() != null) {
 					List<List<Entity>> entities = MCWorldExporter.getApp().getWorld().getEntitiesInRegion(
@@ -326,7 +329,8 @@ public class EntityDialog extends JDialog{
 		
 		if(!noDefaultSelection)
 			exportEntities.setSelection(Arrays.asList("minecraft:item_frame", "minecraft:glow_item_frame", 
-					"minecraft:painting", "minecraft:block_display", "minecraft:item_display"));
+					"minecraft:painting", "minecraft:block_display", "minecraft:item_display", 
+					"hytale:BlockEntity", "hytale:ItemEntity", "hytale:ModelEntity"));
 		noDefaultSelection = true;
 	}
 	

@@ -1254,6 +1254,68 @@ public abstract class ModifierNode {
 			}
 		}
 		
+		public Value min(Value other) {
+			switch(type) {
+			case NULL:
+				if(other.isNull())
+					return new Value();
+				return other.copy();
+			case FLOAT:
+				return new Value(Math.min(r, other.getR()));
+			case FLOAT2:
+				return new Value(Math.min(r, other.getR()), Math.min(g, other.getG()));
+			case FLOAT3:
+				return new Value(Math.min(r, other.getR()), Math.min(g, other.getG()),
+						Math.min(b, other.getB()));
+			case FLOAT4:
+				return new Value(Math.min(r, other.getR()), Math.min(g, other.getG()),
+						Math.min(b, other.getB()), Math.min(a, other.getA()));
+			case INT:
+				return new Value(Math.min(i, other.getInt()));
+			case LONG:
+				return new Value(Math.min(l, other.getLong()));
+			case BOOL:
+				return new Value(bool && other.bool);
+			case STRING:
+				int length = other.getString().length();
+				return new Value(length < str.length() ? other.getString() : str);
+			case ARRAY:
+				return new Value();
+			}
+			return new Value();
+		}
+		
+		public Value max(Value other) {
+			switch(type) {
+			case NULL:
+				if(other.isNull())
+					return new Value();
+				return other.copy();
+			case FLOAT:
+				return new Value(Math.max(r, other.getR()));
+			case FLOAT2:
+				return new Value(Math.max(r, other.getR()), Math.max(g, other.getG()));
+			case FLOAT3:
+				return new Value(Math.max(r, other.getR()), Math.max(g, other.getG()),
+						Math.max(b, other.getB()));
+			case FLOAT4:
+				return new Value(Math.max(r, other.getR()), Math.max(g, other.getG()),
+						Math.max(b, other.getB()), Math.max(a, other.getA()));
+			case INT:
+				return new Value(Math.max(i, other.getInt()));
+			case LONG:
+				return new Value(Math.max(l, other.getLong()));
+			case BOOL:
+				return new Value(bool || other.bool);
+			case STRING:
+				int length = other.getString().length();
+				return new Value(length > str.length() ? other.getString() : str);
+			case ARRAY:
+				return new Value();
+			}
+			return new Value();
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if(obj instanceof Value) {

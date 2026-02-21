@@ -73,6 +73,7 @@ public class ConfigDefaults {
 	public static List<String> lodNoUVScale = new ArrayList<String>();
 	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
+	public static List<String> noFaceOptimisation = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean runOptimiser;
@@ -110,6 +111,11 @@ public class ConfigDefaults {
 	public static boolean useIndexedUVs;
 	public static boolean useIndexedVertexColors;
 	public static boolean useIndexedNormals;
+	public static boolean usePointInstancersForIndividualBlocks;
+	public static boolean usePointInstancersForAnimatedBlocks;
+	public static int animatedBlocksPointInstancerTimeOffsetMergeRadius;
+	public static boolean useSinglePointInstancer;
+	public static boolean individualBlocksOcclusionCulling;
 	public static boolean allowBlockAnimations;
 	public static float animationFrameRate;
 	public static float animationStartFrame;
@@ -273,6 +279,11 @@ public class ConfigDefaults {
 		useIndexedUVs = true;
 		useIndexedVertexColors = true;
 		useIndexedNormals = true;
+		usePointInstancersForIndividualBlocks = true;
+		usePointInstancersForAnimatedBlocks = true;
+		animatedBlocksPointInstancerTimeOffsetMergeRadius = 6;
+		useSinglePointInstancer = true;
+		individualBlocksOcclusionCulling = false;
 		allowBlockAnimations = true;
 		animationFrameRate = 24;
 		animationStartFrame = 0;

@@ -1,0 +1,54 @@
+{
+    "blocks": "minecraft:short_grass",
+    "group": "grass_flowing",
+    "duration": 10.0,
+    "positionDependent": false,
+    "positionDependentIgnoreBiome": true,
+    "randomOffsetXZ": true,
+    "randomOffsetY": true,
+    "randomOffsetMethod": "noise",
+    "runNodes": [ "SetPos" ],
+    "nodes": {
+        "Pos": {
+            "type": "getVertexPosition"
+        },
+        "Time": {
+            "type": "getTime"
+        },
+        "YPos": {
+            "type": "getY",
+            "input": { "connect": "Pos" }
+        },
+        "NoiseStrength": {
+            "type": "remap",
+            "input": { "connect": "YPos" },
+            "inMin": 0.0,
+            "inMax": 16.0,
+            "outMin": 0.0,
+            "outMax": 1.0
+        },
+        "Noise": {
+            "type": "noiseFloat3",
+            "scale": 32.0,
+            "minValue": { "x": -4.0, "y": -1.0, "z": -4.0},
+            "maxValue": { "x": 4.0, "y": 1.0, "z": 4.0},
+            "position": { "connect": "Pos" },
+            "evolution": { "connect": "Time" },
+            "evolutionPeriod": 10.0
+        },
+        "MultNoise": {
+            "type": "multiply",
+            "a": { "connect": "Noise" },
+            "b": { "connect": "NoiseStrength" }
+        },
+        "AddNoise": {
+            "type": "add",
+            "a": { "connect": "Pos" },
+            "b": { "connect": "MultNoise" }
+        },
+        "SetPos": {
+            "type": "setVertexPosition",
+            "position": { "connect": "AddNoise" }
+        }
+    }
+}

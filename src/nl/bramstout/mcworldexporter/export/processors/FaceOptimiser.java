@@ -56,13 +56,13 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	}
 	
 	public void optimise(Mesh inMesh) {
-		if(inMesh.getNumSubsets() == 0 && inMesh.hasAnimatedTexture()) {
+		if(inMesh.getNumSubsets() == 0 && (inMesh.hasAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getMatTexture()))) {
 			// Don't optimise the faces of animated materials.
 			return;
 		}else if(inMesh.getNumSubsets() > 0) {
 			boolean isAllAnimated = true;
 			for(int i = 0; i < inMesh.getNumSubsets(); ++i) {
-				if(!inMesh.getSubset(i).isAnimatedTexture()) {
+				if(!(inMesh.getSubset(i).isAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getSubset(i).getMatTexture()))) {
 					isAllAnimated = false;
 					break;
 				}
@@ -84,8 +84,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, null, combinedFace);
 		}else {
 			for(MeshSubset subset : inMesh.getSubsets()) {
-				if((subset.getMatTexture() != null && subset.isAnimatedTexture()) || 
-						(subset.getMatTexture() == null && inMesh.hasAnimatedTexture())) {
+				if((subset.getMatTexture() != null && (subset.isAnimatedTexture() || Config.noFaceOptimisation.contains(subset.getMatTexture()))) || 
+						(subset.getMatTexture() == null && (inMesh.hasAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getMatTexture())))) {
 					addFacesInSubset(inMesh, tempMesh1, subset);
 				}else {
 					getFacesPerVertex(inMesh, subset);
@@ -105,8 +105,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, null, combinedFace);
 		}else {
 			for(MeshSubset subset : tempMesh1.getSubsets()) {
-				if((subset.getMatTexture() != null && subset.isAnimatedTexture()) || 
-						(subset.getMatTexture() == null && inMesh.hasAnimatedTexture())) {
+				if((subset.getMatTexture() != null && (subset.isAnimatedTexture() || Config.noFaceOptimisation.contains(subset.getMatTexture()))) || 
+						(subset.getMatTexture() == null && (inMesh.hasAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getMatTexture())))) {
 					addFacesInSubset(tempMesh1, inMesh, subset);
 				}else {
 					getFacesPerVertex(tempMesh1, subset);

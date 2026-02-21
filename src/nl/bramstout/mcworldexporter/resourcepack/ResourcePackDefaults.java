@@ -43,6 +43,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -119,10 +120,18 @@ public class ResourcePackDefaults {
 			
 			if(versions.isEmpty()) {
 				System.out.println("Could not find a Minecraft Java Edition install.");
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_VERSIONS_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_ROOT_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			Object selectedValue = versionLabels.get(0);
+			Date selectedReleaseDate = versions.get(0).getReleaseTime();
+			// Let's default to the latest release data.
+			for(MinecraftVersion version : versions) {
+				if(version.getReleaseTime().after(selectedReleaseDate)) {
+					selectedValue = version.getLabel();
+					selectedReleaseDate = version.getReleaseTime();
+				}
+			}
 			
 			if(!updateToNewest) {
 				// We're not doing a forced update to the latest version,
@@ -130,7 +139,7 @@ public class ResourcePackDefaults {
 				selectedValue = JOptionPane.showInputDialog(MCWorldExporter.getApp().getUI(),
 			             "Update to version", "Version",
 			             JOptionPane.INFORMATION_MESSAGE, null,
-			             versionLabels.toArray(), versionLabels.get(0));
+			             versionLabels.toArray(), selectedValue);
 				if(selectedValue == null)
 					return;
 			}

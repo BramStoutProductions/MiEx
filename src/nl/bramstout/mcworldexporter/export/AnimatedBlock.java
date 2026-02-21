@@ -47,7 +47,9 @@ import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.modifier.nodes.ModifierNodeNoiseFloat;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler.RandomOffsetMethod;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
@@ -107,8 +109,9 @@ public class AnimatedBlock {
 	public AnimatedBlock(String name, AnimatedBlockId id, BlendedBiome blendedBiome, BlockAnimationHandler animationHandler) {
 		this.name = name;
 		this.id = id;
-		if(animationHandler != null)
+		if(animationHandler != null) {
 			this.duration = animationHandler.getDuration();
+		}
 		this.positions = new FloatArray();
 		this.blockPositions = new IntArray();
 		this.timeOffsets = new FloatArray();
@@ -126,13 +129,31 @@ public class AnimatedBlock {
 		this.timeOffsets.add(timeOffset);
 	}
 	
-	public void addBlock(float x, float y, float z, int bx, int by, int bz, boolean withRandomTimeOffsetXZ, boolean withRandomTimeOffsetY) {
+	public void addBlock(float x, float y, float z, int bx, int by, int bz, 
+			boolean withRandomTimeOffsetXZ, boolean withRandomTimeOffsetY, RandomOffsetMethod randomOffsetMethod, 
+			float randomOffsetNoiseScale) {
 		float timeOffset = 0f;
 		if(withRandomTimeOffsetXZ || withRandomTimeOffsetY) {
 			// Add some offset to it so that it doesn't perfectly line up with
 			// other random values used for this block.
-			timeOffset = Noise.get(withRandomTimeOffsetXZ ? (bx + 7) : 0, 
-					withRandomTimeOffsetY ? (by + 9) : 0, withRandomTimeOffsetXZ ? (bz + 11) : 0) * this.duration;
+			if(randomOffsetMethod == RandomOffsetMethod.RANDOM) {
+				timeOffset = Noise.get(withRandomTimeOffsetXZ ? (bx + 7) : 0, 
+						withRandomTimeOffsetY ? (by + 9) : 0, withRandomTimeOffsetXZ ? (bz + 11) : 0) * this.duration;
+			}else if(randomOffsetMethod == RandomOffsetMethod.NOISE) {
+				float rx = (float) bx;
+				float ry = (float) by;
+				float rz = (float) bz;
+				if(randomOffsetNoiseScale > 0.0001f) {
+					rx /= randomOffsetNoiseScale;
+					ry /= randomOffsetNoiseScale;
+					rz /= randomOffsetNoiseScale;
+				}
+				timeOffset = ModifierNodeNoiseFloat.evalNoise(withRandomTimeOffsetXZ ? rx : 0, 
+						withRandomTimeOffsetY ? ry : 0, withRandomTimeOffsetXZ ? rz : 0) * this.duration;
+			}
+			
+			// Make sure that it's a multiple of a frame.
+			timeOffset = (float) Math.floor(timeOffset * Config.animationFrameRate) / Config.animationFrameRate;
 		}
 		addBlock(x, y, z, bx, by, bz, timeOffset);
 	}
@@ -160,7 +181,7 @@ public class AnimatedBlock {
 	public FloatArray getTimeOffsets() {
 		return timeOffsets;
 	}
-	
+
 	public void getMeshes(float frame, Map<String, Mesh> meshes) {
 		Block block = BlockRegistry.getBlock(id.blockId);
 		int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
@@ -180,7 +201,8 @@ public class AnimatedBlock {
 		for(Model model : models) {
 			for(ModelFace face : model.getFaces()) {
 				addFace(meshes, state.getName(), id.blockId, face, model.getTexture(face.getTexture()), 
-						model.getExtraData(), bakedState.getTint(), model.isDoubleSided(), blendedBiome);
+						model.getExtraData(), bakedState.getTint(), model.isDoubleSided(), blendedBiome,
+						model.isAnimatesTopology(), model.isAnimatesPoints(), model.isAnimatesUVs(), model.isAnimatesVertexColors());
 			}
 		}
 	}
@@ -218,7 +240,8 @@ public class AnimatedBlock {
 	
 	private Color[] faceTint = new Color[1];
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, ModelFace face, String texture, 
-			String extraData, TintLayers tintLayers, boolean doubleSided, BlendedBiome blendedBiome) {
+			String extraData, TintLayers tintLayers, boolean doubleSided, BlendedBiome blendedBiome,
+			boolean animatesTopology, boolean animatesPoints, boolean animatesUVs, boolean animatesVertexColors) {
 		if(texture == null || texture.equals(""))
 			return;
 		
@@ -273,6 +296,14 @@ public class AnimatedBlock {
 			mesh.setExtraData(extraData);
 			meshes.put(meshName, mesh);
 		}
+		if(animatesTopology)
+			mesh.setAnimatesTopology(true);
+		if(animatesPoints)
+			mesh.setAnimatesPoints(true);
+		if(animatesUVs)
+			mesh.setAnimatesUVs(true);
+		if(animatesVertexColors)
+			mesh.setAnimatesVertexColors(true);
 		
 		mesh.addFace(face, -0.5f, 0f, -0.5f, 0f, 0f, 0f, 0f, 1, 1, 1, 1, atlas, tint, null, 0, null, null);
 	}

@@ -31,39 +31,21 @@
 
 package nl.bramstout.mcworldexporter.modifier.nodes;
 
-import nl.bramstout.mcworldexporter.Color;
-import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.modifier.ModifierContext;
 import nl.bramstout.mcworldexporter.modifier.ModifierNode;
 
 /**
- * "getBiomeColor" node outputs the biome colour for
- * the specified colormap identifier.
- * It outputs null if no colormap exists of that name.
+ * "getVertexTint" outputs the tint colour of the vertex.
  */
-public class ModifierNodeGetBiomeColor extends ModifierNode{
+public class ModifierNodeGetVertexTint extends ModifierNode{
 
-	public Attribute colormap;
-	
-	public ModifierNodeGetBiomeColor(String name) {
+	public ModifierNodeGetVertexTint(String name) {
 		super(name);
-		this.colormap = new Attribute(this, new Value("minecraft:grass"));
 	}
 	
 	@Override
 	public Value evaluate(ModifierContext context) {
-		Value valueColormap = context.getValue(colormap);
-		String colormapName = valueColormap.getString();
-		if(colormapName.indexOf(':') == -1)
-			colormapName = "minecraft:" + colormapName;
-		
-		WeightedColor wcolor = context.biome.getColor(colormapName);
-		if(wcolor != null) {
-			Color color = wcolor.get(0);
-			if(color != null)
-				return new Value(color.getR(), color.getG(), color.getB());
-		}
-		return new Value();
+		return new Value(context.vertexR, context.vertexG, context.vertexB);
 	}
 
 }

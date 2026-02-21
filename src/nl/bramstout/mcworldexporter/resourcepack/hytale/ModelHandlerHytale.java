@@ -42,6 +42,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Quaternion;
 import nl.bramstout.mcworldexporter.math.Vector3f;
@@ -167,7 +168,8 @@ public class ModelHandlerHytale extends ModelHandler{
 					this.shape = new ShapeBox(shape);
 				else if(type.equals("quad"))
 					this.shape = new ShapeQuad(shape);
-				else this.shape = new ShapeNone(shape); 
+				else 
+					this.shape = new ShapeNone(shape); 
 			}
 			if(this.shape != null)
 				this.offset = this.shape.offset;
@@ -496,7 +498,7 @@ public class ModelHandlerHytale extends ModelHandler{
 					modelFace.reverseDirection();
 				modelFace.transform(transform);
 				
-				if(forceSingleSided && this.doubleSided) {
+				if(forceSingleSided && this.doubleSided && !Config.forceDoubleSidedOnEverything) {
 					ModelFace backModelFace = new ModelFace(modelFace);
 					backModelFace.reverseDirection();
 					model.getFaces().add(backModelFace);
@@ -620,10 +622,12 @@ public class ModelHandlerHytale extends ModelHandler{
 					case WEST:
 						this.size.z = this.size.x;
 						this.size.x = 0f;
+						break;
 					case TOP:
 					case BOTTOM:
 						this.size.z = this.size.y;
 						this.size.y = 0f;
+						break;
 					}
 					
 					break;
@@ -631,6 +635,14 @@ public class ModelHandlerHytale extends ModelHandler{
 			}
 			if(this.faces == null) {
 				this.faces = new Faces[0];
+			}else {
+				FaceUVs faceUVs = this.textureLayout.getOrDefault(this.faces[0].id, null);
+				if(faceUVs == null && !this.textureLayout.isEmpty()) {
+					faceUVs = this.textureLayout.values().iterator().next();
+				}
+				for(Faces face : Faces.values()) {
+					this.textureLayout.put(face.id, faceUVs);
+				}
 			}
 		}
 		

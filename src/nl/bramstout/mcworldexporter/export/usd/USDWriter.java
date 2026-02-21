@@ -321,6 +321,14 @@ public class USDWriter {
 		fw.write((noEqual ? " \"" : " = \"") + value.replace("\"", "\\\"").replace("\n", "\\n") + "\"");
 	}
 	
+	public void writeAttributeValuePrimPath(String value) throws IOException{
+		writeAttributeValueString(value, false);
+	}
+	
+	public void writeAttributeValuePrimPath(String value, boolean noEqual) throws IOException{
+		fw.write((noEqual ? " <" : " = <") + value.replace("\"", "\\\"").replace("\n", "\\n") + ">");
+	}
+	
 	public void writeAttributeValuePath(String value) throws IOException{
 		writeAttributeValuePath(value, false);
 	}
@@ -402,6 +410,24 @@ public class USDWriter {
 		fw.write("]");
 	}
 	
+	public void writeAttributeValuePrimPathArray(String[] value) throws IOException{
+		fw.write(" = [");
+		for(int i = 0; i < value.length - 1; ++i)
+			fw.write("<" + value[i] + ">,");
+		if(value.length > 0)
+			fw.write("<" + value[value.length - 1] + ">");
+		fw.write("]");
+	}
+	
+	public void writeAttributeValuePrimPathArray(List<String> value) throws IOException{
+		fw.write(" = [");
+		for(int i = 0; i < value.size() - 1; ++i)
+			fw.write("<" + value.get(i) + ">,");
+		if(value.size() > 0)
+			fw.write("<" + value.get(value.size() - 1) + ">");
+		fw.write("]");
+	}
+	
 	public void writeAttributeValueIntArray(int[] value) throws IOException{
 		writeAttributeValueIntArray(value, value.length);
 	}
@@ -415,6 +441,25 @@ public class USDWriter {
 		int num = count - 1;
 		for(int i = 0; i <= num; ++i) {
 			fw.write(Integer.toString(value[i]));
+			if(i != num)
+				fw.write(",");
+		}
+		fw.write("]");
+	}
+	
+	public void writeAttributeValueIntArray(List<Integer> value) throws IOException{
+		writeAttributeValueIntArray(value, value.size());
+	}
+	
+	public void writeAttributeValueIntArray(List<Integer> value, int count) throws IOException{
+		writeAttributeValueIntArray(value, count, false);
+	}
+	
+	public void writeAttributeValueIntArray(List<Integer> value, int count, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
+		int num = count - 1;
+		for(int i = 0; i <= num; ++i) {
+			fw.write(Integer.toString(value.get(i).intValue()));
 			if(i != num)
 				fw.write(",");
 		}
@@ -499,6 +544,32 @@ public class USDWriter {
 			fw.write(Float.toString(value[i+1]));
 			fw.write(",");
 			fw.write(Float.toString(value[i+2]));
+			if(i == num)
+				fw.write(")");
+			else
+				fw.write("),");
+		}
+		fw.write("]");
+	}
+	
+	public void writeAttributeValuePoint3fArray(List<Float> value) throws IOException{
+		writeAttributeValuePoint3fArray(value, value.size());
+	}
+	
+	public void writeAttributeValuePoint3fArray(List<Float> value, int size) throws IOException{
+		writeAttributeValuePoint3fArray(value, size, false);
+	}
+	
+	public void writeAttributeValuePoint3fArray(List<Float> value, int size, boolean noEqual) throws IOException{
+		fw.write(noEqual ? " [" : " = [");
+		int num = size - 3;
+		for(int i = 0; i <= num; i += 3) {
+			fw.write("(");
+			fw.write(Float.toString(value.get(i)));
+			fw.write(",");
+			fw.write(Float.toString(value.get(i+1)));
+			fw.write(",");
+			fw.write(Float.toString(value.get(i+2)));
 			if(i == num)
 				fw.write(")");
 			else

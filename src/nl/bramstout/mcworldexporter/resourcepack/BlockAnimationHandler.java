@@ -32,14 +32,26 @@
 package nl.bramstout.mcworldexporter.resourcepack;
 
 public abstract class BlockAnimationHandler {
+	
+	public static enum RandomOffsetMethod{
+		RANDOM,
+		NOISE
+	}
 
 	/**
 	 * Duration of the animation in seconds.
 	 */
 	protected float duration;
 	protected boolean positionDependent;
+	protected boolean ignoreBiome;
 	protected boolean randomOffsetXZ;
 	protected boolean randomOffsetY;
+	protected RandomOffsetMethod randomOffsetMethod = RandomOffsetMethod.RANDOM;
+	protected float randomOffsetNoiseScale = 16f;
+	protected boolean animatesTopology;
+	protected boolean animatesPoints;
+	protected boolean animatesUVs;
+	protected boolean animatesVertexColors;
 	
 	public float getDuration() {
 		return duration;
@@ -49,12 +61,66 @@ public abstract class BlockAnimationHandler {
 		return positionDependent;
 	}
 	
+	public boolean isIgnoreBiome() {
+		return ignoreBiome;
+	}
+	
 	public boolean hasRandomOffsetXZ() {
 		return randomOffsetXZ;
 	}
 	
 	public boolean hasRandomOffsetY() {
 		return randomOffsetY;
+	}
+	
+	public RandomOffsetMethod getRandomOffsetMethod() {
+		return randomOffsetMethod;
+	}
+	
+	public float getRandomOffsetNoiseScale() {
+		return randomOffsetNoiseScale;
+	}
+	
+	public boolean isAnimatesTopology() {
+		return animatesTopology;
+	}
+
+	public boolean isAnimatesPoints() {
+		return animatesPoints;
+	}
+
+	public boolean isAnimatesUVs() {
+		return animatesUVs;
+	}
+
+	public boolean isAnimatesVertexColors() {
+		return animatesVertexColors;
+	}
+
+	/***
+	 * This function combines the two durations so that both animations
+	 * can seamlessly loop.
+	 * @param duration1
+	 * @param duration2
+	 * @return
+	 */
+	public static float combineDurations(float duration1, float duration2) {
+		if(Math.abs(duration1 - duration2) < 0.01)
+			// Close enough together that we can see them as the same.
+			return duration1;
+		
+		float minDuration = Math.min(duration1, duration2);
+		float maxDuration = Math.max(duration1, duration2);
+		// If maxDuration is a multiple of minDuration,
+		// we can just use maxDuration. Otherwise we need
+		// to return the two durations multiplied by each other.
+		float remainder = maxDuration / minDuration;
+		remainder = (float) (remainder - Math.floor(remainder));
+		if(remainder < 0.001 || remainder > 0.999)
+			// Close enough to being a multiple of each other
+			return maxDuration;
+		
+		return duration1 * duration2;
 	}
 	
 }

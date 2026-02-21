@@ -159,7 +159,7 @@ public class ExportData {
 					(exportMinX + exportMaxX)/2, exportOffsetY, (exportMinZ + exportMaxZ)/2, 
 					lodCenterX, lodCenterZ, 
 					lodWidth, lodDepth, lodYDetail, 0, hasLOD, 
-					disabledChunks, fgChunks, data.chunkSize, new ArrayList<ExcludeRegion>(), false, false));
+					disabledChunks, fgChunks, data.chunkSize, new ArrayList<ExcludeRegion>(), false, true, false));
 		}
 		int numResourcePacks = dis.readInt();
 		data.resourcePacks = new ArrayList<ResourcePack>();
@@ -239,7 +239,9 @@ public class ExportData {
 			});
 			return;
 		}
-		MCWorldExporter.getApp().setWorld(null, null, null);
+		if(!onlySettings) {
+			MCWorldExporter.getApp().setWorld(null, null, null);
+		}
 		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
 		List<String> resourcePackUUIDS = new ArrayList<String>();
 		for(ResourcePack pack : resourcePacks)

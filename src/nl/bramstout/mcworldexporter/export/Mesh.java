@@ -80,6 +80,10 @@ public class Mesh {
 	private Set<String> colorSetNames;
 	private List<MeshSubset> subsets;
 	private Set<String> subsetNames;
+	private boolean animatesTopology;
+	private boolean animatesPoints;
+	private boolean animatesUVs;
+	private boolean animatesVertexColors;
 	
 	public Mesh() {
 		this("", MeshPurpose.UNDEFINED, "", "", false, false, 6, 4);
@@ -1371,6 +1375,38 @@ public class Mesh {
 			flatNormals.set(i * 3 + 1, normals.get(normalIndices.get(i) * 3 + 1));
 			flatNormals.set(i * 3 + 2, normals.get(normalIndices.get(i) * 3 + 2));
 		}
+	}
+
+	public boolean isAnimatesTopology() {
+		return animatesTopology;
+	}
+
+	public void setAnimatesTopology(boolean animatesTopology) {
+		this.animatesTopology = animatesTopology;
+	}
+
+	public boolean isAnimatesPoints() {
+		return animatesPoints;
+	}
+
+	public void setAnimatesPoints(boolean animatesPoints) {
+		this.animatesPoints = animatesPoints;
+	}
+
+	public boolean isAnimatesUVs() {
+		return animatesUVs;
+	}
+
+	public void setAnimatesUVs(boolean animatesUVs) {
+		this.animatesUVs = animatesUVs;
+	}
+
+	public boolean isAnimatesVertexColors() {
+		return animatesVertexColors;
+	}
+
+	public void setAnimatesVertexColors(boolean animatesVertexColors) {
+		this.animatesVertexColors = animatesVertexColors;
 	}
 
 	public void write(LargeDataOutputStream dos) throws IOException {

@@ -31,8 +31,13 @@
 
 package nl.bramstout.mcworldexporter.world.hytale;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
+import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.Region;
 
@@ -144,7 +149,25 @@ public class ChunkHytale extends Chunk{
 	}
 
 	@Override
-	protected void _loadEntities() throws Exception {}
+	protected void _loadEntities() throws Exception {
+		this.entities = new ArrayList<Entity>();
+		
+		int localHytaleX = (this.chunkX - region.getXCoordinate() * 64) >> 1;
+		int localHytaleZ = (this.chunkZ - region.getZCoordinate() * 64) >> 1;
+		HytaleChunk hytaleChunk = ((RegionHytale)region).getHytaleChunk(localHytaleX, localHytaleZ);
+		
+		if(hytaleChunk == null) 
+			return;
+		
+		List<EntityHandlerHytale> entityHandlers = hytaleChunk.getEntities();
+		if(entityHandlers == null)
+			return;
+		
+		for(EntityHandlerHytale entityHandler : entityHandlers) {
+			if(entityHandler.isInChunk(this))
+				this.entities.add(new Entity(entityHandler.getId(), NbtTagCompound.newNonPooledInstance(""), entityHandler));
+		}
+	}
 
 	@Override
 	public void unload() {

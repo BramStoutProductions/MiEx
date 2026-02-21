@@ -69,6 +69,23 @@ public class BlockAnimationHandlerHytale extends BlockAnimationHandler{
 				}
 			}
 		}
+		
+		animatesTopology = false;
+		animatesPoints = false;
+		animatesUVs = false;
+		animatesVertexColors = false;
+		for(NodeAnimation anim : nodeAnimations.values()) {
+			if(anim.position != null)
+				animatesPoints = true;
+			if(anim.orientation != null)
+				animatesPoints = true;
+			if(anim.shapeStretch != null)
+				animatesPoints = true;
+			if(anim.shapeVisible != null)
+				animatesTopology = true;
+			if(anim.shapeUvOffset != null)
+				animatesUVs = true;
+		}
 	}
 	
 	public boolean getHoldLastKeyframe() {

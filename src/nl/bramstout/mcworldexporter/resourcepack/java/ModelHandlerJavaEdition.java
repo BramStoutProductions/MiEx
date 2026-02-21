@@ -64,7 +64,15 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 		Map<String, String> textures = new HashMap<String, String>();
 		if (data.has("textures")) {
 			for (Entry<String, JsonElement> element : data.get("textures").getAsJsonObject().entrySet()) {
-				String texName = element.getValue().getAsString();
+				String texName = "";
+				if(element.getValue().isJsonPrimitive()) {
+					texName = element.getValue().getAsString();
+				}else if(element.getValue().isJsonObject()) {
+					if(element.getValue().getAsJsonObject().has("sprite")) {
+						texName = element.getValue().getAsJsonObject().get("sprite").getAsString();
+					}
+				}
+				
 				if (!texName.contains(":") && !texName.startsWith("#"))
 					texName = "minecraft:" + texName;
 				String varName = element.getKey();

@@ -49,6 +49,9 @@ public class ModifierNodeNoiseFloat extends ModifierNode{
 	public Attribute octaveAmplitude;
 	public Attribute octaveScale;
 	public Attribute offset;
+	public Attribute evolution;
+	public Attribute evolutionPeriod;
+	public Attribute evolutionOctaveScale;
 	
 	public ModifierNodeNoiseFloat(String name) {
 		super(name);
@@ -60,6 +63,9 @@ public class ModifierNodeNoiseFloat extends ModifierNode{
 		this.octaveAmplitude = new Attribute(this, new Value(0.7f));
 		this.octaveScale = new Attribute(this, new Value(0.707f));
 		this.offset = new Attribute(this, new Value(0f));
+		this.evolution = new Attribute(this, new Value(0f));
+		this.evolutionPeriod = new Attribute(this, new Value(0f));
+		this.evolutionOctaveScale = new Attribute(this, new Value(1.5f));
 	}
 	
 	@Override
@@ -86,9 +92,13 @@ public class ModifierNodeNoiseFloat extends ModifierNode{
 		Value valueOctaveScale = context.getValue(octaveScale);
 		Value valueMinValue = context.getValue(minValue);
 		Value valueMaxValue = context.getValue(maxValue);
+		Value valueEvolution = context.getValue(evolution);
+		Value valueEvolutionPeriod = context.getValue(evolutionPeriod);
+		Value valueEvolutionOctaveScale = context.getValue(evolutionOctaveScale);
 		
 		float noise = evalFractalNoise(x, y, z, valueOctaves.getInt(), 
-				valueOctaveAmplitude.getX(), valueOctaveScale.getX());
+				valueOctaveAmplitude.getX(), valueOctaveScale.getX(), 
+				valueEvolution.getX(), valueEvolutionPeriod.getX(), valueEvolutionOctaveScale.getX());
 		
 		noise = noise * (valueMaxValue.getR() - valueMinValue.getR()) + valueMinValue.getR();
 		
@@ -135,14 +145,48 @@ public class ModifierNodeNoiseFloat extends ModifierNode{
 		return noise000;
 	}
 	
+	public static float evalNoise(float x, float y, float z, float evolution, float evolutionPeriod) {
+		float evolutionPeriod2 = (float) Math.floor(evolutionPeriod);
+		if(evolutionPeriod2 > 0f) {
+			// Remap evolution and evolutionPeriod so that it is
+			// whole numbers. This is important to make sure that
+			// it actually loops when it needs to.
+			evolution /= evolutionPeriod;
+			evolution *= evolutionPeriod2;
+			evolution = evolution % evolutionPeriod2;
+			if(evolution < 0f)
+				evolution += evolutionPeriod2;
+		}
+		
+		float evolutionI0 = (float) Math.floor(evolution);
+		float evolutionI1 = (evolutionI0 + 1) % evolutionPeriod2;
+		float evolutionT = evolution - evolutionI0;
+		evolutionT = smoothstep(evolutionT);
+		
+		float offsetI0_X = Noise.getLarge((int) evolutionI0, 0, 0) * 256f;
+		float offsetI0_Y = Noise.getLarge((int) evolutionI0, 1, 0) * 256f;
+		float offsetI0_Z = Noise.getLarge((int) evolutionI0, 0, 1) * 256f;
+		
+		float offsetI1_X = Noise.getLarge((int) evolutionI1, 0, 0) * 256f;
+		float offsetI1_Y = Noise.getLarge((int) evolutionI1, 1, 0) * 256f;
+		float offsetI1_Z = Noise.getLarge((int) evolutionI1, 0, 1) * 256f;
+		
+		float noiseI0 = evalNoise(x + offsetI0_X, y + offsetI0_Y, z + offsetI0_Z);
+		float noiseI1 = evalNoise(x + offsetI1_X, y + offsetI1_Y, z + offsetI1_Z);
+		
+		return lerp(noiseI0, noiseI1, evolutionT);
+	}
+	
 	public static float evalFractalNoise(float x, float y, float z, int octaves, 
-											float octavesAmplitude, float octavesScale) {
+											float octavesAmplitude, float octavesScale,
+											float evolution, float evolutionPeriod, float evolutionOctaveScale) {
 		float res = 0f;
 		float totalWeight = 0f;
 		for(int i = 0; i < octaves; ++i) {
 			float weight = (float) Math.pow(octavesAmplitude, i);
 			float scale = (float) Math.pow(octavesScale, -i);
-			res += evalNoise(x * scale, y * scale, z * scale) * weight;
+			float evolutionScale = (float) Math.pow(evolutionOctaveScale, i);
+			res += evalNoise(x * scale, y * scale, z * scale, evolution * evolutionScale, evolutionPeriod * evolutionScale) * weight;
 			totalWeight += weight;
 		}
 		return totalWeight != 0f ? (res / totalWeight) : 0f;

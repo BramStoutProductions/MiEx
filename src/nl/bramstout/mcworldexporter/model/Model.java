@@ -60,6 +60,10 @@ public class Model {
 	protected String defaultTexture;
 	protected Map<String, Matrix> displayTransforms;
 	private ModelHandler handler;
+	private boolean animatesTopology;
+	private boolean animatesPoints;
+	private boolean animatesUVs;
+	private boolean animatesVertexColors;
 
 	protected Map<String, String> textures;
 	protected List<ModelFace> faces;
@@ -260,6 +264,38 @@ public class Model {
 	
 	public Map<String, Matrix> getDisplayTransforms(){
 		return displayTransforms;
+	}
+
+	public boolean isAnimatesTopology() {
+		return animatesTopology;
+	}
+
+	public void setAnimatesTopology(boolean animatesTopology) {
+		this.animatesTopology = animatesTopology;
+	}
+
+	public boolean isAnimatesPoints() {
+		return animatesPoints;
+	}
+
+	public void setAnimatesPoints(boolean animatesPoints) {
+		this.animatesPoints = animatesPoints;
+	}
+
+	public boolean isAnimatesUVs() {
+		return animatesUVs;
+	}
+
+	public void setAnimatesUVs(boolean animatesUVs) {
+		this.animatesUVs = animatesUVs;
+	}
+
+	public boolean isAnimatesVertexColors() {
+		return animatesVertexColors;
+	}
+
+	public void setAnimatesVertexColors(boolean animatesVertexColors) {
+		this.animatesVertexColors = animatesVertexColors;
 	}
 
 	public float[] getBoundingBox() {

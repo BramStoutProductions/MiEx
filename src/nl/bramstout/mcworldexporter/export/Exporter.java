@@ -189,11 +189,12 @@ public class Exporter {
 				for(int chunkX = chunkStartX; chunkX <= chunkEndX; chunkX += exportBounds.getChunkSize()) {
 					if(exportBounds.isChunkEnabled(i, j)) {
 						String chunkName = exportBounds.getSafeName() +  "_chunk_" + (i + 1) + "_" + (j + 1);
+						String fgChunkName = "chunk_" + (i + 1) + "_" + (j + 1);
 						String chunkFilename = file.getName().replace(".miex", "_" + chunkName + ".miex");
 						File chunkFile = new File(file.getParentFile(), chunkFilename);
 						LargeDataOutputStream chunkDos = new LargeDataOutputStream(new BufferedOutputStream(new FileOutputStream(chunkFile)));
 						futures.add(threadPool.submit(new ExportChunkTask(new ChunkExporter(exportBounds, 
-								MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, exportBounds.getChunkSize(), chunkName), chunkDos)));
+								MCWorldExporter.getApp().getWorld(), chunkX, chunkZ, exportBounds.getChunkSize(), chunkName, fgChunkName), chunkDos)));
 						
 						dos.writeUTF(chunkFilename);
 						chunkFiles.add(chunkFile);
@@ -237,7 +238,7 @@ public class Exporter {
 			dos.writeUTF(state.getName());
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();
-			state.getDefaultModels(models);
+			state.getModels(blockId.getX(), blockId.getY(), blockId.getZ(), models);
 			
 			occlusionHandler.calculateCornerDataForModel(models, state, 0, emptyFaceList);
 			

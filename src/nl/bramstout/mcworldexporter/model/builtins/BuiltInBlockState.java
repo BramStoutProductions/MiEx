@@ -132,11 +132,17 @@ public class BuiltInBlockState extends BlockState{
 	public static class BuiltInBlockAnimationHandler extends BlockAnimationHandler{
 		
 		public BuiltInBlockAnimationHandler(float duration, boolean positionDependent,
-											boolean randomOffsetXZ, boolean randomOffsetY) {
+											boolean randomOffsetXZ, boolean randomOffsetY,
+											boolean animatesTopology, boolean animatesPoints,
+											boolean animatesUVs, boolean animatesVertexColors) {
 			this.duration = duration;
 			this.positionDependent = positionDependent;
 			this.randomOffsetXZ = randomOffsetXZ;
 			this.randomOffsetY = randomOffsetY;
+			this.animatesTopology = animatesTopology;
+			this.animatesPoints = animatesPoints;
+			this.animatesUVs = animatesUVs;
+			this.animatesVertexColors = animatesVertexColors;
 		}
 		
 	}
@@ -217,10 +223,18 @@ public class BuiltInBlockState extends BlockState{
 				float duration = 1f;
 				boolean randomOffsetXZ = false;
 				boolean randomOffsetY = false;
+				boolean animatesTopology = false;
+				boolean animatesPoints = false;
+				boolean animatesUVs = false;
+				boolean animatesVertexColors = false;
 				if(animationHandler != null) {
 					duration = animationHandler.getDuration();
 					randomOffsetXZ = animationHandler.hasRandomOffsetXZ();
 					randomOffsetY = animationHandler.hasRandomOffsetY();
+					animatesTopology = animationHandler.isAnimatesTopology();
+					animatesPoints = animationHandler.isAnimatesPoints();
+					animatesUVs = animationHandler.isAnimatesUVs();
+					animatesVertexColors = animationHandler.isAnimatesVertexColors();
 				}
 				
 				if(data.has("animationDuration"))
@@ -229,8 +243,17 @@ public class BuiltInBlockState extends BlockState{
 					randomOffsetXZ = data.get("animationRandomOffsetXZ").getAsBoolean();
 				if(data.has("animationRandomOffsetY"))
 					randomOffsetY = data.get("animationRandomOffsetY").getAsBoolean();
+				if(data.has("animatedTopology"))
+					animatesTopology = data.get("animatedTopology").getAsBoolean();
+				if(data.has("animatedPoints"))
+					animatesPoints = data.get("animatedPoints").getAsBoolean();
+				if(data.has("animatedUVs"))
+					animatesUVs = data.get("animatedUVs").getAsBoolean();
+				if(data.has("animatedVertexColors"))
+					animatesVertexColors = data.get("animatedVertexColors").getAsBoolean();
 				
-				animationHandler = new BuiltInBlockAnimationHandler(duration, isLocationDependent, randomOffsetXZ, randomOffsetY);
+				animationHandler = new BuiltInBlockAnimationHandler(duration, isLocationDependent, randomOffsetXZ, randomOffsetY,
+							animatesTopology, animatesPoints, animatesUVs, animatesVertexColors);
 			}
 			
 			model.parse(data);
@@ -258,6 +281,21 @@ public class BuiltInBlockState extends BlockState{
 				}
 				if(!model.getFaces().isEmpty()) {
 					model.calculateOccludes();
+					
+					if(this.animationHandler != null) {
+						if(this.animationHandler.isAnimatesTopology())
+							model.setAnimatesTopology(true);
+						if(this.animationHandler.isAnimatesPoints())
+							model.setAnimatesPoints(true);
+						if(this.animationHandler.isAnimatesUVs())
+							model.setAnimatesUVs(true);
+						if(this.animationHandler.isAnimatesVertexColors())
+							model.setAnimatesVertexColors(true);
+					}
+					if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+						state.getExtraAnimationHandler().applyAnimation(model, properties, x, y, z, layer, state, frame);
+					}
+					
 					List<Model> models2 = new ArrayList<Model>();
 					models2.add(model);
 					models.add(models2);
@@ -274,7 +312,7 @@ public class BuiltInBlockState extends BlockState{
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
 					tintColor, state.needsConnectionInfo(), 
-					animationHandler == null ? (this.isAnimated ? this.animationHandler : null) : animationHandler);
+					animationHandler == null ? (this.isAnimated ? this.animationHandler : state.getExtraAnimationHandler()) : animationHandler);
 			
 			return bakedState;
 		}

@@ -72,6 +72,7 @@ public class AdvancedSettingsPanel extends JPanel{
 	private JCheckBox exportIndividualBlocksCheckBox;
 	private JCheckBox exportBlockAnimationsCheckBox;
 	private JCheckBox excludeRegionsAsAirCheckBox;
+	private JCheckBox exportRegionActAsExcludeRegion;
 	
 	private JButton entityButton;
 	
@@ -277,6 +278,14 @@ public class AdvancedSettingsPanel extends JPanel{
 		ToolTips.registerTooltip(excludeRegionsAsAirCheckBox, ToolTips.EXCLUDE_REGIONS_AS_AIR);
 		settingsPanel.add(excludeRegionsAsAirCheckBox);
 		excludeRegionsAsAirCheckBox.setAlignmentX(0);
+		
+		exportRegionActAsExcludeRegion = new JCheckBox("Export Region act as Exclude Region");
+		exportRegionActAsExcludeRegion.setSelected(false);
+		exportRegionActAsExcludeRegion.setBorder(new EmptyBorder(4, 0, 4, 0));
+		ToolTips.registerTooltip(exportRegionActAsExcludeRegion, ToolTips.EXPORT_REGION_ACT_AS_EXCLUDE_REGION);
+		settingsPanel.add(exportRegionActAsExcludeRegion);
+		exportRegionActAsExcludeRegion.setAlignmentX(0);
+		
 		settingsPanel.setAlignmentY(0f);
 		
 		settingsAndEntitiesPanel.add(settingsPanel);
@@ -450,6 +459,14 @@ public class AdvancedSettingsPanel extends JPanel{
 			}
 		});
 		
+		exportRegionActAsExcludeRegion.addChangeListener(new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				MCWorldExporter.getApp().getActiveExportBounds().setActAsExcludeRegion(exportRegionActAsExcludeRegion.isSelected());
+			}
+		});
+		
 		entityButton.addActionListener(new ActionListener() {
 
 			@Override
@@ -503,6 +520,9 @@ public class AdvancedSettingsPanel extends JPanel{
 		}
 		if(MCWorldExporter.getApp().getActiveExportBounds().isExcludeRegionsAsAir() != excludeRegionsAsAirCheckBox.isSelected()) {
 			excludeRegionsAsAirCheckBox.setSelected(MCWorldExporter.getApp().getActiveExportBounds().isExcludeRegionsAsAir());
+		}
+		if(MCWorldExporter.getApp().getActiveExportBounds().isActAsExcludeRegion() != exportRegionActAsExcludeRegion.isSelected()) {
+			exportRegionActAsExcludeRegion.setSelected(MCWorldExporter.getApp().getActiveExportBounds().isActAsExcludeRegion());
 		}
 	}
 

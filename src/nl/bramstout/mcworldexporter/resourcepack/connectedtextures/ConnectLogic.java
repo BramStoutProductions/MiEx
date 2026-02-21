@@ -92,7 +92,7 @@ public abstract class ConnectLogic {
 			BakedBlockState thisState = BlockStateRegistry.getBakedStateForBlock(thisId, x, y, z, layer);
 			String thisTex = null;
 			List<Model> models = new ArrayList<Model>();
-			thisState.getDefaultModels(models);
+			thisState.getModels(x, y, z, models);
 			for(Model model : models) {
 				for(ModelFace face2 : model.getFaces()) {
 					if(face2.getDirection() == face.getDirection()) {
@@ -112,7 +112,7 @@ public abstract class ConnectLogic {
 				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
 				String otherTex = null;
 				models.clear();
-				otherState.getDefaultModels(models);
+				otherState.getModels(x + dx, y + dy, z + dz, models);
 				for(Model model : models) {
 					for(ModelFace face2 : model.getFaces()) {
 						if(face2.getDirection() == face.getDirection()) {
@@ -226,7 +226,7 @@ public abstract class ConnectLogic {
 				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
 				String otherTex = null;
 				List<Model> models = new ArrayList<Model>();
-				otherState.getDefaultModels(models);
+				otherState.getModels(x + dx, y + dy, z + dz, models);
 				for(Model model : models) {
 					for(ModelFace face2 : model.getFaces()) {
 						if(face2.getDirection() == face.getDirection()) {

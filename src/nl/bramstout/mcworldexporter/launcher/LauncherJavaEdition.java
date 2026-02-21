@@ -32,7 +32,11 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.google.gson.JsonElement;
@@ -74,7 +78,12 @@ public class LauncherJavaEdition extends Launcher{
 					File versionJar = new File(versionFolder, name + ".jar");
 					if(!versionJar.exists())
 						continue;
-					versions.add(new MinecraftVersion("MC/" + name, versionJar));
+					Date releaseTime = new Date(versionJar.lastModified());
+					if(e.getAsJsonObject().has("releaseTime")) {
+						TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(e.getAsJsonObject().get("releaseTime").getAsString());
+						releaseTime = Date.from(Instant.from(ta));
+					}
+					versions.add(new MinecraftVersion("MC/" + name, versionJar, releaseTime));
 				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
@@ -85,8 +94,19 @@ public class LauncherJavaEdition extends Launcher{
 			for(File f : versionsFolder.listFiles()) {
 				if(f.isDirectory()) {
 					File versionJar = new File(versionsFolder, f.getName() + "/" + f.getName() + ".jar");
-					if(versionJar.exists())
-						versions.add(new MinecraftVersion("MC/" + f.getName(), versionJar));
+					if(versionJar.exists()) {
+						Date releaseTime = new Date(versionJar.lastModified());
+						File versionJson = new File(versionsFolder, f.getName() + "/" + f.getName() + ".json");
+						if(versionJson.exists()) {
+							JsonObject data = Json.read(versionJson).getAsJsonObject();
+							if(data.has("releaseTime")) {
+								TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(data.get("releaseTime").getAsString());
+								releaseTime = Date.from(Instant.from(ta));
+							}
+						}
+						
+						versions.add(new MinecraftVersion("MC/" + f.getName(), versionJar, releaseTime));
+					}
 				}
 			}
 			return versions;

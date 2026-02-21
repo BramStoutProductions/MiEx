@@ -682,6 +682,10 @@ public class BlockStateVariant {
 			}
 		}
 		
+		if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+			state.getExtraAnimationHandler().applyAnimation(models, properties, x, y, z, 0, state, frame);
+		}
+		
 		Tint tint = state.getTint();
 		TintLayers tintColor = null;
 		if(tint != null)
@@ -801,10 +805,19 @@ public class BlockStateVariant {
 		int customModelId = ModelRegistry.getIdForName(this.customModelId, false);
 		Model customModel = ModelRegistry.getModel(customModelId);
 		Model model = null;
-		if(animationHandler != null)
+		if(animationHandler != null) {
 			model = customModel.getAnimatedVersion(animationHandler, frame);
-		else
+			if(animationHandler.isAnimatesTopology())
+				model.setAnimatesTopology(true);
+			if(animationHandler.isAnimatesPoints())
+				model.setAnimatesPoints(true);
+			if(animationHandler.isAnimatesUVs())
+				model.setAnimatesUVs(true);
+			if(animationHandler.isAnimatesVertexColors())
+				model.setAnimatesVertexColors(true);
+		}else {
 			model = new Model(customModel);
+		}
 		
 		ModelTexture textures = getModelTextureForPermutation(permutation);
 		if(textures == null && this.customModelTextures.size() > 0)

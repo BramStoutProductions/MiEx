@@ -32,10 +32,17 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -60,8 +67,18 @@ public class LauncherTechnic extends Launcher{
 			for(File f : versionsFolder.listFiles()) {
 				if(f.isDirectory()) {
 					File jarFile = FileUtil.findJarFile(versionsFolder, f.getName());
-					if(jarFile != null)
-						versions.add(new MinecraftVersion("Technic/" + f.getName(), jarFile));
+					if(jarFile != null) {
+						Date releaseTime = new Date(jarFile.lastModified());
+						File versionJson = new File(jarFile.getParentFile(), jarFile.getName().replace(".jar", ".json"));
+						if(versionJson.exists()) {
+							JsonObject data = Json.read(versionJson).getAsJsonObject();
+							if(data.has("releaseTime")) {
+								TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(data.get("releaseTime").getAsString());
+								releaseTime = Date.from(Instant.from(ta));
+							}
+						}
+						versions.add(new MinecraftVersion("Technic/" + f.getName(), jarFile, releaseTime));
+					}
 				}
 			}
 		}

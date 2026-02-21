@@ -110,6 +110,7 @@ public class ExportBounds {
 	public int chunkSize;
 	public List<ExcludeRegion> excludeRegions;
 	public boolean excludeRegionsAsAir;
+	public boolean actAsExcludeRegion;
 	public boolean onlyIndividualBlocks;
 	
 	public ExportBounds(String name) {
@@ -136,6 +137,7 @@ public class ExportBounds {
 		chunkSize = Config.chunkSize;
 		excludeRegions = new ArrayList<ExcludeRegion>();
 		excludeRegionsAsAir = false;
+		actAsExcludeRegion = true;
 		onlyIndividualBlocks = false;
 	}
 	
@@ -144,7 +146,7 @@ public class ExportBounds {
 						int lodWidth, int lodDepth, int lodYDetail, int lodBaseLevel, boolean enableLOD, 
 						List<Pair<Integer, Integer>> disabledChunks, List<String> fgChunks,
 						int chunkSize, List<ExcludeRegion> excludeRegions, boolean excludeRegionsAsAir,
-						boolean onlyIndividualBlocks) {
+						boolean actAsExcludeRegion, boolean onlyIndividualBlocks) {
 		this.name = name;
 		generateSafeName();
 		this.minX = minX;
@@ -173,6 +175,7 @@ public class ExportBounds {
 			this.excludeRegions.add(new ExcludeRegion(excludeRegion));
 		}
 		this.excludeRegionsAsAir = excludeRegionsAsAir;
+		this.actAsExcludeRegion = actAsExcludeRegion;
 		this.onlyIndividualBlocks = onlyIndividualBlocks;
 	}
 	
@@ -184,7 +187,39 @@ public class ExportBounds {
 					z >= region.minZ && z <= region.maxZ)
 				return true;
 		}
+		// Export regions can also be exclude regions themselves,
+		// so lets check if this block isn't in any other export region.
+		boolean foundItself = false;
+		for(ExportBounds exportRegion : MCWorldExporter.getApp().getExportBoundsList()) {
+			if(exportRegion == this) {
+				foundItself = true;
+				continue;
+			}
+			if(!foundItself)
+				continue;
+			if(!exportRegion.isActAsExcludeRegion())
+				continue;
+			
+			if(exportRegion.isInExportRegion(x, y, z))
+				// It's in another region later in this export regions list,
+				// so we want to exclude this block from this export region.
+				return true;
+		}
 		return false;
+	}
+	
+	public boolean isInExportRegion(int x, int y, int z) {
+		if(x < minX || x > maxX || y < minY || y > maxY || z < minZ || z > maxZ)
+			return false;
+		// It's inside the main region, but also check its exclude regions.
+		for(int i = 0; i < excludeRegions.size(); ++i) {
+			ExcludeRegion region = excludeRegions.get(i);
+			if(x >= region.minX && x <= region.maxX &&
+					y >= region.minY && y <= region.maxY &&
+					z >= region.minZ && z <= region.maxZ)
+				return false;
+		}
+		return true;
 	}
 	
 	private void generateSafeName() {
@@ -312,6 +347,10 @@ public class ExportBounds {
 	
 	public boolean isExcludeRegionsAsAir() {
 		return excludeRegionsAsAir;
+	}
+	
+	public boolean isActAsExcludeRegion() {
+		return actAsExcludeRegion;
 	}
 	
 	public boolean isOnlyIndividualBlocks() {
@@ -564,6 +603,10 @@ public class ExportBounds {
 		this.excludeRegionsAsAir = excludeRegionsAsAir;
 	}
 	
+	public void setActAsExcludeRegion(boolean actAsExcludeRegion) {
+		this.actAsExcludeRegion = actAsExcludeRegion;
+	}
+	
 	public void setOnlyIndividualBlocks(boolean onlyIndividualBlocks){
 		this.onlyIndividualBlocks = onlyIndividualBlocks;
 	}
@@ -571,7 +614,7 @@ public class ExportBounds {
 		return new ExportBounds(name, minX, minY, minZ, maxX, maxY, maxZ, offsetX, offsetY, offsetZ,
 								lodCenterX, lodCenterZ, lodWidth, lodDepth, lodYDetail, lodBaseLevel, enableLOD, 
 								disabledChunks, fgChunks, chunkSize, excludeRegions, excludeRegionsAsAir,
-								onlyIndividualBlocks);
+								actAsExcludeRegion, onlyIndividualBlocks);
 	}
 	
 	public void write(LargeDataOutputStream dos) throws IOException{
@@ -611,6 +654,7 @@ public class ExportBounds {
 			dos.writeInt(excludeRegions.get(i).maxZ);
 		}
 		dos.writeBoolean(excludeRegionsAsAir);
+		dos.writeBoolean(actAsExcludeRegion);
 		dos.writeBoolean(onlyIndividualBlocks);
 	}
 	
@@ -659,6 +703,7 @@ public class ExportBounds {
 			excludeRegions.add(new ExcludeRegion(minX, minY, minZ, maxX, maxY, maxZ));
 		}
 		excludeRegionsAsAir = dis.readBoolean();
+		actAsExcludeRegion = dis.readBoolean();
 		onlyIndividualBlocks = dis.readBoolean();
 	}
 	

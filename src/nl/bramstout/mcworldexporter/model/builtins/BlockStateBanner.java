@@ -52,6 +52,7 @@ public class BlockStateBanner extends BlockState{
 		
 		public BlockAnimationHandlerBanner() {
 			this.duration = 5f;
+			this.animatesPoints = true;
 		}
 		
 	}
@@ -149,9 +150,14 @@ public class BlockStateBanner extends BlockState{
 			if(animationHandler != null) {
 				Matrix animTransform = Matrix.rotate(((float) Math.cos(frame * Math.PI / 2.5f)) * -3f + 3f, 0f, 0f, new Vector3f(0, maxY, minZ));
 				modelBanner.transform(animTransform);
+				modelBanner.setAnimatesPoints(true);
 			}
 			
 			modelBanner.rotate(0, rotY, false);
+			
+			if(animationHandler != null && state.getExtraAnimationHandler() != null) {
+				state.getExtraAnimationHandler().applyAnimation(models, properties, x, y, z, layer, state, frame);
+			}
 			
 			BakedBlockState bakedState = new BakedBlockState(state.getName(), models, state.isTransparentOcclusion(), 
 					state.isLeavesOcclusion(), state.isDetailedOcclusion(), state.isIndividualBlocks(), 

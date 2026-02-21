@@ -612,6 +612,8 @@ public abstract class Chunk {
 							finalColorWeight += 1;
 						}
 					}
+					if(finalColorWeight == 0)
+						finalColorWeight = 1;
 					Color finalColor = new Color(finalColorR / finalColorWeight, finalColorG / finalColorWeight, finalColorB / finalColorWeight);
 					tmpChunkImg.setRGB(x, z, finalColor.getRGB() | (255 << 24));
 				}
@@ -640,6 +642,7 @@ public abstract class Chunk {
 			chunkColor = new Color(chunkImgSmallest.getRGB(0, 0));
 		} catch (Exception ex) {
 			//ex.printStackTrace();
+			World.handleError(ex);
 		}
 		isRendering = false;
 		this.renderRequested = false;

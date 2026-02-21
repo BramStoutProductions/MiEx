@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.model;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.modifier.AnimationModifiers;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
@@ -65,6 +66,7 @@ public class BlockState {
 	protected boolean _needsConnectionInfo;
 	protected BlockConnections blockConnections;
 	protected BlockStateHandler handler;
+	protected AnimationModifiers extraAnimationHandler;
 	
 	public BlockState(String name, int dataVersion, BlockStateHandler handler) {
 		this.handler = handler;
@@ -86,6 +88,7 @@ public class BlockState {
 		lodNoScale = Config.lodNoScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
 		tint = Tints.getTint(name);
+		extraAnimationHandler = AnimationModifiers.getModifiersForBlockName(name);
 		BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
 												.getWorld().getBlockConnectionsTranslation();
 		if(blockConnectionsTranslation != null)
@@ -174,6 +177,10 @@ public class BlockState {
 	
 	public Tint getTint() {
 		return tint;
+	}
+	
+	public AnimationModifiers getExtraAnimationHandler() {
+		return extraAnimationHandler;
 	}
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {

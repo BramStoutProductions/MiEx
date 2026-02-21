@@ -49,10 +49,12 @@ public class Modifiers {
 
 	private List<Modifier> blockModifiers;
 	private List<Modifier> faceModifiers;
+	private List<AnimationModifier> animationModifiers;
 	
 	private Modifiers() {
 		this.blockModifiers = null;
 		this.faceModifiers = null;
+		this.animationModifiers = null;
 	}
 	
 	private void addBlockModifier(Modifier modifier) {
@@ -97,6 +99,27 @@ public class Modifiers {
 		this.faceModifiers.add(modifier);
 	}
 	
+	private void addAnimationModifiers(AnimationModifier modifier) {
+		if(this.animationModifiers == null)
+			this.animationModifiers = new ArrayList<AnimationModifier>();
+
+		// First check if there already is a modifier in the same group.
+		// If so and this modifier has a higher priority, then replace
+		// it. If so and this modifier doesn't have a higher priority,
+		// keep the one that we already have.
+		for(int i = 0; i < animationModifiers.size(); ++i) {
+			if(animationModifiers.get(i).getGroup().equals(modifier.getGroup())) {
+				// We've got a match, so check the priority;
+				if(modifier.getPriority() > animationModifiers.get(i).getPriority()) {
+					animationModifiers.set(i, modifier);
+				}
+				return;
+			}
+		}
+		// No match with an existing face modifier, so just add it in.
+		this.animationModifiers.add(modifier);
+	}
+	
 	public boolean hasBlockModifiers() {
 		return this.blockModifiers != null;
 	}
@@ -105,8 +128,16 @@ public class Modifiers {
 		return this.faceModifiers != null;
 	}
 	
+	public boolean hasAnimationModifiers() {
+		return this.animationModifiers != null;
+	}
+	
 	public boolean hasModifiers() {
 		return hasBlockModifiers() || hasFaceModifiers();
+	}
+	
+	public List<AnimationModifier> getAnimationModifiers(){
+		return animationModifiers;
 	}
 	
 	public void runBlockModifiers(ModifierContext context) {
@@ -139,6 +170,10 @@ public class Modifiers {
 		return modifiers;
 	}
 	
+	public static Modifiers getModifiersForBlockName(String blockName) {
+		return modifiersRegistry.getOrDefault(blockName, defaultModifiers);
+	}
+	
 	private static Modifiers defaultModifiers = null;
 	private static Map<String, Modifiers> modifiersRegistry = new HashMap<String, Modifiers>();
 	
@@ -167,6 +202,9 @@ public class Modifiers {
 				if(defaultModifiers.faceModifiers != null)
 					for(Modifier modifier : defaultModifiers.faceModifiers)
 						modifiers.addFaceModifiers(modifier);
+				if(defaultModifiers.animationModifiers != null)
+					for(AnimationModifier modifier : defaultModifiers.animationModifiers)
+						modifiers.addAnimationModifiers(modifier);
 			}
 		}
 	}
@@ -181,6 +219,11 @@ public class Modifiers {
 			File faceModifiersFolder = new File(namespaceFolder, "face");
 			if(faceModifiersFolder.exists()) {
 				loadModifiers(faceModifiersFolder, "face", rpPriority);
+			}
+			
+			File animationModifiersFolder = new File(namespaceFolder, "animation");
+			if(animationModifiersFolder.exists()) {
+				loadModifiers(animationModifiersFolder, "animation", rpPriority);
 			}
 		}
 	}
@@ -197,7 +240,11 @@ public class Modifiers {
 		
 		try {
 			JsonObject data = Json.read(file).getAsJsonObject();
-			Modifier modifier = new Modifier(data, rpPriority);
+			Modifier modifier = null;
+			if(type.equals("animation"))
+				modifier = new AnimationModifier(data, rpPriority);
+			else
+				modifier = new Modifier(data, rpPriority);
 			
 			if(modifier.isAllBlocks()) {
 				if(defaultModifiers == null)
@@ -206,6 +253,8 @@ public class Modifiers {
 					defaultModifiers.addBlockModifier(modifier);
 				else if(type.equals("face"))
 					defaultModifiers.addFaceModifiers(modifier);
+				else if(type.equals("animation"))
+					defaultModifiers.addAnimationModifiers((AnimationModifier) modifier);
 			}else {
 				for(String blockName : modifier.getBlocks()) {
 					Modifiers modifiers = modifiersRegistry.getOrDefault(blockName, null);
@@ -217,6 +266,8 @@ public class Modifiers {
 						modifiers.addBlockModifier(modifier);
 					else if(type.equals("face"))
 						modifiers.addFaceModifiers(modifier);
+					else if(type.equals("animation"))
+						modifiers.addAnimationModifiers((AnimationModifier) modifier);
 				}
 			}
 		}catch(Exception ex) {

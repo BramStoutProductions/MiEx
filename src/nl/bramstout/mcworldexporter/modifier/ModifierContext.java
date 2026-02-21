@@ -41,6 +41,7 @@ import nl.bramstout.mcworldexporter.modifier.ModifierNode.Attribute;
 import nl.bramstout.mcworldexporter.modifier.ModifierNode.Value;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.world.Block;
+import nl.bramstout.mcworldexporter.world.World;
 
 public class ModifierContext {
 
@@ -81,6 +82,26 @@ public class ModifierContext {
 	public int faceTintIndex;
 	// [READ, FACE] Face direction
 	public Direction faceDirection;
+	// [READ_WRITE, ANIM] Vertex X position
+	public float vertexX;
+	// [READ_WRITE, ANIM] Vertex Y position
+	public float vertexY;
+	// [READ_WRITE, ANIM] Vertex Z position
+	public float vertexZ;
+	// [READ_WRITE, ANIM] Vertex U Texture coordinate
+	public float vertexU;
+	// [READ_WRITE, ANIM] Vertex V Texture coordinate
+	public float vertexV;
+	// [READ_WRITE, ANIM] Vertex R tint
+	public float vertexR;
+	// [READ_WRITE, ANIM] Vertex G tint
+	public float vertexG;
+	// [READ_WRITE, ANIM] Vertex B tint
+	public float vertexB;
+	// [READ, ANIM] The time of the current frame in seconds.
+	public float time;
+	
+	
 	public Modifier currentModifier;
 	
 	public void clearEvalCache() {
@@ -91,8 +112,10 @@ public class ModifierContext {
 		if(attr.isConnected()) {
 			String nodeName = attr.getInput();
 			ModifierNode node = currentModifier.getNode(nodeName);
-			if(node == null)
+			if(node == null) {
+				World.handleError(new Exception("Node " + nodeName + " does not exist in modifier graph!"));
 				return new Value();
+			}
 			Value val = evalCache.getOrDefault(node, null);
 			if(val == null) {
 				val = node.evaluate(this);

@@ -77,6 +77,7 @@ public class Config {
 	public static List<String> lodNoUVScale = new ArrayList<String>();
 	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
+	public static List<String> noFaceOptimisation = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean removeCaves = false;
@@ -118,6 +119,11 @@ public class Config {
 	public static boolean useIndexedUVs;
 	public static boolean useIndexedVertexColors;
 	public static boolean useIndexedNormals;
+	public static boolean usePointInstancersForIndividualBlocks;
+	public static boolean usePointInstancersForAnimatedBlocks;
+	public static int animatedBlocksPointInstancerTimeOffsetMergeRadius;
+	public static boolean useSinglePointInstancer;
+	public static boolean individualBlocksOcclusionCulling;
 	public static boolean allowBlockAnimations;
 	public static float animationFrameRate;
 	public static float animationStartFrame;
@@ -312,6 +318,8 @@ public class Config {
 				
 				parseList("ignoreAtlas", data, ignoreAtlas);
 				
+				parseList("noFaceOptimisation", data, noFaceOptimisation);
+				
 				if(data.has("runOptimiser"))
 					runOptimiser = data.get("runOptimiser").getAsBoolean();
 				
@@ -429,6 +437,21 @@ public class Config {
 				
 				if(data.has("useIndexedNormals"))
 					useIndexedNormals = data.get("useIndexedNormals").getAsBoolean();
+				
+				if(data.has("usePointInstancersForIndividualBlocks"))
+					usePointInstancersForIndividualBlocks = data.get("usePointInstancersForIndividualBlocks").getAsBoolean();
+				
+				if(data.has("usePointInstancersForAnimatedBlocks"))
+					usePointInstancersForAnimatedBlocks = data.get("usePointInstancersForAnimatedBlocks").getAsBoolean();
+				
+				if(data.has("animatedBlocksPointInstancerTimeOffsetMergeRadius"))
+					animatedBlocksPointInstancerTimeOffsetMergeRadius = data.get("animatedBlocksPointInstancerTimeOffsetMergeRadius").getAsInt();
+				
+				if(data.has("useSinglePointInstancer"))
+					useSinglePointInstancer = data.get("useSinglePointInstancer").getAsBoolean();
+				
+				if(data.has("individualBlocksOcclusionCulling"))
+					individualBlocksOcclusionCulling = data.get("individualBlocksOcclusionCulling").getAsBoolean();
 				
 				if(data.has("allowBlockAnimations"))
 					allowBlockAnimations = data.get("allowBlockAnimations").getAsBoolean();

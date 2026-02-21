@@ -82,8 +82,8 @@ public class LauncherSavesDirectory extends Launcher{
 		for(File f : savesFolder.listFiles()) {
 			if(!f.isDirectory())
 				continue;
-			File levelName = new File(f, "levelname.txt");
 			
+			File levelName = new File(f, "levelname.txt");
 			if(levelName.exists()) {
 				// Bedrock save
 				BufferedReader reader = null;
@@ -101,10 +101,19 @@ public class LauncherSavesDirectory extends Launcher{
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
-			}else {
-				// Java save.
-				saves.add(new MinecraftSave(f.getName(), f, new File(f, "icon.png"), this));
+				continue;
 			}
+		
+			File universeFolder = new File(f, "universe");
+			if(universeFolder.exists() && universeFolder.isDirectory()) {
+				// Hytale save
+				saves.add(new MinecraftSave(f.getName(), f, new File(f, "preview.png"), this));
+				continue;
+			}
+			
+			// Java save.
+			saves.add(new MinecraftSave(f.getName(), f, new File(f, "icon.png"), this));
+			
 		}
 		
 		return saves;

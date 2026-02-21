@@ -33,7 +33,9 @@ package nl.bramstout.mcworldexporter.world.hytale;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.bson.BsonArray;
@@ -79,6 +81,7 @@ public class HytaleChunk {
 	private Section[] sections;
 	private EnvironmentChunk environmentChunk;
 	private BlockChunk blockChunk;
+	private EntityChunk entityChunk;
 	
 	public HytaleChunk(int x, int z) {
 		this.x = x;
@@ -89,6 +92,7 @@ public class HytaleChunk {
 		this.sections = null;
 		this.environmentChunk = null;
 		this.blockChunk = null;
+		this.entityChunk = null;
 	}
 	
 	public int getX() {
@@ -160,6 +164,19 @@ public class HytaleChunk {
 			}
 		}
 		
+		if(components.containsKey("EntityChunk")) {
+			BsonDocument entityChunk = components.getDocument("EntityChunk");
+			int version = entityChunk.getInt32("Version", new BsonInt32(0)).getValue();
+			this.entityChunk = EntityChunk.getEntityChunk(version);
+			if(this.entityChunk != null) {
+				try {
+					this.entityChunk.read(entityChunk);
+				}catch(Exception ex) {
+					World.handleError(ex);
+				}
+			}
+		}
+		
 		if(components.containsKey("BlockComponents")) {
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			BsonDocument blockComponents = components.getDocument("BlockComponents");
@@ -214,48 +231,8 @@ public class HytaleChunk {
 			}
 		}
 		
-		// Just doing a quick check to see if there are any more
-		// components in the chunk. This is purely for diagnostic reasons
-		// and will be removed at some point.
-		for(Entry<String, BsonValue> entry : components.entrySet()) {
-			if(entry.getKey().equals("ChunkColumn") || 
-					entry.getKey().equals("WorldChunk") || 
-					entry.getKey().equals("BlockHealthChunk") || 
-					entry.getKey().equals("ChunkSpawnedNPCData") || 
-					entry.getKey().equals("EnvironmentChunk") || 
-					entry.getKey().equals("BlockChunk") || 
-					entry.getKey().equals("EntityChunk"))
-				continue;
-			if(entry.getKey().equals("BlockComponentChunk")) {
-				//BsonValue val = entry.getValue();
-				//printValue("", val, 5, 0);
-				continue;
-			}
-			System.out.println(entry.getKey());
-		}
-		
 		this.loading = false;
 	}
-	
-	/*private void printValue(String name, BsonValue value, int depthLeft, int indent) {
-		if(depthLeft < 0)
-			return;
-		if(value.isArray()) {
-			System.out.println(" ".repeat(indent*4) + name + "[");
-			for(BsonValue value2 : value.asArray().getValues()) {
-				printValue("", value2, depthLeft-1, indent+1);
-			}
-			System.out.println(" ".repeat(indent*4) + "],");
-		}else if(value.isDocument()) {
-			System.out.println(" ".repeat(indent*4) + name + "{");
-			for(Entry<String, BsonValue> entry : value.asDocument().entrySet()) {
-				printValue(entry.getKey() + ": ", entry.getValue(), depthLeft-1, indent+1);
-			}
-			System.out.println(" ".repeat(indent*4) + "},");
-		}else {
-			System.out.println(" ".repeat(indent*4) + name + value.toString());
-		}
-	}*/
 	
 	public int getBlock(int localX, int localY, int localZ) {
 		if(this.sections == null) {
@@ -299,6 +276,12 @@ public class HytaleChunk {
 		if(this.blockChunk == null)
 			return 0xFFFFFFFF;
 		return this.blockChunk.getTint(localX, localZ);
+	}
+	
+	public List<EntityHandlerHytale> getEntities(){
+		if(this.entityChunk == null)
+			return null;
+		return this.entityChunk.getEntities();
 	}
 	
 	public boolean canLoad() {
@@ -1026,6 +1009,66 @@ public class HytaleChunk {
 		@Override
 		public int getTint(int localX, int localZ) {
 			return tint.get(localZ * 32 + localX);
+		}
+		
+	}
+	
+	private static abstract class EntityChunk{
+		
+		public abstract void read(BsonDocument data) throws IOException;
+		
+		public abstract List<EntityHandlerHytale> getEntities();
+
+		public static EntityChunk getEntityChunk(int version) {
+			if(version == 0)
+				return new EntityChunkV0();
+			return null;
+		}
+		
+	}
+	
+	private static class EntityChunkV0 extends EntityChunk{
+		
+		public List<EntityHandlerHytale> entities;
+		
+		public EntityChunkV0() {
+			entities = new ArrayList<EntityHandlerHytale>();
+		}
+		
+		@Override
+		public void read(BsonDocument bson) throws IOException {
+			BsonArray entities = bson.getArray("Entities", null);
+			if(entities == null)
+				return;
+			if(entities.size() == 0)
+				return;
+			for(BsonValue entityValue : entities) {
+				if(entityValue.isDocument()) {
+					BsonDocument components = entityValue.asDocument().getDocument("Components", null);
+					if(components == null)
+						continue;
+					if(!components.containsKey("Model") &&
+							!components.containsKey("BlockEntity") &&
+							!components.containsKey("Item") &&
+							!components.containsKey("NPC"))
+						// We are only interested in entities with a model,
+						// who are block entities, or who are NPCs.
+						continue;
+					if(components.containsKey("SpawnMarkerComponent") || 
+							components.containsKey("Intangible") || 
+							components.containsKey("PatrolPathMarker") || 
+							components.containsKey("SpawnSuppression"))
+						// We're not interested in intangible entities,
+						// spawn marker entities, or patrol path markers.
+						continue;
+					this.entities.add(new EntityHandlerHytale(entityValue.asDocument()));
+				}
+			}
+		}
+
+		@Override
+		public List<EntityHandlerHytale> getEntities() {
+			return entities;
 		}
 		
 	}

@@ -49,7 +49,7 @@ public class Modifier {
 	private List<String> blocks;
 	private String group;
 	private int priority;
-	private Map<String, ModifierNode> nodes;
+	protected Map<String, ModifierNode> nodes;
 	private List<String> runNodes;
 	
 	public Modifier(JsonObject data, int rpPriority) {

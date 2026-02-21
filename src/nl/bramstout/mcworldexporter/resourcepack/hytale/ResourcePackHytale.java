@@ -86,6 +86,8 @@ public class ResourcePackHytale extends ResourcePack{
 	private Map<String, File> biomeFiles;
 	private Map<String, File> blockStateFiles;
 	private Map<String, BlockAnimationHandler> blockAnimationFiles;
+	private Map<String, EntityModel> entityModels;
+	private Map<String, ItemHandler> itemHandlers;
 	
 	public ResourcePackHytale(File folder) {
 		super(folder.getName(), folder.getName(), folder);
@@ -95,6 +97,8 @@ public class ResourcePackHytale extends ResourcePack{
 		biomeFiles = new HashMap<String, File>();
 		blockStateFiles = new HashMap<String, File>();
 		blockAnimationFiles = new HashMap<String, BlockAnimationHandler>();
+		entityModels = new HashMap<String, EntityModel>();
+		itemHandlers = new HashMap<String, ItemHandler>();
 	}
 	
 	public static boolean supportsResourcePack(File folder) {
@@ -134,6 +138,11 @@ public class ResourcePackHytale extends ResourcePack{
 		File biomeFolder = new File(getFolder(), "Server/Environments");
 		if(biomeFolder.exists()) {
 			searchBiomes(biomeFolder);
+		}
+		
+		File entityModelFolder = new File(getFolder(), "Server/Models");
+		if(entityModelFolder.exists()) {
+			searchEntityModels(entityModelFolder, asyncGroup);
 		}
 		
 		asyncGroup.waitUntilDone();
@@ -198,6 +207,31 @@ public class ResourcePackHytale extends ResourcePack{
 				String blockName = f.getName().substring(0, f.getName().length()-5);
 				blockName = "hytale:" + blockName;
 				blockStateFiles.put(blockName, f);
+				
+				final String blockNameF = blockName;
+				asyncGroup.runTask(()->{
+					ItemHandlerHytale itemHandler = new ItemHandlerHytale(Json.read(f).getAsJsonObject());
+					synchronized(itemHandlers) {
+						itemHandlers.put(blockNameF, itemHandler);
+					}
+				});
+			}
+		}
+	}
+	
+	private void searchEntityModels(File folder, AsyncGroup asyncGroup) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				searchEntityModels(f, asyncGroup);
+			}else if(f.isFile() && f.getName().endsWith(".json")) {
+				asyncGroup.runTask(()->{
+					String modelName = f.getName().substring(0, f.getName().length()-5);
+					modelName = "hytale:" + modelName;
+					EntityModel entityModel = new EntityModel(Json.read(f).getAsJsonObject());
+					synchronized(entityModels) {
+						entityModels.put(modelName, entityModel);
+					}
+				});
 			}
 		}
 	}
@@ -504,7 +538,7 @@ public class ResourcePackHytale extends ResourcePack{
 
 	@Override
 	public ItemHandler getItemHandler(String name, NbtTagCompound data) {
-		return null;
+		return itemHandlers.getOrDefault(name, null);
 	}
 
 	@Override
@@ -582,5 +616,22 @@ public class ResourcePackHytale extends ResourcePack{
 
 	@Override
 	public void getColorMaps(Set<String> colorMaps) {}
+	
+	public EntityModel _getHytaleEntityModel(String id) {
+		return entityModels.getOrDefault(id, null);
+	}
+	
+	public static EntityModel getHytaleEntityModel(String id) {
+		ResourcePack pack = null;
+		for(int i = 0; i < ResourcePacks.getActiveResourcePacks().size(); ++i) {
+			pack = ResourcePacks.getActiveResourcePacks().get(i);
+			if(pack instanceof ResourcePackHytale) {
+				EntityModel entityModel = ((ResourcePackHytale) pack)._getHytaleEntityModel(id);
+				if(entityModel != null)
+					return entityModel;
+			}
+		}
+		return null;
+	}
 
 }

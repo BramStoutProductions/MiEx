@@ -32,15 +32,18 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
+import java.util.Date;
 
 public class MinecraftVersion {
 	
 	private String label;
 	private File jarFile;
+	private Date releaseTime;
 	
-	public MinecraftVersion(String label, File jarFile) {
+	public MinecraftVersion(String label, File jarFile, Date releaseTime) {
 		this.label = label;
 		this.jarFile = jarFile;
+		this.releaseTime = releaseTime;
 	}
 	
 	public String getLabel() {
@@ -49,6 +52,10 @@ public class MinecraftVersion {
 	
 	public File getJarFile() {
 		return jarFile;
+	}
+	
+	public Date getReleaseTime() {
+		return releaseTime;
 	}
 	
 }

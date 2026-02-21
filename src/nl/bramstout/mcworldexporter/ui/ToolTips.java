@@ -98,6 +98,7 @@ public class ToolTips {
 	public static String EXPORT_REGIONS_MANAGER = "Create and manage multiple regions that should be exported out. The active region is the one that you can currently edit.";
 	public static String EXCLUDE_REGIONS_MANAGER = "Specify a list of bounding boxes for the current export region, where all blocks within that bounding box should not be exported out. The min and max values are inclusive.";
 	public static String EXCLUDE_REGIONS_AS_AIR = "If enabled, the exclude regions are exported out as if they are air, meaning that the side of neighbouring blocks aren't occluded away.";
+	public static String EXPORT_REGION_ACT_AS_EXCLUDE_REGION = "If enabled, this export region will act as an exclude region in all other export regions above it in the export regions list.";
 	
 	public static String ENTITY_DIALOG_SPAWN_RULES = "Select which entities MiEx should spawn, in addition to the entities already in the world.";
 	public static String ENTITY_DIALOG_EXPORT = "Select which entities should be exported.";
