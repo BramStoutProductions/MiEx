@@ -389,7 +389,7 @@ public class WorldBrowser extends JDialog {
 			if(searchString == null || searchString.isEmpty())
 				return true;
 			
-			return save.getLabel().contains(searchString);
+			return save.getLabel().toLowerCase().contains(searchString.toLowerCase());
 		}
 		
 	}

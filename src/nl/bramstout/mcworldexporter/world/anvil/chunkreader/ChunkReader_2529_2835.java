@@ -238,7 +238,7 @@ public class ChunkReader_2529_2835 extends ChunkReader{
 				blockEntityY -= blockEntitySectionY * 16;
 				
 				blockEntitySectionY -= chunk._getChunkSectionOffset();
-				if(blockEntitySectionY >= chunk._getBlocks().length)
+				if(blockEntitySectionY >= chunk._getBlocks()[0].length)
 					continue;
 				if(chunk._getBlocks()[0][blockEntitySectionY] == null)
 					chunk._getBlocks()[0][blockEntitySectionY] = new int[16*16*16];
