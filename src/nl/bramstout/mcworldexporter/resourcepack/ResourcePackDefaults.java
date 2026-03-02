@@ -174,7 +174,7 @@ public class ResourcePackDefaults {
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.7f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
-			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack"), false);
 		    
 		    // Write out packInfo file
 		    JsonWriter writer = new JsonWriter(new FileWriter(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json")));
@@ -251,7 +251,7 @@ public class ResourcePackDefaults {
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
-			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack_hytale"));
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack_hytale"), false);
 		    
 		    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
@@ -281,7 +281,7 @@ public class ResourcePackDefaults {
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
-			ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePack);
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePack, true);
 			
 			// Write out packInfo file
 			JsonObject packInfoObj = new JsonObject();
@@ -559,11 +559,20 @@ public class ResourcePackDefaults {
 			    	float progress = (float) ((((double) bytesRead) / ((double)totalSize)) * progressRange + startProgress);
 			    	MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
 			    	
-			    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/"))
+			    	if(!entryName.startsWith("assets/") && !entryName.startsWith("data/") &&
+			    			!entryName.startsWith("resourcepacks/default/"))
 			    		continue;
 			    	
 			    	try {
 				        File outFile = new File(dst, entryName);
+				        if(entryName.startsWith("resourcepacks/default/")) {
+				        	// Some mods include a default resource pack in here,
+				        	// meant to allow it to be toggled on or off.
+				        	// We're going to assume that people intend for it
+				        	// to be on.
+				        	// Maybe this should be a toggle somewhere.
+				        	outFile = new File(dst, entryName.substring(22));
+				        }
 				        if (!entry.isDirectory()) {
 				        	File dir = outFile.getParentFile();
 				        	dir.mkdirs();
@@ -602,9 +611,21 @@ public class ResourcePackDefaults {
 		Set<String> foliageColormapBlocks = new HashSet<String>();
 	}
 	
-	public static void inferMiExConfigFromResourcePack(File resourcePack) {
+	private static class ResourcePackBlock{
+		public String name;
+		public List<String> models;
+		public boolean fromBaseResourcePack;
+		
+		public ResourcePackBlock(String name, boolean fromBaseResourcePack) {
+			this.name = name;
+			this.models = new ArrayList<String>();
+			this.fromBaseResourcePack = fromBaseResourcePack;
+		}
+	}
+	
+	public static void inferMiExConfigFromResourcePack(File resourcePack, boolean includeBaseResourcePackBlocks) {
 		// Go through all of the block states and gather the models per block state.
-		Map<String, List<String>> models = new HashMap<String, List<String>>();
+		List<ResourcePackBlock> models = new ArrayList<ResourcePackBlock>();
 		File assetsFolder = new File(resourcePack, "assets");
 		if(assetsFolder.exists() && assetsFolder.isDirectory()) {
 			for(File namespace : assetsFolder.listFiles()) {
@@ -613,7 +634,20 @@ public class ResourcePackDefaults {
 				File blockStates = new File(namespace, "blockstates");
 				if(!blockStates.exists() || !blockStates.isDirectory())
 					continue;
-				miexConfigProcessFolder(namespace.getName(), blockStates, "", models);
+				miexConfigProcessFolder(namespace.getName(), blockStates, "", models, false);
+			}
+		}
+		if(includeBaseResourcePackBlocks) {
+			File baseAssetsFolder = new File(ResourcePacks.getBaseResourcePack().getFolder(), "assets");
+			if(baseAssetsFolder.exists()) {
+				for(File namespace : baseAssetsFolder.listFiles()) {
+					if(!namespace.isDirectory())
+						continue;
+					File blockStates = new File(namespace, "blockstates");
+					if(!blockStates.exists() || !blockStates.isDirectory())
+						continue;
+					miexConfigProcessFolder(namespace.getName(), blockStates, "", models, true);
+				}
 			}
 		}
 		
@@ -624,11 +658,11 @@ public class ResourcePackDefaults {
 		// Now parse the models
 		float counter = 0;
 		float numBlocks = (float) models.size();
-		for(Entry<String, List<String>> block : models.entrySet()) {
+		for(ResourcePackBlock block : models) {
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.94f + 0.05f * (counter / numBlocks));
 			counter++;
-			for(String model : block.getValue()) {
-				miexConfigProcessModel(block.getKey(), model, resourcePack, configData);
+			for(String model : block.models) {
+				miexConfigProcessModel(block.name, model, resourcePack, configData, block.fromBaseResourcePack);
 			}
 		}
 		
@@ -776,18 +810,19 @@ public class ResourcePackDefaults {
 		return a.equalsIgnoreCase(b);
 	}
 	
-	private static void miexConfigProcessFolder(String namespace, File folder, String parent, Map<String, List<String>> models) {
+	private static void miexConfigProcessFolder(String namespace, File folder, String parent, 
+												List<ResourcePackBlock> models, boolean isBaseRP) {
 		for(File f : folder.listFiles()) {
 			if(f.isDirectory())
-				miexConfigProcessFolder(namespace, f, parent + f.getName() + "/", models);
+				miexConfigProcessFolder(namespace, f, parent + f.getName() + "/", models, isBaseRP);
 			else if(f.isFile() && f.getName().endsWith(".json")) {
 				try {
 					JsonElement data = Json.read(f);
 					
-					List<String> blockModels = new ArrayList<String>();
-					miexConfigFindModels(data, blockModels);
+					ResourcePackBlock block = new ResourcePackBlock(namespace + ":" + parent + f.getName().replace(".json", ""), isBaseRP);
+					miexConfigFindModels(data, block.models);
 					
-					models.put(namespace + ":" + parent + f.getName().replace(".json", ""), blockModels);
+					models.add(block);
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
@@ -925,10 +960,12 @@ public class ResourcePackDefaults {
 		
 		private Map<String, String> textures;
 		private List<ModelFaceData> faces;
+		public boolean fromBaseRP;
 		
 		public ModelData() {
 			textures = new HashMap<String, String>();
 			faces = new ArrayList<ModelFaceData>();
+			fromBaseRP = true;
 		}
 		
 		public Map<String, String> getTextures(){
@@ -951,7 +988,8 @@ public class ResourcePackDefaults {
 		
 	}
 	
-	private static void miexConfigParseModel(String modelName, File resourcePack, ModelData modelData, List<String> visitedModels) {
+	private static void miexConfigParseModel(String modelName, File resourcePack, ModelData modelData, 
+											List<String> visitedModels) {
 		if(!modelName.contains(":"))
 			modelName = "minecraft:" + modelName;
 		// If this model file has a parent attribute, this function gets recursively called.
@@ -967,6 +1005,8 @@ public class ResourcePackDefaults {
 		File modelFile = new File(resourcePack, modelPath);
 		if(!modelFile.exists())
 			modelFile = new File(FileUtil.getResourcePackDir(), "base_resource_pack/" + modelPath);
+		else
+			modelData.fromBaseRP = false;
 		if(!modelFile.exists())
 			return;
 		
@@ -981,10 +1021,21 @@ public class ResourcePackDefaults {
 			
 			if(data.has("textures")) {
 				for(Entry<String, JsonElement> entry : data.get("textures").getAsJsonObject().entrySet()) {
-					String texture = entry.getValue().getAsString();
-					if(!texture.startsWith("#") && !texture.contains(":"))
-						texture = "minecraft:" + texture;
-					modelData.getTextures().put("#" + entry.getKey(), texture);
+					String texName = "";
+					if(entry.getValue().isJsonPrimitive()) {
+						texName = entry.getValue().getAsString();
+					}else if(entry.getValue().isJsonObject()) {
+						if(entry.getValue().getAsJsonObject().has("sprite")) {
+							texName = entry.getValue().getAsJsonObject().get("sprite").getAsString();
+						}
+					}
+					
+					if (!texName.contains(":") && !texName.startsWith("#"))
+						texName = "minecraft:" + texName;
+					String varName = entry.getKey();
+					if(!varName.startsWith("#"))
+						varName = "#" + varName;
+					modelData.getTextures().put(varName, texName);
 				}
 			}
 			
@@ -1037,10 +1088,14 @@ public class ResourcePackDefaults {
 		}
 	}
 	
-	private static void miexConfigProcessModel(String blockName, String modelName, File resourcePack, MiExConfigData configData) {
+	private static void miexConfigProcessModel(String blockName, String modelName, File resourcePack, 
+												MiExConfigData configData, boolean fromBaseRP) {
 		ModelData model = new ModelData();
 		List<String> visitedModels = new ArrayList<String>();
 		miexConfigParseModel(modelName, resourcePack, model, visitedModels);
+		
+		if(fromBaseRP && model.fromBaseRP)
+			return;
 		
 		boolean usesBiomeColours = false;
 		for(ModelFaceData face : model.getFaces()) {

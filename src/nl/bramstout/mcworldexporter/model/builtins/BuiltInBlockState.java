@@ -41,6 +41,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
 import nl.bramstout.mcworldexporter.expression.ExprValue;
@@ -103,8 +104,11 @@ public class BuiltInBlockState extends BlockState{
 				int dotIndex = name.lastIndexOf('.');
 				name = name.substring(0, dotIndex);
 				BuiltInBlockStateHandler handler = loadFile(file, parent + name, resourcePackIndex);
-				for(String blockName : handler.blockNames)
+				for(String blockName : handler.blockNames) {
 					handlerRegistry.put(blockName, handler);
+					if(handler.model.doubleSided)
+						Config.doubleSided.add(blockName);
+				}
 			}
 		}
 	}
@@ -195,6 +199,7 @@ public class BuiltInBlockState extends BlockState{
 							}
 						}
 						
+						model.doubleSided = includedHandler.model.doubleSided;
 						model.localGenerators.putAll(includedHandler.model.localGenerators);
 						model.localFunctions.putAll(includedHandler.model.localFunctions);
 						if(!includedHandler.model.defaultTexture.isEmpty())

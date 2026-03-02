@@ -55,6 +55,11 @@ private static final int INIT_SIZE = 64;
 		this.size = data.length;
 	}
 	
+	public IntArray(IntArray other) {
+		this.data = Arrays.copyOf(other.data, other.data.length);
+		this.size = other.size;
+	}
+	
 	public void resize(int size) {
 		data = Arrays.copyOf(data, size);
 		this.size = size;

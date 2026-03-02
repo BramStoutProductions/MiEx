@@ -106,6 +106,7 @@ public class ConfigDefaults {
 	public static int memoryPerThread;
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
+	public static boolean preventZFighting;
 	public static int maxMaterialNameLength;
 	public static boolean useGeometrySubsets;
 	public static boolean useIndexedUVs;
@@ -274,6 +275,7 @@ public class ConfigDefaults {
 		memoryPerThread = 1024;
 		forceDoubleSidedOnEverything = false;
 		minCubeSize = -1.0f;
+		preventZFighting = true;
 		maxMaterialNameLength = -1;
 		useGeometrySubsets = false;
 		useIndexedUVs = true;
@@ -438,7 +440,7 @@ public class ConfigDefaults {
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("Setting up default config file...");
-			ResourcePackDefaults.inferMiExConfigFromResourcePack(baseResourcePackFolder);
+			ResourcePackDefaults.inferMiExConfigFromResourcePack(baseResourcePackFolder, false);
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		}

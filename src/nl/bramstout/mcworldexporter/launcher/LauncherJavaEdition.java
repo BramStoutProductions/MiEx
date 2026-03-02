@@ -32,9 +32,6 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -43,6 +40,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -80,8 +78,9 @@ public class LauncherJavaEdition extends Launcher{
 						continue;
 					Date releaseTime = new Date(versionJar.lastModified());
 					if(e.getAsJsonObject().has("releaseTime")) {
-						TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(e.getAsJsonObject().get("releaseTime").getAsString());
-						releaseTime = Date.from(Instant.from(ta));
+						releaseTime = Util.parseDateTime(e.getAsJsonObject().get("releaseTime").getAsString());
+						if(releaseTime == null)
+							releaseTime = new Date(versionJar.lastModified());
 					}
 					versions.add(new MinecraftVersion("MC/" + name, versionJar, releaseTime));
 				}
@@ -100,8 +99,9 @@ public class LauncherJavaEdition extends Launcher{
 						if(versionJson.exists()) {
 							JsonObject data = Json.read(versionJson).getAsJsonObject();
 							if(data.has("releaseTime")) {
-								TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(data.get("releaseTime").getAsString());
-								releaseTime = Date.from(Instant.from(ta));
+								releaseTime = Util.parseDateTime(data.get("releaseTime").getAsString());
+								if(releaseTime == null)
+									releaseTime = new Date(versionJar.lastModified());
 							}
 						}
 						

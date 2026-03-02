@@ -119,6 +119,7 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 		String connectBlocks = null;
 		String tintIndex = null;
 		String tintBlock = null;
+		String resourceCondition = null;
 		
 		BufferedReader reader = null;
 		try {
@@ -174,6 +175,8 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 					tintIndex = value;
 				else if(key.equalsIgnoreCase("tintBlock"))
 					tintBlock = value;
+				else if(key.equalsIgnoreCase("resourceCondition"))
+					resourceCondition = value;
 			}
 		}catch(Exception ex) {
 			ex.printStackTrace();
@@ -183,6 +186,17 @@ public class OptifineLoader extends ConnectedTexturesLoader{
 				reader.close();
 		}catch(Exception ex) {
 			ex.printStackTrace();
+		}
+		
+		if(resourceCondition != null) {
+			if(resourceCondition.contains("@")) {
+				// This connected texture is only supposed to be
+				// loaded for a very specific resource pack.
+				// We don't really support that, so to prevent
+				// possible issues, we ignore any connected textures
+				// that are for specific resource packs.
+				return;
+			}
 		}
 		
 		

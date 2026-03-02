@@ -114,6 +114,7 @@ public class Config {
 	public static int memoryPerThread;
 	public static boolean forceDoubleSidedOnEverything;
 	public static float minCubeSize;
+	public static boolean preventZFighting;
 	public static int maxMaterialNameLength;
 	public static boolean useGeometrySubsets;
 	public static boolean useIndexedUVs;
@@ -422,6 +423,9 @@ public class Config {
 				
 				if(data.has("minCubeSize"))
 					minCubeSize = data.get("minCubeSize").getAsFloat();
+				
+				if(data.has("preventZFighting"))
+					preventZFighting = data.get("preventZFighting").getAsBoolean();
 				
 				if(data.has("maxMaterialNameLength"))
 					maxMaterialNameLength = data.get("maxMaterialNameLength").getAsInt();

@@ -90,7 +90,13 @@ public class Json {
 		try {
 			reader = new JsonReader(new BufferedReader(new FileReader(file)));
 			reader.setLenient(true);
-			return JsonParser.parseReader(reader);
+			JsonElement el = JsonParser.parseReader(reader);
+			try {
+				reader.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			return el;
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
@@ -109,7 +115,13 @@ public class Json {
 		try {
 			reader = new JsonReader(new StringReader(data));
 			reader.setLenient(true);
-			return JsonParser.parseReader(reader);
+			JsonElement el = JsonParser.parseReader(reader);
+			try {
+				reader.close();
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			return el;
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}

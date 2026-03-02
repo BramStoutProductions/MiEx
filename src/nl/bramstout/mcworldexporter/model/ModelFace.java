@@ -1295,5 +1295,21 @@ public class ModelFace {
 	public float getCenterZ() {
 		return (points[2] + points[5] + points[8] + points[11]) / 4f;
 	}
+	
+	/**
+	 * Checks if the two faces are on top of each other.
+	 * @param other
+	 * @return
+	 */
+	public boolean isOnTop(ModelFace other) {
+		if(other.direction != direction)
+			return false;
+		for(int i = 0; i < 12; i++) {
+			if(Math.floor(points[i] * 1000.0 + 0.5) != Math.floor(other.points[i] * 1000.0 + 0.5)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
 }

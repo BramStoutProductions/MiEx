@@ -558,7 +558,7 @@ public class ResourcePacks {
 						float weight = 0.0f;
 						for(int i = 0; i < tex.getWidth(); ++i) {
 							for(int j = 0; j < tex.getHeight(); ++j) {
-								Color color = new Color(tex.getRGB(i, j));
+								Color color = new Color(tex.getRGB(i, j), true);
 								if(color.getAlpha() > 0) {
 									r += color.getRed();
 									g += color.getGreen();

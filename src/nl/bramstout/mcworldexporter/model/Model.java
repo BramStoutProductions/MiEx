@@ -42,6 +42,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.export.IntArray;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
@@ -64,6 +65,7 @@ public class Model {
 	private boolean animatesPoints;
 	private boolean animatesUVs;
 	private boolean animatesVertexColors;
+	private IntArray newFaces;
 
 	protected Map<String, String> textures;
 	protected List<ModelFace> faces;
@@ -110,6 +112,10 @@ public class Model {
 				locator.bone = bone;
 			}
 		}
+		
+		this.newFaces = null;
+		if(other.newFaces != null)
+			this.newFaces = new IntArray(other.newFaces);
 	}
 
 	public Model(String name, ModelHandler handler, boolean doubleSided) {
@@ -126,6 +132,7 @@ public class Model {
 		this.defaultTexture = null;
 		this.displayTransforms = new HashMap<String, Matrix>();
 		this.handler = handler;
+		this.newFaces = null;
 
 		this.id = ModelRegistry.getNextId(this);
 
@@ -296,6 +303,20 @@ public class Model {
 
 	public void setAnimatesVertexColors(boolean animatesVertexColors) {
 		this.animatesVertexColors = animatesVertexColors;
+	}
+	
+	public void captureNewFaces() {
+		if(this.newFaces == null)
+			this.newFaces = new IntArray();
+		this.newFaces.clear();
+	}
+	
+	public void disableCaptureNewFaces() {
+		this.newFaces = null;
+	}
+	
+	public IntArray getNewFaces() {
+		return newFaces;
 	}
 
 	public float[] getBoundingBox() {
@@ -479,11 +500,15 @@ public class Model {
 			if(face.getTexture().startsWith("#")) {
 				copy.setTexture(texPrefix + face.getTexture().substring(1));
 			}
+			if(this.newFaces != null)
+				this.newFaces.add(faces.size());
 			faces.add(copy);
 			if(convertToSingleSided) {
 				copy.setDoubleSided(false);
 				ModelFace backFace = new ModelFace(copy);
 				backFace.reverseDirection();
+				if(this.newFaces != null)
+					this.newFaces.add(faces.size());
 				faces.add(backFace);
 			}
 		}
@@ -538,12 +563,16 @@ public class Model {
 					copy.setTintIndex(-1);
 				}
 			}
+			if(this.newFaces != null)
+				this.newFaces.add(faces.size());
 			faces.add(copy);
 			
 			if(convertToSingleSided) {
 				copy.setDoubleSided(false);
 				ModelFace backFace = new ModelFace(copy);
 				backFace.reverseDirection();
+				if(this.newFaces != null)
+					this.newFaces.add(faces.size());
 				faces.add(backFace);
 			}
 		}
@@ -565,6 +594,8 @@ public class Model {
 		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided);
 		if (modelFace.isValid()) {
 			this.occludes |= modelFace.getOccludes();
+			if(this.newFaces != null)
+				this.newFaces.add(faces.size());
 			faces.add(modelFace);
 		}
 		return modelFace;
@@ -614,6 +645,8 @@ public class Model {
 			if(rotX != 0f || rotY != 0f)
 				modelFace.rotate(rotX, rotY, false);
 			this.occludes |= modelFace.getOccludes();
+			if(this.newFaces != null)
+				this.newFaces.add(faces.size());
 			faces.add(modelFace);
 		}
 		return modelFace;

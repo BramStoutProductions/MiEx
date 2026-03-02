@@ -127,7 +127,7 @@
                     "condition": "(thisBlock.state.Item != null) && (isMap != true)",
                     "transform": {
                         "translate": [ 0.0, 0.0, -7.0 ],
-                        "rotate": [ 0.0, 0.0, "-itemRotation" ],
+                        "rotate": [ 0.0, 180.0, "-itemRotation" ],
                         "scale": [ 0.5, 0.5, 0.5 ]
                     },
                     "generators": [

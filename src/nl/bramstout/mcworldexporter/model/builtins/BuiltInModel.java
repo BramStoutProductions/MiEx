@@ -909,12 +909,14 @@ public class BuiltInModel {
 	public Map<String, BuiltInGenerator> localGenerators;
 	public Map<String, ExprValue> localFunctions;
 	public String defaultTexture;
+	public boolean doubleSided;
 	
 	public BuiltInModel() {
 		rootPart = null;
 		localGenerators = new HashMap<String, BuiltInGenerator>();
 		localFunctions = new HashMap<String, ExprValue>();
 		defaultTexture = "";
+		doubleSided = false;
 	}
 	
 	public void parse(JsonObject data) {
@@ -929,6 +931,9 @@ public class BuiltInModel {
 			if(!defaultTexture.contains(":"))
 				defaultTexture = "minecraft:" + defaultTexture;
 		}
+		
+		if(data.has("doubleSided"))
+			doubleSided = data.get("doubleSided").getAsBoolean();
 		
 		if(data.has("functions")) {
 			for(Entry<String, JsonElement> entry : data.getAsJsonObject("functions").entrySet()) {

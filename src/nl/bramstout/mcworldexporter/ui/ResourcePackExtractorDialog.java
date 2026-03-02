@@ -157,7 +157,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 				}
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering MiEx config");
-				ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePackFolder);
+				ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePackFolder, true);
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1.0f);
 				
 				

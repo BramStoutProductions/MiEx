@@ -32,6 +32,8 @@
 package nl.bramstout.mcworldexporter;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 public class Util {
@@ -57,6 +59,73 @@ public class Util {
 			reversed.add(list.get(i));
 		}
 		return reversed;
+	}
+	
+	public static int parseInt(String str) {
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < str.length(); ++i) {
+			char c = str.charAt(i);
+			if(Character.isDigit(c) || (sb.length() == 0 && c == '-')) {
+				sb.append(c);
+			}
+		}
+		try {
+			return Integer.parseInt(str);
+		}catch(Exception ex) {}
+		return 0;
+	}
+	
+	public static Date parseDateTime(String datetime) {
+		/*try {
+			TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(datetime);
+			return Date.from(Instant.from(ta));
+		}catch(Exception ex) {}*/
+		// Default parsing didn't work, so fall back to manual parsing.
+		int year = 0;
+		int month = 0;
+		int day = 0;
+		int hour = 0;
+		int minute = 0;
+		int seconds = 0;
+		
+		int timeSep = datetime.indexOf('T');
+		String date = datetime;
+		String time = "";
+		if(timeSep >= 0) {
+			date = datetime.substring(0, timeSep);
+			time = datetime.substring(timeSep + 1);
+			for(int i = 0; i < time.length(); ++i) {
+				char c = time.charAt(i);
+				if(!Character.isDigit(c) && c != ':') {
+					// End of time part of the string
+					time = time.substring(0, i);
+					break;
+				}
+			}
+		}
+		
+		String[] dateTokens = date.split("-");
+		if(dateTokens.length > 0)
+			year = parseInt(dateTokens[0]);
+		if(dateTokens.length > 1)
+			month = parseInt(dateTokens[1]);
+		if(dateTokens.length > 2)
+			day = parseInt(dateTokens[2]);
+		
+		String[] timeTokens = time.split(":");
+		if(timeTokens.length > 0)
+			hour = parseInt(timeTokens[0]);
+		if(timeTokens.length > 1)
+			minute = parseInt(timeTokens[1]);
+		if(timeTokens.length > 2)
+			seconds = parseInt(timeTokens[2]);
+		
+		if(year == 0 || day == 0)
+			return null;
+		
+		Date dateObj = Date.from(new GregorianCalendar(year, month-1, day, hour, minute, seconds).toInstant());
+		
+		return dateObj;
 	}
 	
 }

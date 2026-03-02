@@ -672,6 +672,23 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			}
 		}
 		
+		for(ModelFace modelFace : faces) {
+			for(ModelFace modelFace2 : model.getFaces()) {
+				if(faces.contains(modelFace2))
+					break;
+				if(modelFace.isOnTop(modelFace2)) {
+					// These two faces are exactly the same.
+					// This is sometimes done as an overlay.
+					// Minecraft handles it perfectly fine, but
+					// not all render engines do.
+					// So, move it out very slightly.
+					float[] normal = new float[3];
+					modelFace.calculateNormal(normal);
+					modelFace.translate(normal[0] * 0.005f, normal[1] * 0.005f, normal[2] * 0.005f);
+				}
+			}
+		}
+		
 		/*for(ModelFace face : faces) {
 			face.translate(baseTranslation.x, -baseTranslation.y, -baseTranslation.z);
 		}*/
