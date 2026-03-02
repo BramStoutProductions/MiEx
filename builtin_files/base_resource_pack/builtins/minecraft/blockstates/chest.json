@@ -61,8 +61,8 @@
                             "texture": "'#texture'"
                         },
                         {
-                            "from": [ 16, 7, 0 ],
-                            "to": [ 15, 11, 1 ],
+                            "from": [ 16, 11, 0 ],
+                            "to": [ 15, 7, 1 ],
                             "entityUVs": [ 0, 0, 1.0, 1.25 ],
                             "texture": "'#texture'"
                         }
@@ -84,8 +84,8 @@
                             "texture": "'#texture'"
                         },
                         {
-                            "from": [ 1, 7, 0 ],
-                            "to": [ 0, 11, 1 ],
+                            "from": [ 1, 11, 0 ],
+                            "to": [ 0, 7, 1 ],
                             "entityUVs": [ 0, 0, 1, 1.25 ],
                             "texture": "'#texture'"
                         }
