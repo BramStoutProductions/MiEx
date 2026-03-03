@@ -1,0 +1,21 @@
+{
+    "blocks": [
+        "amendments:water_lily_pad"
+    ],
+    "defaultTexture": "",
+    "handler": {
+        "condition": "thisBlock.state.Mimic != null",
+        "transform": {
+            "translate": [ 0.0, 16.0, 0.0 ]
+        },
+        "generators": [
+            {
+                "type": "block",
+                "args": {
+                    "name": "thisBlock.state.Mimic.Name",
+                    "properties": "thisBlock.state.Mimic.Properties"
+                }
+            }
+        ]
+    }
+}
