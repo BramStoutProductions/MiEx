@@ -44,8 +44,8 @@ public class BlockStateLiquid extends BlockState{
 		super(name, dataVersion, null);
 	}
 	
-	public String getDefaultTexture() {
-		return name.replace(":", ":block/") + "_still";
+	public DefaultTexture getDefaultTexture() {
+		return new DefaultTexture(name.replace(":", ":block/") + "_still", true);
 	}
 	
 	@Override

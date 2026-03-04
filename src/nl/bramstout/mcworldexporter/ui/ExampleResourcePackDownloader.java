@@ -46,7 +46,12 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -136,11 +141,20 @@ public class ExampleResourcePackDownloader extends JDialog {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				List<String> packs = new ArrayList<String>();
+				Map<String, List<String>> packs = new HashMap<String, List<String>>();
 				for(Component comp : availablePanel.getComponents()) {
-					if(comp instanceof JCheckBox) {
-						if(((JCheckBox) comp).isSelected())
-							packs.add(((JCheckBox) comp).getText());
+					if(comp instanceof ExampleResourcePackItem) {
+						if(((ExampleResourcePackItem) comp).isSelected()) {
+							String repository = ((ExampleResourcePackItem) comp).getRepository();
+							String resourcePack = ((ExampleResourcePackItem) comp).getText();
+							
+							List<String> packs2 = packs.getOrDefault(repository, null);
+							if(packs2 == null) {
+								packs2 = new ArrayList<String>();
+								packs.put(repository, packs2);
+							}
+							packs2.add(resourcePack);
+						}
 					}
 				}
 				if(packs.isEmpty())
@@ -149,81 +163,19 @@ public class ExampleResourcePackDownloader extends JDialog {
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("Downloading resource packs");
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
 				System.out.println("Downloading example resource packs:");
-				for(String pack : packs) {
-					System.out.println("  " + pack);
-					// Make sure to delete the old pack, in case the new version
-					// has fewer or different files.
-					File packDir = new File(FileUtil.getResourcePackDir(), pack);
-					if(packDir.exists() && packDir.isDirectory())
-						packDir.delete();
-				}
-				
-				HttpURLConnection connection = null;
-				InputStream stream = null;
-				byte[] buffer = new byte[4096];
-				try {
-					URL url = new URI("https://api.github.com/repos/BramStoutProductions/MiEx/zipball").toURL();
-					connection = (HttpURLConnection) url.openConnection();
-					stream = connection.getInputStream();
-					
-					ZipInputStream zis = new ZipInputStream(new BufferedInputStream(stream));
-					
-					MCWorldExporter.getApp().getUI().getProgressBar().setText("Installing resource packs");
-					MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.5f);
-					
-					ZipEntry entry;
-					while((entry = zis.getNextEntry()) != null) {
-						if(entry.isDirectory())
-							continue;
-						String path = entry.getName();
-						// Get rid of the first directory
-						int slashIndex = path.indexOf((int) '/');
-						path = path.substring(slashIndex + 1);
-						
-						if(!path.startsWith("extras/example_resource_packs"))
-							continue;
-						
-						path = path.substring(30); // Get rid of "extras/example_resource_packs"
-						
-						slashIndex = path.indexOf((int) '/');
-						String packName = path.substring(0, slashIndex);
-						if(!packs.contains(packName))
-							continue;
-						
-						File outFile = new File(FileUtil.getResourcePackDir(), path);
-						File parentDir = outFile.getParentFile();
-						parentDir.mkdirs();
-						
-						FileOutputStream fos = null;
-						try {
-							fos = new FileOutputStream(outFile);
-							int read = 0;
-							while((read = zis.read(buffer)) > 0) {
-								fos.write(buffer, 0, read);
-							}
-						}catch(Exception ex) {
-							ex.printStackTrace();
-						}
-						if(fos != null) {
-							try {
-								fos.close();
-							}catch(Exception ex) {
-								ex.printStackTrace();
-							}
-						}
+				for(Entry<String, List<String>> entry : packs.entrySet()) {
+					for(String pack : entry.getValue()) {
+						System.out.println("  " + entry.getKey() + ":" + pack);
+						// Make sure to delete the old pack, in case the new version
+						// has fewer or different files.
+						File packDir = new File(FileUtil.getResourcePackDir(), pack);
+						if(packDir.exists() && packDir.isDirectory())
+							packDir.delete();
 					}
-				}catch(Exception ex) {
-					ex.printStackTrace();
+					downloadExampleResourcePacks(entry.getKey(), entry.getValue());
 				}
 				
-				try {
-					if(stream != null)
-						stream.close();
-				}catch(Exception ex) {}
-				try {
-					if(connection != null)
-						connection.disconnect();
-				}catch(Exception ex) {}
+				
 				
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
@@ -257,19 +209,87 @@ public class ExampleResourcePackDownloader extends JDialog {
 		});
 	}
 	
+	private void downloadExampleResourcePacks(String repository, List<String> packs) {
+		HttpURLConnection connection = null;
+		InputStream stream = null;
+		byte[] buffer = new byte[4096];
+		try {
+			URL url = new URI("https://api.github.com/repos/" + repository + "/zipball").toURL();
+			connection = (HttpURLConnection) url.openConnection();
+			stream = connection.getInputStream();
+			
+			ZipInputStream zis = new ZipInputStream(new BufferedInputStream(stream));
+			
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Installing resource packs");
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.5f);
+			
+			ZipEntry entry;
+			while((entry = zis.getNextEntry()) != null) {
+				if(entry.isDirectory())
+					continue;
+				String path = entry.getName();
+				// Get rid of the first directory
+				int slashIndex = path.indexOf((int) '/');
+				path = path.substring(slashIndex + 1);
+				
+				if(!path.startsWith("extras/example_resource_packs"))
+					continue;
+				
+				path = path.substring(30); // Get rid of "extras/example_resource_packs"
+				
+				slashIndex = path.indexOf((int) '/');
+				String packName = path.substring(0, slashIndex);
+				if(!packs.contains(packName))
+					continue;
+				
+				File outFile = new File(FileUtil.getResourcePackDir(), path);
+				File parentDir = outFile.getParentFile();
+				parentDir.mkdirs();
+				
+				FileOutputStream fos = null;
+				try {
+					fos = new FileOutputStream(outFile);
+					int read = 0;
+					while((read = zis.read(buffer)) > 0) {
+						fos.write(buffer, 0, read);
+					}
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				if(fos != null) {
+					try {
+						fos.close();
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		try {
+			if(stream != null)
+				stream.close();
+		}catch(Exception ex) {}
+		try {
+			if(connection != null)
+				connection.disconnect();
+		}catch(Exception ex) {}
+	}
+	
 	@Override
 	public void setVisible(boolean b) {
 		if(b) {
 			
 			availablePanel.removeAll();
 			SwingUtilities.invokeLater(new Runnable() {
-
-				@Override
-				public void run() {
+				
+				private void loadFromRepository(String repository, Set<String> foundRPs) {
 					HttpURLConnection connection = null;
 					InputStream stream = null;
 					try {
-						URL url = new URI("https://api.github.com/repos/BramStoutProductions/MiEx/contents/extras/example_resource_packs").toURL();
+						URL url = new URI("https://api.github.com/repos/" + repository + "/contents/extras/example_resource_packs").toURL();
 						connection = (HttpURLConnection) url.openConnection();
 						stream = connection.getInputStream();
 						
@@ -280,7 +300,10 @@ public class ExampleResourcePackDownloader extends JDialog {
 							if(!pack.has("name"))
 								continue;
 							String name = pack.get("name").getAsString();
-							availablePanel.add(new JCheckBox(name));
+							if(foundRPs.contains(name))
+								continue;
+							foundRPs.add(name);
+							availablePanel.add(new ExampleResourcePackItem(name, repository));
 						}
 					}catch(Exception ex) {
 						ex.printStackTrace();
@@ -295,10 +318,37 @@ public class ExampleResourcePackDownloader extends JDialog {
 							connection.disconnect();
 					}catch(Exception ex) {}
 				}
+
+				@Override
+				public void run() {
+					Set<String> foundRPs = new HashSet<String>();
+					for(String repository : MCWorldExporter.GitHubRepository) {
+						loadFromRepository(repository, foundRPs);
+					}
+				}
 				
 			});
 		}
 		super.setVisible(b);
+	}
+	
+	private static class ExampleResourcePackItem extends JCheckBox{
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		private String repository;
+		
+		public ExampleResourcePackItem(String name, String repository) {
+			super(name);
+			this.repository = repository;
+		}
+		
+		public String getRepository() {
+			return repository;
+		}
+		
 	}
 	
 }

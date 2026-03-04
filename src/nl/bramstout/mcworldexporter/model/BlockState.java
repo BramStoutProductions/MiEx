@@ -31,6 +31,9 @@
 
 package nl.bramstout.mcworldexporter.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
@@ -44,6 +47,16 @@ import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation.Bloc
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class BlockState {
+	
+	public static class DefaultTexture{
+		public String texture;
+		public boolean applyTint;
+		
+		public DefaultTexture(String texture, boolean applyTint) {
+			this.texture = texture;
+			this.applyTint = applyTint;
+		}
+	}
 
 	protected String name;
 	protected int id;
@@ -62,6 +75,7 @@ public class BlockState {
 	protected boolean lodNoUVScale;
 	protected boolean lodNoScale;
 	protected int lodPriority;
+	protected boolean separateMeshForBlock;
 	protected Tint tint;
 	protected boolean _needsConnectionInfo;
 	protected BlockConnections blockConnections;
@@ -87,13 +101,16 @@ public class BlockState {
 		lodNoUVScale = Config.lodNoUVScale.contains(name);
 		lodNoScale = Config.lodNoScale.contains(name);
 		lodPriority = Config.lodPriority.getOrDefault(name, 1);
+		separateMeshForBlock = Config.separateMeshForBlocks.contains(name);
 		tint = Tints.getTint(name);
 		extraAnimationHandler = AnimationModifiers.getModifiersForBlockName(name);
-		BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
-												.getWorld().getBlockConnectionsTranslation();
-		if(blockConnectionsTranslation != null)
-			blockConnections = blockConnectionsTranslation.getBlockConnections(name, dataVersion);
-		
+		if(MCWorldExporter.getApp().getWorld() != null) {
+			BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
+													.getWorld().getBlockConnectionsTranslation();
+			if(blockConnectionsTranslation != null)
+				blockConnections = blockConnectionsTranslation.getBlockConnections(name, dataVersion);
+		}
+			
 		_needsConnectionInfo = false;
 		if(blockConnections != null)
 			_needsConnectionInfo = true;
@@ -151,6 +168,10 @@ public class BlockState {
 		return lodPriority;
 	}
 	
+	public boolean isSeparateMeshForBlock() {
+		return separateMeshForBlock;
+	}
+	
 	public boolean hasRandomAnimationXZOffset() {
 		return randomAnimationXZOffset;
 	}
@@ -184,6 +205,10 @@ public class BlockState {
 	}
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
+		if(handler == null) {
+			return new BakedBlockState(name, new ArrayList<List<Model>>(), false, false, false, 
+					false, false, false, false, false, false, false, false, false, false, 0, false, null, false, null);
+		}
 		if(blockConnections != null && runBlockConnections) {
 			properties = (NbtTagCompound) properties.copy();
 			String newName = blockConnections.map(name, properties, x, y, z, layer);
@@ -202,7 +227,9 @@ public class BlockState {
 		return res;
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
+		if(handler == null)
+			return new DefaultTexture("", false);
 		return handler.getDefaultTexture();
 	}
 

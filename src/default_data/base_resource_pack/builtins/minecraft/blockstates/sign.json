@@ -75,8 +75,8 @@
                                 "state": "thisBlock.state",
                                 "textOffsetX": "offsetX",
                                 "textOffsetY": "(isWall ? 0.0 : 20.0) * scale + offsetY + 0.133",
-                                "textOffsetZ": "1.0 * scale + offsetZ + 0.25",
-                                "textOffsetZBack": "-1.0 * scale + offsetZ - 0.25",
+                                "textOffsetZ": "1.0 * scale + offsetZ + 0.02",
+                                "textOffsetZBack": "-1.0 * scale + offsetZ - 0.02",
                                 "textScale": "6.666 / 5.0",
                                 "lineDistance": "2.5 * scale"
                             }

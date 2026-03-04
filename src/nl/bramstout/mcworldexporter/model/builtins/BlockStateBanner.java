@@ -164,7 +164,7 @@ public class BlockStateBanner extends BlockState{
 					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-					null, state.needsConnectionInfo(), 
+					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), 
 					animationHandler == null ? new BlockAnimationHandlerBanner() : animationHandler);
 			
 			return bakedState;
@@ -248,8 +248,8 @@ public class BlockStateBanner extends BlockState{
 		}
 
 		@Override
-		public String getDefaultTexture() {
-			return "minecraft:entity/banner_base";
+		public DefaultTexture getDefaultTexture() {
+			return new DefaultTexture("minecraft:entity/banner_base", false);
 		}
 
 		@Override

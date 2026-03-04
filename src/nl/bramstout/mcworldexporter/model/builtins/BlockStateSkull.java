@@ -49,8 +49,8 @@ public class BlockStateSkull extends BlockState{
 		super(name, dataVersion, null);
 	}
 	
-	public String getDefaultTexture() {
-		return "minecraft:entity/player/player";
+	public DefaultTexture getDefaultTexture() {
+		return new DefaultTexture("minecraft:entity/player/player", false);
 	}
 	
 	@Override
@@ -194,7 +194,7 @@ public class BlockStateSkull extends BlockState{
 		model.rotate(0, rotY, false);
 		
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
-				individualBlocks, isLiquid(), caveBlock, false, false, false, false, false, true, true, 0, null,
+				individualBlocks, isLiquid(), caveBlock, false, false, false, false, false, true, true, 0, separateMeshForBlock, null,
 				needsConnectionInfo(), null);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.

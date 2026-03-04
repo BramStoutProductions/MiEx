@@ -42,6 +42,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
@@ -139,17 +140,17 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-					null, state.needsConnectionInfo(), null);
+					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), null);
 		}
 		return variant.getBakedBlockState(properties, x, y, z, state, animationHandler, frame);
 	}
 
 	@Override
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		BlockStateVariant variant = this.variants.getOrDefault("", null);
 		if(variant != null)
 			return variant.getDefaultTexture();
-		return "";
+		return new DefaultTexture("", false);
 	}
 
 	@Override

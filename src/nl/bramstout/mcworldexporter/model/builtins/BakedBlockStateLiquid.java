@@ -36,6 +36,7 @@ import java.util.List;
 
 import nl.bramstout.mcworldexporter.Cache;
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
@@ -60,7 +61,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	public BakedBlockStateLiquid(String name) {
 		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, 
 				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), 
-				false, false, 2, getTintLayers(name), true, null);
+				false, false, 2, Config.separateMeshForBlocks.contains(name), getTintLayers(name), true, null);
 		String[] nameTokens = getName().split(":");
 		stillTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_still";
 		flowTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_flow";
@@ -214,10 +215,11 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		if(height11 < 16f) {
 			ModelFace topFace = model.addFace(minMaxPoints, gradientLength > 0f ? minMaxUVs : minMaxUVsStill, Direction.UP, gradientLength > 0f ? "#flow" : "#still", angle, 0);
-			topFace.getPoints()[0*3+1] = cheight01;
-			topFace.getPoints()[1*3+1] = cheight11;
-			topFace.getPoints()[2*3+1] = cheight10;
-			topFace.getPoints()[3*3+1] = cheight00;
+			// Clamp the height to prevent z-fighting.
+			topFace.getPoints()[0*3+1] = Math.min(cheight01, 15.99f);
+			topFace.getPoints()[1*3+1] = Math.min(cheight11, 15.99f);
+			topFace.getPoints()[2*3+1] = Math.min(cheight10, 15.99f);
+			topFace.getPoints()[3*3+1] = Math.min(cheight00, 15.99f);
 		}
 		//BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
 		//if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
@@ -315,6 +317,18 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 				continue;
 			
 			liquidBlock = block;
+		}
+		
+		if(liquidBlock != null && Config.fillWorldBorders) {
+			boolean outsideExport = true;
+			for(ExportBounds region : MCWorldExporter.getApp().getExportBoundsList()) {
+				if(region.isInExportRegionBounds(x, y, z)) {
+					outsideExport = false;
+					break;
+				}
+			}
+			if(outsideExport)
+				return null;
 		}
 		
 		return liquidBlock == null ? firstBlock : liquidBlock;

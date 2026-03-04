@@ -56,6 +56,7 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
@@ -124,6 +125,18 @@ public class ResourcePackExtractorDialog extends JDialog {
 		});
 		
 		createButton.addActionListener(new ActionListener() {
+			
+			private void findSources(File file, ResourcePackSource source) {
+				if(file.isDirectory()) {
+					for(File f : file.listFiles()) {
+						findSources(f, source);
+					}
+				}else if(file.isFile()) {
+					if(file.getName().endsWith(".jar")) {
+						source.addSource(ResourcePackSource.getHash(file), file);
+					}
+				}
+			}
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -140,29 +153,18 @@ public class ResourcePackExtractorDialog extends JDialog {
 				System.out.println("Saving into: " + resourcePackInput.getText());
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
 				File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePackInput.getText());
-				File[] mods = modsFolder.listFiles();
-				int counter = 0;
-				for(File mod : mods) {
-					if(!mod.isFile())
-						continue;
-					if(!mod.getName().endsWith(".jar"))
-						continue;
-					try {
-						ResourcePackDefaults.extractResourcePackFromJar(mod, resourcePackFolder);
-					}catch(Exception ex) {
-						ex.printStackTrace();
-					}
-					MCWorldExporter.getApp().getUI().getProgressBar().setProgress((((float) counter) / ((float) mods.length)) * 0.9f);
-					counter++;
+				List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+				ResourcePackSource source = new ResourcePackSource("Mods");
+				findSources(modsFolder, source);
+				sources.add(source);
+			
+				try {
+					ResourcePackDefaults.extractSourcesIntoResourcePack(sources, resourcePackFolder);
+				}catch(Exception ex) {
+					ex.printStackTrace();
 				}
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.9f);
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering MiEx config");
-				ResourcePackDefaults.inferMiExConfigFromResourcePack(resourcePackFolder, true);
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(1.0f);
 				
 				
-				System.out.println("Mod resource pack extracted successfully.");
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mod resource pack extracted successfully!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
 				MCWorldExporter.getApp().getUI().getProgressBar().setText("");

@@ -45,6 +45,7 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class TextMeshCreator {
 	
@@ -208,6 +209,10 @@ public class TextMeshCreator {
 		str += "§r" + parentFormatCode + formatCode;
 		if(obj.has("text")) {
 			str += obj.get("text").getAsString();
+		}else if(obj.has("translate")) {
+			String textStr = ResourcePacks.getLocalisation(obj.get("translate").getAsString());
+			if(textStr != null)
+				str += textStr;
 		}
 		if(obj.has("extra")) {
 			for(JsonElement el : obj.getAsJsonArray("extra").asList()) {

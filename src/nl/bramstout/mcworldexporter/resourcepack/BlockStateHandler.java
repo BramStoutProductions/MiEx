@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.resourcepack;
 
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 
 public abstract class BlockStateHandler {
@@ -42,7 +43,7 @@ public abstract class BlockStateHandler {
 	public abstract BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
 										BlockState state, BlockAnimationHandler animationHandler, float frame);
 	
-	public abstract String getDefaultTexture();
+	public abstract DefaultTexture getDefaultTexture();
 	
 	public abstract boolean needsConnectionInfo();
 	

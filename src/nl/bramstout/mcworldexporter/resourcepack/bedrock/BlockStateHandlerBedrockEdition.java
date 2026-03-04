@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelBone;
 import nl.bramstout.mcworldexporter.model.ModelFace;
@@ -296,12 +297,12 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 									state.hasRandomYOffset(),
 									state.isDoubleSided(), state.hasRandomAnimationXZOffset(), 
 									state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(),
-									state.getLodPriority(), tintColor, state.needsConnectionInfo(), 
+									state.getLodPriority(), state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), 
 									animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
 	}
 
 	@Override
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		Map<String, String> materialInstances = new HashMap<String, String>();
 		for(BlockStatePart part : parts) {
 			if(part.getMaterialInstances() != null)
@@ -321,11 +322,11 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 			if(!entry.getValue().contains("/")) {
 				List<String> paths = ResourcePackBedrockEdition.getTerrainTexture(entry.getValue());
 				if(paths.size() > 0){
-					return TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(paths.get(0));
+					return new DefaultTexture(TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(paths.get(0)), true);
 				}
 			}
 		}
-		return "";
+		return new DefaultTexture("", false);
 	}
 
 	@Override

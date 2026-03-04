@@ -71,13 +71,13 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 		}
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		if(this.cubeTextures.size() > 0) {
 			String up = this.cubeTextures.get(0).up;
 			if(up != null)
-				return up;
+				return new DefaultTexture(up, true);
 		}
-		return "";
+		return new DefaultTexture("", false);
 	}
 	
 	@Override

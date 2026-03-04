@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.model;
 import java.util.List;
 
 import nl.bramstout.mcworldexporter.export.Noise;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 
@@ -57,6 +58,7 @@ public class BakedBlockState {
 	private boolean lodNoUVScale;
 	private boolean lodNoScale;
 	private int lodPriority;
+	private boolean separateMeshForBlock;
 	private TintLayers tint;
 	private boolean needsConnectionInfo;
 	private BlockAnimationHandler animationHandler;
@@ -66,8 +68,8 @@ public class BakedBlockState {
 							boolean individualBlocks, boolean liquid, boolean caveBlock,
 							boolean randomOffset, boolean randomYOffset,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
-							boolean lodNoUVScale, boolean lodNoScale, int lodPriority, TintLayers tint, 
-							boolean needsConnectionInfo, BlockAnimationHandler animationHandler) {
+							boolean lodNoUVScale, boolean lodNoScale, int lodPriority, boolean separateMeshForBlock,
+							TintLayers tint, boolean needsConnectionInfo, BlockAnimationHandler animationHandler) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -95,6 +97,7 @@ public class BakedBlockState {
 		this.lodNoUVScale = lodNoUVScale;
 		this.lodNoScale = lodNoScale;
 		this.lodPriority = lodPriority;
+		this.separateMeshForBlock = separateMeshForBlock;
 		this.tint = tint;
 		this.needsConnectionInfo = needsConnectionInfo;
 		this.animationHandler = animationHandler;
@@ -136,7 +139,7 @@ public class BakedBlockState {
 		}
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		for(int i = 0; i < models.size(); ++i)
 			if(models.get(i).size() > 0)
 				return models.get(i).get(0).getDefaultTexture();
@@ -201,6 +204,10 @@ public class BakedBlockState {
 	
 	public int getLodPriority() {
 		return lodPriority;
+	}
+	
+	public boolean getSeparateMeshForBlock() {
+		return separateMeshForBlock;
 	}
 	
 	public TintLayers getTint() {

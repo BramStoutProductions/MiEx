@@ -54,6 +54,7 @@ import nl.bramstout.mcworldexporter.expression.ExprContext;
 import nl.bramstout.mcworldexporter.expression.ExprValue;
 import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueDict;
 import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueNbtCompound;
+import nl.bramstout.mcworldexporter.expression.ExprValue.ExprValueNbtList;
 import nl.bramstout.mcworldexporter.expression.Expression;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
@@ -99,6 +100,8 @@ public abstract class BuiltInGenerator {
 		generatorRegistry.put("block", new BuiltInGeneratorBlock());
 		generatorRegistry.put("item", new BuiltInGeneratorItem());
 		generatorRegistry.put("map", new BuiltInGeneratorMap());
+		generatorRegistry.put("modelTextures", new BuiltInGeneratorModelTextures());
+		generatorRegistry.put("blockTextures", new BuiltInGeneratorBlockTextures());
 		generatorRegistry.put("painting", new BuiltInGeneratorPainting());
 		generatorRegistry.put("text", new BuiltInGeneratorText());
 		generatorRegistry.put("signText", new BuiltInGeneratorSignText());
@@ -318,6 +321,96 @@ public abstract class BuiltInGenerator {
 			
 			if(model != null) {
 				context.model.addModel(model);
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorModelTextures extends BuiltInGenerator{
+
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String modelName = null;
+			String prefix = "";
+			
+			if(arguments.containsKey("model"))
+				modelName = arguments.get("model").eval(context).asString();
+			if(arguments.containsKey("prefix"))
+				prefix = arguments.get("prefix").eval(context).asString();
+			
+			if(modelName == null)
+				return;
+			
+			int modelId = ModelRegistry.getIdForName(modelName, false);
+			Model model = ModelRegistry.getModel(modelId);
+			if(model != null) {
+				for(Entry<String, String> entry : model.getTextures().entrySet()) {
+					String texKey = entry.getKey();
+					if(texKey.startsWith("#"))
+						texKey = texKey.substring(1);
+					texKey = "#" + prefix + texKey;
+					String texPath = entry.getValue();
+					if(texPath.startsWith("#")) {
+						// Remap to also use prefix.
+						texPath = "#" + prefix + texPath.substring(1);
+					}
+					
+					context.model.addTexture(texKey, texPath);
+				}
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorBlockTextures extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String blockName = null;
+			NbtTagCompound properties = null;
+			int x = context.x;
+			int y = context.y;
+			int z = context.z;
+			String prefix = "";
+			
+			if(arguments.containsKey("name"))
+				blockName = arguments.get("name").eval(context).asString();
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag.copy();
+			}
+			if(arguments.containsKey("x"))
+				x = (int) arguments.get("x").eval(context).asInt();
+			if(arguments.containsKey("y"))
+				y = (int) arguments.get("y").eval(context).asInt();
+			if(arguments.containsKey("z"))
+				z = (int) arguments.get("z").eval(context).asInt();
+			
+			if(arguments.containsKey("prefix"))
+				prefix = arguments.get("prefix").eval(context).asString();
+			
+			Reference<char[]> charBuffer = new Reference<char[]>();
+			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
+			
+			List<Model> models = new ArrayList<Model>();
+			state.getModels(x, y, z, models);
+			
+			for(Model model : models) {
+				for(Entry<String, String> entry : model.getTextures().entrySet()) {
+					String texKey = entry.getKey();
+					if(texKey.startsWith("#"))
+						texKey = texKey.substring(1);
+					texKey = "#" + prefix + texKey;
+					String texPath = entry.getValue();
+					if(texPath.startsWith("#")) {
+						// Remap to also use prefix.
+						texPath = "#" + prefix + texPath.substring(1);
+					}
+					
+					context.model.addTexture(texKey, texPath);
+				}
 			}
 		}
 		
@@ -675,6 +768,8 @@ public abstract class BuiltInGenerator {
 							JsonElement el = null;
 							if(tag.getImpl() instanceof ExprValueNbtCompound) {
 								el = nbtToJson(((ExprValueNbtCompound) tag.getImpl()).getNbt());
+							}else if(tag.getImpl() instanceof ExprValueNbtList) {
+								el = nbtToJson(((ExprValueNbtList) tag.getImpl()).toNbt());
 							}else {
 								String text = tag.asString();
 								if(text.length() == 0) {
@@ -727,6 +822,8 @@ public abstract class BuiltInGenerator {
 								String text = tag.asString();
 								if(text.length() == 0) {
 									el = new JsonPrimitive(text);
+								}else if(tag.getImpl() instanceof ExprValueNbtList) {
+									el = nbtToJson(((ExprValueNbtList) tag.getImpl()).toNbt());
 								}else {
 									if(text.charAt(0) == '{' || text.charAt(0) == '[') {
 										el = JsonParser.parseString(tag.asString());

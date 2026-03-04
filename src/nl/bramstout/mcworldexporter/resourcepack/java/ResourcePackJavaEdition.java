@@ -74,6 +74,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	private Map<String, PaintingVariant> paintingVariants;
 	private List<EntitySpawner> entitySpawners;
 	private Map<String, Font> fonts;
+	private Map<String, Map<String, String>> localisations;
 	
 	public ResourcePackJavaEdition(File folder) {
 		super(folder.getName(), folder.getName(), folder);
@@ -84,6 +85,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		paintingVariants = new HashMap<String, PaintingVariant>();
 		entitySpawners = new ArrayList<EntitySpawner>();
 		fonts = new HashMap<String, Font>();
+		localisations = new HashMap<String, Map<String, String>>();
 	}
 
 	@Override
@@ -94,6 +96,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		rootFolders.add(getFolder());
 		paintingVariants.clear();
 		entitySpawners.clear();
+		localisations.clear();
 		
 		File packMcMetaFile = new File(getFolder(), "pack.mcmeta");
 		if(packMcMetaFile.exists()) {
@@ -752,6 +755,48 @@ public class ResourcePackJavaEdition extends ResourcePack{
 				}
 			}
 		}
+	}
+	
+	private void readLocalisation(String language, Map<String, String> localisation) {
+		for(File f : this.rootFolders) {
+			File assetsFolder = new File(f, "assets");
+			if(assetsFolder.exists()) {
+				for(File namespace : assetsFolder.listFiles()) {
+					File languageFile = new File(namespace, "lang/" + language + ".json");
+					if(languageFile.exists()) {
+						JsonElement el = Json.read(languageFile);
+						if(el != null && el.isJsonObject()) {
+							for(Entry<String, JsonElement> entry : el.getAsJsonObject().entrySet()) {
+								if(entry.getValue().isJsonPrimitive()) {
+									localisation.put(entry.getKey(), entry.getValue().getAsString());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private Map<String, String> getLocalisation(String language){
+		Map<String, String> res = localisations.getOrDefault(language, null);
+		if(res != null)
+			return res;
+		synchronized(localisations) {
+			res = localisations.getOrDefault(language, null);
+			if(res != null)
+				return res;
+			
+			res = new HashMap<String, String>();
+			readLocalisation(language, res);
+			localisations.put(language, res);
+			return res;
+		}
+	}
+	
+	@Override
+	public String getLocalisation(String key, String language) {
+		return getLocalisation(language).getOrDefault(key, null);
 	}
 
 }

@@ -38,6 +38,7 @@ import java.util.Map;
 
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState;
+import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.BuiltInBlockStateHandler;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -57,6 +58,7 @@ public class BlockStateRegistry {
 	private static List<Boolean> needsConnectionInfo = new ArrayList<Boolean>();
 	private static Object mutex2 = new Object();
 	public static List<String> missingBlockStates = new ArrayList<String>();
+	private static BlockState INVALID_BLOCK_STATE = new BlockState("miex:invalid", 0, null);
 	
 	public static int getIdForName(String name, int dataVersion) {
 		if(!name.contains(":"))
@@ -84,12 +86,14 @@ public class BlockStateRegistry {
 	}
 	
 	public static BlockState getState(int id) {
-		return registeredStates.get(id < 0 ? 0 : id);
+		return id >= registeredStates.size() ? INVALID_BLOCK_STATE : registeredStates.get(id < 0 ? 0 : id);
 	}
 	
 	private static BlockState getStateFromName(String name, int dataVersion) {
-		if(BuiltInBlockStateRegistry.builtins.containsKey(name) || BuiltInBlockState.hasHandler(name)) {
-			if(!ResourcePacks.hasOverride(name, "blockstates", ".json", "assets"))
+		BuiltInBlockStateHandler bibsHandler = BuiltInBlockState.getHandler(name);
+		if(BuiltInBlockStateRegistry.builtins.containsKey(name) || bibsHandler != null) {
+			int resourcePackIndex = bibsHandler != null ? bibsHandler.getResourcePackIndex() : Integer.MAX_VALUE;
+			if(!ResourcePacks.hasOverride(name, "blockstates", ".json", "assets", resourcePackIndex))
 				return BuiltInBlockStateRegistry.newBlockState(name, dataVersion);
 		}
 		BlockStateHandler handler = ResourcePacks.getBlockStateHandler(name);

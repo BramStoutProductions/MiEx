@@ -40,9 +40,13 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import javax.swing.JOptionPane;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -53,6 +57,7 @@ public class BuiltInFiles {
 	
 	public static void setupBuiltInFiles(boolean forceUpdate) {
 		System.out.println("Checking built-in files.");
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Setting up... Checking built-in files.");
 		
 		List<BuiltInFile> files = findBuiltInFiles();
 		
@@ -67,6 +72,7 @@ public class BuiltInFiles {
 			manifestObject = new JsonObject();
 		
 		List<BuiltInFile> modifiedByUser = new ArrayList<BuiltInFile>();
+		List<String> updatedFiles = new ArrayList<String>();
 		
 		for(BuiltInFile file : files) {
 			String storedHash = "";
@@ -113,7 +119,7 @@ public class BuiltInFiles {
 			
 			boolean wasModifiedByUser = !actualHash.equals(storedHash) && 
 								!actualHash.isEmpty() && !storedHash.isEmpty();
-			boolean shouldExtract = storedHash.isEmpty() || actualHash.isEmpty();
+			boolean shouldExtract = storedHash.isEmpty() || actualHash.isEmpty() || !storedHash.equals(file.hash);
 			if(forceUpdate)
 				shouldExtract = !actualHash.equals(file.hash);
 			
@@ -123,7 +129,8 @@ public class BuiltInFiles {
 				if(!shouldExtract)
 					continue;
 				// We can easily update it now
-				System.out.println("Installing " + file.name);
+				System.out.println("Installing " + file.source + ": " + file.name);
+				updatedFiles.add(file.source + ": " + file.name);
 				try {
 					File parentFile = actualFile.getParentFile();
 					if(!parentFile.exists())
@@ -158,7 +165,8 @@ public class BuiltInFiles {
 				if(dialog.filesToChange.contains(file)) {
 					// Change it
 					File actualFile = new File(FileUtil.getResourcePackDir(), file.name);
-					System.out.println("Installing " + file.name);
+					System.out.println("Installing " + file.source + ": " + file.name);
+					updatedFiles.add(file.source + ": " + file.name);
 					try {
 						File parentFile = actualFile.getParentFile();
 						if(!parentFile.exists())
@@ -183,6 +191,9 @@ public class BuiltInFiles {
 		
 		Json.writeJson(manifestFile, manifestObject);
 		System.out.println("Built-in files up to date.");
+		if(updatedFiles.size() > 0 && Environment.getEnvBool("MIEX_BUILT_IN_FILES_SHOW_PROMPT")) {
+			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), updatedFiles.toArray(), "Updated built-in files", JOptionPane.PLAIN_MESSAGE);
+		}
 	}
 	
 	public static class BuiltInFile{
@@ -190,11 +201,13 @@ public class BuiltInFiles {
 		public String name;
 		public URL url;
 		public String hash;
+		public String source;
 		
-		public BuiltInFile(String name, URL url, String hash) {
+		public BuiltInFile(String name, URL url, String hash, String source) {
 			this.name = name;
 			this.url = url;
 			this.hash = hash;
+			this.source = source;
 		}
 		
 	}
@@ -232,7 +245,7 @@ public class BuiltInFiles {
 							files.add(new BuiltInFile(
 									entry.getName().substring("default_data/".length()), 
 									BuiltInFiles.class.getClassLoader().getResource(entry.getName()), 
-									hash));
+									hash, "Jar"));
 						}catch(Exception ex) {
 							ex.printStackTrace();
 						}
@@ -263,7 +276,7 @@ public class BuiltInFiles {
 					is = new FileInputStream(f);
 					String hash = calcHash(is, f.length());
 					
-					files.add(new BuiltInFile(parent + f.getName(), f.toURI().toURL(), hash));
+					files.add(new BuiltInFile(parent + f.getName(), f.toURI().toURL(), hash, "Jar"));
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
@@ -335,10 +348,20 @@ public class BuiltInFiles {
 	private static boolean checkGitHubForBuiltInFiles(List<BuiltInFile> files) {
 		if(MCWorldExporter.offlineMode)
 			return false;
-		System.out.println("Searching for built-in files in GitHub repository " + MCWorldExporter.GitHubRepository);
+		System.out.println("Searching for built-in files in GitHub repositories " + String.join(", ", MCWorldExporter.GitHubRepository));
+		boolean success = false;
+		Set<String> foundFiles = new HashSet<String>();
+		for(String repository : MCWorldExporter.GitHubRepository) {
+			if(checkGitHubRepository(repository, files, foundFiles))
+				success = true;
+		}
+		return success;
+	}
+	
+	private static boolean checkGitHubRepository(String repository, List<BuiltInFile> files, Set<String> foundFiles) {
 		try{
 			String builtin_filesTreeURL = null;
-			JsonElement rootTree = Json.read(new URI("https://api.github.com/repos/" + MCWorldExporter.GitHubRepository + 
+			JsonElement rootTree = Json.read(new URI("https://api.github.com/repos/" + repository + 
 													"/git/trees/main").toURL(), false);
 			if(rootTree == null)
 				return false;
@@ -390,14 +413,17 @@ public class BuiltInFiles {
 				else
 					continue;
 				
+				if(foundFiles.contains(name))
+					continue;
+				foundFiles.add(name);
+				
 				files.add(new BuiltInFile(name, 
-						new URI("https://raw.githubusercontent.com/" + MCWorldExporter.GitHubRepository + 
+						new URI("https://raw.githubusercontent.com/" + repository + 
 								"/main/builtin_files/" + name).toURL(), 
-						hash));
+						hash, repository));
 			}
 			return true;
-		}catch(Exception ex) {
-		}
+		}catch(Exception ex) {}
 		return false;
 	}
 	

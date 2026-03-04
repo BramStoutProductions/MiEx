@@ -426,8 +426,8 @@ public class ChunkExporter {
 				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
 						biomeInstance, biome, wx, by, wz, layer, wx, by, wz, 
 						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), state.getTint(), model.isDoubleSided(), 
-						lodSize, lodYSize, state.isLodNoUVScale(), state.isLodNoScale(), false, ambientOcclusion, cornerData,
-						modifierContext, modifiers, chunk);
+						lodSize, lodYSize, state.isLodNoUVScale(), state.isLodNoScale(), false, state.getSeparateMeshForBlock(), 
+						ambientOcclusion, cornerData, modifierContext, modifiers, chunk);
 				
 				faceIndex++;
 			}
@@ -882,8 +882,8 @@ public class ChunkExporter {
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
 			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, int layer, float bx, float by, float bz, float ox, float oy, float oz, 
 			float uvOffsetY, String extraData, TintLayers tintLayers, boolean doubleSided, int lodSize, int lodYSize,
-			boolean lodNoUVScale, boolean lodNoScale, boolean noConnectedTextures, AmbientOcclusion ambientOcclusion, int cornerData,
-			ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
+			boolean lodNoUVScale, boolean lodNoScale, boolean noConnectedTextures, boolean separateMeshForBlock, 
+			AmbientOcclusion ambientOcclusion, int cornerData, ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
 		if(texture == null || texture.equals(""))
 			return;
 		
@@ -948,7 +948,7 @@ public class ChunkExporter {
 								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, blendedBiome,
 										ix, iy, iz, layer, bx, by, bz, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
-										lodNoUVScale, lodNoScale, true, ambientOcclusion, cornerData,
+										lodNoUVScale, lodNoScale, true, false, ambientOcclusion, cornerData,
 										modifierContext, modifiers, chunk);
 							}
 						}
@@ -1053,6 +1053,10 @@ public class ChunkExporter {
 		if(face.getDirection() == Direction.UP || face.getDirection() == Direction.DOWN)
 			lodYUVScale = lodUVScale;
 				
+		if(separateMeshForBlock) {
+			meshName = blockName.replace(':', '_') + "_" + meshName;
+		}
+		
 		Mesh mesh = meshes.getOrDefault(meshName, null);
 		if(mesh == null) {
 			boolean animatedTexture = false;
@@ -1327,6 +1331,14 @@ public class ChunkExporter {
 			int bx = cx + dir.x * lodSize;
 			int by = cy + dir.y * lodYSize;
 			int bz = cz + dir.z * lodSize;
+			if(Config.fillWorldBorders) {
+				if((chunk.getChunkX() * 16 + bx) < bounds.getMinX() || (chunk.getChunkX() * 16 + bx) > bounds.getMaxX() || 
+						by < bounds.getMinY() || by > bounds.getMaxY() ||
+						(chunk.getChunkZ() * 16 + bz) < bounds.getMinZ() || (chunk.getChunkZ() * 16 + bz) > bounds.getMaxZ()) {
+					// Blocks outside of the export region shouldn't be occluding.
+					continue;
+				}
+			}
 			
 			for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
 				occludes = getOcclusionFromDirection(chunk, bx, by, bz, layer, dir, currentState, detailedOcclusionFaces, lodSize, lodYSize);

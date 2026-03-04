@@ -158,6 +158,7 @@ public class BuiltInBlockState extends BlockState{
 		private boolean isAnimated;
 		private BuiltInModel model;
 		private BuiltInBlockAnimationHandler animationHandler;
+		private int resourcePackIndex;
 		
 		public BuiltInBlockStateHandler(String name, int resourcePackIndex, JsonObject data) {
 			blockNames = new ArrayList<String>();
@@ -165,6 +166,7 @@ public class BuiltInBlockState extends BlockState{
 			isAnimated = false;
 			model = new BuiltInModel();
 			animationHandler = null;
+			this.resourcePackIndex = resourcePackIndex;
 			
 			if(data.has("include")) {
 				JsonArray includeArray = data.getAsJsonArray("include");
@@ -285,7 +287,7 @@ public class BuiltInBlockState extends BlockState{
 					World.handleError(new RuntimeException("Error while evaluating block state " + state.getName(), ex));
 				}
 				if(!model.getFaces().isEmpty()) {
-					model.calculateOccludes();
+					model.calculateOcclusions();
 					
 					if(this.animationHandler != null) {
 						if(this.animationHandler.isAnimatesTopology())
@@ -316,20 +318,24 @@ public class BuiltInBlockState extends BlockState{
 					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-					tintColor, state.needsConnectionInfo(), 
+					state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), 
 					animationHandler == null ? (this.isAnimated ? this.animationHandler : state.getExtraAnimationHandler()) : animationHandler);
 			
 			return bakedState;
 		}
 
 		@Override
-		public String getDefaultTexture() {
-			return model.defaultTexture;
+		public DefaultTexture getDefaultTexture() {
+			return new DefaultTexture(model.defaultTexture, true);
 		}
 
 		@Override
 		public boolean needsConnectionInfo() {
 			return isLocationDependent;
+		}
+		
+		public int getResourcePackIndex() {
+			return resourcePackIndex;
 		}
 		
 	}

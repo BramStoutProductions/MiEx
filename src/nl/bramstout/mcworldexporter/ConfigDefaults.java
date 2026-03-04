@@ -74,6 +74,7 @@ public class ConfigDefaults {
 	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static List<String> noFaceOptimisation = new ArrayList<String>();
+	public static List<String> separateMeshForBlocks = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean runOptimiser;
@@ -122,6 +123,8 @@ public class ConfigDefaults {
 	public static float animationStartFrame;
 	public static float animationEndFrame;
 	public static float usdMetersPerUnit;
+	public static String defaultLocalisation;
+	public static boolean fillWorldBorders;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -140,6 +143,9 @@ public class ConfigDefaults {
 		transparentOcclusion.addAll(Arrays.asList());
 		leavesOcclusion.addAll(Arrays.asList());
 		detailedOcclusion.addAll(Arrays.asList(
+				"#minecraft:block/walls", "#minecraft:block/trapdoors", "#minecraft:block/fence_gates", 
+				"#minecraft:block/fences", "#minecraft:block/wool_carpets",
+				
 				"minecraft:acacia_fence", "minecraft:acacia_fence_gate", "minecraft:acacia_trapdoor", "minecraft:birch_fence", 
 				"minecraft:birch_fence_gate", "minecraft:birch_trapdoor", "minecraft:black_carpet", 
 				"minecraft:black_stained_glass_pane", "minecraft:blue_carpet", "minecraft:blue_stained_glass_pane", 
@@ -291,6 +297,8 @@ public class ConfigDefaults {
 		animationStartFrame = 0;
 		animationEndFrame = 24000;
 		usdMetersPerUnit = 1f;
+		defaultLocalisation = "en_us";
+		fillWorldBorders = false;
 	}
 	
 	public static void loadDefaults() {

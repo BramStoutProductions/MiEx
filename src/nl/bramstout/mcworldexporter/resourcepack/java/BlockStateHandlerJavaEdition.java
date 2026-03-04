@@ -41,6 +41,7 @@ import com.google.gson.JsonObject;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
@@ -116,20 +117,20 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				tintColor, state.needsConnectionInfo(), 
+				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), 
 				animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
 	}
 
 	@Override
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		BlockStatePart part = null;
 		for(int i = 0; i < parts.size(); ++i) {
 			part = parts.get(i);
-			String defaultTexture = part.getDefaultTexture();
+			DefaultTexture defaultTexture = part.getDefaultTexture();
 			if(defaultTexture != null)
 				return defaultTexture;
 		}
-		return "";
+		return new DefaultTexture("", false);
 	}
 
 	@Override

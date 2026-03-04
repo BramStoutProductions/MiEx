@@ -153,9 +153,33 @@ public class WorldBrowser extends JDialog {
 			setActiveTab(tabs.get(0));
 	}
 	
+	@Override
+	public void setVisible(boolean b) {
+		if(b) {
+			SwingUtilities.invokeLater(new Runnable() {
+	
+				@Override
+				public void run() {
+					setActiveTab(activeTab);
+				}
+				
+			});
+		}
+		super.setVisible(b);
+	}
+	
 	private void setActiveTab(Tab tab) {
-		if(activeTab == tab)
+		if(activeTab == tab) {
+			if(tab != null) {
+				savesPanel.removeAll();
+				for(MinecraftSave save : tab.launcher.getSaves()) {
+					savesPanel.add(new Save(this, save));
+				}
+				setSearchString(searchString);
+			}
 			return;
+		}
+		activeTab = tab;
 		
 		for(Tab tab2 : tabs) {
 			tab2.setBackground(getBackground());

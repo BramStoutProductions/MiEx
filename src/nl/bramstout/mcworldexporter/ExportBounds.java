@@ -222,6 +222,10 @@ public class ExportBounds {
 		return true;
 	}
 	
+	public boolean isInExportRegionBounds(int x, int y, int z) {
+		return !(x < minX || x > maxX || y < minY || y > maxY || z < minZ || z > maxZ);
+	}
+	
 	private void generateSafeName() {
 		safeName = name.toLowerCase();
 		for(int i = 0; i < safeName.length(); ++i) {

@@ -78,6 +78,7 @@ public class Config {
 	public static List<String> lodNoScale = new ArrayList<String>();
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static List<String> noFaceOptimisation = new ArrayList<String>();
+	public static List<String> separateMeshForBlocks = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean removeCaves = false;
@@ -130,6 +131,8 @@ public class Config {
 	public static float animationStartFrame;
 	public static float animationEndFrame;
 	public static float usdMetersPerUnit;
+	public static String defaultLocalisation;
+	public static boolean fillWorldBorders;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -321,6 +324,8 @@ public class Config {
 				
 				parseList("noFaceOptimisation", data, noFaceOptimisation);
 				
+				parseList("separateMeshForBlocks", data, separateMeshForBlocks);
+				
 				if(data.has("runOptimiser"))
 					runOptimiser = data.get("runOptimiser").getAsBoolean();
 				
@@ -471,6 +476,12 @@ public class Config {
 				
 				if(data.has("usdMetersPerUnit"))
 					usdMetersPerUnit = data.get("usdMetersPerUnit").getAsFloat();
+				
+				if(data.has("defaultLocalisation"))
+					defaultLocalisation = data.get("defaultLocalisation").getAsString();
+				
+				if(data.has("fillWorldBorders"))
+					fillWorldBorders = data.get("fillWorldBorders").getAsBoolean();
 				
 			}catch(Exception ex) {
 				ex.printStackTrace();

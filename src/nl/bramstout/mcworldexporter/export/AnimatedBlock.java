@@ -187,7 +187,7 @@ public class AnimatedBlock {
 		int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 		BlockState state = BlockStateRegistry.getState(stateId);
 		BlockAnimationHandler animationHandler = BlockStateRegistry.getBakedStateForBlock(id.blockId, id.x, id.y, id.z, id.layer).getAnimationHandler();
-		if(animationHandler == null)
+		if(animationHandler == null || state.getHandler() == null)
 			// Shouldn't ever happen.
 			return;
 		

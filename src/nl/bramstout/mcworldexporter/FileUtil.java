@@ -36,6 +36,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -177,6 +178,24 @@ public class FileUtil {
 		String log = Environment.getEnv("MIEX_LOG_FILE");
 		if(log == null)
 			log = "./log.txt";
+		String addDateTime = Environment.getEnv("MIEX_LOG_FILE_ADD_DATETIME");
+		if(addDateTime != null && (addDateTime.startsWith("t") || addDateTime.startsWith("1"))) {
+			int sep = log.lastIndexOf('.');
+			String prefix = log;
+			String suffix = ".txt";
+			if(sep >= 1) {
+				prefix = log.substring(0, sep);
+				suffix = log.substring(sep);
+			}
+			String datetime = Instant.now().toString();
+			datetime = datetime.replace(':', '_').replace('-', '_');
+			int sep2 = datetime.indexOf('.');
+			if(sep2 >= 0)
+				datetime = datetime.substring(0, sep2);
+			
+			log = prefix + "_" + datetime + suffix;
+		}
+		
 		logFile = log;
 		return log;
 	}

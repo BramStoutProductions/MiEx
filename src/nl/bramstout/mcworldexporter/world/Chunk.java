@@ -42,6 +42,7 @@ import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.parallel.Queue;
 import nl.bramstout.mcworldexporter.parallel.SpinLock;
@@ -111,6 +112,14 @@ public abstract class Chunk {
 			}
 		}
 		
+	}
+	
+	public static void unloadAllLoadedChunks() {
+		Chunk chunk = null;
+		while((chunk = loadedChunks.pop()) != null) {
+			chunk.unload();
+			chunk.unloadImages();
+		}
 	}
 	
 	static {
@@ -203,6 +212,7 @@ public abstract class Chunk {
 		loadLock.aqcuire();
 		isLoading = true;
 		try {
+			blockRegistryChangeCounter = BlockRegistry.getChangeCounter();
 			_load();
 			this.lastAccess = System.currentTimeMillis();
 			loadedChunks.push(this);
@@ -463,11 +473,11 @@ public abstract class Chunk {
 	private int getColourForBlock(Block block, BlockState state, int x, int y, int z, BlendedBiome blendedBiome) {
 		int colour = 0;
 		blendedBiome.clear();
-		String defaultTexture = state.getDefaultTexture();
-		if (defaultTexture != "") {
-			colour = ResourcePacks.getDefaultColour(defaultTexture);
+		DefaultTexture defaultTexture = state.getDefaultTexture();
+		if (defaultTexture != null && !defaultTexture.texture.equals("")) {
+			colour = ResourcePacks.getDefaultColour(defaultTexture.texture);
 
-			if (state.hasTint()) {
+			if (state.hasTint() && defaultTexture.applyTint) {
 				int biomeId = getBiomeIdLocal(x, y, z);
 				Biome biome = BiomeRegistry.getBiome(biomeId);
 				blendedBiome.addBiome(biome, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f);
@@ -486,9 +496,15 @@ public abstract class Chunk {
 									int r = (colour >>> 16) & 0xFF;
 									int g = (colour >>> 8) & 0xFF;
 									int b = (colour) & 0xFF;
-									r = (int) (((float) r) * tint.getR());
-									g = (int) (((float) g) * tint.getG());
-									b = (int) (((float) b) * tint.getB());
+									float fr = (float) Math.pow(((float) r) / 255f, 2.2f);
+									float fg = (float) Math.pow(((float) g) / 255f, 2.2f);
+									float fb = (float) Math.pow(((float) b) / 255f, 2.2f);
+									fr *= tint.getR();
+									fg *= tint.getG();
+									fb *= tint.getB();
+									r = ((int) (Math.pow(fr, 1.0f / 2.2f) * 255f)) & 0xFF;
+									g = ((int) (Math.pow(fg, 1.0f / 2.2f) * 255f)) & 0xFF;
+									b = ((int) (Math.pow(fb, 1.0f / 2.2f) * 255f)) & 0xFF;
 									colour = (r << 16) | (g << 8) | b;
 								}
 							}

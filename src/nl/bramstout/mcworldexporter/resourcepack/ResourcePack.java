@@ -211,4 +211,6 @@ public abstract class ResourcePack {
 	
 	public abstract void getColorMaps(Set<String> colorMaps);
 	
+	public abstract String getLocalisation(String key, String language);
+	
 }

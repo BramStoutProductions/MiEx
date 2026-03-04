@@ -143,6 +143,11 @@
     "minecraft:acacia_leaves"
   ],
   "detailedOcclusion": [
+    "#minecraft:block/walls", 
+    "#minecraft:block/trapdoors", 
+    "#minecraft:block/fence_gates", 
+		"#minecraft:block/fences", 
+    "#minecraft:block/wool_carpets",
     "minecraft:acacia_fence",
     "minecraft:acacia_fence_gate",
     "minecraft:acacia_trapdoor",

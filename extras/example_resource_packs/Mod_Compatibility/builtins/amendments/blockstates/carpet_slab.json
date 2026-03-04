@@ -1,0 +1,46 @@
+{
+    "blocks": [
+        "amendments:carpet_slab"
+    ],
+    "defaultTexture": "",
+    "handler": [
+        {
+            "condition": "thisBlock.state.Mimic != null",
+            "generators": [
+                {
+                    "type": "block",
+                    "args": {
+                        "name": "thisBlock.state.Mimic.Name",
+                        "properties": "thisBlock.state.Mimic.Properties"
+                    }
+                }
+            ]
+        },
+        {
+            "condition": "thisBlock.state.Carpet != null",
+            "generators": [
+                {
+                    "type": "blockTextures",
+                    "args": {
+                        "name": "thisBlock.state.Carpet.Name",
+                        "properties": "thisBlock.state.Carpet.Properties",
+                        "prefix": "'carpet_'"
+                    }
+                }
+            ],
+            "elements": [
+                {
+                    "from": [0, 8, 0],
+                    "to": [16, 9, 16],
+                    "faces": {
+                        "north": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
+                        "east": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
+                        "south": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
+                        "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
+                        "up": {"uv": [0, 0, 16, 16], "texture": "'#carpet_wool'"}
+                    }
+                }
+            ]
+        }
+    ]
+}

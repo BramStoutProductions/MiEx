@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
@@ -67,9 +68,9 @@ public abstract class BlockStatePart {
 		}
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		if(models.size() == 0)
-			return "";
+			return new DefaultTexture("", false);
 		return models.get(0).getDefaultTexture();
 	}
 	

@@ -319,7 +319,7 @@ public class EnvironmentSettingsDialog extends JDialog implements ComponentListe
 				editor = new VariableEditorString();
 				break;
 			case STRING_ARRAY:
-				editor = null;
+				editor = new VariableEditorStringList();
 				break;
 			}
 			if(editor != null) {
@@ -596,6 +596,90 @@ public class EnvironmentSettingsDialog extends JDialog implements ComponentListe
 			String[] items = value.split(";");
 			for(String item : items) {
 				VariableEditorPath editor = new VariableEditorPath(isDirectory);
+				editor.setFromStringValue(item);
+				root.add(new ListItem(editor));
+			}
+			root.add(addButton);
+			setEnabled(isEnabled());
+		}
+
+		@Override
+		public String getStringValue() {
+			String str = null;
+			for(Component comp : root.getComponents()) {
+				if(comp instanceof ListItem) {
+					if(((ListItem) comp).getItem() instanceof VariableEditor) {
+						String editorVal = ((VariableEditor) ((ListItem) comp).getItem()).getStringValue();
+						if(str == null)
+							str = editorVal;
+						else
+							str = str + ";" + editorVal;
+					}
+				}
+			}
+			return str;
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled) {
+			super.setEnabled(enabled);
+			root.setEnabled(enabled);
+			for(Component comp : root.getComponents())
+				comp.setEnabled(enabled);
+		}
+		
+	}
+	
+	public static class VariableEditorStringList extends JScrollPane implements VariableEditor{
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+		
+		private JPanel root;
+		private JButton addButton;
+		
+		public VariableEditorStringList() {
+			super();
+			setBorder(new EmptyBorder(0, 0, 0, 0));
+			
+			setMinimumSize(new Dimension(20, 150));
+			setPreferredSize(new Dimension(200, 150));
+			
+			root = new JPanel();
+			root.setLayout(new ListLayout());
+			root.setBackground(getBackground().brighter());
+			setViewportView(root);
+			setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+			
+			addButton = new JButton("Add Item");
+			addButton.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					root.add(new ListItem(new VariableEditorString()), root.getComponentCount()-1);
+					root.invalidate();
+					invalidate();
+					validate();
+				}
+				
+			});
+			setFromStringValue(null);
+		}
+
+		@Override
+		public void setFromStringValue(String value) {
+			root.removeAll();
+			if(value == null) {
+				root.add(addButton);
+				return;
+			}
+			
+			String[] items = value.split(";");
+			for(String item : items) {
+				VariableEditorString editor = new VariableEditorString();
 				editor.setFromStringValue(item);
 				root.add(new ListItem(editor));
 			}

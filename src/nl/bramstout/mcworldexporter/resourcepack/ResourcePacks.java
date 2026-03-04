@@ -62,6 +62,8 @@ import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
+import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class ResourcePacks {
@@ -251,6 +253,8 @@ public class ResourcePacks {
 		
 		MCWorldExporter.getApp().getUI().update();
 		MCWorldExporter.getApp().getUI().fullReRender();
+		BlockRegistry.clearBlockRegistry();
+		Chunk.unloadAllLoadedChunks();
 		if(MCWorldExporter.getApp().getWorld() != null)
 			MCWorldExporter.getApp().getWorld().reloadFromResourcepack();
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
@@ -387,8 +391,12 @@ public class ResourcePacks {
 	}
 	
 	public static boolean hasOverride(String resource, String type, String extension, String category) {
+		return hasOverride(resource, type, extension, category, Integer.MAX_VALUE);
+	}
+	
+	public static boolean hasOverride(String resource, String type, String extension, String category, int resourcePackIndex) {
 		ResourcePack pack = null;
-		for(int i = 0; i < activeResourcePacks.size(); ++i) {
+		for(int i = 0; i < Math.min(activeResourcePacks.size(), resourcePackIndex-1); ++i) {
 			pack = activeResourcePacks.get(i);
 			if(pack.getName().equals("base_resource_pack"))
 				continue;
@@ -599,6 +607,23 @@ public class ResourcePacks {
 	
 	public static Set<String> getColorMaps(){
 		return colorMaps;
+	}
+	
+	public static String getLocalisation(String key) {
+		return getLocalisation(key, Config.defaultLocalisation, null);
+	}
+	
+	public static String getLocalisation(String key, String language) {
+		return getLocalisation(key, language, null);
+	}
+	
+	public static String getLocalisation(String key, String language, String defaultValue) {
+		for(ResourcePack rp : activeResourcePacks) {
+			String res = rp.getLocalisation(key, language);
+			if(res != null)
+				return res;
+		}
+		return defaultValue;
 	}
 	
 }

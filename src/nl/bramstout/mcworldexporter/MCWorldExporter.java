@@ -72,7 +72,7 @@ public class MCWorldExporter {
 	public static int numUIThreads = 4;
 	public static boolean portableExports = false;
 	public static ReadWriteMutex worldMutex = new ReadWriteMutex();
-	public static String GitHubRepository = "BramStoutProductions/MiEx";
+	public static String GitHubRepository[] = new String[] {"BramStoutProductions/MiEx"};
 	public static boolean offlineMode = false;
 	
 	public static MCWorldExporter getApp() {
@@ -535,7 +535,7 @@ public class MCWorldExporter {
 		try {
 			String gitHubRepositoryEnvVar = Environment.getEnv("MIEX_GITHUB_REPO");
 			if(gitHubRepositoryEnvVar != null)
-				GitHubRepository = gitHubRepositoryEnvVar;
+				GitHubRepository = gitHubRepositoryEnvVar.split(";");
 		}catch(Exception ex) {}
 		
 		try {
@@ -631,7 +631,7 @@ public class MCWorldExporter {
 					offlineMode = true;
 				}
 				else if(args[i].equalsIgnoreCase("-githubRepo")) {
-					GitHubRepository = args[i+1];
+					GitHubRepository = args[i+1].split(";");
 				}
 				else if(args[i].equalsIgnoreCase("-storeGenTexInExport")) {
 					GeneratedTextures.storeGeneratedTexturesInExport = true;

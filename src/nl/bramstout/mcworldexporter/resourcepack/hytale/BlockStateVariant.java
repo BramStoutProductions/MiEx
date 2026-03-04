@@ -47,6 +47,7 @@ import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
@@ -627,15 +628,15 @@ public class BlockStateVariant {
 		return tintsUp;
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		if(this.cubeTextures.size() > 0) {
 			String up = this.cubeTextures.get(0).up;
 			if(up != null)
-				return up;
+				return new DefaultTexture(up, biomeTintUp >= 0);
 		}
 		if(this.customModelTextures.size() > 0)
-			return this.customModelTextures.get(0).texture;
-		return "";
+			return new DefaultTexture(this.customModelTextures.get(0).texture, biomeTintUp >= 0);
+		return new DefaultTexture("", false);
 	}
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, 
@@ -695,7 +696,7 @@ public class BlockStateVariant {
 				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				tintColor, state.needsConnectionInfo(), animationHandler == null ? (this.looping ? this.animationHandler : null) : animationHandler);
+				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), animationHandler == null ? (this.looping ? this.animationHandler : null) : animationHandler);
 	}
 	
 	private Model createCubeModel(int x, int y, int z, int permutation) {

@@ -41,8 +41,10 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
@@ -56,11 +58,11 @@ public class RegionViewer extends JPanel{
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	private int regionSize;
-	private int xPos;
-	private int yPos;
-	private int xOffset;
-	private int yOffset;
+	private float regionSize;
+	private float xPos;
+	private float yPos;
+	private float xOffset;
+	private float yOffset;
 	
 	private int cursorX;
 	private int cursorY;
@@ -75,6 +77,7 @@ public class RegionViewer extends JPanel{
 		prevDimension = null;
 		cursorX = 0;
 		cursorY = 0;
+		regionSize = 1f;
 		
 		setCursor(Toolkit.getDefaultToolkit().createCustomCursor(new BufferedImage(4, 4, BufferedImage.TYPE_INT_ARGB), 
 				new Point(), "emptyCursor"));
@@ -99,72 +102,83 @@ public class RegionViewer extends JPanel{
 	}
 	
 	public Point getCursorWorldLocation() {
-		int xWorld = ((cursorX - xPos) * 32 * 16) / Math.max(regionSize,1) + (xOffset * 32 * 16);
-		int zWorld = ((cursorY - yPos) * 32 * 16) / Math.max(regionSize,1) + (yOffset * 32 * 16);
+		float xWorld = ((cursorX - xPos) * 32f * 16f) / regionSize + (xOffset * 32f * 16f);
+		float zWorld = ((cursorY - yPos) * 32f * 16f) / regionSize + (yOffset * 32f * 16f);
 		
-		return new Point(xWorld, zWorld);
+		return new Point((int) xWorld, (int) zWorld);
 	}
 	
 	private void paintBuffer() {
-		Graphics2D g2 = (Graphics2D) buffer.getGraphics();
-		g2.setBackground(Color.BLACK);
-		g2.clearRect(0, 0, getWidth(), getHeight());
-		
-		g2.setColor(new Color(127, 127, 127));
-		
-		World world = MCWorldExporter.getApp().getWorld();
-		if(world == null)
-			return;
-		
-		int regionMinX = world.getRegionMinX();
-		int regionMinZ = world.getRegionMinZ();
-		int regionMaxX = world.getRegionMaxX();
-		int regionMaxZ = world.getRegionMaxZ();
-		int regionWidth = regionMaxX - regionMinX + 1;
-		int regionHeight = regionMaxZ - regionMinZ + 1;
-		
-		regionSize = Math.max(Math.min(getWidth() / regionWidth, getHeight() / regionHeight),1);
-		int imgWidth = regionWidth * regionSize;
-		int imgHeight = regionHeight * regionSize;
-		
-		xPos = (getWidth() - imgWidth) / 2;
-		yPos = (getHeight() - imgHeight) / 2;
-		xOffset = regionMinX;
-		yOffset = regionMinZ;
-		
-		if(world.getRegions() != null) {
-			for(Region region : world.getRegions()) {
-				if(region == null)
-					continue;
-				int regionX = region.getXCoordinate();
-				int regionZ = region.getZCoordinate();
-				
-				for(int chunkZ = 0; chunkZ < region.getStride(); ++chunkZ) {
-					for(int chunkX = 0; chunkX < region.getStride(); ++chunkX) {
-						try {
-							Chunk chunk = region.getChunk((regionX * region.getStride()) + chunkX, (regionZ * region.getStride()) + chunkZ);
-							if(chunk == null)
-								continue;
-							
-							if(chunk instanceof ChunkAnvil) {
-								if(((ChunkAnvil) chunk).getDataSize() <= 0)
+		BackgroundThread.runInBackground(()->{
+			Graphics2D g2 = (Graphics2D) buffer.getGraphics();
+			g2.setBackground(Color.BLACK);
+			g2.clearRect(0, 0, getWidth(), getHeight());
+			
+			g2.setColor(new Color(127, 127, 127));
+			
+			World world = MCWorldExporter.getApp().getWorld();
+			if(world == null)
+				return;
+			
+			int regionMinX = world.getRegionMinX();
+			int regionMinZ = world.getRegionMinZ();
+			int regionMaxX = world.getRegionMaxX();
+			int regionMaxZ = world.getRegionMaxZ();
+			int padding = Math.max(regionMaxX - regionMinX, regionMaxZ - regionMinZ) / 16;
+			regionMinX -= padding;
+			regionMinZ -= padding;
+			regionMaxX += padding;
+			regionMaxZ += padding;
+			float regionWidth = regionMaxX - regionMinX + 1;
+			float regionHeight = regionMaxZ - regionMinZ + 1;
+			
+			regionSize = Math.max(Math.min(((float) getWidth()) / regionWidth, ((float) getHeight()) / regionHeight),0.000000001f);
+			float imgWidth = regionWidth * regionSize;
+			float imgHeight = regionHeight * regionSize;
+			
+			xPos = (((float) getWidth()) - imgWidth) / 2f;
+			yPos = (((float) getHeight()) - imgHeight) / 2f;
+			xOffset = regionMinX;
+			yOffset = regionMinZ;
+			
+			if(world.getRegions() != null) {
+				for(Region region : world.getRegions()) {
+					if(region == null)
+						continue;
+					int regionX = region.getXCoordinate();
+					int regionZ = region.getZCoordinate();
+					
+					for(int chunkZ = 0; chunkZ < region.getStride(); ++chunkZ) {
+						for(int chunkX = 0; chunkX < region.getStride(); ++chunkX) {
+							try {
+								Chunk chunk = region.getChunk((regionX * region.getStride()) + chunkX, (regionZ * region.getStride()) + chunkZ);
+								if(chunk == null)
 									continue;
-							}else if(chunk instanceof ChunkBedrock) {
-								continue;
+								
+								if(chunk instanceof ChunkAnvil) {
+									if(((ChunkAnvil) chunk).getDataSize() <= 0)
+										continue;
+								}else if(chunk instanceof ChunkBedrock) {
+									continue;
+								}
+								
+								float xStart = (regionX-regionMinX) * regionSize + (chunkX * regionSize) / ((float) region.getStride()) + xPos;
+								float yStart = (regionZ-regionMinZ) * regionSize + (chunkZ * regionSize) / ((float) region.getStride()) + yPos;
+								float xEnd = (regionX-regionMinX) * regionSize + ((chunkX+1) * regionSize) / ((float) region.getStride()) + xPos;
+								float yEnd = (regionZ-regionMinZ) * regionSize + ((chunkZ+1) * regionSize) / ((float) region.getStride()) + yPos;
+								g2.fillRect((int) xStart, (int) yStart, (int) Math.max(xEnd-xStart,1), (int) Math.max(yEnd-yStart,1));
+							}catch(Exception ex) {
+								ex.printStackTrace();
 							}
-							
-							int xStart = (regionX-regionMinX) * regionSize + (chunkX * regionSize) / region.getStride() + xPos;
-							int yStart = (regionZ-regionMinZ) * regionSize + (chunkZ * regionSize) / region.getStride() + yPos;
-							int xEnd = (regionX-regionMinX) * regionSize + ((chunkX+1) * regionSize) / region.getStride() + xPos;
-							int yEnd = (regionZ-regionMinZ) * regionSize + ((chunkZ+1) * regionSize) / region.getStride() + yPos;
-							g2.fillRect(xStart, yStart, Math.max(xEnd-xStart,1), Math.max(yEnd-yStart,1));
-						}catch(Exception ex) {
-							ex.printStackTrace();
 						}
 					}
 				}
 			}
-		}
+			
+			SwingUtilities.invokeLater(()->{
+				repaint();
+			});
+		});
 	}
 	
 	@Override

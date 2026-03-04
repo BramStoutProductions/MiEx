@@ -45,6 +45,7 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.export.IntArray;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
+import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
@@ -58,7 +59,7 @@ public class Model {
 	private long occludes;
 	protected String extraData;
 	protected boolean doubleSided;
-	protected String defaultTexture;
+	protected DefaultTexture defaultTexture;
 	protected Map<String, Matrix> displayTransforms;
 	private ModelHandler handler;
 	private boolean animatesTopology;
@@ -193,14 +194,14 @@ public class Model {
 		return this;
 	}
 	
-	public String getDefaultTexture() {
+	public DefaultTexture getDefaultTexture() {
 		if(defaultTexture != null)
 			return defaultTexture;
 		if(textures.size() == 0)
-			defaultTexture = "";
+			defaultTexture = new DefaultTexture("", false);
 		else if(faces.size() == 0) {
 			String key = (String) textures.keySet().iterator().next();
-			defaultTexture = getTexture(key);
+			defaultTexture = new DefaultTexture(getTexture(key), true);
 		}else {
 			ModelFace face = faces.get(0);
 			for(ModelFace face2 : faces) {
@@ -209,7 +210,7 @@ public class Model {
 					break;
 				}
 			}
-			defaultTexture = getTexture(face.getTexture());
+			defaultTexture = new DefaultTexture(getTexture(face.getTexture()), face.getTintIndex() >= 0);
 		}
 		return defaultTexture;
 	}

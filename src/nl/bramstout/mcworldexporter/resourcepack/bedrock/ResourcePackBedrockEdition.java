@@ -1102,5 +1102,10 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 			}
 		}
 	}
+	
+	@Override
+	public String getLocalisation(String key, String language) {
+		return null;
+	}
 
 }

@@ -85,6 +85,7 @@ public class ResourcePackDefaults {
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Setting up...");
 		try {
 			BuiltInFiles.setupBuiltInFiles(false);
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("Setting up...");
 			
 			ConfigDefaults.createBaseConfigFile();
 			
@@ -331,7 +332,7 @@ public class ResourcePackDefaults {
 	    return 0;
 	}
 	
-	public static void extractResourcePackFromJar(File jarFile, File resourcePackDir) throws IOException {
+	private static void extractResourcePackFromJar(File jarFile, File resourcePackDir) throws IOException {
 		ZipInputStream zipIn = new ZipInputStream(new FileInputStream(jarFile));
 		try {
 		    ZipEntry entry = null;
