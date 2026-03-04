@@ -6,7 +6,7 @@
     "handler": {
         "condition": "thisBlock.state.Mimic != null",
         "transform": {
-            "translate": [ 0.0, 16.0, 0.0 ]
+            "translate": [ 0.0, 15.99, 0.0 ]
         },
         "generators": [
             {
