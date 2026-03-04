@@ -24,7 +24,8 @@
                     "args": {
                         "name": "thisBlock.state.Carpet.Name",
                         "properties": "thisBlock.state.Carpet.Properties",
-                        "prefix": "'carpet_'"
+                        "prefix": "'carpet_'",
+                        "remap": "'wool'"
                     }
                 }
             ],
