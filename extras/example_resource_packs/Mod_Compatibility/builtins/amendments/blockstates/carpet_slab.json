@@ -3,6 +3,9 @@
         "amendments:carpet_slab"
     ],
     "defaultTexture": "",
+    "tint":{
+        "tint": "minecraft:grass"
+    },
     "handler": [
         {
             "condition": "thisBlock.state.Mimic != null",
@@ -34,11 +37,16 @@
                     "from": [0, 8, 0],
                     "to": [16, 9, 16],
                     "faces": {
-                        "north": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                        "east": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                        "south": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                        "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                        "up": {"uv": [0, 0, 16, 16], "texture": "'#carpet_wool'"}
+                        "north": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                        "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                        "east": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                        "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                        "south": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                        "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                        "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                        "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                        "up": {"uv": [0, 0, 16, 16], "texture": "'#carpet_wool'", 
+                        "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                     }
                 }
             ]

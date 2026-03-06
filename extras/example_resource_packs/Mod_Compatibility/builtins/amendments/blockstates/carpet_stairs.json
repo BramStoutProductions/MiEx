@@ -3,6 +3,9 @@
         "amendments:carpet_stairs"
     ],
     "defaultTexture": "",
+    "tint":{
+        "tint": "minecraft:grass"
+    },
     "handler": [
         {
             "condition": "thisBlock.state.Mimic != null",
@@ -56,42 +59,60 @@
                             "from": [0, 8, 0],
                             "to": [8, 9, 16],
                             "faces": {
-                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 8, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 8, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [7, 16, 0.001],
                             "to": [16, 17, 15.999],
                             "faces": {
-                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [7, 0, 16, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [7, 0, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [-1, 0, 0.001],
                             "to": [0, 9, 15.999],
                             "faces": {
-                                "north": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [15, 0, 16, 16], "texture": "'#carpet_wool'"},
-                                "down": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [15, 0, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "down": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [7, 9, 0],
                             "to": [8, 16, 16],
                             "faces": {
-                                "north": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 16, 7], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 16, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         }
                     ]
@@ -131,8 +152,10 @@
                             "from": [0, 9, 7],
                             "to": [7, 16, 8],
                             "faces": {
-                                "north": {"uv": [9, 0, 16, 7], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [9, 0, 16, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
@@ -140,8 +163,10 @@
                             "from": [7, 9, 0],
                             "to": [8, 16, 7],
                             "faces": {
-                                "north": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 7, 7], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 7, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
@@ -149,9 +174,12 @@
                             "from": [0, 8, 0],
                             "to": [8, 9, 8],
                             "faces": {
-                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 8, 8], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 8, 8], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
@@ -159,11 +187,16 @@
                             "from": [0, 16, 7],
                             "to": [16, 17, 16],
                             "faces": {
-                                "north": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [7, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [7, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
@@ -171,10 +204,14 @@
                             "from": [7, 16, 0],
                             "to": [16, 17, 7],
                             "faces": {
-                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 15, 7, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 15, 7, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [7, 0, 16, 7], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 15, 7, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 15, 7, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [7, 0, 16, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         }
                     ]
@@ -213,71 +250,100 @@
                             "from": [7, 9, 7],
                             "to": [8, 16, 16],
                             "faces": {
-                                "north": {"uv": [8, 0, 9, 7], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [15, 0, 16, 7], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [7, 0, 16, 7], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 1, 9], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [8, 0, 9, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [15, 0, 16, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [7, 0, 16, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 1, 9], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [0, 8, 0],
                             "to": [8, 9, 16],
                             "faces": {
-                                "north": {"uv": [8, 0, 16, 1], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 8, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [8, 0, 16, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 8, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [6.999, 16, 6.999],
                             "to": [15.998, 17, 15.998],
                             "faces": {
-                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [7, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [7, 7, 16, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [0, 15, 9, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [7, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [7, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [8, 8, 0],
                             "to": [16, 9, 8],
                             "faces": {
-                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [8, 0, 16, 8], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [8, 0, 16, 8], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [-1, 0, 0.0001],
                             "to": [0, 9, 15.9999],
                             "faces": {
-                                "north": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'"},
-                                "south": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [15, 0, 16, 16], "texture": "'#carpet_wool'"},
-                                "down": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "south": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [15, 0, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "down": {"uv": [0, 0, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [8, 9, 7],
                             "to": [16, 16, 8],
                             "faces": {
-                                "north": {"uv": [0, 0, 8, 7], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 0, 8, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 0, 1, 7], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 0, 8, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         },
                         {
                             "from": [-0.0001, 0, -1],
                             "to": [15.9997, 9, 0],
                             "faces": {
-                                "north": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "east": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'"},
-                                "west": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'"},
-                                "up": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'"},
-                                "down": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'"}
+                                "north": {"uv": [0, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "east": {"uv": [0, 7, 1, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "west": {"uv": [15, 7, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "up": {"uv": [0, 15, 16, 16], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"},
+                                "down": {"uv": [0, 0, 16, 1], "texture": "'#carpet_wool'", 
+                                "tintindex": "global.RefTintIndices.carpet_wool == null ? -1 : global.RefTintIndices.carpet_wool"}
                             }
                         }
                     ]
