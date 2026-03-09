@@ -34,11 +34,17 @@ package nl.bramstout.mcworldexporter.export;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
@@ -48,6 +54,7 @@ import nl.bramstout.mcworldexporter.Pair;
 import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.ui.Popups;
 
 public class ExportData {
 	
@@ -233,7 +240,7 @@ public class ExportData {
 				
 				@Override
 				public void run() {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find world save specified in export.", "Error", JOptionPane.ERROR_MESSAGE);
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find world save specified in export.", "Error", Popups.ERROR_MESSAGE);
 				}
 				
 			});
@@ -304,6 +311,129 @@ public class ExportData {
 			}
 		}
 		System.out.println();
+	}
+	
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		for(Field field : this.getClass().getFields()) {
+			try {
+				if(List.class.isAssignableFrom(field.getType())) {
+					ParameterizedType parameter = (ParameterizedType) field.getGenericType();
+					Type[] parameterTypes = parameter.getActualTypeArguments();
+					if(parameterTypes.length != 1)
+						continue;
+					Class<?> parameterType = (Class<?>) parameterTypes[0];
+					List<?> data = (List<?>) field.get(this);
+					
+					if(parameterType.equals(ExportBounds.class)) {
+						JsonObject array = new JsonObject();
+						for(Object obj : data) {
+							array.add(((ExportBounds) obj).getName(), ((ExportBounds)obj).toJson());
+						}
+						res.add(field.getName(), array);
+					}else {
+						JsonArray array = new JsonArray();
+						for(Object obj : data) {
+							if(parameterType.equals(String.class)) {
+								array.add((String) obj);
+							}else if(parameterType.equals(ResourcePack.class)) {
+								array.add(((ResourcePack) obj).getUUID());
+							}
+						}
+						res.add(field.getName(), array);
+					}
+				}else{
+					if(String.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (String) field.get(this));
+					}else if(Float.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Float) field.get(this));
+					}else if(Integer.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Integer) field.get(this));
+					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Boolean) field.get(this));
+					}
+				}
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		return res;
+	}
+	
+	public void fromJson(JsonObject data) {
+		for(Entry<String, JsonElement> entry : data.entrySet()) {
+			try {
+				Field field = this.getClass().getField(entry.getKey());
+				
+				if(List.class.isAssignableFrom(field.getType())) {
+					ParameterizedType parameter = (ParameterizedType) field.getGenericType();
+					Type[] parameterTypes = parameter.getActualTypeArguments();
+					if(parameterTypes.length != 1)
+						continue;
+					Class<?> parameterType = (Class<?>) parameterTypes[0];
+					
+					if(parameterType.equals(ExportBounds.class)) {
+						if(entry.getValue().isJsonObject()) {
+							@SuppressWarnings("unchecked")
+							List<ExportBounds> fieldData = (List<ExportBounds>) field.get(this);
+							
+							for(Entry<String, JsonElement> entry2 : entry.getValue().getAsJsonObject().entrySet()) {
+								ExportBounds bounds = null;
+								for(ExportBounds bounds2 : fieldData) {
+									if(bounds2.getName().equals(entry2.getKey())) {
+										bounds = bounds2;
+										break;
+									}
+								}
+								
+								if(entry2.getValue().isJsonNull()) {
+									// We need to remove it.
+									if(bounds != null)
+										fieldData.remove(bounds);
+								}else if(entry2.getValue().isJsonObject()) {
+									if(bounds == null) {
+										// Newly added
+										bounds = new ExportBounds("");
+										bounds.setName(entry2.getKey());
+										fieldData.add(bounds);
+									}
+									bounds.fromJson(entry.getValue().getAsJsonObject());
+								}
+							}
+						}
+					}else {
+						if(entry.getValue().isJsonArray()) {
+							JsonArray entryData = entry.getValue().getAsJsonArray();
+							List<Object> fieldData = new ArrayList<Object>();
+							for(JsonElement el : entryData.asList()) {
+								if(parameterType.equals(String.class)) {
+									fieldData.add(el.getAsString());
+								}else if(parameterType.equals(ResourcePack.class)) {
+									ResourcePack rp = ResourcePacks.getResourcePack(el.getAsString());
+									if(rp != null)
+										fieldData.add(rp);
+								}
+							}
+							field.set(this, fieldData);
+						}
+					}
+				}else{
+					if(String.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsString());
+					}else if(Float.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsFloat());
+					}else if(Integer.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsInt());
+					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsBoolean());
+					}
+				}
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 	
 }

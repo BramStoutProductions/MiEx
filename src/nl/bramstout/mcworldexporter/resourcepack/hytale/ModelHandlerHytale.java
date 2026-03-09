@@ -316,7 +316,6 @@ public class ModelHandlerHytale extends ModelHandler{
 		public boolean visible;
 		public boolean doubleSided;
 		public boolean reverseDirections;
-		@SuppressWarnings("unused")
 		public String shadingMode;
 		@SuppressWarnings("unused")
 		public String unwrapMode;
@@ -420,7 +419,7 @@ public class ModelHandlerHytale extends ModelHandler{
 			};
 			
 			for(Faces face : this.faces) {
-				ModelFace modelFace = model.addFace(minMaxPoints, null, face.dir, face.tex, 0f, -1);
+				ModelFace modelFace = model.addFace(minMaxPoints, null, face.dir, face.tex, 0f, -1, shadingMode);
 				
 				FaceUVs uvs = this.textureLayout.getOrDefault(face.id, null);
 				if(uvs == null) {

@@ -436,7 +436,8 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 	
 	private Mesh newMesh(Mesh origMesh, BVHNode node, int meshCounter, int[] subsetIds) {
 		Mesh mesh = new Mesh(origMesh.getName() + meshCounter, MeshPurpose.RENDER, origMesh.getTexture(), 
-							origMesh.getMatTexture(), origMesh.hasAnimatedTexture(), origMesh.isDoubleSided(), 128, 8);
+							origMesh.getMatTexture(), origMesh.hasAnimatedTexture(), origMesh.isDoubleSided(),
+							origMesh.getShadingMode(), 128, 8);
 		mesh.setExtraData(origMesh.getExtraData());
 		addPrimsToMesh(origMesh, mesh, node, subsetIds);
 		return mesh;
@@ -556,7 +557,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			WriteCapturer capturer = manager.getWriteCapturer(writeCapturerId);
 			Mesh proxyMesh = new Mesh(mesh.getName(), MeshPurpose.PROXY, mesh.getTexture(), 
 										mesh.getMatTexture(), mesh.hasAnimatedTexture(), mesh.isDoubleSided(),
-										mesh.getVertices().size()/3, mesh.getUs().size());
+										mesh.getShadingMode(), mesh.getVertices().size()/3, mesh.getUs().size());
 			for(Mesh mesh2 : capturer.meshes) {
 				mesh2.appendMesh(mesh2, false);
 			}

@@ -108,6 +108,8 @@ public class BuiltInBlockState extends BlockState{
 					handlerRegistry.put(blockName, handler);
 					if(handler.model.doubleSided)
 						Config.doubleSided.add(blockName);
+					if(handler.tint != null)
+						Tints.setTint(blockName, handler.tint, true);
 				}
 			}
 		}
@@ -159,6 +161,7 @@ public class BuiltInBlockState extends BlockState{
 		private BuiltInModel model;
 		private BuiltInBlockAnimationHandler animationHandler;
 		private int resourcePackIndex;
+		private Tint tint;
 		
 		public BuiltInBlockStateHandler(String name, int resourcePackIndex, JsonObject data) {
 			blockNames = new ArrayList<String>();
@@ -167,6 +170,7 @@ public class BuiltInBlockState extends BlockState{
 			model = new BuiltInModel();
 			animationHandler = null;
 			this.resourcePackIndex = resourcePackIndex;
+			tint = null;
 			
 			if(data.has("include")) {
 				JsonArray includeArray = data.getAsJsonArray("include");
@@ -187,6 +191,7 @@ public class BuiltInBlockState extends BlockState{
 						isAnimated = isAnimated || includedHandler.isAnimated;
 						if(includedHandler.animationHandler != null)
 							animationHandler = includedHandler.animationHandler;
+						tint = includedHandler.tint;
 						
 						if(model.rootPart == null)
 							model.rootPart = includedHandler.model.rootPart;
@@ -261,6 +266,10 @@ public class BuiltInBlockState extends BlockState{
 				
 				animationHandler = new BuiltInBlockAnimationHandler(duration, isLocationDependent, randomOffsetXZ, randomOffsetY,
 							animatesTopology, animatesPoints, animatesUVs, animatesVertexColors);
+			}
+			
+			if(data.has("tint")) {
+				tint = new Tint(data.getAsJsonObject("tint"));
 			}
 			
 			model.parse(data);

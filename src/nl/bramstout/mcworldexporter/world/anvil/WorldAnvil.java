@@ -41,8 +41,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import javax.swing.JOptionPane;
-
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.IndexCache;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
@@ -50,6 +48,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
+import nl.bramstout.mcworldexporter.ui.Popups;
 import nl.bramstout.mcworldexporter.world.Region;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -200,7 +199,7 @@ public class WorldAnvil extends World{
 				out.close();
 			}catch(Exception ex) {
 				// We couldn't acquire a session, so error out.
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world is open in another program.", "Locked world", JOptionPane.ERROR_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world is open in another program.", "Locked world", Popups.ERROR_MESSAGE);
 				return;
 			}
 		}

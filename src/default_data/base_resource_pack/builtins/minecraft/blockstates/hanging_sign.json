@@ -164,8 +164,8 @@
                                 "state": "thisBlock.state",
                                 "textOffsetX": 8,
                                 "textOffsetY": 5.1333,
-                                "textOffsetZ": 9.25,
-                                "textOffsetZBack": 6.75,
+                                "textOffsetZ": 9.02,
+                                "textOffsetZBack": 6.98,
                                 "textScale": 1.75,
                                 "lineDistance": 2.0
                             }

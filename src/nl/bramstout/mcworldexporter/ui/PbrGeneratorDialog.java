@@ -46,7 +46,6 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -153,7 +152,7 @@ public class PbrGeneratorDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) {
 				if(saveMode.getSelectedIndex() == 1) {
 					if(saveToInput.getText().toLowerCase().contains("save to resource pack") || saveToInput.getText().trim().isEmpty()) {
-						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Please specify a name for the resource pack to save the PBR textures to.", "Error", JOptionPane.ERROR_MESSAGE);
+						Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Please specify a name for the resource pack to save the PBR textures to.", "Error", Popups.ERROR_MESSAGE);
 						return;
 					}
 				}
@@ -182,7 +181,7 @@ public class PbrGeneratorDialog extends JDialog {
 					ex.printStackTrace();
 				}
 				
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "PBR textures created successfully", "Done", JOptionPane.PLAIN_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "PBR textures created successfully", "Done", Popups.PLAIN_MESSAGE);
 				setVisible(false);
 				
 				// Reload resource packs.

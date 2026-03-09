@@ -51,6 +51,7 @@ public class BlockRegistry {
 	
 	public static NbtTagCompound EMPTY_COMPOUND = NbtTagCompound.newNonPooledInstance("");
 	public static int MINECRAFT_WATER_SOURCE_BLOCK_ID = 0;
+	public static Block INVALID_BLOCK = new Block("miex:invalid", EMPTY_COMPOUND, -1, 0);
 	
 	private static final char[] INT_TO_CHAR = new char[] {
 			'0', '1', '2', '3', '4', '5', '6', '7', 
@@ -131,7 +132,7 @@ public class BlockRegistry {
 	}
 	
 	public static Block getBlock(int id) {
-		return registeredBlocks.get((id < 0 || id >= registeredBlocks.size()) ? 0 : id);
+		return id >= registeredBlocks.size() ? INVALID_BLOCK : registeredBlocks.get((id < 0) ? 0 : id);
 	}
 	
 	private static Block getBlockFromName(String name, NbtTagCompound properties, int id, int dataVersion) {

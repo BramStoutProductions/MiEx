@@ -35,12 +35,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.model.ModelFace;
+
 public class MeshGroup extends Mesh{
 
 	private List<Mesh> children;
 	
 	public MeshGroup(String name, MeshPurpose purpose) {
-		super(name, purpose, name, name, false, false, 0, 0);
+		super(name, purpose, name, name, false, false, ModelFace.SHADING_MODE_STANDARD, 0, 0);
 		children = new ArrayList<Mesh>();
 	}
 	

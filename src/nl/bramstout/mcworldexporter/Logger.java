@@ -38,8 +38,9 @@ import java.io.PrintStream;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+
+import nl.bramstout.mcworldexporter.ui.Popups;
 
 public class Logger extends PrintStream{
 
@@ -128,7 +129,7 @@ public class Logger extends PrintStream{
 				@Override
 				public void run() {
 					if(MCWorldExporter.getApp() != null)
-						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "An error happened somewhere. Please check the log for more information.", "Error", JOptionPane.ERROR_MESSAGE);
+						Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "An error happened somewhere. Please check the log for more information.", "Error", Popups.ERROR_MESSAGE);
 					hasShownPopup.set(false);
 				}
 				

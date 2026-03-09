@@ -43,7 +43,6 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
@@ -131,8 +130,8 @@ public class SavePresetDialog extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if(nameInput.getText().trim().isEmpty()) {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), 
-							"Please specify a name for the preset.", "Error", JOptionPane.ERROR_MESSAGE);
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), 
+							"Please specify a name for the preset.", "Error", Popups.ERROR_MESSAGE);
 					return;
 				}
 				
@@ -144,8 +143,8 @@ public class SavePresetDialog extends JDialog {
 				preset.fromApp();
 				Preset.addPreset(preset);
 				
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), 
-						"Preset saved successfully", "Done", JOptionPane.PLAIN_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), 
+						"Preset saved successfully", "Done", Popups.PLAIN_MESSAGE);
 				setVisible(false);
 			}
 			

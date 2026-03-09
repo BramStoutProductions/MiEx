@@ -117,7 +117,7 @@ public class ChunkReader_2529_2835 extends ChunkReader{
 			if(palette == null)
 				continue;
 			
-			if (paletteMap == null || palette.getSize() > paletteMap.length) {
+			if (paletteMap == null || palette.getSize() > paletteMap.length || palette.getSize() > waterloggedPalette.length) {
 				paletteMap = new int[palette.getSize()];
 				waterloggedPalette = new boolean[palette.getSize()];
 			}

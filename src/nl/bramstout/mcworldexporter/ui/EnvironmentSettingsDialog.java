@@ -51,7 +51,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -149,7 +148,7 @@ public class EnvironmentSettingsDialog extends JDialog implements ComponentListe
 				Environment.setEnv(values);
 				Environment.saveToEnvFile();
 			}
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "The new settings will go in effect the next time you launch MiEx.", "Saved", JOptionPane.PLAIN_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "The new settings will go in effect the next time you launch MiEx.", "Saved", Popups.PLAIN_MESSAGE);
 		}
 		if(isVisible())
 			setVisible(false);

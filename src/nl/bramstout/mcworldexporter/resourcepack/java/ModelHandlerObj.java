@@ -323,7 +323,7 @@ public class ModelHandlerObj extends ModelHandler{
 			Direction dir = calculateDirection(points);
 			int tintIndex = tintIndices.get(i);
 			ModelFace face = new ModelFace(points, uvs2, "#tex" + Integer.toString(textureIndices.get(i)), 
-											tintIndex, dir, model.isDoubleSided());
+											tintIndex, dir, model.isDoubleSided(), ModelFace.SHADING_MODE_STANDARD);
 			
 			model.getFaces().add(face);
 		}

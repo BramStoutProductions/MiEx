@@ -40,6 +40,11 @@ import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 
 public class ModelFace {
+	
+	public static final String SHADING_MODE_STANDARD = "standard".intern();
+	public static final String SHADING_MODE_FLAT = "flat".intern();
+	public static final String SHADING_MODE_FULLBRIGHT = "fullbright".intern();
+	public static final String SHADING_MODE_REFLECTIVE = "reflective".intern();
 
 	private float points[];
 	private float uvs[];
@@ -50,6 +55,7 @@ public class ModelFace {
 	private Direction direction;
 	private boolean doubleSided;
 	private int tintIndex;
+	private String shadingMode;
 
 	public ModelFace(ModelFace other) {
 		points = Arrays.copyOf(other.points, other.points.length);
@@ -63,9 +69,9 @@ public class ModelFace {
 		direction = other.direction;
 		doubleSided = other.doubleSided;
 		tintIndex = other.tintIndex;
-	}
+		shadingMode = other.shadingMode;	}
 
-	public ModelFace(float[] points, float[] uvs, String texture, int tintIndex, Direction direction, boolean doubleSided) {
+	public ModelFace(float[] points, float[] uvs, String texture, int tintIndex, Direction direction, boolean doubleSided, String shadingMode) {
 		if(points.length != (4 * 3))
 			throw new RuntimeException("Incorrect number of points");
 		if(uvs.length != (4 * 2))
@@ -79,6 +85,7 @@ public class ModelFace {
 		this.doubleSided = doubleSided;
 		this.texture = texture;
 		this.tintIndex = tintIndex;
+		this.shadingMode = shadingMode;
 		
 		float[] minMaxPoints2 = {
 				Math.min(points[0*3+0], points[2*3+0]),
@@ -91,7 +98,7 @@ public class ModelFace {
 		calculateOcclusion(minMaxPoints2);
 	}
 	
-	public ModelFace(float[] minMaxPoints, Direction direction, JsonObject faceData, boolean doubleSided) {
+	public ModelFace(float[] minMaxPoints, Direction direction, JsonObject faceData, boolean doubleSided, String shadingMode) {
 		points = new float[4 * 3];
 		uvs = new float[4 * 2];
 		vertexColors = null;
@@ -99,6 +106,7 @@ public class ModelFace {
 		occludedBy = 0;
 		this.direction = direction;
 		this.doubleSided = doubleSided;
+		this.shadingMode = shadingMode;
 
 		texture = "";
 		if (faceData != null && faceData.has("texture"))
@@ -339,6 +347,17 @@ public class ModelFace {
 	public void calculateOcclusion(float[] minMaxPoints) {
 		occludes = 0;
 		occludedBy = 0;
+		if((minMaxPoints[3] - minMaxPoints[0]) > 0.01f && 
+				(minMaxPoints[4] - minMaxPoints[1]) > 0.01f &&
+				(minMaxPoints[5] - minMaxPoints[2]) > 0.01f) {
+			// If the face isn't perfectly aligned to an axis,
+			// then all three axis of the bounding box will be
+			// non-zero. In that case, this face also wouldn't
+			// be able to occlude other faces or be occluded.
+			// So we'll just end it here.
+			return;
+		}
+		
 		switch (direction) {
 		case DOWN:
 			if (minMaxPoints[1] > -0.02f && minMaxPoints[1] < 0.001f) {
@@ -1148,6 +1167,14 @@ public class ModelFace {
 	
 	public int getTintIndex() {
 		return tintIndex;
+	}
+	
+	public String getShadingMode() {
+		return shadingMode;
+	}
+	
+	public void setShadingMode(String shadingMode) {
+		this.shadingMode = shadingMode;
 	}
 	
 	public void translate(float x, float y, float z) {

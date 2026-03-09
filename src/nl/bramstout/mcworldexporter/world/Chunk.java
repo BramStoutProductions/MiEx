@@ -766,7 +766,7 @@ public abstract class Chunk {
 				done = true;
 				for (z = 0; z < 16; ++z) {
 					for (x = 0; x < 16; ++x) {
-						if (tmpHeightMap[j] == Short.MIN_VALUE) {
+						if (tmpHeightMap[j] < (short) y) {
 							done = false;
 							if (section[i] != 0)
 								tmpHeightMap[j] = (short) y;

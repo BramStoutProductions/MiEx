@@ -115,36 +115,36 @@ public class TextMeshCreator {
 	public static void generateText(JsonElement text, Font font, Color defaultColor, Color glowColor,
 			float distanceBetweenChars, float distanceBetweenBaselines,
 			Alignment horizontalAlignment, Alignment verticalAlignment, float scale, boolean glowing,
-			List<ModelFace> outputFaces) {
+			String shadingMode, List<ModelFace> outputFaces) {
 		String resText = parseJsonElement(text, "");
 		
 		generateText(resText, font, defaultColor, distanceBetweenChars, distanceBetweenBaselines,
-				horizontalAlignment, verticalAlignment, scale, 0f, 0f, 0f, false, outputFaces);
+				horizontalAlignment, verticalAlignment, scale, 0f, 0f, 0f, false, shadingMode, outputFaces);
 		
 		if(glowing) {
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale, -1f/8f, -1f/8f, -0.05f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale, -1f/8f, -1f/8f, -0.05f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale,  0f/8f, -1f/8f, -0.052f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale,  0f/8f, -1f/8f, -0.052f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale,  1f/8f, -1f/8f, -0.054f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale,  1f/8f, -1f/8f, -0.054f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale, -1f/8f,  1f/8f, -0.056f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale, -1f/8f,  1f/8f, -0.056f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale,  0f/8f,  1f/8f, -0.058f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale,  0f/8f,  1f/8f, -0.058f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale,  1f/8f,  1f/8f, -0.06f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale,  1f/8f,  1f/8f, -0.06f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale, -1f/8f,  0f/8f, -0.062f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale, -1f/8f,  0f/8f, -0.062f, true, shadingMode, outputFaces);
 			
 			generateText(resText, font, glowColor, distanceBetweenChars, distanceBetweenBaselines,
-					horizontalAlignment, verticalAlignment, scale,  1f/8f,  0f/8f, -0.064f, true, outputFaces);
+					horizontalAlignment, verticalAlignment, scale,  1f/8f,  0f/8f, -0.064f, true, shadingMode, outputFaces);
 		}
 	}
 	
@@ -255,7 +255,7 @@ public class TextMeshCreator {
 	public static void generateText(String text, Font font, Color defaultColor,
 			float distanceBetweenChars, float distanceBetweenBaselines,
 			Alignment horizontalAlignment, Alignment verticalAlignment, float scale, 
-			float offsetX, float offsetY, float offsetZ, boolean useGlowColors,
+			float offsetX, float offsetY, float offsetZ, boolean useGlowColors, String shadingMode,
 			List<ModelFace> outputFaces) {
 		int outputFacesStartIndex = outputFaces.size();
 		int lineFaceStartIndex = outputFaces.size();
@@ -368,11 +368,11 @@ public class TextMeshCreator {
 			
 			if(charInfo.getTexture() != null) {
 				addCharacterQuad(charInfo, xOffset, yOffset, 0f, minMaxPoints, dir, faceData, uvArray,
-									currentColor, isItalic, outputFaces);
+									currentColor, isItalic, shadingMode, outputFaces);
 				if(isBold) {
 					xOffset += 1f/8f;
 					addCharacterQuad(charInfo, xOffset, yOffset, 0.01f, minMaxPoints, dir, faceData, uvArray,
-							currentColor, isItalic, outputFaces);
+							currentColor, isItalic, shadingMode, outputFaces);
 				}
 				
 				if(isUnderlined) {
@@ -385,7 +385,7 @@ public class TextMeshCreator {
 					addCharacterQuad(underlineInfo, 
 							xOffset - distanceBetweenChars / 2f - (isBold ? 1f/8f : 0f), 
 							yOffset - 2f/8f, 0.02f, minMaxPoints, dir, 
-							faceData, uvArray, currentColor, isItalic, outputFaces);
+							faceData, uvArray, currentColor, isItalic, shadingMode, outputFaces);
 				}
 				if(isStrikethrough) {
 					Font.Character underlineInfo = new Font.Character(
@@ -397,7 +397,7 @@ public class TextMeshCreator {
 					addCharacterQuad(underlineInfo, 
 							xOffset - distanceBetweenChars / 2f - (isBold ? 1f/8f : 0f), 
 							yOffset + 4f/8f, 0.02f, minMaxPoints, dir, 
-							faceData, uvArray, currentColor, isItalic, outputFaces);
+							faceData, uvArray, currentColor, isItalic, shadingMode, outputFaces);
 				}
 			}
 			
@@ -432,7 +432,7 @@ public class TextMeshCreator {
 	
 	private static void addCharacterQuad(Font.Character charInfo, float xOffset, float yOffset, float zOffset,
 										float[] minMaxPoints, Direction dir, JsonObject faceData, JsonArray uvArray,
-										Color currentColor, boolean isItalic, List<ModelFace> outputFaces) {
+										Color currentColor, boolean isItalic, String shadingMode, List<ModelFace> outputFaces) {
 		faceData.addProperty("texture", charInfo.getTexture());
 		uvArray.set(0, new JsonPrimitive(charInfo.getTexU() * 16f));
 		uvArray.set(1, new JsonPrimitive(charInfo.getTexV() * 16f));
@@ -446,7 +446,7 @@ public class TextMeshCreator {
 		minMaxPoints[4] = yOffset + charInfo.getAscent();
 		minMaxPoints[5] = zOffset;
 		
-		ModelFace face = new ModelFace(minMaxPoints, dir, faceData, false);
+		ModelFace face = new ModelFace(minMaxPoints, dir, faceData, false, shadingMode);
 		face.setFaceColour(currentColor.getR(), currentColor.getG(), currentColor.getB());
 		
 		if(isItalic) {

@@ -44,8 +44,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JOptionPane;
-
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
@@ -67,6 +65,7 @@ import nl.bramstout.mcworldexporter.resourcepack.BannerTextureCreator;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
+import nl.bramstout.mcworldexporter.ui.Popups;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class Exporter {
@@ -278,7 +277,7 @@ public class Exporter {
 					Mesh mesh = meshes.get(matTexture);
 					if(mesh == null) {
 						mesh = new Mesh(matTexture, MeshPurpose.UNDEFINED, texture, matTexture, 
-										false, model.isDoubleSided(), 32, 8);
+										false, model.isDoubleSided(), face.getShadingMode(), 32, 8);
 						mesh.addFace(face, -0.5f, -0.5f, -0.5f, atlas, faceTint, cornerData, null);
 						meshes.put(matTexture, mesh);
 					}else {
@@ -387,7 +386,7 @@ public class Exporter {
 		// In case we want to export again, we need to reload the entities
 		// to get rid of the modified data.
 		MCWorldExporter.getApp().getWorld().unloadEntities();
-		JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), message, "Done", JOptionPane.PLAIN_MESSAGE);
+		Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), message, "Done", Popups.PLAIN_MESSAGE);
 	}
 	
 	private static class ExportChunkTask implements Runnable {

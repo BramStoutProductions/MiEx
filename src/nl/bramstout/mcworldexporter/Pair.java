@@ -33,6 +33,8 @@ package nl.bramstout.mcworldexporter;
 
 import java.util.Map;
 
+import com.google.gson.JsonObject;
+
 public class Pair<K, V> implements Map.Entry<K, V> {
 
 	private K key;
@@ -71,6 +73,19 @@ public class Pair<K, V> implements Map.Entry<K, V> {
 	@Override
 	public String toString() {
 		return key.toString() + ", " + value.toString();
+	}
+	
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		if(key instanceof String) {
+			res.addProperty("key", (String) key);
+		}
+		if(value instanceof String) {
+			res.addProperty("value", (String) value);
+		}
+		
+		return res;
 	}
 
 }

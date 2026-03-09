@@ -43,7 +43,6 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
@@ -125,72 +124,78 @@ public class ResourcePackExtractorDialog extends JDialog {
 		});
 		
 		createButton.addActionListener(new ActionListener() {
-			
-			private void findSources(File file, ResourcePackSource source) {
-				if(file.isDirectory()) {
-					for(File f : file.listFiles()) {
-						findSources(f, source);
-					}
-				}else if(file.isFile()) {
-					if(file.getName().endsWith(".jar")) {
-						source.addSource(ResourcePackSource.getHash(file), file);
-					}
-				}
-			}
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				File modsFolder = new File(modsFolderInput.getText());
 				if(!modsFolder.exists()) {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mods folder doesn't exist!", "", JOptionPane.ERROR_MESSAGE);
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Mods folder doesn't exist!", "", Popups.ERROR_MESSAGE);
 					return;
 				}
 				if(resourcePackInput.getText().isEmpty()) {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Invalid resource pack name!", "", JOptionPane.ERROR_MESSAGE);
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Invalid resource pack name!", "", Popups.ERROR_MESSAGE);
 					return;
 				}
-				System.out.println("Extracting resource pack from mods folder: " + modsFolder.getPath());
-				System.out.println("Saving into: " + resourcePackInput.getText());
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
-				File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePackInput.getText());
-				List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-				ResourcePackSource source = new ResourcePackSource("Mods");
-				findSources(modsFolder, source);
-				sources.add(source);
-			
-				try {
-					ResourcePackDefaults.extractSourcesIntoResourcePack(sources, resourcePackFolder);
-				}catch(Exception ex) {
-					ex.printStackTrace();
-				}
 				
+				extractModpack(modsFolder, resourcePackInput.getText());
 				
 				setVisible(false);
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
-				
-				// Reload everything
-				ResourcePacks.load();
-				List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
-				List<String> currentlyLoadedUUIDS = new ArrayList<String>();
-				for(ResourcePack pack : currentlyLoaded)
-					currentlyLoadedUUIDS.add(pack.getUUID());
-				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
-				
-				Atlas.readAtlasConfig();
-				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});
+	}
+	
+	private static void findSources(File file, ResourcePackSource source) {
+		if(file.isDirectory()) {
+			for(File f : file.listFiles()) {
+				findSources(f, source);
+			}
+		}else if(file.isFile()) {
+			if(file.getName().endsWith(".jar")) {
+				source.addSource(ResourcePackSource.getHash(file), file);
+			}
+		}
+	}
+	
+	public static void extractModpack(File modsFolder, String resourcePack) {
+		System.out.println("Extracting resource pack from mods folder: " + modsFolder.getPath());
+		System.out.println("Saving into: " + resourcePack);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
+		File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePack);
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		ResourcePackSource source = new ResourcePackSource("Mods");
+		findSources(modsFolder, source);
+		sources.add(source);
+	
+		try {
+			ResourcePackDefaults.extractSourcesIntoResourcePack(sources, resourcePackFolder);
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
+		
+		// Reload everything
+		ResourcePacks.load();
+		List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
+		List<String> currentlyLoadedUUIDS = new ArrayList<String>();
+		for(ResourcePack pack : currentlyLoaded)
+			currentlyLoadedUUIDS.add(pack.getUUID());
+		
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
+		
+		Atlas.readAtlasConfig();
+		Config.load();
+		BlockStateRegistry.clearBlockStateRegistry();
+		ModelRegistry.clearModelRegistry();
+		BiomeRegistry.recalculateTints();
+		ResourcePacks.doPostLoad();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 
 }

@@ -188,6 +188,10 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 					JsonObject rotateData = null;
 					if (element.has("rotation"))
 						rotateData = element.get("rotation").getAsJsonObject();
+					
+					String shadingMode = ModelFace.SHADING_MODE_STANDARD;
+					if(element.has("shadingMode"))
+						shadingMode = element.get("shadingMode").getAsString().intern();
 
 					if (element.has("faces")) {
 						JsonObject faceObj = element.get("faces").getAsJsonObject();
@@ -227,9 +231,12 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 									face.getValue().getAsJsonObject().addProperty("texture", "#" + texturePrim.getAsString());
 								}
 							}
+							String shadingMode2 = shadingMode;
+							if(face.getValue().getAsJsonObject().has("shadingMode"))
+								shadingMode2 = face.getValue().getAsJsonObject().get("shadingMode").getAsString().intern();
 
 							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
-									face.getValue().getAsJsonObject(), model.isDoubleSided());
+									face.getValue().getAsJsonObject(), model.isDoubleSided(), shadingMode2);
 							if (modelFace.isValid()) {
 								modelFace.rotate(rotateData);
 								for(ModelFace modelFace2 : model.getFaces()) {
@@ -275,7 +282,7 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 								faceData.addProperty("texture", (String) (model.getTextures().keySet().toArray()[0]));
 							}
 							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
-									faceData, model.isDoubleSided());
+									faceData, model.isDoubleSided(), shadingMode);
 							if (modelFace.isValid()) {
 								modelFace.rotate(rotateData);
 								for(ModelFace modelFace2 : model.getFaces()) {

@@ -52,6 +52,7 @@ public class Mesh {
 	private String texture;
 	private String matTexture;
 	private boolean animatedTexture;
+	private String shadingMode;
 	private String extraData;
 	private FloatArray vertices;
 	private FloatArray us;
@@ -86,16 +87,17 @@ public class Mesh {
 	private boolean animatesVertexColors;
 	
 	public Mesh() {
-		this("", MeshPurpose.UNDEFINED, "", "", false, false, 6, 4);
+		this("", MeshPurpose.UNDEFINED, "", "", false, false, ModelFace.SHADING_MODE_STANDARD, 6, 4);
 	}
 	
 	public Mesh(String name, MeshPurpose purpose, String texture, String matTexture, boolean animatedTexture, 
-				boolean doubleSided, int largeCapacity, int smallCapacity) {
+				boolean doubleSided, String shadingMode, int largeCapacity, int smallCapacity) {
 		this.name = name;
 		this.purpose = purpose;
 		this.texture = texture;
 		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
+		this.shadingMode = shadingMode;
 		this.extraData = "";
 		this.vertices = new FloatArray(largeCapacity*3);
 		this.us = new FloatArray(smallCapacity);
@@ -127,12 +129,13 @@ public class Mesh {
 	}
 	
 	public void reset(String name, MeshPurpose purpose, String texture, String matTexture, 
-						boolean animatedTexture, boolean doubleSided) {
+						boolean animatedTexture, boolean doubleSided, String shadingMode) {
 		this.name = name;
 		this.purpose = purpose;
 		this.texture = texture;
 		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
+		this.shadingMode = shadingMode;
 		this.extraData = "";
 		this.vertices.clear();
 		this.us.clear();
@@ -1207,6 +1210,14 @@ public class Mesh {
 		return subsetIds;
 	}
 	
+	public String getShadingMode() {
+		return shadingMode;
+	}
+	
+	public void setShadingMode(String shadingMode) {
+		this.shadingMode = shadingMode;
+	}
+	
 	public void setExtraData(String extraData) {
 		this.extraData = extraData;
 	}
@@ -1417,6 +1428,7 @@ public class Mesh {
 		dos.writeUTF(texture);
 		dos.writeUTF(matTexture);
 		dos.writeInt(animatedTexture ? 1 : 0);
+		dos.writeUTF(shadingMode);
 		dos.writeUTF(extraData);
 		dos.writeInt(vertices.size() / 3); // num vertices
 		dos.writeInt(us.size()); // num UVs
@@ -1523,6 +1535,7 @@ public class Mesh {
 		this.texture = dis.readUTF();
 		this.matTexture = dis.readUTF();
 		this.animatedTexture = dis.readInt() > 0;
+		this.shadingMode = dis.readUTF();
 		this.extraData = dis.readUTF();
 		int numVertices = dis.readInt();
 		int numUVs = dis.readInt();

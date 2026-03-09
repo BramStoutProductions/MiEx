@@ -42,8 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JOptionPane;
-
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
@@ -61,6 +59,7 @@ import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdit
 import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
+import nl.bramstout.mcworldexporter.ui.Popups;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
@@ -261,9 +260,9 @@ public class ResourcePacks {
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
 		
 		if(hasLoadError) {
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), 
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), 
 					"One or more of the resource packs failed to load properly. Please check the log.", 
-					"Warning", JOptionPane.WARNING_MESSAGE);
+					"Warning", Popups.WARNING_MESSAGE);
 		}
 	}
 	

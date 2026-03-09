@@ -111,6 +111,10 @@ public class Json {
 	}
 	
 	public static JsonElement readString(String data) {
+		return readString(data, true);
+	}
+	
+	public static JsonElement readString(String data, boolean printErrors) {
 		JsonReader reader = null;
 		try {
 			reader = new JsonReader(new StringReader(data));
@@ -119,17 +123,20 @@ public class Json {
 			try {
 				reader.close();
 			}catch(Exception ex) {
-				ex.printStackTrace();
+				if(printErrors)
+					ex.printStackTrace();
 			}
 			return el;
 		}catch(Exception ex) {
-			ex.printStackTrace();
+			if(printErrors)
+				ex.printStackTrace();
 		}
 		if(reader != null) {
 			try {
 				reader.close();
 			}catch(Exception ex) {
-				ex.printStackTrace();
+				if(printErrors)
+					ex.printStackTrace();
 			}
 		}
 		return null;

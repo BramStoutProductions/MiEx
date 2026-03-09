@@ -211,12 +211,12 @@ public class AnimatedBlock {
 	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
 	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
 	
-	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided) {
+	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, String shadingMode) {
 		String meshName = atlasMappings.getOrDefault(originalTexture, null);
 		if(meshName != null)
 			return meshName;
 		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null);
+		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null, shadingMode);
 		meshName = atlasMappings2.getOrDefault(key, null);
 		if(meshName != null) {
 			atlasMappings.put(originalTexture, meshName);
@@ -281,7 +281,7 @@ public class AnimatedBlock {
 		}
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
-			meshName = getMeshName(atlas, texture, tint != null, doubleSided);
+			meshName = getMeshName(atlas, texture, tint != null, doubleSided, face.getShadingMode());
 			texture = atlas.atlas;
 		}
 		
@@ -292,7 +292,8 @@ public class AnimatedBlock {
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 1024, 8);
+			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 
+							face.getShadingMode(), 1024, 8);
 			mesh.setExtraData(extraData);
 			meshes.put(meshName, mesh);
 		}

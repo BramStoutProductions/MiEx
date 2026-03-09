@@ -37,7 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import nl.bramstout.mcworldexporter.ExportBounds;
@@ -47,6 +46,7 @@ import nl.bramstout.mcworldexporter.export.IndexCache;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
+import nl.bramstout.mcworldexporter.ui.Popups;
 
 public abstract class World {
 
@@ -442,7 +442,7 @@ public abstract class World {
 
 			@Override
 			public void run() {
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), ex.getLocalizedMessage() == null ? "An error occured loading the world." : ex.getLocalizedMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), ex.getLocalizedMessage() == null ? "An error occured loading the world." : ex.getLocalizedMessage(), "Error", Popups.ERROR_MESSAGE);
 			}
 			
 		});

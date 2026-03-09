@@ -57,6 +57,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import com.google.gson.JsonObject;
 
@@ -65,6 +67,7 @@ import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.ui.WorldBrowser.SearchField;
 
 public class ResourcePackSelector extends JPanel{
 
@@ -77,6 +80,7 @@ public class ResourcePackSelector extends JPanel{
 	private JPanel availablePanel;
 	private JScrollPane activeScrollPane;
 	private JPanel activePanel;
+	private String searchString;
 	
 	private List<String> activeResourcePacks;
 	private Runnable onResourcePackChange;
@@ -99,6 +103,31 @@ public class ResourcePackSelector extends JPanel{
 		availableLabel.setMinimumSize(availableLabel.getPreferredSize());
 		availableLabel.setMaximumSize(availableLabel.getPreferredSize());
 		add(availableLabel);
+		SearchField searchField = new SearchField();
+		searchField.setPlaceholder("Search");
+		searchField.setPreferredSize(new Dimension(260, 14));
+		searchField.setFont(searchField.getFont().deriveFont(10F));
+		searchField.setMargin(new Insets(1, 4, 1, 4));
+		searchField.setBorder(new EmptyBorder(1, 4, 1, 4));
+		add(searchField);
+		searchField.getDocument().addDocumentListener(new DocumentListener() {
+			
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				setSearchString(searchField.getText());
+			}
+		});
+		
 		availablePanel = new JPanel();
 		availablePanel.setLayout(new BoxLayout(availablePanel, BoxLayout.Y_AXIS));
 		availablePanel.setBackground(getBackground().brighter());
@@ -156,6 +185,34 @@ public class ResourcePackSelector extends JPanel{
 		int height = (getHeight() - 16) / 2;
 		availableScrollPane.setPreferredSize(new Dimension(width, height));
 		activeScrollPane.setPreferredSize(new Dimension(width, height));
+	}
+	
+	private void setSearchString(String searchString) {
+		this.searchString = searchString;
+		
+		for(Component comp : availablePanel.getComponents()) {
+			if(comp instanceof AvailableResourcePack) {
+				if(((AvailableResourcePack)comp).matchesSearchString(this.searchString)) {
+					comp.setVisible(true);
+				}else {
+					comp.setVisible(false);
+				}
+			}
+		}
+		
+		availablePanel.invalidate();
+		availableScrollPane.invalidate();
+		validate();
+		SwingUtilities.invokeLater(new Runnable() {
+
+			@Override
+			public void run() {
+				availablePanel.repaint();
+				availableScrollPane.repaint();
+				repaint();
+			}
+			
+		});
 	}
 	
 	public void reset(boolean loadDefaultResourcePacks) {
@@ -565,6 +622,13 @@ public class ResourcePackSelector extends JPanel{
 		
 		public String getUUID() {
 			return uuid;
+		}
+		
+		public boolean matchesSearchString(String searchString) {
+			if(searchString == null || searchString.isEmpty())
+				return true;
+			
+			return name.toLowerCase().contains(searchString.toLowerCase());
 		}
 		
 		@Override

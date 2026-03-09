@@ -54,8 +54,6 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.swing.JOptionPane;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -78,6 +76,7 @@ import nl.bramstout.mcworldexporter.launcher.LauncherHytale;
 import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
 import nl.bramstout.mcworldexporter.launcher.MinecraftVersion;
 import nl.bramstout.mcworldexporter.model.Direction;
+import nl.bramstout.mcworldexporter.ui.Popups;
 
 public class ResourcePackDefaults {
 	
@@ -121,7 +120,7 @@ public class ResourcePackDefaults {
 			
 			if(versions.isEmpty()) {
 				System.out.println("Could not find a Minecraft Java Edition install.");
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_ROOT_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Minecraft Java Edition install with valid installed versions and so cannot automatically create a base_resource_pack. Either launch the latest version of Minecraft, manually create the base_resource_pack or specify the MIEX_MINECRAFT_ROOT_DIR environment variable and start MiEx again.", "Error", Popups.ERROR_MESSAGE);
 				return;
 			}
 			Object selectedValue = versionLabels.get(0);
@@ -137,9 +136,9 @@ public class ResourcePackDefaults {
 			if(!updateToNewest) {
 				// We're not doing a forced update to the latest version,
 				// so let the user select which version.
-				selectedValue = JOptionPane.showInputDialog(MCWorldExporter.getApp().getUI(),
+				selectedValue = Popups.showInputDialog(MCWorldExporter.getApp().getUI(),
 			             "Update to version", "Version",
-			             JOptionPane.INFORMATION_MESSAGE, null,
+			             Popups.INFORMATION_MESSAGE, null,
 			             versionLabels.toArray(), selectedValue);
 				if(selectedValue == null)
 					return;
@@ -191,10 +190,10 @@ public class ResourcePackDefaults {
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		    
 		    System.out.println("base_resource_pack updated successfully.");
-		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack updated successfully");
+		    Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack updated successfully");
 		}catch(Exception ex) {
 			ex.printStackTrace();
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack", "Error", JOptionPane.ERROR_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack", "Error", Popups.ERROR_MESSAGE);
 		}
 	}
 	
@@ -213,7 +212,7 @@ public class ResourcePackDefaults {
 			
 			if(versions.isEmpty()) {
 				System.out.println("Could not find a Hytale install.");
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Hytale install with valid installed versions and so cannot automatically create a base_resource_pack_hytale. Either launch the latest version of Hytale, manually create the base_resource_pack_hytale or specify the MIEX_HYTALE_ROOT_DIR environment variable and start MiEx again.", "Error", JOptionPane.ERROR_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not find a Hytale install with valid installed versions and so cannot automatically create a base_resource_pack_hytale. Either launch the latest version of Hytale, manually create the base_resource_pack_hytale or specify the MIEX_HYTALE_ROOT_DIR environment variable and start MiEx again.", "Error", Popups.ERROR_MESSAGE);
 				return;
 			}
 			// Take index 1 to prefer the release over pre-release
@@ -222,10 +221,10 @@ public class ResourcePackDefaults {
 			if(!updateToNewest) {
 				// We're not doing a forced update to the latest version,
 				// so let the user select which version.
-				selectedValue = JOptionPane.showInputDialog(MCWorldExporter.getApp().getUI(),
+				selectedValue = Popups.showInputDialog(MCWorldExporter.getApp().getUI(),
 			             "Update to version", "Version",
-			             JOptionPane.INFORMATION_MESSAGE, null,
-			             versionLabels.toArray(), versionLabels.get(0));
+			             Popups.INFORMATION_MESSAGE, null,
+			             versionLabels.toArray(), selectedValue);
 				if(selectedValue == null)
 					return;
 			}
@@ -258,10 +257,10 @@ public class ResourcePackDefaults {
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
 		    
 		    System.out.println("base_resource_pack_hytale updated successfully.");
-		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack_hytale updated successfully");
+		    Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack_hytale updated successfully");
 		}catch(Exception ex) {
 			ex.printStackTrace();
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack_hytale", "Error", JOptionPane.ERROR_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack_hytale", "Error", Popups.ERROR_MESSAGE);
 		}
 	}
 	
@@ -300,10 +299,10 @@ public class ResourcePackDefaults {
 		    
 		    System.out.println(resourcePack.getName() + " installed successfully.");
 		    
-		    JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Pack installed successfully");
+		    Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Pack installed successfully");
 		}catch(Exception ex) {
 			ex.printStackTrace();
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not install resource pack", "Error", JOptionPane.ERROR_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not install resource pack", "Error", Popups.ERROR_MESSAGE);
 		}
 	}
 	

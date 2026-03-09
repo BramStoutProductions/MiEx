@@ -119,7 +119,7 @@ public class ChunkReader_2836_2843 extends ChunkReader{
 				palette = (NbtTagList) blockStates.get("palette");
 				if(palette == null)
 					continue;
-				if (paletteMap == null || palette.getSize() > paletteMap.length) {
+				if (paletteMap == null || palette.getSize() > paletteMap.length || palette.getSize() > waterloggedPalette.length) {
 					paletteMap = new int[palette.getSize()];
 					waterloggedPalette = new boolean[palette.getSize()];
 				}

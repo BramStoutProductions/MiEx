@@ -216,16 +216,16 @@ public class ModelItemGenerated extends Model{
 					boolean up = j == 0 || !item.sampleMask(i, j - 1);
 					boolean down = j == (item.height -1) || !item.sampleMask(i, j + 1);
 					
-					model.getFaces().add(new ModelFace(minMaxPoints, Direction.SOUTH, faceData, false));
-					model.getFaces().add(new ModelFace(minMaxPoints, Direction.NORTH, faceData, false));
+					model.getFaces().add(new ModelFace(minMaxPoints, Direction.SOUTH, faceData, false, ModelFace.SHADING_MODE_STANDARD));
+					model.getFaces().add(new ModelFace(minMaxPoints, Direction.NORTH, faceData, false, ModelFace.SHADING_MODE_STANDARD));
 					if(east)
-						model.getFaces().add(new ModelFace(minMaxPoints, Direction.EAST, faceData, false));
+						model.getFaces().add(new ModelFace(minMaxPoints, Direction.EAST, faceData, false, ModelFace.SHADING_MODE_STANDARD));
 					if(west)
-						model.getFaces().add(new ModelFace(minMaxPoints, Direction.WEST, faceData, false));
+						model.getFaces().add(new ModelFace(minMaxPoints, Direction.WEST, faceData, false, ModelFace.SHADING_MODE_STANDARD));
 					if(up)
-						model.getFaces().add(new ModelFace(minMaxPoints, Direction.UP, faceData, false));
+						model.getFaces().add(new ModelFace(minMaxPoints, Direction.UP, faceData, false, ModelFace.SHADING_MODE_STANDARD));
 					if(down)
-						model.getFaces().add(new ModelFace(minMaxPoints, Direction.DOWN, faceData, false));
+						model.getFaces().add(new ModelFace(minMaxPoints, Direction.DOWN, faceData, false, ModelFace.SHADING_MODE_STANDARD));
 					
 					break;
 				}

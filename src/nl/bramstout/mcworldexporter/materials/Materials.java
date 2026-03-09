@@ -294,13 +294,15 @@ public class Materials {
 		}
 		
 		public boolean evaluateCondition(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-										Set<String> colorSets, String currentWorkingDirectory) {
+										Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
 			for(String condition : this.condition.split("&&")) {
 				boolean invert = false;
 				if(condition.startsWith("!")) {
 					invert = true;
 					condition = condition.substring(1);
 				}
+				if(condition.isEmpty())
+					continue;
 				if(condition.equals("@biomeColor@")) {
 					if(invert) {
 						if(hasBiomeColor)
@@ -338,6 +340,24 @@ public class Materials {
 						continue;
 					}else {
 						if(!hasColorSet)
+							return false;
+						continue;
+					}
+				}
+				if(condition.startsWith("@shadingMode.")) {
+					String shadingModeName = condition.substring("@shadingMode.".length());
+					int endIndex = shadingModeName.indexOf('@');
+					if(endIndex >= 0)
+						shadingModeName = shadingModeName.substring(0, endIndex);
+					
+					boolean isShadingMode = shadingMode.equals(shadingModeName);
+					
+					if(invert) {
+						if(isShadingMode)
+							return false;
+						continue;
+					}else {
+						if(!isShadingMode)
 							return false;
 						continue;
 					}
@@ -500,12 +520,12 @@ public class Materials {
 		}
 		
 		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-										Set<String> colorSets, String currentWorkingDirectory) {
+										Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
 			MaterialTemplate material = new MaterialTemplate(name, 0);
 			material.shadingGroup = shadingGroup;
 			material.networks.add(new MaterialNetwork());
 			for(MaterialNetwork network : networks) {
-				if(!network.evaluateCondition(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory))
+				if(!network.evaluateCondition(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, shadingMode))
 					continue;
 				try {
 					material.networks.get(0).override(network, true);
@@ -531,7 +551,7 @@ public class Materials {
 	public static MaterialNetwork sharedNodes = new MaterialNetwork();
 	
 	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-												Set<String> colorSets, String currentWorkingDirectory) {
+												Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
 		if(templates == null) {
 			synchronized(templatesMutex) {
 				if(templates == null)
@@ -556,7 +576,7 @@ public class Materials {
 							currentTemplate = template;
 				}
 				if(currentTemplate != null)
-					return currentTemplate.flatten(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory);
+					return currentTemplate.flatten(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, shadingMode);
 			}
 		}catch(Exception ex) {
 			System.out.println("Failed to get material for texture " + texture);

@@ -33,8 +33,15 @@ package nl.bramstout.mcworldexporter;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.LargeDataOutputStream;
@@ -76,6 +83,22 @@ public class ExportBounds {
 			maxZ = other.maxZ;
 		}
 		
+		public ExcludeRegion(JsonObject data) {
+			this();
+			if(data.has("minX"))
+				minX = data.get("minX").getAsInt();
+			if(data.has("minY"))
+				minY = data.get("minY").getAsInt();
+			if(data.has("minZ"))
+				minZ = data.get("minZ").getAsInt();
+			if(data.has("maxX"))
+				maxX = data.get("maxX").getAsInt();
+			if(data.has("maxY"))
+				maxY = data.get("maxY").getAsInt();
+			if(data.has("maxZ"))
+				maxZ = data.get("maxZ").getAsInt();
+		}
+		
 		@Override
 		public String toString() {
 			return "[ " + Integer.toString(minX) + ", " + 
@@ -84,6 +107,19 @@ public class ExportBounds {
 					Integer.toString(maxX) + ", " + 
 					Integer.toString(maxY) + ", " + 
 					Integer.toString(maxZ) + " ]"; 
+		}
+		
+		public JsonObject toJson() {
+			JsonObject res = new JsonObject();
+			
+			res.addProperty("minX", minX);
+			res.addProperty("minY", minY);
+			res.addProperty("minZ", minZ);
+			res.addProperty("maxX", maxX);
+			res.addProperty("maxY", maxY);
+			res.addProperty("maxZ", maxZ);
+			
+			return res;
 		}
 	}
 	
@@ -224,6 +260,10 @@ public class ExportBounds {
 	
 	public boolean isInExportRegionBounds(int x, int y, int z) {
 		return !(x < minX || x > maxX || y < minY || y > maxY || z < minZ || z > maxZ);
+	}
+	
+	public boolean isOnExportRegionBorder(int x, int y, int z) {
+		return x == minX || x == maxX || y == minY || y == maxY || z == minZ || z == maxZ;
 	}
 	
 	private void generateSafeName() {
@@ -736,6 +776,109 @@ public class ExportBounds {
 			}
 		}
 		return sb.toString();
+	}
+	
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		for(Field field : this.getClass().getFields()) {
+			try {
+				if(List.class.isAssignableFrom(field.getType())) {
+					ParameterizedType parameter = (ParameterizedType) field.getGenericType();
+					Type[] parameterTypes = parameter.getActualTypeArguments();
+					if(parameterTypes.length != 1)
+						continue;
+					Class<?> parameterType = (Class<?>) parameterTypes[0];
+					
+					JsonArray array = new JsonArray();
+					List<?> data = (List<?>) field.get(this);
+					for(Object obj : data) {
+						if(parameterType.equals(String.class)) {
+							array.add((String) obj);
+						}else if(parameterType.equals(Pair.class)) {
+							array.add(((Pair<?,?>) obj).toJson());
+						}else if(parameterType.equals(ExcludeRegion.class)) {
+							array.add(((ExcludeRegion) obj).toJson());
+						}
+					}
+					res.add(field.getName(), array);
+				}else{
+					if(String.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (String) field.get(this));
+					}else if(Float.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Float) field.get(this));
+					}else if(Integer.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Integer) field.get(this));
+					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+						res.addProperty(field.getName(), (Boolean) field.get(this));
+					}
+				}
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		return res;
+	}
+	
+	public void fromJson(JsonObject data) {
+		for(Entry<String, JsonElement> entry : data.entrySet()) {
+			try {
+				Field field = this.getClass().getField(entry.getKey());
+				
+				if(List.class.isAssignableFrom(field.getType())) {
+					ParameterizedType parameter = (ParameterizedType) field.getGenericType();
+					Type[] parameterTypes = parameter.getActualTypeArguments();
+					if(parameterTypes.length != 1)
+						continue;
+					Class<?> parameterType = (Class<?>) parameterTypes[0];
+					
+					if(entry.getValue().isJsonArray()) {
+						JsonArray entryData = entry.getValue().getAsJsonArray();
+						List<Object> fieldData = new ArrayList<Object>();
+						for(JsonElement el : entryData.asList()) {
+							if(parameterType.equals(String.class)) {
+								fieldData.add(el.getAsString());
+							}else if(parameterType.equals(ExcludeRegion.class)) {
+								if(el.isJsonObject()) {
+									fieldData.add(new ExcludeRegion(el.getAsJsonObject()));
+								}
+							}else if(parameterType.equals(Pair.class)) {
+								if(el.isJsonObject()) {
+									Integer key = Integer.valueOf(0);
+									Integer value = Integer.valueOf(0);
+									if(el.getAsJsonObject().has("key"))
+										key = el.getAsJsonObject().get("key").getAsInt();
+									if(el.getAsJsonObject().has("value"))
+										value = el.getAsJsonObject().get("value").getAsInt();
+									fieldData.add(new Pair<Integer, Integer>(key, value));
+								}
+							}
+						}
+						field.set(this, fieldData);
+					}
+				}else{
+					if(String.class.isAssignableFrom(field.getType())) {
+						if(field.getName().equals("name")) {
+							// Use setName to ensure that names remain unique.
+							setName(entry.getValue().getAsString());
+						}else if(field.getName().equals("safeName")) {
+							// Don't set safeName
+						} else {
+							field.set(this, entry.getValue().getAsString());
+						}
+					}else if(Float.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsFloat());
+					}else if(Integer.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsInt());
+					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+						field.set(this, entry.getValue().getAsBoolean());
+					}
+				}
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 	
 }

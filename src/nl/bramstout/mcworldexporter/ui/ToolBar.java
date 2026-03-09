@@ -114,7 +114,7 @@ public class ToolBar extends JPanel {
 	
 	private JToggleButton advancedSettingsButton;
 
-	private JButton exportButton;
+	public JButton exportButton;
 	private JButton reexportButton;
 	
 	private File exportLastDirectory;
@@ -819,54 +819,15 @@ public class ToolBar extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-				chooser.setApproveButtonText("Export");
-				chooser.setDialogTitle("Export World");
-				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-				if(exportLastDirectory == null || !exportLastDirectory.exists())
-					exportLastDirectory = new File(FileUtil.getHomeDir());
-				chooser.setCurrentDirectory(exportLastDirectory);
-				FileFilter defaultFilter = null;
-				for(String extension : Converter.getExtensions()) {
-					FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
-					chooser.addChoosableFileFilter(filter);
-					if(defaultFilter == null)
-						defaultFilter = filter;
-				}
-				chooser.setFileFilter(defaultFilter);
-				chooser.setAcceptAllFileFilterUsed(false);
-				int result = chooser.showSaveDialog(MCWorldExporter.getApp().getUI());
-				if (result == JFileChooser.APPROVE_OPTION) {
+				if(MCWorldExporter.forceOutputPath != null) {
 					try {
-						File file = chooser.getSelectedFile();
-						FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
-						if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
-							file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+						File file = new File(MCWorldExporter.forceOutputPath);
 						
 						exportLastDirectory = file.getParentFile();
 						
 						Exporter.export(file);
 					} catch (Exception e1) {
 						e1.printStackTrace();
-					}
-				}
-			}
-
-		});
-		
-		reexportButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(MCWorldExporter.getApp().getLastExportFileOpened() != null) {
-					File file = MCWorldExporter.getApp().getLastExportFileOpened();
-					
-					try {
-						exportLastDirectory = file.getParentFile();
-						
-						Exporter.export(file);
-					}catch(Exception ex) {
-						ex.printStackTrace();
 					}
 				}else {
 					JFileChooser chooser = new JFileChooser();
@@ -898,6 +859,69 @@ public class ToolBar extends JPanel {
 							Exporter.export(file);
 						} catch (Exception e1) {
 							e1.printStackTrace();
+						}
+					}
+				}
+			}
+
+		});
+		
+		reexportButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(MCWorldExporter.forceOutputPath != null) {
+					try {
+						File file = new File(MCWorldExporter.forceOutputPath);
+						
+						exportLastDirectory = file.getParentFile();
+						
+						Exporter.export(file);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}else {
+					if(MCWorldExporter.getApp().getLastExportFileOpened() != null) {
+						File file = MCWorldExporter.getApp().getLastExportFileOpened();
+						
+						try {
+							exportLastDirectory = file.getParentFile();
+							
+							Exporter.export(file);
+						}catch(Exception ex) {
+							ex.printStackTrace();
+						}
+					}else {
+						JFileChooser chooser = new JFileChooser();
+						chooser.setApproveButtonText("Export");
+						chooser.setDialogTitle("Export World");
+						chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+						if(exportLastDirectory == null || !exportLastDirectory.exists())
+							exportLastDirectory = new File(FileUtil.getHomeDir());
+						chooser.setCurrentDirectory(exportLastDirectory);
+						FileFilter defaultFilter = null;
+						for(String extension : Converter.getExtensions()) {
+							FileFilter filter = new FileNameExtensionFilter(extension.toUpperCase() + " Files", extension);
+							chooser.addChoosableFileFilter(filter);
+							if(defaultFilter == null)
+								defaultFilter = filter;
+						}
+						chooser.setFileFilter(defaultFilter);
+						chooser.setAcceptAllFileFilterUsed(false);
+						int result = chooser.showSaveDialog(MCWorldExporter.getApp().getUI());
+						if (result == JFileChooser.APPROVE_OPTION) {
+							try {
+								File file = chooser.getSelectedFile();
+								FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+								if (!file.getAbsolutePath().toLowerCase().endsWith("." + filter.getExtensions()[0]))
+									file = new File(file.getAbsolutePath() + "." + filter.getExtensions()[0]);
+								
+								exportLastDirectory = file.getParentFile();
+								
+								Exporter.export(file);
+							} catch (Exception e1) {
+								e1.printStackTrace();
+							}
 						}
 					}
 				}

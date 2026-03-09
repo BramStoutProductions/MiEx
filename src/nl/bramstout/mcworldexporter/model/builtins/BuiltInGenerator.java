@@ -332,14 +332,29 @@ public abstract class BuiltInGenerator {
 		public void eval(ExprContext context, Map<String, Expression> arguments) {
 			String modelName = null;
 			String prefix = "";
+			String defaultRemap = null;
+			Map<String, String> remaps = new HashMap<String, String>();
+			boolean hasRemaps = false;
 			
 			if(arguments.containsKey("model"))
 				modelName = arguments.get("model").eval(context).asString();
 			if(arguments.containsKey("prefix"))
 				prefix = arguments.get("prefix").eval(context).asString();
+			if(arguments.containsKey("remap")) {
+				defaultRemap = arguments.get("remap").eval(context).asString();
+				hasRemaps = true;
+			}
+			for(Entry<String, Expression> entry : arguments.entrySet()) {
+				if(entry.getKey().startsWith("remap_")) {
+					remaps.put(entry.getKey().substring(6), entry.getValue().eval(context).asString());
+					hasRemaps = true;
+				}
+			}
 			
 			if(modelName == null)
 				return;
+			
+			NbtTagCompound tintIndices = NbtTagCompound.newNonPooledInstance("");
 			
 			int modelId = ModelRegistry.getIdForName(modelName, false);
 			Model model = ModelRegistry.getModel(modelId);
@@ -348,15 +363,43 @@ public abstract class BuiltInGenerator {
 					String texKey = entry.getKey();
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
+					if(hasRemaps) {
+						texKey = remaps.getOrDefault(texKey, defaultRemap != null ? defaultRemap : texKey);
+					}
+					
 					texKey = "#" + prefix + texKey;
 					String texPath = entry.getValue();
 					if(texPath.startsWith("#")) {
 						// Remap to also use prefix.
-						texPath = "#" + prefix + texPath.substring(1);
+						texPath = model.getTexture(texPath);
 					}
 					
 					context.model.addTexture(texKey, texPath);
 				}
+				for(ModelFace face : model.getFaces()) {
+					String texKey = face.getTexture();
+					if(texKey.startsWith("#"))
+						texKey = texKey.substring(1);
+					if(hasRemaps) {
+						texKey = remaps.getOrDefault(texKey, defaultRemap != null ? defaultRemap : texKey);
+					}
+					texKey = prefix + texKey;
+					
+					NbtTag tag = tintIndices.get(texKey);
+					if(tag == null) {
+						tag = NbtTagInt.newNonPooledInstance(texKey, face.getTintIndex());
+						tintIndices.addElement(tag);
+					}else {
+						((NbtTagInt) tag).setData(face.getTintIndex());
+					}
+				}
+			}
+			
+			ExprValue refTintIndices = context.globals.member("RefTintIndices");
+			if(refTintIndices.isNull()) {
+				refTintIndices.set(new ExprValue(tintIndices));
+			}else if(refTintIndices.getImpl() instanceof ExprValueNbtCompound){
+				((ExprValueNbtCompound) refTintIndices.getImpl()).getNbt().addAllElements(tintIndices);
 			}
 		}
 		
@@ -372,6 +415,9 @@ public abstract class BuiltInGenerator {
 			int y = context.y;
 			int z = context.z;
 			String prefix = "";
+			String defaultRemap = null;
+			Map<String, String> remaps = new HashMap<String, String>();
+			boolean hasRemaps = false;
 			
 			if(arguments.containsKey("name"))
 				blockName = arguments.get("name").eval(context).asString();
@@ -389,6 +435,16 @@ public abstract class BuiltInGenerator {
 			
 			if(arguments.containsKey("prefix"))
 				prefix = arguments.get("prefix").eval(context).asString();
+			if(arguments.containsKey("remap")) {
+				defaultRemap = arguments.get("remap").eval(context).asString();
+				hasRemaps = true;
+			}
+			for(Entry<String, Expression> entry : arguments.entrySet()) {
+				if(entry.getKey().startsWith("remap_")) {
+					remaps.put(entry.getKey().substring(6), entry.getValue().eval(context).asString());
+					hasRemaps = true;
+				}
+			}
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
@@ -397,20 +453,50 @@ public abstract class BuiltInGenerator {
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(x, y, z, models);
 			
+			NbtTagCompound tintIndices = NbtTagCompound.newNonPooledInstance("");
+			
 			for(Model model : models) {
 				for(Entry<String, String> entry : model.getTextures().entrySet()) {
 					String texKey = entry.getKey();
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
+					if(hasRemaps) {
+						texKey = remaps.getOrDefault(texKey, defaultRemap != null ? defaultRemap : texKey);
+					}
+					
 					texKey = "#" + prefix + texKey;
 					String texPath = entry.getValue();
 					if(texPath.startsWith("#")) {
 						// Remap to also use prefix.
-						texPath = "#" + prefix + texPath.substring(1);
+						texPath = model.getTexture(texPath);
 					}
 					
 					context.model.addTexture(texKey, texPath);
 				}
+				for(ModelFace face : model.getFaces()) {
+					String texKey = face.getTexture();
+					if(texKey.startsWith("#"))
+						texKey = texKey.substring(1);
+					if(hasRemaps) {
+						texKey = remaps.getOrDefault(texKey, defaultRemap != null ? defaultRemap : texKey);
+					}
+					texKey = prefix + texKey;
+					
+					NbtTag tag = tintIndices.get(texKey);
+					if(tag == null) {
+						tag = NbtTagInt.newNonPooledInstance(texKey, face.getTintIndex());
+						tintIndices.addElement(tag);
+					}else {
+						((NbtTagInt) tag).setData(face.getTintIndex());
+					}
+				}
+			}
+			
+			ExprValue refTintIndices = context.globals.member("RefTintIndices");
+			if(refTintIndices.isNull()) {
+				refTintIndices.set(new ExprValue(tintIndices));
+			}else if(refTintIndices.getImpl() instanceof ExprValueNbtCompound){
+				((ExprValueNbtCompound) refTintIndices.getImpl()).getNbt().addAllElements(tintIndices);
 			}
 		}
 		
@@ -575,6 +661,7 @@ public abstract class BuiltInGenerator {
 			float textScale = 0f;
 			float lineDistance = 0f;
 			Font font = null;
+			String shadingMode = null;
 			
 			if(arguments.containsKey("state"))
 				properties = arguments.get("state").eval(context);
@@ -601,10 +688,13 @@ public abstract class BuiltInGenerator {
 				font = ResourcePacks.getFont(arguments.get("font").eval(context).asString());
 			else
 				font = ResourcePacks.getFont("minecraft:default");
+			
+			if(arguments.containsKey("shadingMode"))
+				shadingMode = arguments.get("shadingMode").eval(context).asString().intern();
 
 			if(properties != null)
 				handleText(properties, textOffsetX, textOffsetY, textOffsetZ, textOffsetZBack, 
-							textScale, lineDistance, font, context.model);
+							textScale, lineDistance, shadingMode, font, context.model);
 		}
 		
 		private static Map<String, Color> COLORS = new HashMap<String, Color>();
@@ -704,7 +794,7 @@ public abstract class BuiltInGenerator {
 		}
 
 		public static void handleText(ExprValue properties, float textOffsetX, float textOffsetY,
-				float textOffsetZ, float textOffsetZBack, float textScale, float lineDistance, Font font, Model model) {
+				float textOffsetZ, float textOffsetZBack, float textScale, float lineDistance, String shadingModeArg, Font font, Model model) {
 			JsonElement frontText1 = null;
 			JsonElement frontText2 = null;
 			JsonElement frontText3 = null;
@@ -719,6 +809,7 @@ public abstract class BuiltInGenerator {
 			Color backGlowColor = new Color(0xF0EBCC);
 			boolean frontGlowing = false;
 			boolean backGlowing = false;
+			String shadingMode = ModelFace.SHADING_MODE_STANDARD;
 			ExprValue colorTag = properties.member("Color");
 			if (colorTag != null && !colorTag.isNull()) {
 				frontColor = COLORS.getOrDefault(colorTag.asString(), frontColor);
@@ -776,7 +867,11 @@ public abstract class BuiltInGenerator {
 									el = new JsonPrimitive(text);
 								}else {
 									if(text.charAt(0) == '{' || text.charAt(0) == '[') {
-										el = JsonParser.parseString(tag.asString());
+										try {
+											el = JsonParser.parseString(text);
+										}catch(Exception ex) {
+											el = new JsonPrimitive(text);
+										}
 									}else {
 										el = new JsonPrimitive(text);
 									}
@@ -826,7 +921,11 @@ public abstract class BuiltInGenerator {
 									el = nbtToJson(((ExprValueNbtList) tag.getImpl()).toNbt());
 								}else {
 									if(text.charAt(0) == '{' || text.charAt(0) == '[') {
-										el = JsonParser.parseString(tag.asString());
+										try {
+											el = JsonParser.parseString(text);
+										}catch(Exception ex) {
+											el = new JsonPrimitive(text);
+										}
 									}else {
 										el = new JsonPrimitive(text);
 									}
@@ -927,39 +1026,52 @@ public abstract class BuiltInGenerator {
 					}
 				}
 			}
+			
+			if(frontGlowing)
+				shadingMode = ModelFace.SHADING_MODE_FULLBRIGHT;
+			
+			if(shadingModeArg != null)
+				shadingMode = shadingModeArg;
 
 			if (frontText1 != null) {
 				BuiltInGeneratorText.addText(frontText1, font, textOffsetX, textOffsetY + lineDistance * 2f, textOffsetZ, textScale, 0f,
-						frontColor, frontGlowColor, frontGlowing, model);
+						frontColor, frontGlowColor, frontGlowing, shadingMode, model);
 			}
 			if (frontText2 != null) {
 				BuiltInGeneratorText.addText(frontText2, font, textOffsetX, textOffsetY + lineDistance, textOffsetZ, textScale, 0f,
-						frontColor, frontGlowColor, frontGlowing, model);
+						frontColor, frontGlowColor, frontGlowing, shadingMode, model);
 			}
 			if (frontText3 != null) {
 				BuiltInGeneratorText.addText(frontText3, font, textOffsetX, textOffsetY, textOffsetZ, textScale, 0f, frontColor,
-						frontGlowColor, frontGlowing, model);
+						frontGlowColor, frontGlowing, shadingMode, model);
 			}
 			if (frontText4 != null) {
 				BuiltInGeneratorText.addText(frontText4, font, textOffsetX, textOffsetY - lineDistance, textOffsetZ, textScale, 0f,
-						frontColor, frontGlowColor, frontGlowing, model);
+						frontColor, frontGlowColor, frontGlowing, shadingMode, model);
 			}
+			
+			shadingMode = ModelFace.SHADING_MODE_STANDARD;
+			if(backGlowing)
+				shadingMode = ModelFace.SHADING_MODE_FULLBRIGHT;
+			
+			if(shadingModeArg != null)
+				shadingMode = shadingModeArg;
 
 			if (backText1 != null) {
 				BuiltInGeneratorText.addText(backText1, font, textOffsetX, textOffsetY + lineDistance * 2f, textOffsetZBack, textScale, 180f,
-						backColor, backGlowColor, backGlowing, model);
+						backColor, backGlowColor, backGlowing, shadingMode, model);
 			}
 			if (backText2 != null) {
 				BuiltInGeneratorText.addText(backText2, font, textOffsetX, textOffsetY + lineDistance, textOffsetZBack, textScale, 180f,
-						backColor, backGlowColor, backGlowing, model);
+						backColor, backGlowColor, backGlowing, shadingMode, model);
 			}
 			if (backText3 != null) {
 				BuiltInGeneratorText.addText(backText3, font, textOffsetX, textOffsetY, textOffsetZBack, textScale, 180f, backColor,
-						backGlowColor, backGlowing, model);
+						backGlowColor, backGlowing, shadingMode, model);
 			}
 			if (backText4 != null) {
 				BuiltInGeneratorText.addText(backText4, font, textOffsetX, textOffsetY - lineDistance, textOffsetZBack, textScale, 180f,
-						backColor, backGlowColor, backGlowing, model);
+						backColor, backGlowColor, backGlowing, shadingMode, model);
 			}
 		}
 
@@ -979,6 +1091,7 @@ public abstract class BuiltInGenerator {
 			Color defaultColor = new Color(0f, 0f, 0f);
 			Color glowColor = new Color(0xF0EBCC);
 			boolean glowing = false;
+			String shadingMode = ModelFace.SHADING_MODE_STANDARD;
 
 			if (arguments.containsKey("text"))
 				text = Json.readString(arguments.get("text").eval(context).asString());
@@ -1017,9 +1130,15 @@ public abstract class BuiltInGenerator {
 
 			if (arguments.containsKey("glowing"))
 				glowing = arguments.get("glowing").eval(context).asBool();
+			
+			if(glowing)
+				shadingMode = ModelFace.SHADING_MODE_FULLBRIGHT;
+			
+			if(arguments.containsKey("shadingMode"))
+				shadingMode = arguments.get("shadingMode").eval(context).asString().intern();
 
 			addText(text, font, textOffsetX, textOffsetY, textOffsetZ, textScale, rotY, defaultColor, glowColor,
-					glowing, context.model);
+					glowing, shadingMode, context.model);
 		}
 
 		private Color parseColor(ExprValue val) {
@@ -1048,11 +1167,11 @@ public abstract class BuiltInGenerator {
 		}
 
 		public static void addText(JsonElement text, Font font, float textOffsetX, float textOffsetY, float textOffsetZ,
-				float textScale, float rotY, Color defaultColor, Color glowColor, boolean glowing, Model model) {
+				float textScale, float rotY, Color defaultColor, Color glowColor, boolean glowing, String shadingMode, Model model) {
 			List<ModelFace> textFaces = new ArrayList<ModelFace>();
 			TextMeshCreator.generateText(text, font, defaultColor, glowColor,
 					TextMeshCreator.defaultDistanceBetweenChars, TextMeshCreator.defaultDistanceBetweenBaselines,
-					TextMeshCreator.Alignment.CENTER, TextMeshCreator.Alignment.TOP, textScale, glowing, textFaces);
+					TextMeshCreator.Alignment.CENTER, TextMeshCreator.Alignment.TOP, textScale, glowing, shadingMode, textFaces);
 			for (ModelFace face : textFaces) {
 				if (rotY != 0f)
 					face.rotate(0f, rotY, 0f, 0f, 0f, 0f);

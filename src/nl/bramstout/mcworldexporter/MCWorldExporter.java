@@ -37,12 +37,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.commands.CommandSystem;
 import nl.bramstout.mcworldexporter.export.GeneratedTextures;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
@@ -56,6 +56,7 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.ui.MainWindow;
+import nl.bramstout.mcworldexporter.ui.Popups;
 import nl.bramstout.mcworldexporter.ui.ResourcePackSourcesExtractorDialog;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -74,6 +75,11 @@ public class MCWorldExporter {
 	public static ReadWriteMutex worldMutex = new ReadWriteMutex();
 	public static String GitHubRepository[] = new String[] {"BramStoutProductions/MiEx"};
 	public static boolean offlineMode = false;
+	public static boolean skipWorldResourcePackCheck = false;
+	public static boolean cliMode = false;
+	public static File commandFile = null;
+	public static String commandString = null;
+	public static boolean commandStdIn = false;
 	
 	public static MCWorldExporter getApp() {
 		return instance;
@@ -87,6 +93,7 @@ public class MCWorldExporter {
 	private MainWindow ui;
 	private List<ExportBounds> exportBounds;
 	private int activeExportBoundsIndex;
+	private CommandSystem commandSystem;
 	
 	public MCWorldExporter() {
 		instance = this;
@@ -98,10 +105,14 @@ public class MCWorldExporter {
 		exportBounds.add(new ExportBounds("Region 1"));
 		activeExportBoundsIndex = 0;
 		ui = new MainWindow();
-		ui.setLocationRelativeTo(null);
-		ui.setVisible(true);
-		ui.setEnabled(false);
+		if(!cliMode) {
+			ui.setLocationRelativeTo(null);
+			ui.setVisible(true);
+		}else {
+			commandSystem = new CommandSystem(commandStdIn);
+		}
 		
+		ui.setEnabled(false);
 		try {
 			ResourcePackDefaults.setupDefaults();
 			
@@ -124,18 +135,34 @@ public class MCWorldExporter {
 		}
 		ui.setEnabled(true);
 		
-		SwingUtilities.invokeLater(new Runnable() {
-
-			@Override
-			public void run() {
-				if(forceOpenWorld != null) {
+		if(forceOpenWorld != null) {
+			SwingUtilities.invokeLater(new Runnable() {
+	
+				@Override
+				public void run() {
 					File worldFolder = new File(forceOpenWorld);
 					if(worldFolder.exists() && worldFolder.isDirectory())
 						setWorld(worldFolder, worldFolder.getName(), null);
+					
+					if(commandSystem != null) {
+						if(commandString != null)
+							commandSystem.parseAndRunCommand(commandString);
+						if(commandFile != null)
+							commandSystem.parseAndRunCommand(commandFile);
+						commandSystem.run();
+					}
 				}
+				
+			});
+		}else {
+			if(commandSystem != null) {
+				if(commandString != null)
+					commandSystem.parseAndRunCommand(commandString);
+				if(commandFile != null)
+					commandSystem.parseAndRunCommand(commandFile);
+				commandSystem.run();
 			}
-			
-		});
+		}
 	}
 	
 	public void setWorld(File worldFolder, String name, Launcher launcher) {
@@ -165,7 +192,7 @@ public class MCWorldExporter {
 		
 						@Override
 						public void run() {
-							JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "The selected folder does not contain a world.", "Error", JOptionPane.ERROR_MESSAGE);
+							Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "The selected folder does not contain a world.", "Error", Popups.ERROR_MESSAGE);
 						}
 						
 					});
@@ -176,7 +203,9 @@ public class MCWorldExporter {
 				
 				
 				List<String> requiredResourcePacks = tmpWorld.getRequiredResourcePacks();
-				List<ResourcePackSource> dependentRPs = tmpWorld.getDependentResourcePacks();
+				List<ResourcePackSource> dependentRPs = new ArrayList<ResourcePackSource>();
+				if(!skipWorldResourcePackCheck)
+					dependentRPs = tmpWorld.getDependentResourcePacks();
 				for(String rp : requiredResourcePacks) {
 					System.out.println("World requires resource pack: " + rp);
 				}
@@ -202,9 +231,9 @@ public class MCWorldExporter {
 					// If the missing resource packs are certain base_resource_packs, then try setting them up.
 					if(missingRequired.contains("base_resource_pack_hytale")) {
 						// No base_resource_pack_hytale, so make it.
-						int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+						int option = Popups.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
 								"No base_resource_pack_hytale so this world cannot be loaded. Would you like to install the base_resource_pack_hytale?", 
-								"Error", JOptionPane.YES_NO_OPTION);
+								"Error", Popups.YES_NO_OPTION);
 						
 						if(option == 0) {
 							ResourcePackDefaults.updateBaseResourcePackHytale(true);
@@ -241,7 +270,7 @@ public class MCWorldExporter {
 							
 							@Override
 							public void run() {
-								JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world requires the following resource packs to be installed: " + finalListStr, "Error", JOptionPane.ERROR_MESSAGE);
+								Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "This world requires the following resource packs to be installed: " + finalListStr, "Error", Popups.ERROR_MESSAGE);
 							}
 							
 						});
@@ -289,9 +318,9 @@ public class MCWorldExporter {
 					}
 					
 					if(!hasLoadedEverything) {
-						int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+						int option = Popups.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
 								"This world makes use of resource packs and/or mods. Would you like to enable the resource packs for it?", 
-								"Load Resource Packs?", JOptionPane.YES_NO_OPTION);
+								"Load Resource Packs?", Popups.YES_NO_OPTION);
 						
 						if(option == 0) {
 							if(neededResourcePacks != null) {
@@ -351,10 +380,10 @@ public class MCWorldExporter {
 				int resourcePackVersion = ResourcePacks.getBaseResourcePack().getWorldVersion();
 				int worldVersion = tmpWorld.getWorldVersion();
 				System.out.println("World version: " + Integer.toString(worldVersion));
-				if(worldVersion > resourcePackVersion && worldVersion > 0) {
-					int option = JOptionPane.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+				if(worldVersion > resourcePackVersion && worldVersion > 0 && !cliMode) {
+					int option = Popups.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
 							"The base resource pack is outdated. Please update the base resource pack via the Tools button. Are you sure you still want to load the world?", 
-							"Warning", JOptionPane.YES_NO_OPTION);
+							"Warning", Popups.YES_NO_OPTION);
 					
 					if(option != 0) {
 						ui.reset();
@@ -381,6 +410,10 @@ public class MCWorldExporter {
 	
 	public MainWindow getUI() {
 		return ui;
+	}
+	
+	public CommandSystem getCommandSystem() {
+		return commandSystem;
 	}
 	
 	public List<ExportBounds> getExportBoundsList() {
@@ -561,6 +594,14 @@ public class MCWorldExporter {
 		}catch(Exception ex) {}
 		
 		try {
+			String skipWorldResourcePackCheckEnvVar = Environment.getEnv("MIEX_SKIP_WORLD_RESOURCEPACK_CHECK");
+			if(skipWorldResourcePackCheckEnvVar != null) {
+				skipWorldResourcePackCheck = skipWorldResourcePackCheckEnvVar.toLowerCase().startsWith("t") || 
+						skipWorldResourcePackCheckEnvVar.startsWith("1");
+			}
+		}catch(Exception ex) {}
+		
+		try {
 			for(int i = 0; i < args.length; ++i) {
 				if(args[i].equalsIgnoreCase("-homeDir"))
 					FileUtil.homeDir = args[i+1];
@@ -639,6 +680,9 @@ public class MCWorldExporter {
 				else if(args[i].equalsIgnoreCase("-genTexRpName")) {
 					GeneratedTextures.generatedTexturesResourcePackName = args[i+1];
 				}
+				else if(args[i].equalsIgnoreCase("-skipWorldResourcePackCheck")) {
+					skipWorldResourcePackCheck = true;
+				}
 				else if(args[i].equalsIgnoreCase("-output")) {
 					forceOutputPath = args[i+1];
 					if(!forceOutputPath.endsWith(".usd"))
@@ -647,19 +691,27 @@ public class MCWorldExporter {
 				else if(args[i].equalsIgnoreCase("-world")) {
 					forceOpenWorld = args[i+1];
 					if(!(new File(forceOpenWorld).exists())) {
+						boolean foundFile = false;
 						for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-							boolean foundFile = false;
 							for(MinecraftSave save : launcher.getSaves()) {
 								if(save.getLabel().equals(forceOpenWorld)) {
 									forceOpenWorld = save.getWorldFolder().getPath();
 									foundFile = true;
 									break;
 								}
-								if(foundFile)
-									break;
 							}
+							if(foundFile)
+								break;
 						}
 					}
+				}else if(args[i].equalsIgnoreCase("-cli")) {
+					cliMode = true;
+				}else if(args[i].equalsIgnoreCase("-commandStdIn")) {
+					commandStdIn = true;
+				}else if(args[i].equalsIgnoreCase("-command")) {
+					commandString = args[i+1];
+				}else if(args[i].equalsIgnoreCase("-commandFile")) {
+					commandFile = new File(args[i+1]);
 				}
 			}
 		}catch(Exception ex) {
@@ -683,7 +735,7 @@ public class MCWorldExporter {
 		// Only support 64 bit Java
 		String archModel = System.getProperty("sun.arch.data.model");
 		if(!archModel.contains("64")) {
-			JOptionPane.showMessageDialog(null, "MiEx only supports 64-bit Java. Please make sure that MiEx is launched with 64-bit Java", "Error", JOptionPane.ERROR_MESSAGE);
+			Popups.showMessageDialog(null, "MiEx only supports 64-bit Java. Please make sure that MiEx is launched with 64-bit Java", "Error", Popups.ERROR_MESSAGE);
 			return;
 		}
 		

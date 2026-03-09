@@ -418,7 +418,7 @@ public class WorldBrowser extends JDialog {
 		
 	}
 	
-	private static class SearchField extends JTextField{
+	public static class SearchField extends JTextField{
 		
 		/**
 		 * 

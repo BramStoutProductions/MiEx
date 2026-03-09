@@ -587,12 +587,17 @@ public class Model {
 			bone.faceIds.add(i);
 		bones.add(bone);
 	}
+	
 
 	public ModelFace addFace(float[] minMaxPoints, Direction dir, String texture) {
+		return addFace(minMaxPoints, dir, texture, ModelFace.SHADING_MODE_STANDARD);
+	}
+
+	public ModelFace addFace(float[] minMaxPoints, Direction dir, String texture, String shadingMode) {
 		JsonObject faceData = new JsonObject();
 		faceData.addProperty("texture", texture);
 
-		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided);
+		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided, shadingMode);
 		if (modelFace.isValid()) {
 			this.occludes |= modelFace.getOccludes();
 			if(this.newFaces != null)
@@ -626,7 +631,18 @@ public class Model {
 	}
 	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float uvRot, int tintIndex, String shadingMode) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, uvRot, tintIndex, shadingMode);
+	}
+	
+
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
 								float rotX, float rotY, float uvRot, int tintIndex) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, uvRot, tintIndex, ModelFace.SHADING_MODE_STANDARD);
+	}
+	
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float rotX, float rotY, float uvRot, int tintIndex, String shadingMode) {
 		JsonObject faceData = new JsonObject();
 		faceData.addProperty("texture", texture);
 		faceData.addProperty("tintindex", tintIndex);
@@ -641,7 +657,7 @@ public class Model {
 			faceData.addProperty("rotationMiEx", true);
 		}
 
-		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided);
+		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided, shadingMode);
 		if (modelFace.isValid()) {
 			if(rotX != 0f || rotY != 0f)
 				modelFace.rotate(rotX, rotY, false);

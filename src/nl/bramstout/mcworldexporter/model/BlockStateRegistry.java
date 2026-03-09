@@ -90,6 +90,8 @@ public class BlockStateRegistry {
 	}
 	
 	private static BlockState getStateFromName(String name, int dataVersion) {
+		if(name.equals("miex:invalid"))
+			return INVALID_BLOCK_STATE;
 		BuiltInBlockStateHandler bibsHandler = BuiltInBlockState.getHandler(name);
 		if(BuiltInBlockStateRegistry.builtins.containsKey(name) || bibsHandler != null) {
 			int resourcePackIndex = bibsHandler != null ? bibsHandler.getResourcePackIndex() : Integer.MAX_VALUE;

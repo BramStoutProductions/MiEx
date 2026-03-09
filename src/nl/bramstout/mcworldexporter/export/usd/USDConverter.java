@@ -133,13 +133,13 @@ public class USDConverter extends Converter{
 		boolean hasBiomeColor;
 		
 		public Texture(String texture, String matTexture, boolean hasBiomeColor, boolean isDoubleSided, 
-						Set<String> colorSets, Map<MatKey, Materials.MaterialTemplate> templates) {
+						Set<String> colorSets, String shadingMode, Map<MatKey, Materials.MaterialTemplate> templates) {
 			this.texture = texture;
 			MatKey matKey = new MatKey(matTexture, hasBiomeColor);
 			this.materialTemplate = templates.getOrDefault(matKey, null);
 			if(this.materialTemplate == null) {
 				this.materialTemplate = Materials.getMaterial(matTexture, hasBiomeColor, isDoubleSided, colorSets,
-										Exporter.currentExportFile.getParentFile().getAbsolutePath());
+										Exporter.currentExportFile.getParentFile().getAbsolutePath(), shadingMode);
 				templates.put(matKey, materialTemplate);
 			}
 			this.hasBiomeColor = hasBiomeColor;
@@ -1246,7 +1246,7 @@ public class USDConverter extends Converter{
 		private void writeAnimatedBaseMesh(AnimatedBlock block, String meshName, Mesh mesh, 
 											USDWriter writer) throws IOException{
 			Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.isDoubleSided(), 
-											mesh.getColorSetNames(), templates);
+											mesh.getColorSetNames(), mesh.getShadingMode(), templates);
 			String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
 			usedTextures.put(matName, textureObj);
 			
@@ -2055,7 +2055,7 @@ public class USDConverter extends Converter{
 		}
 		
 		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.isDoubleSided(), 
-										mesh.getColorSetNames(), templates);
+										mesh.getColorSetNames(), mesh.getShadingMode(), templates);
 		String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
 		usedTextures.put(matName, textureObj);
 		
@@ -2332,7 +2332,7 @@ public class USDConverter extends Converter{
 				writer.writeAttributeValueIntArray(subset.getFaceIndices().getData(), subset.getFaceIndices().size());
 				if(subset.getMatTexture() != null) {
 					Texture textureObj2 = new Texture(subset.getTexture(), subset.getMatTexture(), mesh.hasColors(), 
-							mesh.isDoubleSided(), mesh.getColorSetNames(), templates);
+							mesh.isDoubleSided(), mesh.getColorSetNames(), mesh.getShadingMode(), templates);
 					String matName = MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor);
 					usedTextures.put(matName, textureObj2);
 					writer.writeAttributeName("rel", "material:binding", false);

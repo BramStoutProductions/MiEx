@@ -60,7 +60,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
@@ -159,57 +158,90 @@ public class ExampleResourcePackDownloader extends JDialog {
 				}
 				if(packs.isEmpty())
 					return;
+				downloadExampleResourcePacks(packs);
 				
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("Downloading resource packs");
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
-				System.out.println("Downloading example resource packs:");
-				for(Entry<String, List<String>> entry : packs.entrySet()) {
-					for(String pack : entry.getValue()) {
-						System.out.println("  " + entry.getKey() + ":" + pack);
-						// Make sure to delete the old pack, in case the new version
-						// has fewer or different files.
-						File packDir = new File(FileUtil.getResourcePackDir(), pack);
-						if(packDir.exists() && packDir.isDirectory())
-							packDir.delete();
-					}
-					downloadExampleResourcePacks(entry.getKey(), entry.getValue());
-				}
-				
-				
-				
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
-				System.out.println("Example resource packs downloaded.");
-				
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Packs successfully downloaded!", "Done", JOptionPane.PLAIN_MESSAGE);
 				setVisible(false);
-				
-				// Reload resource packs.
-				List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
-				List<String> activeResourcePackUUIDS = new ArrayList<String>();
-				for(ResourcePack pack : activeResourcePacks)
-					activeResourcePackUUIDS.add(pack.getUUID());
-				
-				ResourcePacks.load();
-				ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(activeResourcePackUUIDS);
-				
-				Atlas.readAtlasConfig();
-				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});
 	}
 	
-	private void downloadExampleResourcePacks(String repository, List<String> packs) {
+	public static List<String> getExampleResourcePacks() {
+		List<String> items = new ArrayList<String>();
+		for(ExampleResourcePackItem item : loadItems()) {
+			items.add(item.getText());
+		}
+		return items;
+	}
+	
+	public static void downloadExampleResourcePacks(List<String> packs) {
+		Map<String, List<String>> packsMap = new HashMap<String, List<String>>();
+		for(ExampleResourcePackItem comp : loadItems()) {
+			if(packs.contains(comp.getText())) {
+				String repository = ((ExampleResourcePackItem) comp).getRepository();
+				String resourcePack = ((ExampleResourcePackItem) comp).getText();
+				
+				List<String> packs2 = packsMap.getOrDefault(repository, null);
+				if(packs2 == null) {
+					packs2 = new ArrayList<String>();
+					packsMap.put(repository, packs2);
+				}
+				packs2.add(resourcePack);
+			}
+		}
+		if(packsMap.isEmpty())
+			return;
+		
+		downloadExampleResourcePacks(packsMap);
+	}
+	
+	public static void downloadExampleResourcePacks(Map<String, List<String>> packs) {
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Downloading resource packs");
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.25f);
+		System.out.println("Downloading example resource packs:");
+		for(Entry<String, List<String>> entry : packs.entrySet()) {
+			for(String pack : entry.getValue()) {
+				System.out.println("  " + entry.getKey() + ":" + pack);
+				// Make sure to delete the old pack, in case the new version
+				// has fewer or different files.
+				File packDir = new File(FileUtil.getResourcePackDir(), pack);
+				if(packDir.exists() && packDir.isDirectory())
+					packDir.delete();
+			}
+			downloadExampleResourcePacks(entry.getKey(), entry.getValue());
+		}
+		
+		
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+		System.out.println("Example resource packs downloaded.");
+		
+		Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Resource Packs successfully downloaded!", "Done", Popups.PLAIN_MESSAGE);
+		
+		// Reload resource packs.
+		List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+		List<String> activeResourcePackUUIDS = new ArrayList<String>();
+		for(ResourcePack pack : activeResourcePacks)
+			activeResourcePackUUIDS.add(pack.getUUID());
+		
+		ResourcePacks.load();
+		ResourcePacks.setActiveResourcePacks(activeResourcePacks);
+		
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(activeResourcePackUUIDS);
+		
+		Atlas.readAtlasConfig();
+		Config.load();
+		BlockStateRegistry.clearBlockStateRegistry();
+		ModelRegistry.clearModelRegistry();
+		BiomeRegistry.recalculateTints();
+		ResourcePacks.doPostLoad();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
+	}
+	
+	public static void downloadExampleResourcePacks(String repository, List<String> packs) {
 		HttpURLConnection connection = null;
 		InputStream stream = null;
 		byte[] buffer = new byte[4096];
@@ -278,52 +310,60 @@ public class ExampleResourcePackDownloader extends JDialog {
 		}catch(Exception ex) {}
 	}
 	
+	
+	private static void loadFromRepository(String repository, Set<String> foundRPs, List<ExampleResourcePackItem> items) {
+		HttpURLConnection connection = null;
+		InputStream stream = null;
+		try {
+			URL url = new URI("https://api.github.com/repos/" + repository + "/contents/extras/example_resource_packs").toURL();
+			connection = (HttpURLConnection) url.openConnection();
+			stream = connection.getInputStream();
+			
+			JsonArray packs = JsonParser.parseReader(new JsonReader(new BufferedReader(
+								new InputStreamReader(stream)))).getAsJsonArray();
+			for(JsonElement el : packs.asList()) {
+				JsonObject pack = el.getAsJsonObject();
+				if(!pack.has("name"))
+					continue;
+				String name = pack.get("name").getAsString();
+				if(foundRPs.contains(name))
+					continue;
+				foundRPs.add(name);
+				items.add(new ExampleResourcePackItem(name, repository));
+			}
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		try {
+			if(stream != null)
+				stream.close();
+		}catch(Exception ex) {}
+		try {
+			if(connection != null)
+				connection.disconnect();
+		}catch(Exception ex) {}
+	}
+	private static List<ExampleResourcePackItem> loadItems(){
+		List<ExampleResourcePackItem> items = new ArrayList<ExampleResourcePackItem>();
+		Set<String> foundRPs = new HashSet<String>();
+		for(String repository : MCWorldExporter.GitHubRepository) {
+			loadFromRepository(repository, foundRPs, items);
+		}
+		return items;
+	}
+	
 	@Override
 	public void setVisible(boolean b) {
 		if(b) {
 			
 			availablePanel.removeAll();
 			SwingUtilities.invokeLater(new Runnable() {
-				
-				private void loadFromRepository(String repository, Set<String> foundRPs) {
-					HttpURLConnection connection = null;
-					InputStream stream = null;
-					try {
-						URL url = new URI("https://api.github.com/repos/" + repository + "/contents/extras/example_resource_packs").toURL();
-						connection = (HttpURLConnection) url.openConnection();
-						stream = connection.getInputStream();
-						
-						JsonArray packs = JsonParser.parseReader(new JsonReader(new BufferedReader(
-											new InputStreamReader(stream)))).getAsJsonArray();
-						for(JsonElement el : packs.asList()) {
-							JsonObject pack = el.getAsJsonObject();
-							if(!pack.has("name"))
-								continue;
-							String name = pack.get("name").getAsString();
-							if(foundRPs.contains(name))
-								continue;
-							foundRPs.add(name);
-							availablePanel.add(new ExampleResourcePackItem(name, repository));
-						}
-					}catch(Exception ex) {
-						ex.printStackTrace();
-					}
-					
-					try {
-						if(stream != null)
-							stream.close();
-					}catch(Exception ex) {}
-					try {
-						if(connection != null)
-							connection.disconnect();
-					}catch(Exception ex) {}
-				}
 
 				@Override
 				public void run() {
-					Set<String> foundRPs = new HashSet<String>();
-					for(String repository : MCWorldExporter.GitHubRepository) {
-						loadFromRepository(repository, foundRPs);
+					for(ExampleResourcePackItem item : loadItems()) {
+						availablePanel.add(item);
 					}
 				}
 				

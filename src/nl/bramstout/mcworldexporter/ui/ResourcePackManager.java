@@ -40,7 +40,6 @@ import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.border.EmptyBorder;
@@ -70,15 +69,15 @@ public class ResourcePackManager extends JPanel {
 	private JButton presetsButton;
 	private JButton toolsButton;
 	private JPopupMenu toolsMenu;
-	private JMenuItem reloadTool;
-	private JMenuItem updateBaseResourcePackTool;
-	private JMenuItem updateBaseResourcePackHytaleTool;
-	private JMenuItem updateBuiltInFilesTool;
-	private JMenuItem exampleResourcePackDownloaderTool;
-	private JMenuItem extractModResourcePackTool;
-	private JMenuItem createAtlassesTool;
-	private JMenuItem pbrGeneratorTool;
-	private JMenuItem environmentSettingsTool;
+	public JMenuItem reloadTool;
+	public JMenuItem updateBaseResourcePackTool;
+	public JMenuItem updateBaseResourcePackHytaleTool;
+	public JMenuItem updateBuiltInFilesTool;
+	public JMenuItem exampleResourcePackDownloaderTool;
+	public JMenuItem extractModResourcePackTool;
+	public JMenuItem createAtlassesTool;
+	public JMenuItem pbrGeneratorTool;
+	public JMenuItem environmentSettingsTool;
 	private AtlasCreatorDialog atlasCreator;
 	private ResourcePackExtractorDialog resourcePackExtractor;
 	private PbrGeneratorDialog pbrGenerator;
@@ -344,7 +343,7 @@ public class ResourcePackManager extends JPanel {
 						MCWorldExporter.getApp().getUI().fullReRender();
 						repaint();
 						
-						JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Built in files successfully installed", "Done", JOptionPane.PLAIN_MESSAGE);
+						Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Built in files successfully installed", "Done", Popups.PLAIN_MESSAGE);
 					}
 				
 				});

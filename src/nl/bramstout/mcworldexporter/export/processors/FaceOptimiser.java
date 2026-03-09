@@ -75,7 +75,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		
 		// Go bottom and top
 		tempMesh1.reset(inMesh.getName(), inMesh.getPurpose(), inMesh.getTexture(), inMesh.getMatTexture(), 
-						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
+						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided(), inMesh.getShadingMode());
 		tempMesh1.setExtraData(inMesh.getExtraData());
 		
 		boolean[] processedFaces = new boolean[inMesh.getFaceIndices().size()/4];
@@ -97,7 +97,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		// Go left and right
 		Arrays.fill(processedFaces, false);
 		inMesh.reset(inMesh.getName(), inMesh.getPurpose(), inMesh.getTexture(), inMesh.getMatTexture(), 
-						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided());
+						inMesh.hasAnimatedTexture(), inMesh.isDoubleSided(), inMesh.getShadingMode());
 		inMesh.setExtraData(tempMesh1.getExtraData());
 		
 		if(tempMesh1.getNumSubsets() == 0) {

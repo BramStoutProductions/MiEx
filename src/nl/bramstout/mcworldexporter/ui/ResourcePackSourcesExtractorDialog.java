@@ -65,6 +65,12 @@ public class ResourcePackSourcesExtractorDialog extends JDialog {
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	public static String FORCE_RP_NAME = null;
+	
+	
+	private JTextField resourcePackInput;
+	private JButton createButton;
+	
 	public ResourcePackSourcesExtractorDialog(World world, List<ResourcePackSource> sources) {
 		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
 		JPanel root = new JPanel();
@@ -105,7 +111,7 @@ public class ResourcePackSourcesExtractorDialog extends JDialog {
 		JLabel resourcePackLabel = new JLabel("Resource Pack Name");
 		resourcePackLabel.setAlignmentX(0f);
 		root.add(resourcePackLabel);
-		JTextField resourcePackInput = new JTextField();
+		resourcePackInput = new JTextField();
 		resourcePackInput.setAlignmentX(0f);
 		root.add(resourcePackInput);
 		String rpName = world.getWorldDir().getName();
@@ -123,7 +129,7 @@ public class ResourcePackSourcesExtractorDialog extends JDialog {
 		buttonPanel.setLayout(new BorderLayout(0, 0));
 		buttonPanel.setAlignmentX(0f);
 		root.add(buttonPanel);
-		JButton createButton = new JButton("Install");
+		createButton = new JButton("Install");
 		createButton.setPreferredSize(new Dimension(174, 24));
 		buttonPanel.add(createButton, BorderLayout.WEST);
 		JButton closeButton = new JButton("Close");
@@ -178,6 +184,21 @@ public class ResourcePackSourcesExtractorDialog extends JDialog {
 			}
 			
 		});
+	}
+	
+	@Override
+	public void setVisible(boolean b) {
+		if(b) {
+			if(MCWorldExporter.cliMode) {
+				if(FORCE_RP_NAME != null) {
+					resourcePackInput.setText(FORCE_RP_NAME);
+					FORCE_RP_NAME = null;
+				}
+				createButton.doClick();
+				return;
+			}
+		}
+		super.setVisible(b);
 	}
 	
 	private static class SourceComponent extends JPanel{

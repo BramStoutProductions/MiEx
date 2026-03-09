@@ -217,7 +217,7 @@ public class ChunkExporter {
 						
 						if(state.isAir() || state.hasLiquid()) {
 							placeStone = false;
-							if(Config.fillInCaves) {
+							if(Config.fillInCaves && layer == 0) {
 								// We need to fill in the holes generated
 								// by the cave removal algorithm.
 								// Holes can occur in air or liquids.
@@ -233,6 +233,10 @@ public class ChunkExporter {
 										placeStone = true;
 									else {
 										for(Direction dir : Direction.CACHED_VALUES) {
+											if(Config.fillWorldBorders && !bounds.isInExportRegionBounds(wx + dir.x, by + dir.y, wz + dir.z)) {
+												placeStone = true;
+												break;
+											}
 											if(!isInCaveCached(wx + dir.x, by + dir.y, wz + dir.z)) {
 												placeStone = true;
 												break;
@@ -249,8 +253,9 @@ public class ChunkExporter {
 						}
 						
 						occlusion = getOcclusion(chunk, bx, by, bz, state, detailedOcclusionFaces, lodSize, lodYSize);
-						if(occlusion == Long.MAX_VALUE)
+						if(occlusion == Long.MAX_VALUE) {
 							continue; // Block is in cave
+						}
 						
 						offsetX = 0f;
 						offsetY = 0f;
@@ -824,9 +829,10 @@ public class ChunkExporter {
 		public String atlasTexture;
 		public Materials.MaterialTemplate materialTemplate;
 		
-		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, Set<String> colorSets) {
+		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, 
+						Set<String> colorSets, String shadingMode) {
 			atlasTexture = item.atlas;
-			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, isDoubleSided, colorSets, "");
+			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, isDoubleSided, colorSets, "", shadingMode);
 		}
 		
 		@Override
@@ -850,12 +856,12 @@ public class ChunkExporter {
 	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
 	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
 	
-	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided) {
+	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, String shadingMode) {
 		String meshName = atlasMappings.getOrDefault(originalTexture, null);
 		if(meshName != null)
 			return meshName;
 		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null);
+		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null, shadingMode);
 		meshName = atlasMappings2.getOrDefault(key, null);
 		if(meshName != null) {
 			atlasMappings.put(originalTexture, meshName);
@@ -1043,7 +1049,7 @@ public class ChunkExporter {
 		float lodYUVScale = lodNoUVScale ? 1.0f : lodYScale;
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
-			meshName = getMeshName(atlas, texture, tint != null, doubleSided);
+			meshName = getMeshName(atlas, texture, tint != null, doubleSided, face.getShadingMode());
 			texture = atlas.atlas;
 			// When using an atlas, we can't just scale up the UVs.
 			lodUVScale = Math.min(lodUVScale, (float) atlas.padding);
@@ -1064,7 +1070,8 @@ public class ChunkExporter {
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 1024, 8);
+			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided,
+							face.getShadingMode(), 1024, 8);
 			mesh.setExtraData(extraData);
 			meshes.put(meshName, mesh);
 		}
@@ -1363,13 +1370,20 @@ public class ChunkExporter {
 				// Offset the position from which we test if it's in a cave to the top of
 				// the LoD block.
 				else if(isInCaveCached(wx + (lodSize-1)/2, wy + lodYSize - 1, wz + (lodSize-1)/2)) {
-					if(Config.fillInCaves) {
+					if(Config.fillInCaves || Config.fillWorldBorders) {
 						// If we need to fill in the caves, then
 						// we need to check the neighbours and see if
 						// any of them aren't in a cave, if so we don't
 						// occlude it.
 						boolean dontOcclude = false;
 						for(Direction dir : Direction.CACHED_VALUES) {
+							if(Config.fillWorldBorders && !bounds.isInExportRegionBounds(
+												wx + (lodSize-1)/2 + dir.x * lodSize, 
+												wy + lodYSize - 1 + dir.y * lodYSize, 
+												wz + (lodSize-1)/2 + dir.z * lodSize)) {
+								dontOcclude = true;
+								break;
+							}
 							if(!isInCaveCached(wx + (lodSize-1)/2 + dir.x * lodSize, 
 												wy + lodYSize - 1 + dir.y * lodYSize, 
 												wz + (lodSize-1)/2 + dir.z * lodSize)) {

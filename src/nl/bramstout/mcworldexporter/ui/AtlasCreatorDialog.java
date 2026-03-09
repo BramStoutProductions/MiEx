@@ -42,7 +42,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
@@ -184,7 +183,7 @@ public class AtlasCreatorDialog extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if(saveToInput.getText().toLowerCase().contains("save to resource pack") || saveToInput.getText().trim().isEmpty()) {
-					JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Please specify a name for the resource pack to save the atlases to.", "Error", JOptionPane.ERROR_MESSAGE);
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Please specify a name for the resource pack to save the atlases to.", "Error", Popups.ERROR_MESSAGE);
 					return;
 				}
 				
@@ -223,7 +222,7 @@ public class AtlasCreatorDialog extends JDialog {
 				
 				Atlas.readAtlasConfig();
 				
-				JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), "Atlases created successfully", "Done", JOptionPane.PLAIN_MESSAGE);
+				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Atlases created successfully", "Done", Popups.PLAIN_MESSAGE);
 				setVisible(false);
 				
 				// Restore resource packs.

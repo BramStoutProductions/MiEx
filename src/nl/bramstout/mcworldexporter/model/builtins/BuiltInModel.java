@@ -109,6 +109,7 @@ public class BuiltInModel {
 		private Expression maxU;
 		private Expression maxV;
 		private Expression texture;
+		private Expression shadingMode;
 		private Expression rotation;
 		private boolean affineRotation;
 		private Expression tintIndex;
@@ -117,7 +118,7 @@ public class BuiltInModel {
 		private Expression entityUVsMaxU;
 		private Expression entityUVsMaxV;
 		
-		public ElementFace(Direction dir, Expression texture, Expression entityUVsMinU, Expression entityUVsMinV, 
+		public ElementFace(Direction dir, Expression texture, Expression shadingMode, Expression entityUVsMinU, Expression entityUVsMinV, 
 							Expression entityUVsMaxU, Expression entityUVsMaxV, JsonObject data) {
 			this.dir = dir;
 			this.entityUVsMinU = entityUVsMinU;
@@ -125,6 +126,7 @@ public class BuiltInModel {
 			this.entityUVsMaxU = entityUVsMaxU;
 			this.entityUVsMaxV = entityUVsMaxV;
 			this.texture = texture;
+			this.shadingMode = shadingMode;
 			this.affineRotation = false;
 			if(data == null)
 				return;
@@ -149,6 +151,10 @@ public class BuiltInModel {
 			}
 			if(data.has("tintindex")) {
 				tintIndex = ExprParser.parseMultiExpression(data.get("tintindex").getAsString());
+			}
+			
+			if(data.has("shadingMode")) {
+				this.shadingMode = ExprParser.parseMultiExpression(data.get("shadingMode").getAsString());
 			}
 		}
 		
@@ -242,7 +248,10 @@ public class BuiltInModel {
 			if(tintIndex != null) {
 				faceData.addProperty("tintindex", tintIndex.eval(context).asInt());
 			}
-			ModelFace face = new ModelFace(bounds, dir, faceData, context.model.isDoubleSided());
+			String shadingModeStr = ModelFace.SHADING_MODE_STANDARD;
+			if(shadingMode != null)
+				shadingModeStr = shadingMode.eval(context).asString().intern();
+			ModelFace face = new ModelFace(bounds, dir, faceData, context.model.isDoubleSided(), shadingModeStr);
 			if(face.isValid()) {
 				face.rotate(rotateData);
 				context.model.getFaces().add(face);
@@ -346,19 +355,22 @@ public class BuiltInModel {
 				}
 			}
 			Expression defaultTexture = null;
+			Expression defaultShadingMode = null;
 			if(data.has("texture"))
 				defaultTexture = ExprParser.parseMultiExpression(data.get("texture").getAsString());
+			if(data.has("shadingMode"))
+				defaultShadingMode = ExprParser.parseMultiExpression(data.get("shadingMode").getAsString());
 			if(data.has("faces")) {
 				for(Entry<String, JsonElement> entry : data.getAsJsonObject("faces").entrySet()) {
 					Direction dir = Direction.getDirection(entry.getKey());
 					if(entry.getValue().isJsonObject()) {
-						addFace(new ElementFace(dir, defaultTexture, entityUVsMinU, entityUVsMinV, entityUVsMaxU, 
+						addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, entityUVsMinU, entityUVsMinV, entityUVsMaxU, 
 												entityUVsMaxV, entry.getValue().getAsJsonObject()));
 					}
 				}
 			}else {
 				for (Direction dir : Direction.CACHED_VALUES) {
-					addFace(new ElementFace(dir, defaultTexture, entityUVsMinU, entityUVsMinV, entityUVsMaxU, entityUVsMaxV, null));
+					addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, entityUVsMinU, entityUVsMinV, entityUVsMaxU, entityUVsMaxV, null));
 				}
 			}
 		}
@@ -716,6 +728,7 @@ public class BuiltInModel {
 		private Expression loopIncrement;
 		private Expression[] subExpressions;
 		private Element[] elements;
+		private Part[] generators;
 		private Part[] children;
 		private Transformation transformation;
 		
@@ -723,6 +736,7 @@ public class BuiltInModel {
 			children = new Part[0];
 			subExpressions = new Expression[0];
 			elements = new Element[0];
+			generators = new Part[0];
 			transformation = null;
 			if(data.has("condition"))
 				condition = ExprParser.parseMultiExpression(data.get("condition").getAsString());
@@ -780,7 +794,8 @@ public class BuiltInModel {
 					addGenerator(el);
 				}
 			}else if(data.isJsonObject()) {
-				addChild(new GeneratorPart(data.getAsJsonObject()));
+				generators = Arrays.copyOf(generators, generators.length + 1);
+				generators[generators.length - 1] = new GeneratorPart(data.getAsJsonObject());
 			}
 		}
 		
@@ -800,6 +815,9 @@ public class BuiltInModel {
 					for(int i = 0; i < subExpressions.length; ++i) {
 						subExpressions[i].eval(context);
 					}
+					for(int i = 0; i < generators.length; ++i) {
+						generators[i].eval(context);
+					}
 					for(int i = 0; i < elements.length; ++i) {
 						elements[i].addElementToModel(context);
 					}
@@ -816,6 +834,9 @@ public class BuiltInModel {
 			}else {
 				for(int i = 0; i < subExpressions.length; ++i) {
 					subExpressions[i].eval(context);
+				}
+				for(int i = 0; i < generators.length; ++i) {
+					generators[i].eval(context);
 				}
 				for(int i =0 ; i < elements.length; ++i) {
 					elements[i].addElementToModel(context);

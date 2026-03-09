@@ -98,7 +98,8 @@ public class MeshProcessors {
 					Mesh combinedMesh = combinedMeshes.getOrDefault(kind, null);
 					if(combinedMesh == null) {
 						combinedMesh = new Mesh(manager.meshNamePrefix + "_" + kind.hashCode(), kind.purpose, 
-												mesh.getTexture(), mesh.getMatTexture(), mesh.hasAnimatedTexture(), kind.doubleSided, 64, 16);
+												mesh.getTexture(), mesh.getMatTexture(), mesh.hasAnimatedTexture(), kind.doubleSided,
+												mesh.getShadingMode(), 64, 16);
 						combinedMeshes.put(kind, combinedMesh);
 					}
 					combinedMesh.appendMesh(mesh, true);

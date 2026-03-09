@@ -46,12 +46,11 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.swing.JOptionPane;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.ui.BuiltInFilesDialog;
+import nl.bramstout.mcworldexporter.ui.Popups;
 
 public class BuiltInFiles {
 	
@@ -192,7 +191,7 @@ public class BuiltInFiles {
 		Json.writeJson(manifestFile, manifestObject);
 		System.out.println("Built-in files up to date.");
 		if(updatedFiles.size() > 0 && Environment.getEnvBool("MIEX_BUILT_IN_FILES_SHOW_PROMPT")) {
-			JOptionPane.showMessageDialog(MCWorldExporter.getApp().getUI(), updatedFiles.toArray(), "Updated built-in files", JOptionPane.PLAIN_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), updatedFiles.toArray(), "Updated built-in files", Popups.PLAIN_MESSAGE);
 		}
 	}
 	
