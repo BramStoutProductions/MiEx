@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.model;
 
 import java.util.Arrays;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
@@ -1337,6 +1338,37 @@ public class ModelFace {
 			}
 		}
 		return true;
+	}
+
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		JsonArray pointsArray = new JsonArray();
+		for(float point : points) {
+			pointsArray.add(point);
+		}
+		res.add("points", pointsArray);
+		JsonArray uvsArray = new JsonArray();
+		for(float uv : uvs) {
+			uvsArray.add(uv);
+		}
+		res.add("uvs", uvsArray);
+		if(vertexColors != null) {
+			JsonArray vertexColorsArray = new JsonArray();
+			for(float x : vertexColors) {
+				vertexColorsArray.add(x);
+			}
+			res.add("vertexColors", vertexColorsArray);
+		}
+		res.addProperty("occludes", occludes);
+		res.addProperty("occludedBy", occludedBy);
+		res.addProperty("texture", texture);
+		res.addProperty("direction", direction.toString());
+		res.addProperty("doubleSided", doubleSided);
+		res.addProperty("tintIndex", tintIndex);
+		res.addProperty("shadingMode", shadingMode);
+		
+		return res;
 	}
 
 }

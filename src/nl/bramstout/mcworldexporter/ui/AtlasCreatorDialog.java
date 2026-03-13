@@ -187,59 +187,11 @@ public class AtlasCreatorDialog extends JDialog {
 					return;
 				}
 				
-				// Set the resource packs
-				List<ResourcePack> oldResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
-				List<String> oldResourcePackUUIDS = new ArrayList<String>();
-				for(ResourcePack pack : oldResourcePacks)
-					oldResourcePackUUIDS.add(pack.getUUID());
-				ResourcePacks.setActiveResourcePackUUIDs(resourcePackSelector.getActiveResourcePacks());
+				createAtlases(resourcePackSelector.getActiveResourcePacks(), saveToInput.getText(),
+						((Integer) repeatsInput.getValue()).intValue(), ((Integer) paddingInput.getValue()).intValue(),
+						excludeTexturesCtrl.getText().split("\\n"), utilityTexturesCtrl.getText().split("\\n"));
 				
-				AtlasCreator creator = new AtlasCreator();
-				creator.resourcePack = saveToInput.getText();
-				creator.repeats = ((Integer) repeatsInput.getValue()).intValue();
-				creator.padding = ((Integer) paddingInput.getValue()).intValue();
-				String excludeTexturesArray[] = excludeTexturesCtrl.getText().split("\\n");
-				for(String s : excludeTexturesArray) {
-					if(s.isEmpty())
-						continue;
-					if(!s.startsWith("block/") && !s.startsWith("item/"))
-						s = "block/" + s;
-					if(!s.contains(":"))
-						s = "minecraft:" + s;
-					creator.excludeTextures.add(s);
-				}
-				
-				String utilityTexturesArray[] = utilityTexturesCtrl.getText().split("\\n");
-				for(String s : utilityTexturesArray) {
-					creator.utilityTextures.add(s);
-				}
-				
-				for(String rp : resourcePackSelector.getActiveResourcePacks()) {
-					creator.sourceResourcePacks.add(ResourcePacks.getResourcePack(rp));
-				}
-				
-				creator.process();
-				
-				Atlas.readAtlasConfig();
-				
-				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Atlases created successfully", "Done", Popups.PLAIN_MESSAGE);
 				setVisible(false);
-				
-				// Restore resource packs.
-				ResourcePacks.load();
-				ResourcePacks.setActiveResourcePacks(oldResourcePacks);
-				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(oldResourcePackUUIDS);
-				
-				Atlas.readAtlasConfig();
-				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});
@@ -256,6 +208,60 @@ public class AtlasCreatorDialog extends JDialog {
 			paddingInput.setValue(Integer.valueOf(1));
 		}
 		super.setVisible(b);
+	}
+	
+	public static void createAtlases(List<String> activeResourcePacks, String saveToResourcePack, int repeats, int padding,
+									String[] excludeTexturesArray, String[] utilityTexturesArray) {
+		// Set the resource packs
+		List<ResourcePack> oldResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+		List<String> oldResourcePackUUIDS = new ArrayList<String>();
+		for(ResourcePack pack : oldResourcePacks)
+			oldResourcePackUUIDS.add(pack.getUUID());
+		ResourcePacks.setActiveResourcePackUUIDs(activeResourcePacks);
+		
+		AtlasCreator creator = new AtlasCreator();
+		creator.resourcePack = saveToResourcePack;
+		creator.repeats = repeats;
+		creator.padding = padding;
+		for(String s : excludeTexturesArray) {
+			if(s.isEmpty())
+				continue;
+			if(!s.startsWith("block/") && !s.startsWith("item/"))
+				s = "block/" + s;
+			if(!s.contains(":"))
+				s = "minecraft:" + s;
+			creator.excludeTextures.add(s);
+		}
+		
+		for(String s : utilityTexturesArray) {
+			creator.utilityTextures.add(s);
+		}
+		
+		for(String rp : activeResourcePacks) {
+			creator.sourceResourcePacks.add(ResourcePacks.getResourcePack(rp));
+		}
+		
+		creator.process();
+		
+		Atlas.readAtlasConfig();
+		
+		Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Atlases created successfully", "Done", Popups.PLAIN_MESSAGE);
+		
+		// Restore resource packs.
+		ResourcePacks.load();
+		ResourcePacks.setActiveResourcePacks(oldResourcePacks);
+		
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(oldResourcePackUUIDS);
+		
+		Atlas.readAtlasConfig();
+		Config.load();
+		BlockStateRegistry.clearBlockStateRegistry();
+		ModelRegistry.clearModelRegistry();
+		BiomeRegistry.recalculateTints();
+		ResourcePacks.doPostLoad();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 
 }

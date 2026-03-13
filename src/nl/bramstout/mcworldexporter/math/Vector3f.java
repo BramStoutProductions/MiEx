@@ -31,6 +31,8 @@
 
 package nl.bramstout.mcworldexporter.math;
 
+import com.google.gson.JsonArray;
+
 public class Vector3f {
 	
 	public float x;
@@ -103,6 +105,14 @@ public class Vector3f {
 	
 	public float length() {
 		return (float) Math.sqrt(x * x + y * y + z * z);
+	}
+	
+	public JsonArray toJson() {
+		JsonArray res = new JsonArray();
+		res.add(x);
+		res.add(y);
+		res.add(z);
+		return res;
 	}
 
 }

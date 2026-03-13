@@ -1,0 +1,100 @@
+{
+    "attachments": [
+        "minecraft:leather_chestplate", "minecraft:copper_chestplate", "minecraft:golden_chestplate",
+        "minecraft:chainmail_chestplate", "minecraft:iron_chestplate", "minecraft:diamond_chestplate",
+        "minecraft:netherite_chestplate"
+    ],
+    "body": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_chestplate' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_chestplate' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-5, -1, -3],
+                    "to": [5, 13, 3],
+                    "faces": {
+                        "north": {"uv": [8, 10, 10, 16], "texture": "'#armor'"},
+                        "east": {"uv": [7, 10, 8, 16], "texture": "'#armor'"},
+                        "south": {"uv": [5, 10, 7, 16], "texture": "'#armor'"},
+                        "west": {"uv": [4, 10, 5, 16], "texture": "'#armor'"},
+                        "up": {"uv": [5, 8, 7, 10], "texture": "'#armor'"},
+                        "down": {"uv": [7, 8, 9, 10], "texture": "'#armor'"}
+                    }
+		        }
+            ]
+        }
+    },
+    "rightShoulder": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_chestplate' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_chestplate' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-3, -11, -3],
+                    "to": [3, 3, 3],
+                    "faces": {
+                        "north": {"uv": [13, 10, 14, 16], "texture": "'#armor'"},
+                        "east": {"uv": [12, 10, 13, 16], "texture": "'#armor'"},
+                        "south": {"uv": [11, 10, 12, 16], "texture": "'#armor'"},
+                        "west": {"uv": [10, 10, 11, 16], "texture": "'#armor'"},
+                        "up": {"uv": [11, 8, 12, 10], "texture": "'#armor'"},
+                        "down": {"uv": [12, 8, 13, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    },
+    "leftShoulder": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_chestplate' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_chestplate' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-3, -11, -3],
+                    "to": [3, 3, 3],
+                    "faces": {
+                        "north": {"uv": [14, 10, 13, 16], "texture": "'#armor'"},
+                        "east": {"uv": [11, 10, 10, 16], "texture": "'#armor'"},
+                        "south": {"uv": [12, 10, 11, 16], "texture": "'#armor'"},
+                        "west": {"uv": [13, 10, 12, 16], "texture": "'#armor'"},
+                        "up": {"uv": [12, 8, 11, 10], "texture": "'#armor'"},
+                        "down": {"uv": [13, 8, 12, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    }
+}

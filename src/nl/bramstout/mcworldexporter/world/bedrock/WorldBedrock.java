@@ -72,6 +72,11 @@ public class WorldBedrock extends World{
 		blockConnectionsTranslation = new BlockConnectionsTranslation("bedrock");
 		blockConnectionsTranslation.load();
 		
+		regionMinX = Integer.MIN_VALUE >> 9;
+		regionMinZ = Integer.MIN_VALUE >> 9;
+		regionMaxX = Integer.MAX_VALUE >> 9;
+		regionMaxZ = Integer.MAX_VALUE >> 9;
+		
 		Options options = new Options();
 		options.createIfMissing(false);
 		options.readOnly(true);

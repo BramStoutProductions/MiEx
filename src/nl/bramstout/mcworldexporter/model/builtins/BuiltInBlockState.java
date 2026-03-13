@@ -288,7 +288,7 @@ public class BuiltInBlockState extends BlockState{
 			if(this.model.rootPart != null) {
 				Model model = new Model(state.getName(), null, state.isDoubleSided());
 				ExprContext context = new ExprContext(state.getName(), properties, needsConnectionInfo(), x, y, z, (float) x, (float) y, (float) z, 
-						frame, model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
+						frame, 0f, 0f, model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
 						this.model.localGenerators, this.model.localFunctions);
 				try {
 					this.model.rootPart.eval(context);

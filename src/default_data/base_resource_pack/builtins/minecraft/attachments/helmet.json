@@ -1,0 +1,39 @@
+{
+    "attachments": [
+        "minecraft:leather_helmet", "minecraft:golden_helmet", "minecraft:copper_helmet",
+        "minecraft:iron_helmet", "minecraft:chainmail_helmet", "minecraft:turtle_helmet",
+        "minecraft:diamond_helmet", "minecraft:netherite_helmet"
+    ],
+    "head": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_helmet' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_helmet' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_helmet' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_helmet' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_helmet' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_helmet' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:turtle_helmet' ? 'minecraft:entity/equipment/humanoid/turtle_scute' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-4.625, -0.625, -4.625],
+                    "to": [4.625, 8.625, 4.625],
+                    "faces": {
+                        "north": {"uv": [6, 4, 8, 8], "texture": "'#armor'"},
+                        "east": {"uv": [4, 4, 6, 8], "texture": "'#armor'"},
+                        "south": {"uv": [2, 4, 4, 8], "texture": "'#armor'"},
+                        "west": {"uv": [0, 4, 2, 8], "texture": "'#armor'"},
+                        "up": {"uv": [2, 0, 4, 4], "texture": "'#armor'"},
+                        "down": {"uv": [4, 0, 6, 4], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    }
+}

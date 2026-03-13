@@ -52,7 +52,7 @@ import nl.bramstout.mcworldexporter.world.hytale.WorldHytale;
 
 public class Renderer2D implements Runnable {
 
-	private static ThreadPool threadPool = new ThreadPool("Renderer2D", 1536);
+	public static ThreadPool threadPool = new ThreadPool("Renderer2D", 1536);
 
 	private BufferedImage buffer;
 	private BufferedImage heightBuffer;

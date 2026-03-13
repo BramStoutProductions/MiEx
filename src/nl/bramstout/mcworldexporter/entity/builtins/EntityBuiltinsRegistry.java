@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.entity.builtins;
 import java.util.HashMap;
 import java.util.Map;
 
+import nl.bramstout.mcworldexporter.entity.attachments.AttachmentHandlerBuiltIn;
 import nl.bramstout.mcworldexporter.entity.builtins.BuiltInEntity.BuiltInEntityHandler;
 import nl.bramstout.mcworldexporter.resourcepack.EntityHandler;
 
@@ -43,6 +44,7 @@ public class EntityBuiltinsRegistry {
 	
 	public static void load(){
 		BuiltInEntity.load();
+		AttachmentHandlerBuiltIn.load();
 		
 		builtins.clear();
 	}

@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -59,6 +60,45 @@ public class Util {
 			reversed.add(list.get(i));
 		}
 		return reversed;
+	}
+	
+	public static String toBase64(byte[] data) {
+		return Base64.getEncoder().encodeToString(data);
+	}
+	
+	public static String toBase64(short[] data) {
+		byte[] byteData = new byte[data.length*2];
+		for(int i = 0; i < data.length; ++i) {
+			byteData[i*2] = (byte) (data[i]&0xFF);
+			byteData[i*2+1] = (byte) ((data[i]>>8)&0xFF);
+		}
+		return toBase64(byteData);
+	}
+	
+	public static String toBase64(int[] data) {
+		byte[] byteData = new byte[data.length*4];
+		for(int i = 0; i < data.length; ++i) {
+			byteData[i*4] = (byte) (data[i]&0xFF);
+			byteData[i*4+1] = (byte) ((data[i]>>8)&0xFF);
+			byteData[i*4+2] = (byte) ((data[i]>>16)&0xFF);
+			byteData[i*4+3] = (byte) ((data[i]>>24)&0xFF);
+		}
+		return toBase64(byteData);
+	}
+	
+	public static String toBase64(long[] data) {
+		byte[] byteData = new byte[data.length*8];
+		for(int i = 0; i < data.length; ++i) {
+			byteData[i*8] = (byte) (data[i]&0xFF);
+			byteData[i*8+1] = (byte) ((data[i]>>8)&0xFF);
+			byteData[i*8+2] = (byte) ((data[i]>>16)&0xFF);
+			byteData[i*8+3] = (byte) ((data[i]>>24)&0xFF);
+			byteData[i*8+4] = (byte) ((data[i]>>32)&0xFF);
+			byteData[i*8+5] = (byte) ((data[i]>>40)&0xFF);
+			byteData[i*8+6] = (byte) ((data[i]>>48)&0xFF);
+			byteData[i*8+7] = (byte) ((data[i]>>56)&0xFF);
+		}
+		return toBase64(byteData);
 	}
 	
 	public static int parseInt(String str) {

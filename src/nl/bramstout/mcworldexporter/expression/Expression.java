@@ -512,6 +512,8 @@ public abstract class Expression {
 				return context.thisBlock;
 			if(name.equalsIgnoreCase("thisEntity"))
 				return context.thisBlock;
+			if(name.equalsIgnoreCase("thisAttachment"))
+				return context.thisBlock;
 			if(name.equalsIgnoreCase("global")) {
 				return context.globals;
 			}

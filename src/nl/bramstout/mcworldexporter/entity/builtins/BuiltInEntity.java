@@ -222,7 +222,7 @@ public class BuiltInEntity extends EntityHandler{
 		Model model = new Model(entity.getId(), null, handler.model.doubleSided);
 		ExprContext context = new ExprContext(entity.getId(), entity.getProperties(), handler.isLocationDependent, 
 				(int) Math.floor(entity.getX()), (int) Math.floor(entity.getY()), (int) Math.floor(entity.getZ()), 
-				entity.getX(), entity.getY(), entity.getZ(), 0f,
+				entity.getX(), entity.getY(), entity.getZ(), 0f, entity.getPitch(), entity.getYaw(),
 				model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
 				handler.model.localGenerators, handler.model.localFunctions);
 		try {
@@ -277,7 +277,7 @@ public class BuiltInEntity extends EntityHandler{
 		
 		ExprContext context = new ExprContext(entity.getId(), entity.getProperties(), handler.isLocationDependent, 
 				(int) Math.floor(entity.getX()), (int) Math.floor(entity.getY()), (int) Math.floor(entity.getZ()), 
-				entity.getX(), entity.getY(), entity.getZ(), 0f,
+				entity.getX(), entity.getY(), entity.getZ(), 0f, entity.getPitch(), entity.getYaw(),
 				null, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
 				handler.model.localGenerators, handler.model.localFunctions);
 		

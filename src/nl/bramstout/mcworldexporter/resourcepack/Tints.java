@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -74,6 +75,22 @@ public class Tints {
 			if(biomeColor != null)
 				return biome.getColor(biomeColor);
 			return null;
+		}
+		
+		public JsonObject toJson() {
+			JsonObject res = new JsonObject();
+			
+			if(color != null) {
+				JsonArray colour = new JsonArray();
+				colour.add(this.color.color000.getR());
+				colour.add(this.color.color000.getG());
+				colour.add(this.color.color000.getB());
+				res.add("color", colour);
+			}else {
+				res.addProperty("colorMap", biomeColor);
+			}
+			
+			return res;
 		}
 	}
 	
@@ -158,6 +175,23 @@ public class Tints {
 		
 		public boolean isEmpty() {
 			return defaultValue == null;
+		}
+		
+		public JsonObject toJson() {
+			JsonObject res = new JsonObject();
+			
+			if(defaultValue != null) {
+				res.add("defaultValue", defaultValue.toJson());
+			}
+			if(layers != null) {
+				JsonArray layersArray = new JsonArray();
+				for(int i = 0; i < layers.length; ++i) {
+					layersArray.add(layers[i].toJson());
+				}
+				res.add("layers", layersArray);
+			}
+			
+			return res;
 		}
 	}
 	

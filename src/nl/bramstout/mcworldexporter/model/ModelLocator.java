@@ -31,6 +31,8 @@
 
 package nl.bramstout.mcworldexporter.model;
 
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 
@@ -73,6 +75,18 @@ public class ModelLocator {
 	
 	public String getName() {
 		return name;
+	}
+
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		res.addProperty("name", name);
+		res.add("offset", offset.toJson());
+		res.add("rotation", rotation.toJson());
+		res.addProperty("ignoreInheritedScale", ignoreInheritedScale);
+		res.addProperty("bone", bone == null ? "" : bone.getName());
+		
+		return res;
 	}
 	
 }

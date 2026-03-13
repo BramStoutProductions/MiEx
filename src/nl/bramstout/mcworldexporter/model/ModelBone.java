@@ -34,6 +34,9 @@ package nl.bramstout.mcworldexporter.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 
@@ -114,6 +117,24 @@ public class ModelBone {
 		Matrix localMatrix = getLocalMatrix();
 		
 		return parentMatrix.mult(localMatrix);
+	}
+
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		res.addProperty("name", name);
+		res.add("translation", translation.toJson());
+		res.add("pivot", pivot.toJson());
+		res.add("rotation", rotation.toJson());
+		res.add("scaling", scaling.toJson());
+		res.addProperty("visiblity", visibility);
+		res.addProperty("parent", parent == null ? "" : parent.name);
+		JsonArray faceIdsArray = new JsonArray();
+		for(int faceId : faceIds)
+			faceIdsArray.add(faceId);
+		res.add("faceIds", faceIdsArray);
+		
+		return res;
 	}
 	
 }

@@ -34,6 +34,9 @@ package nl.bramstout.mcworldexporter.nbt;
 import java.io.DataInput;
 import java.util.Arrays;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 public class NbtTagIntArray extends NbtTag{
 
 	public static final byte ID = 11;
@@ -131,6 +134,15 @@ public class NbtTagIntArray extends NbtTag{
 	@Override
 	public boolean asBoolean() {
 		return false;
+	}
+	
+	@Override
+	public JsonElement asJson() {
+		JsonArray array = new JsonArray();
+		for(int item : data) {
+			array.add(item);
+		}
+		return array;
 	}
 	
 	@Override

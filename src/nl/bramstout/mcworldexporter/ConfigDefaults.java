@@ -75,6 +75,7 @@ public class ConfigDefaults {
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static List<String> noFaceOptimisation = new ArrayList<String>();
 	public static List<String> separateMeshForBlocks = new ArrayList<String>();
+	public static List<String> exportEntityAsBlocks = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean runOptimiser;
@@ -238,6 +239,12 @@ public class ConfigDefaults {
 		lodNoScale.addAll(Arrays.asList());
 		ignoreAtlas.addAll(Arrays.asList(
 				"block/grass_block_side"));
+		exportEntityAsBlocks.addAll(Arrays.asList(
+				"minecraft:item_frame", "minecraft:frame",
+		        "minecraft:ItemFrame", "minecraft:glow_item_frame",
+		        "minecraft:glow_frame", "minecraft:GlowItemFrame",
+		        "minecraft:painting"
+				));
 		
 		lodPriority.put("grass_block", 200);
 		lodPriority.put("dirt", 2);

@@ -41,19 +41,34 @@ public class CommandRegistry {
 	
 	static {
 		registerCommand("applyExportSettings", CommandApplyExportSettings.class);
+		registerCommand("createAtlases", CommandCreateAtlases.class);
 		registerCommand("downloadExampleResourcePacks", CommandDownloadExampleResourcePacks.class);
+		registerCommand("executeFile", CommandExecuteFile.class);
 		registerCommand("export", CommandExport.class);
 		registerCommand("extractModResourcePack", CommandExtractModResourcePack.class);
 		registerCommand("getActiveResourcePacks", CommandGetActiveResourcePacks.class);
+		registerCommand("getBakedBlockstate", CommandGetBakedBlockState.class);
+		registerCommand("getBiome", CommandGetBiome.class);
+		registerCommand("getBlock", CommandGetBlock.class);
+		registerCommand("getChunk", CommandGetChunk.class);
+		registerCommand("getEntityModel", CommandGetEntityModel.class);
+		registerCommand("getEnvironmentSettings", CommandGetEnvironmentSettings.class);
 		registerCommand("getExampleResourcePacks", CommandGetExampleResourcePacks.class);
 		registerCommand("getExportSettings", CommandGetExportSettings.class);
 		registerCommand("getHytaleVersions", CommandGetHytaleVersions.class);
+		registerCommand("getItemModel", CommandGetItemModel.class);
 		registerCommand("getMinecraftVersions", CommandGetMinecraftVersions.class);
+		registerCommand("getModel", CommandGetModel.class);
 		registerCommand("getResourcePacks", CommandGetResourcePacks.class);
+		registerCommand("getWorld", CommandGetWorld.class);
 		registerCommand("getWorlds", CommandGetWorlds.class);
+		registerCommand("loadDimension", CommandLoadDimension.class);
 		registerCommand("loadWorld", CommandLoadWorld.class);
+		registerCommand("pbrGenerator", CommandPbrGenerator.class);
 		registerCommand("quit", CommandQuit.class);
 		registerCommand("reloadResourcePacks", CommandReloadResourcePacks.class);
+		registerCommand("resolveTags", CommandResolveTags.class);
+		registerCommand("setEnvironmentSettings", CommandSetEnvironmentSettings.class);
 		registerCommand("setActiveResourcePacks", CommandSetActiveResourcePacks.class);
 		registerCommand("updateBaseResourcePack", CommandUpdateBaseResourcePack.class);
 		registerCommand("updateBaseResourcePackHytale", CommandUpdateBaseResourcePackHytale.class);

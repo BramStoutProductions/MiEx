@@ -157,53 +157,15 @@ public class PbrGeneratorDialog extends JDialog {
 					}
 				}
 				
-				PbrGenerator generator = new PbrGenerator();
-				
-				for(String rpName : resourcePackSelector.getActiveResourcePacks()) {
-					generator.resourcePacks.add(ResourcePacks.getResourcePack(rpName));
-				}
-				
+				String saveToResourcePack = null;
 				if(saveMode.getSelectedIndex() == 1) {
-					File rpFolder = new File(FileUtil.getResourcePackDir(), saveToInput.getText());
-					rpFolder.mkdirs();
-					generator.saveToResourcePack = new ResourcePackJavaEdition(rpFolder);
+					saveToResourcePack = saveToInput.getText();
 				}
 				
-				String utilityTexturesArray[] = utilityTexturesCtrl.getText().split("\\n");
-				for(String s : utilityTexturesArray) {
-					generator.utilitySuffixes.add(s);
-				}
+				generatePBR(resourcePackSelector.getActiveResourcePacks(), saveToResourcePack, utilityTexturesCtrl.getText().split("\\n"));
 				
-				try {
-					generator.init();
-					generator.process();
-				}catch(Exception ex) {
-					ex.printStackTrace();
-				}
 				
-				Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "PBR textures created successfully", "Done", Popups.PLAIN_MESSAGE);
 				setVisible(false);
-				
-				// Reload resource packs.
-				List<ResourcePack> activeResourcePacks = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
-				List<String> activeResourcePackUUIDS = new ArrayList<String>();
-				for(ResourcePack pack : activeResourcePacks)
-					activeResourcePackUUIDS.add(pack.getUUID());
-				
-				ResourcePacks.load();
-				ResourcePacks.setActiveResourcePacks(activeResourcePacks);
-				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(activeResourcePackUUIDS);
-				
-				Atlas.readAtlasConfig();
-				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 			}
 			
 		});
@@ -220,6 +182,54 @@ public class PbrGeneratorDialog extends JDialog {
 			saveMode.setSelectedIndex(0);
 		}
 		super.setVisible(b);
+	}
+	
+	public static void generatePBR(List<String> activeResourcePacks, String saveToResourcePack, String[] utilityTexturesArray) {
+		PbrGenerator generator = new PbrGenerator();
+		
+		for(String rpName : activeResourcePacks) {
+			generator.resourcePacks.add(ResourcePacks.getResourcePack(rpName));
+		}
+		
+		if(saveToResourcePack != null) {
+			File rpFolder = new File(FileUtil.getResourcePackDir(), saveToResourcePack);
+			rpFolder.mkdirs();
+			generator.saveToResourcePack = new ResourcePackJavaEdition(rpFolder);
+		}
+		
+		for(String s : utilityTexturesArray) {
+			generator.utilitySuffixes.add(s);
+		}
+		
+		try {
+			generator.init();
+			generator.process();
+		}catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "PBR textures created successfully", "Done", Popups.PLAIN_MESSAGE);
+		
+		// Reload resource packs.
+		List<ResourcePack> activeResourcePacks2 = new ArrayList<ResourcePack>(ResourcePacks.getActiveResourcePacks());
+		List<String> activeResourcePackUUIDS = new ArrayList<String>();
+		for(ResourcePack pack : activeResourcePacks2)
+			activeResourcePackUUIDS.add(pack.getUUID());
+		
+		ResourcePacks.load();
+		ResourcePacks.setActiveResourcePacks(activeResourcePacks2);
+		
+		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(activeResourcePackUUIDS);
+		
+		Atlas.readAtlasConfig();
+		Config.load();
+		BlockStateRegistry.clearBlockStateRegistry();
+		ModelRegistry.clearModelRegistry();
+		BiomeRegistry.recalculateTints();
+		ResourcePacks.doPostLoad();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 
 }

@@ -218,6 +218,7 @@ public class EntityDialog extends JDialog{
 				entityNamesSet.add("minecraft:painting");
 				entityNamesSet.add("minecraft:block_display");
 				entityNamesSet.add("minecraft:item_display");
+				entityNamesSet.add("minecraft:armor_stand");
 				entityNamesSet.add("hytale:BlockEntity");
 				entityNamesSet.add("hytale:ItemEntity");
 				entityNamesSet.add("hytale:ModelEntity");
@@ -329,7 +330,7 @@ public class EntityDialog extends JDialog{
 		
 		if(!noDefaultSelection)
 			exportEntities.setSelection(Arrays.asList("minecraft:item_frame", "minecraft:glow_item_frame", 
-					"minecraft:painting", "minecraft:block_display", "minecraft:item_display", 
+					"minecraft:painting", "minecraft:block_display", "minecraft:item_display", "minecraft:armor_stand", 
 					"hytale:BlockEntity", "hytale:ItemEntity", "hytale:ModelEntity"));
 		noDefaultSelection = true;
 	}

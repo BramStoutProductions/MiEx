@@ -79,6 +79,7 @@ public class Config {
 	public static List<String> ignoreAtlas = new ArrayList<String>();
 	public static List<String> noFaceOptimisation = new ArrayList<String>();
 	public static List<String> separateMeshForBlocks = new ArrayList<String>();
+	public static List<String> exportEntityAsBlocks = new ArrayList<String>();
 	public static Map<String, Integer> lodPriority = new HashMap<String, Integer>();
 	
 	public static boolean removeCaves = false;
@@ -325,6 +326,8 @@ public class Config {
 				parseList("noFaceOptimisation", data, noFaceOptimisation);
 				
 				parseList("separateMeshForBlocks", data, separateMeshForBlocks);
+				
+				parseList("exportEntityAsBlocks", data, exportEntityAsBlocks);
 				
 				if(data.has("runOptimiser"))
 					runOptimiser = data.get("runOptimiser").getAsBoolean();

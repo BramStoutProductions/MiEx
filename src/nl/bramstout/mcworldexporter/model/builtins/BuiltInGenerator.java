@@ -48,6 +48,9 @@ import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.entity.Entity;
+import nl.bramstout.mcworldexporter.entity.attachments.Attachment;
+import nl.bramstout.mcworldexporter.entity.attachments.Attachment.AttachmentLocation;
+import nl.bramstout.mcworldexporter.entity.attachments.AttachmentRegistry;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.expression.ExprContext;
@@ -99,6 +102,8 @@ public abstract class BuiltInGenerator {
 		generatorRegistry.put("entity", new BuiltInGeneratorEntity());
 		generatorRegistry.put("block", new BuiltInGeneratorBlock());
 		generatorRegistry.put("item", new BuiltInGeneratorItem());
+		generatorRegistry.put("attachment", new BuiltInGeneratorAttachment());
+		generatorRegistry.put("entityAttachment", new BuiltInGeneratorEntityAttachment());
 		generatorRegistry.put("map", new BuiltInGeneratorMap());
 		generatorRegistry.put("modelTextures", new BuiltInGeneratorModelTextures());
 		generatorRegistry.put("blockTextures", new BuiltInGeneratorBlockTextures());
@@ -272,6 +277,84 @@ public abstract class BuiltInGenerator {
 			
 			if(model != null) {
 				model.applyTransformation(displayContext);
+				context.model.addModel(model);
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorAttachment extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String itemName = null;
+			NbtTagCompound properties = null;
+			AttachmentLocation location = AttachmentLocation.NONE;
+			
+			if(arguments.containsKey("id"))
+				itemName = arguments.get("id").eval(context).asString();
+			
+			if(arguments.containsKey("location"))
+				location = AttachmentLocation.fromName(arguments.get("location").eval(context).asString());
+			
+			if(arguments.containsKey("properties")) {
+				NbtTag propertiesTag = arguments.get("properties").eval(context).toNbt();
+				if(propertiesTag instanceof NbtTagCompound)
+					properties = (NbtTagCompound) propertiesTag;
+			}
+			if(properties == null)
+				properties = NbtTagCompound.newNonPooledInstance("properties");
+			
+			Attachment attachment = AttachmentRegistry.getAttachment(itemName, properties);
+			
+			Model model = attachment.getModel(location);
+			
+			if(model != null) {
+				context.model.addModel(model);
+			}
+		}
+		
+	}
+	
+	public static class BuiltInGeneratorEntityAttachment extends BuiltInGenerator{
+		
+		@Override
+		public void eval(ExprContext context, Map<String, Expression> arguments) {
+			String slot = "";
+			AttachmentLocation location = AttachmentLocation.NONE;
+			
+			if(arguments.containsKey("slot"))
+				slot = arguments.get("slot").eval(context).asString();
+			
+			if(arguments.containsKey("location"))
+				location = AttachmentLocation.fromName(arguments.get("location").eval(context).asString());
+			
+			if(slot.equalsIgnoreCase("rightHand"))
+				slot = "mainhand";
+			else if(slot.equalsIgnoreCase("leftHand"))
+				slot = "offhand";
+			
+			NbtTagCompound itemTag = null;
+			
+			NbtTag equipmentTag = context.properties.get("equipment");
+			if(equipmentTag != null && equipmentTag instanceof NbtTagCompound) {
+				NbtTag tag = ((NbtTagCompound) equipmentTag).get(slot);
+				if(tag != null && tag instanceof NbtTagCompound)
+					itemTag = (NbtTagCompound) tag;
+			}
+			
+			if(itemTag == null)
+				return;
+			
+			NbtTag itemNameTag = itemTag.get("id");
+			String itemName = itemNameTag != null ? itemNameTag.asString() : "";
+			
+			
+			Attachment attachment = AttachmentRegistry.getAttachment(itemName, itemTag);
+			
+			Model model = attachment.getModel(location);
+			
+			if(model != null) {
 				context.model.addModel(model);
 			}
 		}

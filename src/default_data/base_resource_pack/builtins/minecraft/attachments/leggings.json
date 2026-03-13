@@ -1,0 +1,100 @@
+{
+    "attachments": [
+        "minecraft:leather_leggings", "minecraft:copper_leggings", "minecraft:golden_leggings",
+        "minecraft:chainmail_leggings", "minecraft:iron_leggings", "minecraft:diamond_leggings",
+        "minecraft:netherite_leggings"
+    ],
+    "body": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid_leggings/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-4.5, -0.5, -2.5],
+                    "to": [4.5, 12.5, 2.5],
+                    "faces": {
+                        "north": {"uv": [8, 10, 10, 16], "texture": "'#armor'"},
+                        "east": {"uv": [7, 10, 8, 16], "texture": "'#armor'"},
+                        "south": {"uv": [5, 10, 7, 16], "texture": "'#armor'"},
+                        "west": {"uv": [4, 10, 5, 16], "texture": "'#armor'"},
+                        "up": {"uv": [5, 8, 7, 10], "texture": "'#armor'"},
+                        "down": {"uv": [7, 8, 9, 10], "texture": "'#armor'"}
+                    }
+		        }
+            ]
+        }
+    },
+    "rightLeg": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid_leggings/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-2.5, -12.5, -2.5],
+                    "to": [2.5, 0.5, 2.5],
+                    "faces": {
+                        "north": {"uv": [3, 10, 4, 16], "texture": "'#armor'"},
+                        "east": {"uv": [2, 10, 3, 16], "texture": "'#armor'"},
+                        "south": {"uv": [1, 10, 2, 16], "texture": "'#armor'"},
+                        "west": {"uv": [0, 10, 1, 16], "texture": "'#armor'"},
+                        "up": {"uv": [1, 8, 2, 10], "texture": "'#armor'"},
+                        "down": {"uv": [2, 8, 3, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    },
+    "leftLeg": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid_leggings/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-2.5, -12.5, -2.5],
+                    "to": [2.5, 0.5, 2.5],
+                    "faces": {
+                        "north": {"uv": [4, 10, 3, 16], "texture": "'#armor'"},
+                        "east": {"uv": [1, 10, 0, 16], "texture": "'#armor'"},
+                        "south": {"uv": [2, 10, 1, 16], "texture": "'#armor'"},
+                        "west": {"uv": [3, 10, 2, 16], "texture": "'#armor'"},
+                        "up": {"uv": [2, 8, 1, 10], "texture": "'#armor'"},
+                        "down": {"uv": [3, 8, 2, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    }
+}

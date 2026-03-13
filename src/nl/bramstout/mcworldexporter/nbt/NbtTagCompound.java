@@ -35,6 +35,9 @@ import java.io.DataInput;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class NbtTagCompound extends NbtTag{
 	
 	public static final byte ID = 10;
@@ -459,6 +462,17 @@ public class NbtTagCompound extends NbtTag{
 	@Override
 	public boolean asBoolean() {
 		return false;
+	}
+	
+	@Override
+	public JsonElement asJson() {
+		JsonObject object = new JsonObject();
+		int size = getSize();
+		for(int i = 0; i < size; ++i) {
+			NbtTag tag = get(i);
+			object.add(tag.name, tag.asJson());
+		}
+		return object;
 	}
 	
 	@Override

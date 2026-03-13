@@ -1,0 +1,69 @@
+{
+    "attachments": [
+        "minecraft:leather_boots", "minecraft:copper_boots", "minecraft:golden_boots",
+        "minecraft:chainmail_boots", "minecraft:iron_boots", "minecraft:diamond_boots",
+        "minecraft:netherite_boots"
+    ],
+    "rightLeg": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_boots' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_boots' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_boots' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_boots' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_boots' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-3, -12.5, -3.01],
+                    "to": [3, 1.5, 2.99],
+                    "faces": {
+                        "north": {"uv": [3, 10, 4, 16], "texture": "'#armor'"},
+                        "east": {"uv": [2, 10, 3, 16], "texture": "'#armor'"},
+                        "south": {"uv": [1, 10, 2, 16], "texture": "'#armor'"},
+                        "west": {"uv": [0, 10, 1, 16], "texture": "'#armor'"},
+                        "up": {"uv": [1, 8, 2, 10], "texture": "'#armor'"},
+                        "down": {"uv": [2, 8, 3, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    },
+    "leftLeg": {
+        "doubleSided": true,
+        "handler": {
+            "variables": [
+                "armorTex = 'minecraft:entity/equipment/humanoid/leather'",
+                "armorTex = thisAttachment.name == 'minecraft:chainmail_boots' ? 'minecraft:entity/equipment/humanoid/chainmail' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:iron_boots' ? 'minecraft:entity/equipment/humanoid/iron' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:copper_boots' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:golden_boots' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:diamond_boots' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
+                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+            ],
+            "textures": {
+                "armor": "armorTex"
+            },
+            "elements": [
+                {
+                    "from": [-3, -12.5, -3],
+                    "to": [3, 1.5, 3],
+                    "faces": {
+                        "north": {"uv": [4, 10, 3, 16], "texture": "'#armor'"},
+                        "east": {"uv": [1, 10, 0, 16], "texture": "'#armor'"},
+                        "south": {"uv": [2, 10, 1, 16], "texture": "'#armor'"},
+                        "west": {"uv": [3, 10, 2, 16], "texture": "'#armor'"},
+                        "up": {"uv": [2, 8, 1, 10], "texture": "'#armor'"},
+                        "down": {"uv": [3, 8, 2, 10], "texture": "'#armor'"}
+                    }
+                }
+            ]
+        }
+    }
+}

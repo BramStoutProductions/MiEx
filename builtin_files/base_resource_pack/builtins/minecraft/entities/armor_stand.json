@@ -1,0 +1,393 @@
+{
+    "entities": [ "minecraft:armor_stand" ],
+    "handler": [
+        {
+            "condition": "((thisEntity.state.Marker == null || (thisEntity.state.Marker == 0)))",
+            "textures": {
+                "armorstand": "'minecraft:entity/armorstand/armorstand'"
+            },
+            "variables": [
+                "visible = ((thisEntity.state.Invisible == null) || (thisEntity.state.Invisible == 0))",
+                "small = thisEntity.state.Small != null ? (thisEntity.state.small == 1) : false",
+                "scale = small ? 0.5 : 1.0",
+                "showArms = thisEntity.state.ShowArms != null ? (thisEntity.state.ShowArms == 1) : true",
+                "showBaseplate = thisEntity.state.NoBasePlate != null ? (thisEntity.state.NoBasePlate == 0) : true",
+                "bodyRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Body != null)) ? thisEntity.state.Pose.Body[0] : 0",
+                "bodyRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Body != null)) ? thisEntity.state.Pose.Body[1] : 0",
+                "bodyRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Body != null)) ? thisEntity.state.Pose.Body[2] : 0",
+                
+                "headRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Head != null)) ? thisEntity.state.Pose.Head[0] : 0",
+                "headRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Head != null)) ? thisEntity.state.Pose.Head[1] : 0",
+                "headRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.Head != null)) ? thisEntity.state.Pose.Head[2] : 0",
+                
+                "leftArmRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftArm != null)) ? thisEntity.state.Pose.LeftArm[0] : 10",
+                "leftArmRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftArm != null)) ? thisEntity.state.Pose.LeftArm[1] : 0",
+                "leftArmRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftArm != null)) ? thisEntity.state.Pose.LeftArm[2] : -5",
+                
+                "leftLegRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftLeg != null)) ? thisEntity.state.Pose.LeftLeg[0] : 0",
+                "leftLegRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftLeg != null)) ? thisEntity.state.Pose.LeftLeg[1] : 0",
+                "leftLegRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.LeftLeg != null)) ? thisEntity.state.Pose.LeftLeg[2] : 0",
+                
+                "rightArmRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightArm != null)) ? thisEntity.state.Pose.RightArm[0] : 10",
+                "rightArmRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightArm != null)) ? thisEntity.state.Pose.RightArm[1] : 0",
+                "rightArmRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightArm != null)) ? thisEntity.state.Pose.RightArm[2] : 5",
+                
+                "rightLegRotX = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightLeg != null)) ? thisEntity.state.Pose.RightLeg[0] : 0",
+                "rightLegRotY = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightLeg != null)) ? thisEntity.state.Pose.RightLeg[1] : 0",
+                "rightLegRotZ = ((thisEntity.state.Pose != null) && (thisEntity.state.Pose.RightLeg != null)) ? thisEntity.state.Pose.RightLeg[2] : 0"
+            ],
+            "transform": {
+                "translate": [ -8, 0, -8 ],
+                "scale": [ "scale", "scale", "scale" ]
+            },
+            "children": [
+                {
+                    "name": "baseplate",
+                    "condition": "showBaseplate && visible",
+                    "transform": {
+                        "pivot": [8, 0, 8],
+                        "rotate": [ 0, "-(thisEntity.yaw)", 0 ]
+                    },
+                    "elements": [
+                        {
+                            "from": [2, 0, 2],
+                            "to": [14, 1, 14],
+                            "faces": {
+                                "north": {"uv": [3, 11, 6, 11.25], "texture": "'#armorstand'"},
+                                "east": {"uv": [0, 11, 3, 11.25], "texture": "'#armorstand'"},
+                                "south": {"uv": [9, 11, 12, 11.25], "texture": "'#armorstand'"},
+                                "west": {"uv": [6, 11, 9, 11.25], "texture": "'#armorstand'"},
+                                "up": {"uv": [6, 11, 3, 8], "texture": "'#armorstand'"},
+                                "down": {"uv": [9, 8, 6, 11], "texture": "'#armorstand'"}
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "body",
+                    "transform": {
+                        "pivot": [8, 24, 8],
+                        "rotate": [ "bodyRotX", "bodyRotY", "bodyRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "visible",
+                            "elements": [
+                                {
+                                    "from": [2, 21, 6.5],
+                                    "to": [14, 24, 9.5],
+                                    "faces": {
+                                        "north": {"uv": [0.75, 7.25, 3.75, 8], "texture": "'#armorstand'"},
+                                        "east": {"uv": [0, 7.25, 0.75, 8], "texture": "'#armorstand'"},
+                                        "south": {"uv": [4.5, 7.25, 7.5, 8], "texture": "'#armorstand'"},
+                                        "west": {"uv": [3.75, 7.25, 4.5, 8], "texture": "'#armorstand'"},
+                                        "up": {"uv": [3.75, 7.25, 0.75, 6.5], "texture": "'#armorstand'"},
+                                        "down": {"uv": [6.75, 6.5, 3.75, 7.25], "texture": "'#armorstand'"}
+                                    }
+                                },
+                                {
+                                    "from": [9, 14, 7],
+                                    "to": [11, 21, 9],
+                                    "faces": {
+                                        "north": {"uv": [4.5, 0.5, 5, 2.25], "texture": "'#armorstand'"},
+                                        "east": {"uv": [4, 0.5, 4.5, 2.25], "texture": "'#armorstand'"},
+                                        "south": {"uv": [5.5, 0.5, 6, 2.25], "texture": "'#armorstand'"},
+                                        "west": {"uv": [5, 0.5, 5.5, 2.25], "texture": "'#armorstand'"},
+                                        "up": {"uv": [5, 0.5, 4.5, 0], "texture": "'#armorstand'"},
+                                        "down": {"uv": [5.5, 0, 5, 0.5], "texture": "'#armorstand'"}
+                                    }
+                                },
+                                {
+                                    "from": [5, 14, 7],
+                                    "to": [7, 21, 9],
+                                    "faces": {
+                                        "north": {"uv": [12.5, 4.5, 13, 6.25], "texture": "'#armorstand'"},
+                                        "east": {"uv": [12, 4.5, 12.5, 6.25], "texture": "'#armorstand'"},
+                                        "south": {"uv": [13.5, 4.5, 14, 6.25], "texture": "'#armorstand'"},
+                                        "west": {"uv": [13, 4.5, 13.5, 6.25], "texture": "'#armorstand'"},
+                                        "up": {"uv": [13, 4.5, 12.5, 4], "texture": "'#armorstand'"},
+                                        "down": {"uv": [13.5, 4, 13, 4.5], "texture": "'#armorstand'"}
+                                    }
+                                },
+                                {
+                                    "from": [4, 12, 7],
+                                    "to": [12, 14, 9],
+                                    "faces": {
+                                        "north": {"uv": [0.5, 12.5, 2.5, 13], "texture": "'#armorstand'"},
+                                        "east": {"uv": [0, 12.5, 0.5, 13], "texture": "'#armorstand'"},
+                                        "south": {"uv": [3, 12.5, 5, 13], "texture": "'#armorstand'"},
+                                        "west": {"uv": [2.5, 12.5, 3, 13], "texture": "'#armorstand'"},
+                                        "up": {"uv": [2.5, 12.5, 0.5, 12], "texture": "'#armorstand'"},
+                                        "down": {"uv": [4.5, 12, 2.5, 12.5], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 8, 12, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'chest'",
+                                        "location": "'body'"
+                                    }
+                                },
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'legs'",
+                                        "location": "'body'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "head",
+                    "transform": {
+                        "pivot": [8, 24, 8],
+                        "rotate": [ "headRotX", "headRotY", "headRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "visible",
+                            "elements": [
+                                {
+                                    "from": [7, 24, 7],
+                                    "to": [9, 31, 9],
+                                    "faces": {
+                                        "north": {"uv": [0.5, 0.5, 1, 2.25], "texture": "'#armorstand'"},
+                                        "east": {"uv": [0, 0.5, 0.5, 2.25], "texture": "'#armorstand'"},
+                                        "south": {"uv": [1.5, 0.5, 2, 2.25], "texture": "'#armorstand'"},
+                                        "west": {"uv": [1, 0.5, 1.5, 2.25], "texture": "'#armorstand'"},
+                                        "up": {"uv": [1, 0.5, 0.5, 0], "texture": "'#armorstand'"},
+                                        "down": {"uv": [1.5, 0, 1, 0.5], "texture": "'#armorstand'"}
+                                    }
+                                },
+                                {
+                                    "name": "hat",
+                                    "from": [4, 24, 4],
+                                    "to": [12, 32, 12],
+                                    "faces": {
+                                        "north": {"uv": [10, 2, 12, 4], "texture": "'#armorstand'"},
+                                        "east": {"uv": [8, 2, 10, 4], "texture": "'#armorstand'"},
+                                        "south": {"uv": [14, 2, 16, 4], "texture": "'#armorstand'"},
+                                        "west": {"uv": [12, 2, 14, 4], "texture": "'#armorstand'"},
+                                        "up": {"uv": [12, 2, 10, 0], "texture": "'#armorstand'"},
+                                        "down": {"uv": [14, 0, 12, 2], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 8, 24, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'head'",
+                                        "location": "'head'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "leftarm",
+                    "transform": {
+                        "pivot": [3, 22, 8],
+                        "rotate": [ "leftArmRotX", "leftArmRotY", "leftArmRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "showArms && visible",
+                            "elements": [
+                                {
+                                    "from": [1, 12, 7],
+                                    "to": [3, 24, 9],
+                                    "faces": {
+                                        "north": {"uv": [9, 4.5, 8.5, 7.5], "texture": "'#armorstand'"},
+                                        "east": {"uv": [9.5, 4.5, 9, 7.5], "texture": "'#armorstand'"},
+                                        "south": {"uv": [10, 4.5, 9.5, 7.5], "texture": "'#armorstand'"},
+                                        "west": {"uv": [8.5, 4.5, 8, 7.5], "texture": "'#armorstand'"},
+                                        "up": {"uv": [8.5, 4.5, 9, 4], "texture": "'#armorstand'"},
+                                        "down": {"uv": [9, 4, 9.5, 4.5], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 2, 22, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'chest'",
+                                        "location": "'leftShoulder'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "leftleg",
+                    "transform": {
+                        "pivot": [6.1, 12, 8],
+                        "rotate": [ "leftLegRotX", "leftLegRotY", "leftLegRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "visible",
+                            "elements": [
+                                {
+                                    "from": [5.1, 1, 7],
+                                    "to": [7.1, 12, 9],
+                                    "faces": {
+                                        "north": {"uv": [11, 4.5, 10.5, 7.25], "texture": "'#armorstand'"},
+                                        "east": {"uv": [11.5, 4.5, 11, 7.25], "texture": "'#armorstand'"},
+                                        "south": {"uv": [12, 4.5, 11.5, 7.25], "texture": "'#armorstand'"},
+                                        "west": {"uv": [10.5, 4.5, 10, 7.25], "texture": "'#armorstand'"},
+                                        "up": {"uv": [10.5, 4.5, 11, 4], "texture": "'#armorstand'"},
+                                        "down": {"uv": [11, 4, 11.5, 4.5], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 6, 12, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'legs'",
+                                        "location": "'leftLeg'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 6, 12, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'feet'",
+                                        "location": "'leftLeg'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "rightarm",
+                    "transform": {
+                        "pivot": [13, 22, 8],
+                        "rotate": [ "rightArmRotX", "rightArmRotY", "rightArmRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "showArms && visible",
+                            "elements": [
+                                {
+                                    "from": [13, 12, 7],
+                                    "to": [15, 24, 9],
+                                    "faces": {
+                                        "north": {"uv": [6.5, 0.5, 7, 3.5], "texture": "'#armorstand'"},
+                                        "east": {"uv": [6, 0.5, 6.5, 3.5], "texture": "'#armorstand'"},
+                                        "south": {"uv": [7.5, 0.5, 8, 3.5], "texture": "'#armorstand'"},
+                                        "west": {"uv": [7, 0.5, 7.5, 3.5], "texture": "'#armorstand'"},
+                                        "up": {"uv": [7, 0.5, 6.5, 0], "texture": "'#armorstand'"},
+                                        "down": {"uv": [7.5, 0, 7, 0.5], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 14, 22, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'chest'",
+                                        "location": "'rightShoulder'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "rightleg",
+                    "transform": {
+                        "pivot": [9.9, 12, 8],
+                        "rotate": [ "rightLegRotX", "rightLegRotY", "rightLegRotZ" ]
+                    },
+                    "children": [
+                        {
+                            "condition": "visible",
+                            "elements": [
+                                {
+                                    "from": [8.9, 1, 7],
+                                    "to": [10.9, 12, 9],
+                                    "faces": {
+                                        "north": {"uv": [2.5, 0.5, 3, 3.25], "texture": "'#armorstand'"},
+                                        "east": {"uv": [2, 0.5, 2.5, 3.25], "texture": "'#armorstand'"},
+                                        "south": {"uv": [3.5, 0.5, 4, 3.25], "texture": "'#armorstand'"},
+                                        "west": {"uv": [3, 0.5, 3.5, 3.25], "texture": "'#armorstand'"},
+                                        "up": {"uv": [3, 0.5, 2.5, 0], "texture": "'#armorstand'"},
+                                        "down": {"uv": [3.5, 0, 3, 0.5], "texture": "'#armorstand'"}
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 10, 12, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'legs'",
+                                        "location": "'rightLeg'"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "transform": {
+                                "translate": [ 10, 12, 8 ]
+                            },
+                            "generators": [
+                                {
+                                    "type": "entityAttachment",
+                                    "args": {
+                                        "slot": "'feet'",
+                                        "location": "'rightLeg'"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

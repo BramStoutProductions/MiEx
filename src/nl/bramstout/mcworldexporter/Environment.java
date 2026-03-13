@@ -134,6 +134,14 @@ public class Environment {
 			new EnvironmentVariable("MIEX_SKIP_WORLD_RESOURCEPACK_CHECK", VariableType.BOOLEAN, "0",
 					"When a world is opened up, skip checking for any resource packs that the world might need.")
 	};
+	
+	public static EnvironmentVariable getEnvironmentVariableObject(String name) {
+		for(EnvironmentVariable envVar : ENVIRONMENT_VARIABLES) {
+			if(envVar.getName().equals(name))
+				return envVar;
+		}
+		return null;
+	}
 
 	private static Map<String, String> values = new HashMap<String, String>();
 	
@@ -237,6 +245,7 @@ public class Environment {
 		String val = getEnv(key);
 		if(val == null)
 			return defaultValue;
+		val = val.toLowerCase();
 		return val.startsWith("t") || val.startsWith("1");
 	}
 	

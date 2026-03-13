@@ -93,6 +93,8 @@ public class Player {
 						if(connection != null)
 							connection.disconnect();
 					}catch(Exception ex) {}
+					
+					player.lookupCompleted();
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
@@ -113,6 +115,8 @@ public class Player {
 	protected double y;
 	protected double z;
 	protected String dimension;
+	protected Runnable onLookup;
+	protected boolean finishedLookup;
 	
 	public Player(String uuid, String name, NbtTagCompound data, double x, double y, double z, 
 						String dimension, boolean tryResolveName) {
@@ -123,11 +127,29 @@ public class Player {
 		this.y = y;
 		this.z = z;
 		this.dimension = dimension;
+		this.onLookup = null;
+		this.finishedLookup = true;
 		
 		if(tryResolveName) {
+			this.finishedLookup = false;
 			synchronized(PLAYER_LOOKUP_QUEUE) {
 				PLAYER_LOOKUP_QUEUE.add(this);
 			}
+		}
+	}
+	
+	public void addOnLookup(Runnable runnable) {
+		this.onLookup = runnable;
+		if(this.finishedLookup) {
+			lookupCompleted();
+		}
+	}
+	
+	public void lookupCompleted() {
+		this.finishedLookup = true;
+		if(this.onLookup != null) {
+			this.onLookup.run();
+			this.onLookup = null;
 		}
 	}
 

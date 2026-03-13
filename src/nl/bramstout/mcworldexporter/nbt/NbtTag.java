@@ -39,6 +39,11 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
 import nl.bramstout.mcworldexporter.MemoryPool;
 import nl.bramstout.mcworldexporter.Poolable;
 
@@ -102,6 +107,8 @@ public abstract class NbtTag extends Poolable{
 	public NbtTagCompound asCompound() {
 		return (NbtTagCompound) this;
 	}
+	
+	public abstract JsonElement asJson();
 	
 	
 	
@@ -279,6 +286,48 @@ public abstract class NbtTag extends Poolable{
 			return NbtTagLong.newInstance(name, value.asInt64().getValue());
 		}else if(value.isString()) {
 			return NbtTagString.newInstance(name, value.asString().getValue());
+		}
+		return null;
+	}
+	
+	public static NbtTag fromJsonValue(JsonElement value) {
+		return fromJsonValue("", value);
+	}
+	
+	public static NbtTag fromJsonValue(String name, JsonElement value) {
+		if(value.isJsonArray()) {
+			JsonArray array = value.getAsJsonArray();
+			NbtTag[] children = new NbtTag[array.size()];
+			int numWritten = 0;
+			for(JsonElement val : array) {
+				NbtTag valTag = fromJsonValue(val);
+				if(valTag == null)
+					continue;
+				children[numWritten] = valTag;
+				numWritten++;
+			}
+			if(numWritten != children.length)
+				children = Arrays.copyOf(children, numWritten);
+			return NbtTagList.newInstance(name, children);
+		}else if(value.isJsonObject()) {
+			JsonObject doc = value.getAsJsonObject();
+			NbtTagCompound tag = NbtTagCompound.newInstance(name);
+			for(Entry<String, JsonElement> entry : doc.entrySet()) {
+				NbtTag childTag = fromJsonValue(entry.getKey(), entry.getValue());
+				if(childTag == null)
+					continue;
+				tag.addElement(tag);
+			}
+			return tag;
+		}else if(value.isJsonPrimitive()) {
+			JsonPrimitive valuePrim = value.getAsJsonPrimitive();
+			if(valuePrim.isBoolean()) {
+				return NbtTagByte.newInstance(name, value.getAsBoolean() ? (byte)1 : (byte)0);
+			}else if(valuePrim.isNumber()) {
+				return NbtTagDouble.newInstance(name, value.getAsDouble());
+			}else if(valuePrim.isString()) {
+				return NbtTagString.newInstance(name, value.getAsString());
+			}
 		}
 		return null;
 	}

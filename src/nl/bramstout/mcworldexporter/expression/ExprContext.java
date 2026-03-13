@@ -51,6 +51,8 @@ public class ExprContext {
 	public float fy;
 	public float fz;
 	public float time;
+	public float pitch;
+	public float yaw;
 	public Model model;
 	public ExprValue thisBlock;
 	public Map<String, ExprValue> variables;
@@ -61,7 +63,7 @@ public class ExprContext {
 	public ExprValue returnValue;
 	
 	public ExprContext(String name, NbtTagCompound properties, boolean isLocationDependent, int x, int y, int z, 
-					float fx, float fy, float fz, float time, Model model, 
+					float fx, float fy, float fz, float time, float pitch, float yaw, Model model, 
 					ExprValue globals, Map<String, ExprValue> builtins, Map<String, BuiltInGenerator> localGenerators,
 					Map<String, ExprValue> localFunctions) {
 		this.name = name;
@@ -74,6 +76,8 @@ public class ExprContext {
 		this.fy = fy;
 		this.fz = fz;
 		this.time = time;
+		this.pitch = pitch;
+		this.yaw = yaw;
 		this.model = model;
 		this.thisBlock = new ExprValue(new ExprValueThisBlock(this));
 		this.variables = new HashMap<String, ExprValue>();

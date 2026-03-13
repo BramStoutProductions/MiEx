@@ -45,6 +45,7 @@ import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.AnimatedBlock.AnimatedBlockId;
 import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
 import nl.bramstout.mcworldexporter.export.processors.FaceOptimiser;
@@ -64,9 +65,9 @@ import nl.bramstout.mcworldexporter.modifier.ModifierContext;
 import nl.bramstout.mcworldexporter.modifier.Modifiers;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
+import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler.RandomOffsetMethod;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
-import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler.RandomOffsetMethod;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.resourcepack.connectedtextures.ConnectedTexture;
@@ -325,6 +326,14 @@ public class ChunkExporter {
 				}
 			}
 		}
+		
+		if(!Config.exportEntityAsBlocks.isEmpty()) {
+			for(Entity entity : chunk.getEntities()) {
+				if(Config.exportEntityAsBlocks.contains(entity.getId())) {
+					handleEntity(entity, chunk);
+				}
+			}
+		}
 	}
 	
 	private void handleIndividualBlock(int[] blockId, int wx, int by, int wz, int layer, float offsetX, float offsetY, float offsetZ,
@@ -436,6 +445,22 @@ public class ChunkExporter {
 				
 				faceIndex++;
 			}
+		}
+	}
+	
+	private void handleEntity(Entity entity, Chunk chunk) {
+		Model model = entity.getModel();
+		ModelFace face;
+		int cornerData = 0;
+
+		for(int j = 0; j < model.getFaces().size(); ++j) {
+			face = model.getFaces().get(j);
+				
+			addFace(meshes, entity.getId(), 0, 0, face, model.getTexture(face.getTexture()), 
+					null, null, (int) entity.getX(), (int) entity.getY(), (int) entity.getZ(), 0, entity.getX(), entity.getY(), entity.getZ(), 
+					0f, 0f, 0f, 0f, model.getExtraData(), null, model.isDoubleSided(), 
+					1, 1, false, false, true, false, 
+					null, cornerData, null, null, chunk);
 		}
 	}
 	

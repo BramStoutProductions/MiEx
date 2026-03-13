@@ -261,6 +261,10 @@ public abstract class Chunk {
 		return biomes;
 	}
 	
+	public short[] _getHeightmap() {
+		return heightMap;
+	}
+	
 	public int _getChunkSectionOffset() {
 		return chunkSectionOffset;
 	}

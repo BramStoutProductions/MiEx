@@ -191,7 +191,8 @@ public class TeleportDialog extends JDialog {
 			
 			JPanel infoPanel = new JPanel();
 			infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-			infoPanel.add(new JLabel(player.getName()));
+			JLabel nameLabel = new JLabel(player.getName());
+			infoPanel.add(nameLabel);
 			infoPanel.add(new JLabel(player.getDimension()));
 			add(infoPanel, BorderLayout.CENTER);
 			
@@ -220,6 +221,11 @@ public class TeleportDialog extends JDialog {
 					parent.setVisible(false);
 				}
 				
+			});
+			
+			player.addOnLookup(()->{
+				nameLabel.setText(player.getName());
+				nameLabel.repaint();
 			});
 		}
 		

@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Random;
@@ -300,6 +301,8 @@ public class EntityExporter {
 						continue;
 					if(!enabledEntityExports.contains(entity.getId()))
 						continue;
+					if(Config.exportEntityAsBlocks.contains(entity.getId()))
+						continue;
 					if(entity.getUniqueId() == 0)
 						entity.setUniqueId(random.nextLong());
 					entity.setGlobalRandomSeed(globalSeed);
@@ -384,6 +387,8 @@ public class EntityExporter {
 						continue;
 					if(!enabledEntityExports.contains(spawner.getEntityType()))
 						continue;
+					if(Config.exportEntityAsBlocks.contains(spawner.getEntityType()))
+						continue;
 					if(spawner.test(blockX, blockY, blockZ, sunLightLevel, random)) {
 						candidateSpawners.add(spawner);
 						totalWeight += spawner.getWeight();
@@ -457,6 +462,9 @@ public class EntityExporter {
 				}
 			}
 		}
+		
+		if(entities.isEmpty())
+			return;
 		
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Simulating entities");

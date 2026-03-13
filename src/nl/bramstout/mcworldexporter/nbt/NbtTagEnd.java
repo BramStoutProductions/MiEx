@@ -34,6 +34,8 @@ package nl.bramstout.mcworldexporter.nbt;
 
 import java.io.DataInput;
 
+import com.google.gson.JsonElement;
+
 public class NbtTagEnd extends NbtTag{
 
 	public static final byte ID = 0;
@@ -89,6 +91,11 @@ public class NbtTagEnd extends NbtTag{
 	@Override
 	public boolean asBoolean() {
 		return false;
+	}
+	
+	@Override
+	public JsonElement asJson() {
+		return null;
 	}
 
 	@Override

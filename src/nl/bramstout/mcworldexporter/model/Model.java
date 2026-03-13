@@ -772,5 +772,37 @@ public class Model {
 	public void setParentModel(Model parentModel) {
 		this.parentModel = parentModel;
 	}
+	
+	public JsonObject toJson() {
+		JsonObject res = new JsonObject();
+		
+		res.addProperty("name", name);
+		res.addProperty("id", id);
+		res.addProperty("occludes", occludes);
+		res.addProperty("extraData", extraData);
+		res.addProperty("doubleSided", doubleSided);
+		JsonObject texturesObject = new JsonObject();
+		for(Entry<String, String> entry : textures.entrySet()) {
+			texturesObject.addProperty(entry.getKey(), entry.getValue());
+		}
+		res.add("textures", texturesObject);
+		JsonArray facesArray = new JsonArray();
+		for(ModelFace face : faces) {
+			facesArray.add(face.toJson());
+		}
+		res.add("faces", facesArray);
+		JsonArray bonesArray = new JsonArray();
+		for(ModelBone bone : bones) {
+			bonesArray.add(bone.toJson());
+		}
+		res.add("bones", bonesArray);
+		JsonArray locatorsArray = new JsonArray();
+		for(ModelLocator locator : locators) {
+			locatorsArray.add(locator.toJson());
+		}
+		res.add("locators", locatorsArray);
+		
+		return res;
+	}
 
 }

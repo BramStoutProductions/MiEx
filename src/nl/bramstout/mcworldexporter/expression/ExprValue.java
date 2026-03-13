@@ -1259,6 +1259,12 @@ public class ExprValue {
 			else if(name.equals("time")) {
 				return new ExprValue(new ExprValueFloat(value.time));
 			}
+			else if(name.equals("pitch")) {
+				return new ExprValue(new ExprValueFloat(value.pitch));
+			}
+			else if(name.equals("yaw")) {
+				return new ExprValue(new ExprValueFloat(value.yaw));
+			}
 			return new ExprValue(new ExprValueNull());
 		}
 		
@@ -1283,6 +1289,8 @@ public class ExprValue {
 			tag.addElement(NbtTagFloat.newNonPooledInstance("fz", value.fz));
 			tag.addElement(NbtTagString.newNonPooledInstance("name", value.name));
 			tag.addElement(NbtTagFloat.newNonPooledInstance("time", value.time));
+			tag.addElement(NbtTagFloat.newNonPooledInstance("pitch", value.pitch));
+			tag.addElement(NbtTagFloat.newNonPooledInstance("yaw", value.yaw));
 			NbtTagCompound properties = NbtTagCompound.newNonPooledInstance("properties");
 			if(value.properties != null) {
 				properties.addAllElements(value.properties);
