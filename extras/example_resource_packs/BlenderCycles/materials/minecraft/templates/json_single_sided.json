@@ -1,0 +1,45 @@
+{
+    "priority": 2,
+    "selection": [ "*glass*", "*glass", "*leaves", "*door*"],
+    "include": [ "json_base", "json_single_sided" ],
+    "shadingGroup": {
+        "json:Surface": "MIX_SHADER.Shader"
+    },
+    "network": {
+        "" : {
+            "MIX_SHADER": {
+                "type": "JSON:ShaderNodeMixShader",
+                "attributes": {
+                    "Fac": {
+                        "type": "Float",
+                        "connection": "GEO_INFO.Backfacing"
+                    },
+                    "Shader": {
+                        "type": "Shader",
+                        "connection": "MAT.BSDF"
+                    },
+                    "Shader_001": {
+                        "type": "Shader",
+                        "connection": "TRANSPARENT_SHADER.BSDF"
+                    }
+                }
+            },
+            "TRANSPARENT_SHADER": {
+                "type": "JSON:ShaderNodeBsdfTransparent",
+                "attributes": {
+                    "BSDF": {
+                        "type": "Shader"
+                    }
+                }
+            },
+            "GEO_INFO": {
+                "type": "JSON:ShaderNodeNewGeometry",
+                "attributes": {
+                    "Backfacing": {
+                        "type": "Bool"
+                    }
+                }
+            }
+        }
+    }
+}
