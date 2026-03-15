@@ -36,6 +36,7 @@ except:
     from shiboken2 import wrapInstance
 import os.path
 import maya.OpenMayaUI as omui
+import maya.api.OpenMaya as om
 from maya.api import OpenMaya
 import maya.mel
 import json
@@ -274,6 +275,56 @@ except:
     MIEX_IMPORTER_WINDOW.run()
 
 def MIEX_IMPORT(path, namespace, variant):
+    def fixUVsOnMesh(shape : str):
+        try:
+            selectionList = om.MSelectionList()
+            selectionList.add(shape)
+    
+            obj = selectionList.getDependNode(0)
+    
+            meshFn = om.MFnMesh(obj)
+    
+            uvSets = meshFn.getUVSetNames()
+            for uvSet in uvSets:
+                try:
+                    us, vs = meshFn.getUVs(uvSet=uvSet)
+                    counts, indices = meshFn.getAssignedUVs(uvSet=uvSet)
+    
+                    nus = om.MFloatArray()
+                    nvs = om.MFloatArray()
+                    ncounts = om.MIntArray()
+                    nindices = om.MIntArray()
+    
+                    i = 0
+                    faceI = 0
+                    numFaces = len(counts)
+                    while faceI < numFaces:
+                        count = counts[faceI]
+                        ncounts.append(count)
+                        vertexI = 0
+                        while vertexI < count:
+                            index = indices[i + vertexI]
+                            u = us[index]
+                            v = vs[index]
+                            nus.append(u)
+                            nvs.append(v)
+                            nindices.append(i + vertexI)
+                            
+                            vertexI += 1
+                        
+                        faceI += 1
+                        i += count
+    
+                    meshFn.clearUVs(uvSet=uvSet)
+                    meshFn.setUVs(nus, nvs, uvSet=uvSet)
+                    meshFn.assignUVs(ncounts, nindices, uvSet=uvSet)
+                except:
+                    import traceback
+                    traceback.print_exc()
+        except:
+            import traceback
+            traceback.print_exc()
+    
     variantOption = "proxy"
     if variant == "Render":
         variantOption = "render"
@@ -282,7 +333,7 @@ def MIEX_IMPORT(path, namespace, variant):
         cmds.namespace(add=namespace)
     cmds.namespace(set=namespace)
 
-    cmds.mayaUSDImport(file=path, primVariant= [( "/world", "MiEx_LOD", variantOption )], shadingMode=[("useRegistry","UsdPreviewSurface")], readAnimData=False, primPath="/")
+    cmds.mayaUSDImport(file=path, unit=False, primVariant= [( "/world", "MiEx_LOD", variantOption )], shadingMode=[("useRegistry","UsdPreviewSurface")], readAnimData=True, primPath="/")
 
     cmds.namespace(set=":")
     
@@ -301,6 +352,8 @@ def MIEX_IMPORT(path, namespace, variant):
             # For the render variant we want to not have the proxy meshes.
             parent = cmds.listRelatives(mesh, parent=True, fullPath=True)
             cmds.delete(parent)
+            
+        fixUVsOnMesh(mesh)
 
     
     def setupMaterial(shadingEngine, data):
