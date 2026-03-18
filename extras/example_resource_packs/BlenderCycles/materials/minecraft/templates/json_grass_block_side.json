@@ -3,7 +3,7 @@
     "selection": [ "minecraft:block/grass_block_side" ],
     "include": [ "json_base", "json_grass_block_side" ],
     "network": {
-        "@texture@_overlay": {
+        "@texture@_overlay&&@biomeColor@": {
             "FILE_OVERLAY": {
                 "type": "JSON:ShaderNodeTexImage",
                 "attributes": {
