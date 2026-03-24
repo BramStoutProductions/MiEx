@@ -285,14 +285,14 @@ public class WorldAnvil extends World{
 		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
 		File resourcesZip = new File(getWorldDir(), "resources.zip");
 		if(resourcesZip.exists()) {
-			ResourcePackSource source = new ResourcePackSource("World's resources.zip");
+			ResourcePackSource source = new ResourcePackSource("World's resources.zip", null);
 			source.addSource(ResourcePackSource.getHash(resourcesZip), resourcesZip);
 			sources.add(source);
 		}
 		
 		File resourcepacksFolder = new File(getWorldDir(), "resourcepacks");
 		if(resourcepacksFolder.exists()) {
-			ResourcePackSource source = new ResourcePackSource("World's resourcepacks");
+			ResourcePackSource source = new ResourcePackSource("World's resourcepacks", null);
 			for(File resourcepackFile : resourcepacksFolder.listFiles()) {
 				// We only care about the biome definitions in the datapacks right now.
 				// If a datapack doesn't contain any biome definitions, then no need to
@@ -311,7 +311,7 @@ public class WorldAnvil extends World{
 		
 		File datapacksFolder = new File(getWorldDir(), "datapacks");
 		if(datapacksFolder.exists()) {
-			ResourcePackSource source = new ResourcePackSource("World's datapacks");
+			ResourcePackSource source = new ResourcePackSource("World's datapacks", null);
 			for(File datapackFile : datapacksFolder.listFiles()) {
 				// We only care about the biome definitions in the datapacks right now.
 				// If a datapack doesn't contain any biome definitions, then no need to

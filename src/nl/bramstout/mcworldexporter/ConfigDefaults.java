@@ -126,6 +126,8 @@ public class ConfigDefaults {
 	public static float usdMetersPerUnit;
 	public static String defaultLocalisation;
 	public static boolean fillWorldBorders;
+	public static boolean calculateLighting;
+	public static boolean blockLightingAdditive;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -306,6 +308,8 @@ public class ConfigDefaults {
 		usdMetersPerUnit = 1f;
 		defaultLocalisation = "en_us";
 		fillWorldBorders = false;
+		calculateLighting = false;
+		blockLightingAdditive = false;
 	}
 	
 	public static void loadDefaults() {

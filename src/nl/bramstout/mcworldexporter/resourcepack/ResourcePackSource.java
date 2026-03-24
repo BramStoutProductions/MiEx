@@ -36,6 +36,8 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.launcher.Launcher;
+
 /**
  * Holds potential locations of resource pack data.
  * Worlds can indicate resource pack sources that it has
@@ -47,11 +49,22 @@ public class ResourcePackSource {
 	private String name;
 	private List<String> sourceUuids;
 	private List<File> sources;
+	private Launcher launcher;
 	
-	public ResourcePackSource(String name) {
+	public ResourcePackSource(String name, Launcher launcher) {
 		this.name = name;
 		this.sourceUuids = new ArrayList<String>();
 		this.sources = new ArrayList<File>();
+		this.launcher = launcher;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof ResourcePackSource) {
+			if(sourceUuids.equals(((ResourcePackSource)obj).sourceUuids))
+				return true;
+		}
+		return false;
 	}
 	
 	public void addSource(String uuid, File file) {
@@ -73,6 +86,10 @@ public class ResourcePackSource {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public Launcher getLauncher() {
+		return launcher;
 	}
 	
 	private static byte[] hashBuffer = new byte[1024*1024];

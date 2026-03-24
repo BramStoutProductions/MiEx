@@ -328,7 +328,7 @@ public class WorldBedrock extends World{
 		
 		File resourcepacksFolder = new File(getWorldDir(), "resource_packs");
 		if(resourcepacksFolder.exists()) {
-			ResourcePackSource source = new ResourcePackSource("World's Resource Packs");
+			ResourcePackSource source = new ResourcePackSource("World's Resource Packs", null);
 			for(File resourcepackFile : resourcepacksFolder.listFiles()) {
 				if(!resourcepackFile.isDirectory() || !new File(resourcepackFile, "manifest.json").exists())
 					continue;
@@ -342,7 +342,7 @@ public class WorldBedrock extends World{
 		
 		File behaviorpacksFolder = new File(getWorldDir(), "behavior_packs");
 		if(behaviorpacksFolder.exists()) {
-			ResourcePackSource source = new ResourcePackSource("World's Behavior Packs");
+			ResourcePackSource source = new ResourcePackSource("World's Behavior Packs", null);
 			for(File behaviorpackFile : behaviorpacksFolder.listFiles()) {
 				if(!behaviorpackFile.isDirectory() || !new File(behaviorpackFile, "manifest.json").exists())
 					continue;

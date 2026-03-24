@@ -1,0 +1,8 @@
+[
+    {
+        "blocks": [ "minecraft:jack_o_lantern", "minecraft:lit_pumpkin" ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

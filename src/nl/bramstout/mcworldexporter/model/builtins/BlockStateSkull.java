@@ -195,7 +195,7 @@ public class BlockStateSkull extends BlockState{
 		
 		BakedBlockState bakedState = new BakedBlockState(name, models, transparentOcclusion, leavesOcclusion, detailedOcclusion, 
 				individualBlocks, isLiquid(), caveBlock, false, false, false, false, false, true, true, 0, separateMeshForBlock, null,
-				needsConnectionInfo(), null);
+				needsConnectionInfo(), _hasLocators, getLightValues(properties), null);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}

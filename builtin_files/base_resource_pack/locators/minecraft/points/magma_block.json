@@ -1,0 +1,8 @@
+[
+    {
+        "blocks": [ "minecraft:magma_block", "minecraft:magma" ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

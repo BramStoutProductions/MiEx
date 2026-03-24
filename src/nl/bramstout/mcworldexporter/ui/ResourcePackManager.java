@@ -74,12 +74,14 @@ public class ResourcePackManager extends JPanel {
 	public JMenuItem updateBaseResourcePackHytaleTool;
 	public JMenuItem updateBuiltInFilesTool;
 	public JMenuItem exampleResourcePackDownloaderTool;
-	public JMenuItem extractModResourcePackTool;
+	//public JMenuItem extractModResourcePackTool;
+	public JMenuItem installResourcePacksTool;
 	public JMenuItem createAtlassesTool;
 	public JMenuItem pbrGeneratorTool;
 	public JMenuItem environmentSettingsTool;
 	private AtlasCreatorDialog atlasCreator;
-	private ResourcePackExtractorDialog resourcePackExtractor;
+	//private ResourcePackExtractorDialog resourcePackExtractor;
+	private ResourcePackInstallerDialog resourcePackInstaller;
 	private PbrGeneratorDialog pbrGenerator;
 	private ExampleResourcePackDownloader exampleResourcePackDownloader;
 	private SavePresetDialog savePresetDialog;
@@ -136,8 +138,10 @@ public class ResourcePackManager extends JPanel {
 		ToolTips.registerTooltip(updateBuiltInFilesTool, ToolTips.TOOL_UPDATE_BUILT_IN_FILES);
 		exampleResourcePackDownloaderTool = toolsMenu.add("Download Example Resourcepacks");
 		ToolTips.registerTooltip(exampleResourcePackDownloaderTool, ToolTips.TOOL_DOWNLOAD_EXAMPLE_RESOURCE_PACKS);
-		extractModResourcePackTool = toolsMenu.add("Extract Resourcepack from Modpack");
-		ToolTips.registerTooltip(extractModResourcePackTool, ToolTips.TOOL_EXTRACT_MOD_RESOURCE_PACK);
+		//extractModResourcePackTool = toolsMenu.add("Extract Resourcepack from Modpack");
+		//ToolTips.registerTooltip(extractModResourcePackTool, ToolTips.TOOL_EXTRACT_MOD_RESOURCE_PACK);
+		installResourcePacksTool = toolsMenu.add("Install Resourcepacks");
+		ToolTips.registerTooltip(installResourcePacksTool, ToolTips.TOOL_INSTALL_RESOURCE_PACK);
 		createAtlassesTool = toolsMenu.add("Create Atlasses");
 		ToolTips.registerTooltip(createAtlassesTool, ToolTips.TOOL_CREATE_ATLASSES);
 		pbrGeneratorTool = toolsMenu.add("Generate PBR textures");
@@ -146,7 +150,8 @@ public class ResourcePackManager extends JPanel {
 		ToolTips.registerTooltip(environmentSettingsTool, ToolTips.TOOL_ENVIRONMENT_SETTINGS);
 		
 		atlasCreator = new AtlasCreatorDialog();
-		resourcePackExtractor = new ResourcePackExtractorDialog();
+		//resourcePackExtractor = new ResourcePackExtractorDialog();
+		resourcePackInstaller = new ResourcePackInstallerDialog();
 		pbrGenerator = new PbrGeneratorDialog();
 		exampleResourcePackDownloader = new ExampleResourcePackDownloader();
 		savePresetDialog = new SavePresetDialog();
@@ -361,12 +366,22 @@ public class ResourcePackManager extends JPanel {
 			
 		});
 		
-		extractModResourcePackTool.addActionListener(new ActionListener() {
+		/*extractModResourcePackTool.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				resourcePackExtractor.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
 				resourcePackExtractor.setVisible(true);
+			}
+			
+		});*/
+		
+		installResourcePacksTool.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				resourcePackInstaller.setLocationRelativeTo(MCWorldExporter.getApp().getUI());
+				resourcePackInstaller.setVisible(true);
 			}
 			
 		});

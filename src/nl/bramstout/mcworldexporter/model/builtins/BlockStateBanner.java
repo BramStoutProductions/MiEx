@@ -80,29 +80,35 @@ public class BlockStateBanner extends BlockState{
 			boolean isWall = state.getName().contains("wall");
 			float rotY = 0f;
 			if (isWall) {
-				String val = properties.get("facing").asString();
-				if (val == null)
-					val = "north";
-				if (val.equals("north")) {
-					rotY = 180f;
-				} else if (val.equals("east")) {
-					rotY = 270f;
-				} else if (val.equals("south")) {
-					rotY = 0f;
-				} else if (val.equals("west")) {
-					rotY = 90f;
+				NbtTag facingTag = properties.get("facing");
+				if(facingTag != null) {
+					String val = facingTag.asString();
+					if (val == null)
+						val = "north";
+					if (val.equals("north")) {
+						rotY = 180f;
+					} else if (val.equals("east")) {
+						rotY = 270f;
+					} else if (val.equals("south")) {
+						rotY = 0f;
+					} else if (val.equals("west")) {
+						rotY = 90f;
+					}
 				}
 			} else {
-				String val = properties.get("rotation").asString();
-				if (val == null)
-					val = "0";
-				int ival = 0;
-				try {
-					ival = Integer.parseInt(val);
-				} catch (Exception ex) {
-					ex.printStackTrace();
+				NbtTag rotationTag = properties.get("rotation");
+				if(rotationTag != null) {
+					String val = rotationTag.asString();
+					if (val == null)
+						val = "0";
+					int ival = 0;
+					try {
+						ival = Integer.parseInt(val);
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
+					rotY = (((float) ival) / 16f) * 360f;
 				}
-				rotY = (((float) ival) / 16f) * 360f;
 			}
 			
 			modelBase.addTexture("#base", "minecraft:entity/banner_base");
@@ -164,7 +170,8 @@ public class BlockStateBanner extends BlockState{
 					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), 
+					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), state.hasLocators(),
+					state.getLightValues(properties),
 					animationHandler == null ? new BlockAnimationHandlerBanner() : animationHandler);
 			
 			return bakedState;

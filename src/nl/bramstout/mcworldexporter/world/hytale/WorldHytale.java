@@ -340,11 +340,11 @@ public class WorldHytale extends World{
 		if(modsFolder.exists()) {
 			for(File modFile : modsFolder.listFiles()) {
 				if(modFile.isDirectory() && new File(modFile, "manifest.json").exists()) {
-					ResourcePackSource source = new ResourcePackSource(modFile.getName());
+					ResourcePackSource source = new ResourcePackSource(modFile.getName(), null);
 					source.addSource(ResourcePackSource.getHash(modFile), modFile);
 					sources.add(source);
 				}else if(modFile.isFile() && modFile.getName().endsWith(".zip")){
-					ResourcePackSource source = new ResourcePackSource(modFile.getName());
+					ResourcePackSource source = new ResourcePackSource(modFile.getName(), null);
 					source.addSource(ResourcePackSource.getHash(modFile), modFile);
 					sources.add(source);
 				}

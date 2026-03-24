@@ -247,7 +247,7 @@ public class Exporter {
 			for(Model model : models) {
 				for(ModelFace face : model.getFaces()) {
 					String texture = model.getTexture(face.getTexture());
-					if(Config.bannedMaterials.contains(texture)) {
+					if(texture == null || texture.equals("") || Config.bannedMaterials.contains(texture)) {
 						faceIndex++;
 						continue;
 					}

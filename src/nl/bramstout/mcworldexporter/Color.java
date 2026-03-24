@@ -225,4 +225,19 @@ public class Color {
 		a = 1.0f - ((1.0f - a) * (1.0f - other.a)); 
 	}
 	
+	public void pow(float v) {
+		r = (float) Math.pow(r, v);
+		g = (float) Math.pow(g, v);
+		b = (float) Math.pow(b, v);
+	}
+	
+	public Color lerp(Color other, float t) {
+		return new Color(
+				r * (1f - t) + other.r * t,
+				g * (1f - t) + other.g * t,
+				b * (1f - t) + other.b * t,
+				a * (1f - t) + other.a * t
+				);
+	}
+	
 }

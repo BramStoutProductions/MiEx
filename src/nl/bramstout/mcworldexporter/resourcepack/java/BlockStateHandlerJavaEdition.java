@@ -117,7 +117,8 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), 
+				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), state.hasLocators(),
+				state.getLightValues(properties),
 				animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
 	}
 

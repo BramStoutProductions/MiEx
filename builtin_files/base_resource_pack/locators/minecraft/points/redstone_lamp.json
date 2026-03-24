@@ -1,0 +1,9 @@
+[
+    {
+        "blocks": [ { "id":"minecraft:redstone_lamp", "state": { "lit": true }}, 
+                    "minecraft:lit_redstone_lamp" ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

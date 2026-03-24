@@ -46,6 +46,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.GeneratedTextures;
@@ -207,6 +208,10 @@ public class ExprValue {
 		return impl.getChildren();
 	}
 	
+	public boolean isContainer() {
+		return impl.isContainer();
+	}
+	
 	public NbtTag toNbt() {
 		return impl.toNbt();
 	}
@@ -236,6 +241,7 @@ public class ExprValue {
 		public abstract ExprValue call(ExprContext context);
 		
 		public abstract Map<String, ExprValue> getChildren();
+		public abstract boolean isContainer();
 		
 		public abstract NbtTag toNbt();
 		
@@ -313,6 +319,11 @@ public class ExprValue {
 		@Override
 		public Map<String, ExprValue> getChildren() {
 			return new HashMap<String, ExprValue>();
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return false;
 		}
 		
 		@Override
@@ -406,6 +417,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return false;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			return NbtTagLong.newNonPooledInstance("", value);
 		}
@@ -496,6 +512,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return false;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			return NbtTagFloat.newNonPooledInstance("", value);
 		}
@@ -583,6 +604,11 @@ public class ExprValue {
 		@Override
 		public Map<String, ExprValue> getChildren() {
 			return new HashMap<String, ExprValue>();
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return false;
 		}
 		
 		@Override
@@ -678,6 +704,11 @@ public class ExprValue {
 		@Override
 		public NbtTag toNbt() {
 			return NbtTagString.newNonPooledInstance("", value);
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return false;
 		}
 		
 		@Override
@@ -815,6 +846,10 @@ public class ExprValue {
 			this.value = new HashMap<String, ExprValue>();
 		}
 		
+		public ExprValueDict(Map<String, ExprValue> value) {
+			this.value = value;
+		}
+		
 		public Map<String, ExprValue> getValue(){
 			return value;
 		}
@@ -904,6 +939,11 @@ public class ExprValue {
 		@Override
 		public Map<String, ExprValue> getChildren() {
 			return value;
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return true;
 		}
 		
 		@Override
@@ -1021,6 +1061,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return true;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			return value;
 		}
@@ -1116,6 +1161,11 @@ public class ExprValue {
 				return new ExprValue(new ExprValueNull());
 			}
 			return new ExprValue(val);
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return true;
 		}
 		
 		@Override
@@ -1279,6 +1329,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return true;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			NbtTagCompound tag = NbtTagCompound.newNonPooledInstance("");
 			tag.addElement(NbtTagInt.newNonPooledInstance("x", value.x));
@@ -1382,6 +1437,11 @@ public class ExprValue {
 		@Override
 		public Map<String, ExprValue> getChildren() {
 			return new HashMap<String, ExprValue>();
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return false;
 		}
 		
 		@Override
@@ -1497,6 +1557,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return false;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			NbtTagCompound tag = NbtTagCompound.newNonPooledInstance("");
 			tag.addElement(NbtTagInt.newNonPooledInstance("x", x));
@@ -1608,6 +1673,11 @@ public class ExprValue {
 		}
 		
 		@Override
+		public boolean isContainer() {
+			return false;
+		}
+		
+		@Override
 		public NbtTag toNbt() {
 			return null;
 		}
@@ -1705,6 +1775,11 @@ public class ExprValue {
 		@Override
 		public Map<String, ExprValue> getChildren() {
 			return new HashMap<String, ExprValue>();
+		}
+		
+		@Override
+		public boolean isContainer() {
+			return false;
 		}
 		
 		@Override
@@ -2303,6 +2378,78 @@ public class ExprValue {
 				}
 			}
 			return new ExprValue(new ExprValueString(texId));
+		}
+		
+		@NativeFunction 
+		public ExprValue getDyeTintColor(ExprContext context){
+			ExprValue arg0V = context.variables.getOrDefault("item", null);
+			if(arg0V == null || arg0V.isNull())
+				return new ExprValue(new ExprValueNull());
+			
+			ExprValue components = arg0V.member("components");
+			if(!components.isNull()) {
+				ExprValue dyedColor = components.member("minecraft:dyed_color");
+				if(dyedColor.isContainer()) {
+					ExprValue rV = dyedColor.member("0");
+					ExprValue gV = dyedColor.member("1");
+					ExprValue bV = dyedColor.member("2");
+					float r = !rV.isNull() ? rV.asFloat() : 1f;
+					float g = !gV.isNull() ? gV.asFloat() : 1f;
+					float b = !bV.isNull() ? bV.asFloat() : 1f;
+					ExprValueDict resImpl = new ExprValueDict();
+					resImpl.value.put("0", new ExprValue(new ExprValueFloat(r)));
+					resImpl.value.put("1", new ExprValue(new ExprValueFloat(g)));
+					resImpl.value.put("2", new ExprValue(new ExprValueFloat(b)));
+					return new ExprValue(resImpl);
+				}else {
+					int rgb = (int) dyedColor.asInt();
+					Color color = new Color(rgb);
+					ExprValueDict resImpl = new ExprValueDict();
+					resImpl.value.put("0", new ExprValue(new ExprValueFloat(color.getR())));
+					resImpl.value.put("1", new ExprValue(new ExprValueFloat(color.getG())));
+					resImpl.value.put("2", new ExprValue(new ExprValueFloat(color.getB())));
+					return new ExprValue(resImpl);
+				}
+			}
+			
+			ExprValue customColor = arg0V.member("customColor");
+			if(!customColor.isNull()) {
+				if(customColor.isContainer()) {
+					ExprValue rV = customColor.member("0");
+					ExprValue gV = customColor.member("1");
+					ExprValue bV = customColor.member("2");
+					float r = !rV.isNull() ? rV.asFloat() : 1f;
+					float g = !gV.isNull() ? gV.asFloat() : 1f;
+					float b = !bV.isNull() ? bV.asFloat() : 1f;
+					ExprValueDict resImpl = new ExprValueDict();
+					resImpl.value.put("0", new ExprValue(new ExprValueFloat(r)));
+					resImpl.value.put("1", new ExprValue(new ExprValueFloat(g)));
+					resImpl.value.put("2", new ExprValue(new ExprValueFloat(b)));
+					return new ExprValue(resImpl);
+				}else {
+					int rgb = (int) customColor.asInt();
+					Color color = new Color(rgb);
+					ExprValueDict resImpl = new ExprValueDict();
+					resImpl.value.put("0", new ExprValue(new ExprValueFloat(color.getR())));
+					resImpl.value.put("1", new ExprValue(new ExprValueFloat(color.getG())));
+					resImpl.value.put("2", new ExprValue(new ExprValueFloat(color.getB())));
+					return new ExprValue(resImpl);
+				}
+			}
+			
+			return new ExprValue(new ExprValueNull());
+		}
+		
+		@NativeFunction 
+		public ExprValue intToRGB(ExprContext context){
+			ExprValue arg0V = context.variables.getOrDefault("arg0", null);
+			int rgb = (int) arg0V.asInt();
+			Color color = new Color(rgb);
+			ExprValueDict resImpl = new ExprValueDict();
+			resImpl.value.put("0", new ExprValue(new ExprValueFloat(color.getR())));
+			resImpl.value.put("1", new ExprValue(new ExprValueFloat(color.getG())));
+			resImpl.value.put("2", new ExprValue(new ExprValueFloat(color.getB())));
+			return new ExprValue(resImpl);
 		}
 		
 	}

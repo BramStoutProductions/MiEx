@@ -122,6 +122,7 @@ public class ToolTips {
 	public static String TOOL_UPDATE_BUILT_IN_FILES = "Extracts the latest built in files.";
 	public static String TOOL_DOWNLOAD_EXAMPLE_RESOURCE_PACKS = "Download or update example resource packs from the GitHub repository.";
 	public static String TOOL_EXTRACT_MOD_RESOURCE_PACK = "Extract the built-in resource packs from all mods in the selected mods folder. Useful for when you want to load in a modded world.";
+	public static String TOOL_INSTALL_RESOURCE_PACK = "Install various resource pack sources into a resource pack in MiEx. The sources can range from resource packs, data packs, addons, mods, 'mods' folders, etc.";
 	public static String TOOL_CREATE_ATLASSES = "Opens up the Atlas Creator tool.";
 	public static String TOOL_GENERATE_PBR_TEXTURES = "Opens up the PBR Generator tool.";
 	public static String TOOL_ENVIRONMENT_SETTINGS = "Opens up the Environment Settings dialog to allow you to change MiEx's environment variables.";

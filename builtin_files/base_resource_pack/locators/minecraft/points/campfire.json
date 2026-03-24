@@ -1,0 +1,11 @@
+[
+    {
+        "blocks": [ { "id":"minecraft:campfire", "state": { "lit": true }},
+                    { "id":"minecraft:campfire", "state": { "extinguished": false }},
+                    { "id":"minecraft:soul_campfire", "state": { "lit": true }},
+                    { "id":"minecraft:soul_campfire", "state": { "extinguished": false }} ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

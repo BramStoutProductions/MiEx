@@ -124,7 +124,7 @@ public class LauncherHytale extends Launcher{
 			for(String modName : mods) {
 				for(HytaleMod mod : installedMods) {
 					if(mod.name.equals(modName)) {
-						ResourcePackSource source = new ResourcePackSource(mod.name);
+						ResourcePackSource source = new ResourcePackSource(mod.name, this);
 						source.addSource(mod.uuid, mod.file);
 						sources.add(source);
 						
@@ -216,6 +216,21 @@ public class LauncherHytale extends Launcher{
 	@Override
 	public boolean ownsWorld(File worldFolder) {
 		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
+	}
+	
+	@Override
+	public List<ResourcePackSource> getAllResourcePackSources() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		List<HytaleMod> installedMods = getMods();
+		
+		for(HytaleMod mod : installedMods) {
+			ResourcePackSource source = new ResourcePackSource(mod.name, this);
+			source.addSource(mod.uuid, mod.file);
+			sources.add(source);
+		}
+		
+		return sources;
 	}
 
 }

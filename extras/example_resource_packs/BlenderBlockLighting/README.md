@@ -1,0 +1,4 @@
+This resource pack provides some material templates that are meant to work together with BlenderEEVEE and BlenderCycles. Either BlenderEEVEE or BlenderCycles should be enabled together with this resource pack and this resource pack should be placed above BlenderEEVEE or BlenderCycles.
+
+This resource pack will set up the shaders to output the following aovs from the materials `lighting_blocks`, `lighting_sky`, and `lighting_albedo`.
+`lighting_blocks` contains the lighting coming from emissive blocks. `lighting_sky` contains the lighting coming from the sky. `lighting_albedo` contains the block textures. `lighting_blocks` and `lighting_sky` should be multiplied by `lighting_albedo` and then added together. The result can then be added to the main render pass to form the final image. You will need to create these shader AOVs yourself.

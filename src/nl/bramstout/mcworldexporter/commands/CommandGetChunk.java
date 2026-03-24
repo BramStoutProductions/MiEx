@@ -144,18 +144,21 @@ public class CommandGetChunk extends Command{
 						if(entities) {
 							JsonArray entitiesArray = new JsonArray();
 							chunk.loadEntities();
-							for(Entity entity : chunk.getEntities()) {
-								JsonObject entityObj = new JsonObject();
-								entityObj.addProperty("id", entity.getId());
-								entityObj.addProperty("x", entity.getX());
-								entityObj.addProperty("y", entity.getY());
-								entityObj.addProperty("z", entity.getZ());
-								entityObj.addProperty("pitch", entity.getPitch());
-								entityObj.addProperty("yaw", entity.getYaw());
-								entityObj.addProperty("headPitch", entity.getHeadPitch());
-								entityObj.addProperty("headYaw", entity.getHeadYaw());
-								entityObj.add("data", entity.getProperties().asJson());
-								entitiesArray.add(entityObj);
+							List<Entity> chunkEntities = chunk.getEntities();
+							if(chunkEntities != null) {
+								for(Entity entity : chunkEntities) {
+									JsonObject entityObj = new JsonObject();
+									entityObj.addProperty("id", entity.getId());
+									entityObj.addProperty("x", entity.getX());
+									entityObj.addProperty("y", entity.getY());
+									entityObj.addProperty("z", entity.getZ());
+									entityObj.addProperty("pitch", entity.getPitch());
+									entityObj.addProperty("yaw", entity.getYaw());
+									entityObj.addProperty("headPitch", entity.getHeadPitch());
+									entityObj.addProperty("headYaw", entity.getHeadYaw());
+									entityObj.add("data", entity.getProperties().asJson());
+									entitiesArray.add(entityObj);
+								}
 							}
 							chunkObj.add("entities", entitiesArray);
 						}

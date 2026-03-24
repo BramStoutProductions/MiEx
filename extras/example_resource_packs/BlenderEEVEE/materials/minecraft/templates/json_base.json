@@ -25,6 +25,10 @@
                     "Specular IOR Level":{
                         "type": "Float",
                         "value": 0.0
+                    },
+                    "Base Color": {
+                        "type": "Color",
+                        "value": [1.0, 1.0, 1.0, 1.0]
                     }
                 }
             }
@@ -422,7 +426,7 @@
                 }
             }
         },
-        "@biomeColor@": {
+        "@biomeColor@&&@texture@": {
             "BIOME": {
                 "type": "JSON:ShaderNodeVertexColor",
                 "attributes": {
@@ -468,6 +472,28 @@
                     "Base Color": {
                         "type": "Color",
                         "connection": "BIOMEMULT.Result"
+                    }
+                }
+            }
+        },
+        "@biomeColor@&&!@texture@": {
+            "BIOME": {
+                "type": "JSON:ShaderNodeVertexColor",
+                "attributes": {
+                    "Color": {
+                        "type": "Color"
+                    },
+                    "layer_name": {
+                        "type": "str",
+                        "value": "Cd"
+                    }
+                }
+            },
+            "MAT": {
+                "attributes": {
+                    "Base Color": {
+                        "type": "Color",
+                        "connection": "BIOME.Color"
                     }
                 }
             }

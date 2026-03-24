@@ -128,5 +128,10 @@ public class LauncherSavesDirectory extends Launcher{
 	public boolean ownsWorld(File worldFolder) {
 		return worldFolder.getAbsolutePath().startsWith(savesFolder.getAbsolutePath());
 	}
+	
+	@Override
+	public List<ResourcePackSource> getAllResourcePackSources() {
+		return new ArrayList<ResourcePackSource>();
+	}
 
 }

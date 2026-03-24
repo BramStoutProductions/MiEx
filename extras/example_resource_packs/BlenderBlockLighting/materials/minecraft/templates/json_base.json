@@ -1,0 +1,151 @@
+{
+    "priority": 0,
+    "selection": [ "*" ],
+    "include": [ "json_base" ],
+    "network": {
+        "": {
+            "AO": {
+                "type": "JSON:ShaderNodeAttribute",
+                "attributes": {
+                    "Factor": {
+                        "type": "Color"
+                    },
+                    "attribute_name": {
+                        "type": "str",
+                        "value": "CdAO"
+                    }
+                }
+            },
+            "BLOCK_LIGHTING": {
+                "type": "JSON:ShaderNodeVertexColor",
+                "attributes": {
+                    "Color": {
+                        "type": "Color"
+                    },
+                    "layer_name": {
+                        "type": "str",
+                        "value": "lighting_blocks"
+                    }
+                }
+            },
+            "SKY_LIGHTING": {
+                "type": "JSON:ShaderNodeVertexColor",
+                "attributes": {
+                    "Color": {
+                        "type": "Color"
+                    },
+                    "layer_name": {
+                        "type": "str",
+                        "value": "lighting_sky"
+                    }
+                }
+            },
+            "BLOCK_LIGHTING_AO": {
+                "type": "JSON:ShaderNodeMix",
+                "attributes": {
+                    "Result": {
+                        "type": "Color"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
+                    "blend_type": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "BLOCK_LIGHTING.Color"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "AO.Factor"
+                    },
+                    "Factor": {
+                        "type": "Float",
+                        "value": 1.0
+                    }
+                }
+            },
+            "SKY_LIGHTING_AO": {
+                "type": "JSON:ShaderNodeMix",
+                "attributes": {
+                    "Result": {
+                        "type": "Color"
+                    },
+                    "data_type": {
+                        "type": "str",
+                        "value": "RGBA"
+                    },
+                    "blend_type": {
+                        "type": "str",
+                        "value": "MULTIPLY"
+                    },
+                    "A": {
+                        "type": "Color",
+                        "connection": "SKY_LIGHTING.Color"
+                    },
+                    "B": {
+                        "type": "Color",
+                        "connection": "AO.Factor"
+                    },
+                    "Factor": {
+                        "type": "Float",
+                        "value": 1.0
+                    }
+                }
+            },
+            "BLOCK_LIGHTING_OUT": {
+                "type": "JSON:ShaderNodeOutputAOV",
+                "attributes": {
+                    "Color": {
+                        "type": "Color",
+                        "connection": "BLOCK_LIGHTING_AO.Result"
+                    },
+                    "aov_name": {
+                        "type": "str",
+                        "value": "lighting_blocks"
+                    }
+                }
+            },
+            "SKY_LIGHTING_OUT": {
+                "type": "JSON:ShaderNodeOutputAOV",
+                "attributes": {
+                    "Color": {
+                        "type": "Color",
+                        "connection": "SKY_LIGHTING_AO.Result"
+                    },
+                    "aov_name": {
+                        "type": "str",
+                        "value": "lighting_sky"
+                    }
+                }
+            },
+            "ALBEDO_LIGHTING_OUT": {
+                "type": "JSON:ShaderNodeOutputAOV",
+                "attributes": {
+                    "Color": {
+                        "type": "Color",
+                        "value": [1.0,1.0,1.0, 1.0]
+                    },
+                    "aov_name": {
+                        "type": "str",
+                        "value": "lighting_albedo"
+                    }
+                }
+            }
+        },
+        "@texture@": {
+            "ALBEDO_LIGHTING_OUT": {
+                "type": "JSON:ShaderNodeOutputAOV",
+                "attributes": {
+                    "Color": {
+                        "type": "Color",
+                        "connection": "${MAT.Base Color}"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,570 @@
+{
+    "lightMaps": {
+        "skyLight": {
+            "15": "#FFFFFF",
+            "colorSet": "lighting_sky"
+        },
+        "blockLight": {
+            "15": "#FFFFFF",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:copper_lantern": {
+            "15": "#86ca59",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:end_portal": {
+            "15": "#6c70b2",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:fire": {
+            "15": "#f39a5e",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:sea_pickle": {
+            "15": "#b0dad3",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:ochre_froglight": {
+            "15": "#f9efa5",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:verdant_froglight": {
+            "15": "#b7f1bc",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:pearlescent_froglight": {
+            "15": "#da73de",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:lava": {
+            "15": "#d3852b",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:respawn_anchor": {
+            "15": "#a233eb",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:redstone_lamp":{
+            "15": "#e8c398",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:soul_fire": {
+            "15": "#36d9e6",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:redstone": {
+            "15": "#c32c1f",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:glow_lichen": {
+            "15": "#b7f1bc",
+            "colorSet": "lighting_blocks"
+        },
+        "minecraft:amethyst": {
+            "15": "#b966e8",
+            "colorSet": "lighting_blocks"
+        }
+    },
+    "blocks": {
+        "minecraft:beacon": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:copper_lantern,minecraft:waxed_copper_lantern": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:copper_lantern"
+            }
+        },
+        "minecraft:exposed_copper_lantern,minecraft:weathered_copper_lantern,minecraft:oxidized_copper_lantern,minecraft:waxed_exposed_copper_lantern,minecraft:waxed_weathered_copper_lantern,minecraft:waxed_oxidized_copper_lantern": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:redstone_lamp"
+            }
+        },
+        "minecraft:end_gateway,minecraft:end_portal": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:end_portal"
+            }
+        },
+        "minecraft:fire": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:fire"
+            }
+        },
+        "minecraft:sea_pickle": {
+            "states": [
+                {
+                    "state": {
+                        "pickes": 4
+                    },
+                    "emissiveLightLevel": 15,
+                    "emissiveLightColor": "minecraft:sea_pickle"
+                },
+                {
+                    "state": {
+                        "pickes": 3
+                    },
+                    "emissiveLightLevel": 12,
+                    "emissiveLightColor": "minecraft:sea_pickle"
+                },
+                {
+                    "state": {
+                        "pickes": 2
+                    },
+                    "emissiveLightLevel": 9,
+                    "emissiveLightColor": "minecraft:sea_pickle"
+                },
+                {
+                    "state": {
+                        "pickes": 1
+                    },
+                    "emissiveLightLevel": 6,
+                    "emissiveLightColor": "minecraft:sea_pickle"
+                }
+            ]
+        },
+        "minecraft:pearlescent_froglight": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:pearlescent_froglight"
+            }
+        },
+        "minecraft:verdant_froglight": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:verdant_froglight"
+            }
+        },
+        "minecraft:ochre_froglight": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:ochre_froglight"
+            }
+        },
+        "minecraft:glowstone": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:jack_o_lantern": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:lantern": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:fire"
+            }
+        },
+        "minecraft:lava": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:lava_cauldron": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:campfire": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 15,
+                    "emissiveLightColor": "minecraft:fire"
+                }
+            ]
+        },
+        "minecraft:redstone_lamp": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 15,
+                    "emissiveLightColor": "minecraft:redstone_lamp"
+                }
+            ]
+        },
+        "minecraft:respawn_anchor": {
+            "states": [
+                {
+                    "state": {
+                        "charges": 4
+                    },
+                    "emissiveLightLevel": 15,
+                    "emissiveLightColor": "minecraft:respawn_anchor"
+                },
+                {
+                    "state": {
+                        "charges": 3
+                    },
+                    "emissiveLightLevel": 11,
+                    "emissiveLightColor": "minecraft:respawn_anchor"
+                },
+                {
+                    "state": {
+                        "charges": 2
+                    },
+                    "emissiveLightLevel": 7,
+                    "emissiveLightColor": "minecraft:respawn_anchor"
+                },
+                {
+                    "state": {
+                        "charges": 1
+                    },
+                    "emissiveLightLevel": 3,
+                    "emissiveLightColor": "minecraft:respawn_anchor"
+                }
+            ]
+        },
+        "minecraft:sea_lantern": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:sea_pickle"
+            }
+        },
+        "minecraft:shroomlight": {
+            "default": {
+                "emissiveLightLevel": 15,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:copper_bulb,minecraft:waxed_copper_bulb": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 15,
+                    "emissiveLightColor": "minecraft:redstone_lamp"
+                }
+            ]
+        },
+        "minecraft:cave_vines, minecraft:cave_vines_plant": {
+            "states": [
+                {
+                    "state": {
+                        "berries": true
+                    },
+                    "emissiveLightLevel": 14,
+                    "emissiveLightColor": "minecraft:lava"
+                }
+            ]
+        },
+        "minecraft:copper_torch,minecraft:copper_wall_torch": {
+            "default": {
+                "emissiveLightLevel": 14,
+                "emissiveLightColor": "minecraft:copper_lantern"
+            }
+        },
+        "minecraft:end_rod": {
+            "default": {
+                "emissiveLightLevel": 14,
+                "emissiveLightColor": "minecraft:pearlescent_froglight"
+            }
+        },
+        "minecraft:torch,minecraft:wall_torch": {
+            "default": {
+                "emissiveLightLevel": 14,
+                "emissiveLightColor": "minecraft:fire"
+            }
+        },
+        "minecraft:furnace": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 13,
+                    "emissiveLightColor": "blockLight"
+                }
+            ]
+        },
+        "minecraft:blast_furnace": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 13,
+                    "emissiveLightColor": "blockLight"
+                }
+            ]
+        },
+        "minecraft:smoker": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 13,
+                    "emissiveLightColor": "blockLight"
+                }
+            ]
+        },
+        "#minecraft:block/candles": {
+            "states": [
+                {
+                    "state": {
+                        "candles": 4,
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 12,
+                    "emissiveLightColor": "minecraft:lava"
+                },
+                {
+                    "state": {
+                        "candles": 3,
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 9,
+                    "emissiveLightColor": "minecraft:lava"
+                },
+                {
+                    "state": {
+                        "candles": 2,
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 6,
+                    "emissiveLightColor": "minecraft:lava"
+                },
+                {
+                    "state": {
+                        "candles": 1,
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 3,
+                    "emissiveLightColor": "minecraft:lava"
+                }
+            ]
+        },
+        "minecraft:exposed_copper_bulb,minecraft:waxed_exposed_copper_bulb": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 12,
+                    "emissiveLightColor": "minecraft:redstone_lamp"
+                }
+            ]
+        },
+        "minecraft:nether_portal": {
+            "default": {
+                "emissiveLightLevel": 11,
+                "emissiveLightColor": "minecraft:respawn_anchor"
+            }
+        },
+        "minecraft:crying_obsidian": {
+            "default": {
+                "emissiveLightLevel": 10,
+                "emissiveLightColor": "minecraft:respawn_anchor"
+            }
+        },
+        "minecraft:soul_campfire": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 10,
+                    "emissiveLightColor": "minecraft:soul_fire"
+                }
+            ]
+        },
+        "minecraft:soul_fire": {
+            "default": {
+                "emissiveLightLevel": 10,
+                "emissiveLightColor": "minecraft:soul_fire"
+            }
+        },
+        "minecraft:soul_lantern": {
+            "default": {
+                "emissiveLightLevel": 10,
+                "emissiveLightColor": "minecraft:soul_fire"
+            }
+        },
+        "minecraft:soul_torch,minecraft:soul_wall_torch": {
+            "default": {
+                "emissiveLightLevel": 10,
+                "emissiveLightColor": "minecraft:soul_fire"
+            }
+        },
+        "minecraft:redstone_ore,minecraft:deepslate_redstone_ore": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 9,
+                    "emissiveLightColor": "minecraft:redstone"
+                }
+            ]
+        },
+        "minecraft:weathered_copper_bulb,minecraft:waxed_weathered_copper_bulb": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 8,
+                    "emissiveLightColor": "minecraft:redstone_lamp"
+                }
+            ]
+        },
+        "minecraft:enchanting_table": {
+            "default": {
+                "emissiveLightLevel": 7,
+                "emissiveLightColor": "minecraft:respawn_anchor"
+            }
+        },
+        "minecraft:ender_chest": {
+            "default": {
+                "emissiveLightLevel": 7,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:glow_lichen": {
+            "default": {
+                "emissiveLightLevel": 7,
+                "emissiveLightColor": "minecraft:glow_lichen"
+            }
+        },
+        "minecraft:redstone_torch,minecraft:redstone_wall_torch": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 7,
+                    "emissiveLightColor": "minecraft:redstone"
+                }
+            ]
+        },
+        "minecraft:sculk_catalyst": {
+            "default": {
+                "emissiveLightLevel": 6,
+                "emissiveLightColor": "minecraft:soul_fire"
+            }
+        },
+        "minecraft:vault": {
+            "default": {
+                "emissiveLightLevel": 6,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:amethyst_cluster": {
+            "default": {
+                "emissiveLightLevel": 5,
+                "emissiveLightColor": "minecraft:amethyst"
+            }
+        },
+        "minecraft:large_amethyst_bud": {
+            "default": {
+                "emissiveLightLevel": 4,
+                "emissiveLightColor": "minecraft:amethyst"
+            }
+        },
+        "minecraft:oxidized_copper_bulb,minecraft:waxed_oxidized_copper_bulb": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 4,
+                    "emissiveLightColor": "minecraft:redstone_lamp"
+                }
+            ]
+        },
+        "minecraft:trial_spawner": {
+            "default": {
+                "emissiveLightLevel": 4,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "#minecraft:block/candle_cakes": {
+            "states": [
+                {
+                    "state": {
+                        "lit": true
+                    },
+                    "emissiveLightLevel": 3,
+                    "emissiveLightColor": "minecraft:lava"
+                }
+            ]
+        },
+        "minecraft:magma_block": {
+            "default": {
+                "emissiveLightLevel": 3,
+                "emissiveLightColor": "minecraft:lava"
+            }
+        },
+        "minecraft:medium_amethyst_bud": {
+            "default": {
+                "emissiveLightLevel": 2,
+                "emissiveLightColor": "minecraft:amethyst"
+            }
+        },
+        "minecraft:firefly_bush": {
+            "default": {
+                "emissiveLightLevel": 2,
+                "emissiveLightColor": "minecraft:redstone_lamp"
+            }
+        },
+        "minecraft:brewing_stand": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:brown_mushroom": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:calibrated_sculk_sensor": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:dragon_egg": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:end_portal_frame": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "blockLight"
+            }
+        },
+        "minecraft:sculk_sensor": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "minecraft:soul_fire"
+            }
+        },
+        "minecraft:small_amethyst_bud": {
+            "default": {
+                "emissiveLightLevel": 1,
+                "emissiveLightColor": "minecraft:amethyst"
+            }
+        }
+    }
+}

@@ -38,6 +38,8 @@ import nl.bramstout.mcworldexporter.Cache;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
+import nl.bramstout.mcworldexporter.lighting.Lighting;
+import nl.bramstout.mcworldexporter.locators.Locators;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
@@ -61,7 +63,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 	public BakedBlockStateLiquid(String name) {
 		super(name, new ArrayList<List<Model>>(), true, false, false, false, true, false, false, false, 
 				true, Config.randomAnimationXZOffset.contains(name), Config.randomAnimationYOffset.contains(name), 
-				false, false, 2, Config.separateMeshForBlocks.contains(name), getTintLayers(name), true, null);
+				false, false, 2, Config.separateMeshForBlocks.contains(name), getTintLayers(name), true, 
+				Locators.hasLocatorsForBlock(name), Lighting.getBlockLightData(name, null), null);
 		String[] nameTokens = getName().split(":");
 		stillTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_still";
 		flowTexture = nameTokens[0] + ":block/" + nameTokens[1] + "_flow";

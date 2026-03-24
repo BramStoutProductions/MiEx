@@ -796,6 +796,21 @@ public class USDConverter extends Converter{
 					readIndividualBlock(dis);
 				}
 				
+				int numPointLocators = dis.readInt();
+				if(numPointLocators > 0) {
+					chunkWriter.beginDef("Scope", "pointLocators");
+					chunkWriter.beginChildren();
+					chunkRenderWriter.beginDef("Scope", "pointLocators");
+					chunkRenderWriter.beginChildren();
+					for(int i = 0; i < numPointLocators; ++i) {
+						writePointLocator(dis, chunkWriter, chunkRenderWriter);
+					}
+					chunkWriter.endChildren();
+					chunkWriter.endDef();
+					chunkRenderWriter.endChildren();
+					chunkRenderWriter.endDef();
+				}
+				
 				// Write animation file first, since it populates animatedBlockBaseMeshes
 				writeAnimationFile();
 				
@@ -848,6 +863,36 @@ public class USDConverter extends Converter{
 			}
 			
 			instancers.put(new IndividualBlockId(blockId, blockX, blockY, blockZ, 0), points);
+		}
+		
+		private void writePointLocator(LargeDataInputStream dis, USDWriter chunkWriter, USDWriter chunkRenderWriter) throws IOException{
+			String name = dis.readUTF();
+			name = Util.makeSafeName(name);
+			int numPoints = dis.readInt();
+			int numFloats = numPoints * 3;
+			float[] points = new float[numFloats];
+			for(int i = 0; i < numFloats; ++i)
+				points[i] = dis.readFloat();
+			
+			chunkWriter.beginDef("Points", name);
+			chunkWriter.beginChildren();
+			chunkRenderWriter.beginDef("Points", name);
+			chunkRenderWriter.beginChildren();
+			
+			chunkWriter.writeAttributeName("point3f[]", "points", false);
+			chunkWriter.writeAttributeValuePoint3fArray(points, points.length);
+			chunkRenderWriter.writeAttributeName("point3f[]", "points", false);
+			chunkRenderWriter.writeAttributeValuePoint3fArray(points, points.length);
+			
+			chunkWriter.writeAttributeName("token", "visibility", false);
+			chunkWriter.writeAttributeValueString("invisible");
+			chunkRenderWriter.writeAttributeName("token", "visibility", false);
+			chunkRenderWriter.writeAttributeValueString("invisible");
+			
+			chunkWriter.endChildren();
+			chunkWriter.endDef();
+			chunkRenderWriter.endChildren();
+			chunkRenderWriter.endDef();
 		}
 		
 		private void writeAnimatedBlockReferences(AnimatedBlock animatedBlock, USDWriter chunkWriter, String materialsPrim) throws IOException {

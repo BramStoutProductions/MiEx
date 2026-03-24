@@ -1,0 +1,8 @@
+[
+    {
+        "blocks": [ "minecraft:fire", "minecraft:soul_fire" ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

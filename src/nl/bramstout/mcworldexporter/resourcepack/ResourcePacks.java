@@ -277,6 +277,21 @@ public class ResourcePacks {
 		}
 	}
 	
+	public static boolean isValidResourcePackFile(File file) {
+		if(file.isFile()) {
+			if(file.getName().endsWith(".zip"))
+				return true;
+			if(file.getName().endsWith(".jar"))
+				return true;
+		}else if(file.isDirectory()) {
+			if(new File(file, "pack.mcmeta").exists())
+				return true;
+			if(new File(file, "manifest.json").exists())
+				return true;
+		}
+		return false;
+	}
+	
 	public static List<ResourcePack> getActiveResourcePacks() {
 		return activeResourcePacks;
 	}

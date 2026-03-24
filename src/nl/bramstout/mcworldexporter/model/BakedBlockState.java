@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.model;
 import java.util.List;
 
 import nl.bramstout.mcworldexporter.export.Noise;
+import nl.bramstout.mcworldexporter.lighting.BlockLightValues;
 import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
@@ -61,6 +62,12 @@ public class BakedBlockState {
 	private boolean separateMeshForBlock;
 	private TintLayers tint;
 	private boolean needsConnectionInfo;
+	private boolean _hasLocators;
+	private byte emissiveLightLevel;
+	private byte lightAttenuationX;
+	private byte lightAttenuationY;
+	private byte lightAttenuationZ;
+	private short emissiveLightColor;
 	private BlockAnimationHandler animationHandler;
 	
 	public BakedBlockState(String name, List<List<Model>> models, 
@@ -69,7 +76,8 @@ public class BakedBlockState {
 							boolean randomOffset, boolean randomYOffset,
 							boolean doubleSided, boolean randomAnimationXZOffset, boolean randomAnimationYOffset,
 							boolean lodNoUVScale, boolean lodNoScale, int lodPriority, boolean separateMeshForBlock,
-							TintLayers tint, boolean needsConnectionInfo, BlockAnimationHandler animationHandler) {
+							TintLayers tint, boolean needsConnectionInfo, boolean hasLocators, BlockLightValues lightValues,
+							BlockAnimationHandler animationHandler) {
 		this.name = name;
 		this.models = models;
 		this.occludes = 0;
@@ -100,6 +108,19 @@ public class BakedBlockState {
 		this.separateMeshForBlock = separateMeshForBlock;
 		this.tint = tint;
 		this.needsConnectionInfo = needsConnectionInfo;
+		this._hasLocators = hasLocators;
+		this.emissiveLightLevel = 0;
+		this.emissiveLightColor = 0;
+		this.lightAttenuationX = -1;
+		this.lightAttenuationY = -1;
+		this.lightAttenuationZ = -1;
+		if(lightValues != null) {
+			this.emissiveLightLevel = lightValues.getEmissiveLightLevel();
+			this.emissiveLightColor = lightValues.getEmissiveLightColor();
+			this.lightAttenuationX = lightValues.getLightAttenuationX();
+			this.lightAttenuationY = lightValues.getLightAttenuationY();
+			this.lightAttenuationZ = lightValues.getLightAttenuationZ();
+		}
 		this.animationHandler = animationHandler;
 	}
 	
@@ -216,6 +237,48 @@ public class BakedBlockState {
 	
 	public boolean isNeedsConnectionInfo() {
 		return needsConnectionInfo;
+	}
+	
+	public boolean hasLocators() {
+		return _hasLocators;
+	}
+	
+	public byte getEmissiveLightLevel() {
+		return emissiveLightLevel;
+	}
+	
+	public short getEmissiveLightColor() {
+		return emissiveLightColor;
+	}
+	
+	public byte getLightAttenuationX() {
+		if(lightAttenuationX >= 0)
+			return lightAttenuationX;
+		if(((this.occludes >> (Direction.EAST.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		if(((this.occludes >> (Direction.WEST.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		return 1;
+	}
+	
+	public byte getLightAttenuationY() {
+		if(lightAttenuationY >= 0)
+			return lightAttenuationY;
+		if(((this.occludes >> (Direction.UP.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		if(((this.occludes >> (Direction.DOWN.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		return 1;
+	}
+	
+	public byte getLightAttenuationZ() {
+		if(lightAttenuationZ >= 0)
+			return lightAttenuationZ;
+		if(((this.occludes >> (Direction.NORTH.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		if(((this.occludes >> (Direction.SOUTH.id * 4)) & 0xFL) == 0xFL)
+			return (byte) ((this.transparentOcclusion || this.leavesOcclusion) ? 1 : 127);
+		return 1;
 	}
 	
 	public boolean isSolidBlock() {

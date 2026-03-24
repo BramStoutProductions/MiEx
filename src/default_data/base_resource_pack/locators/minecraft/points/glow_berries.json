@@ -1,0 +1,11 @@
+[
+    {
+        "blocks": [ { "id":"minecraft:cave_vines", "state": { "berries": true }}, 
+                    { "id":"minecraft:cave_vines_plant", "state": { "berries": true }},
+                    "minecraft:cave_vines_body_with_berries",
+                    "minecraft:cave_vines_head_with_berries" ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

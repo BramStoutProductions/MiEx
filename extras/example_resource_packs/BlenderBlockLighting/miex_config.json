@@ -1,0 +1,5 @@
+{
+  "calculateLighting": true,
+  "blockLightingAdditive": false,
+  "calculateAmbientOcclusion": true
+}

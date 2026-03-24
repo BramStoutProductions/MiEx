@@ -37,6 +37,10 @@ import java.util.List;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
+import nl.bramstout.mcworldexporter.lighting.BlockLightValues;
+import nl.bramstout.mcworldexporter.lighting.Lighting;
+import nl.bramstout.mcworldexporter.lighting.Lighting.BlockLightData;
+import nl.bramstout.mcworldexporter.locators.Locators;
 import nl.bramstout.mcworldexporter.modifier.AnimationModifiers;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
@@ -78,8 +82,10 @@ public class BlockState {
 	protected boolean separateMeshForBlock;
 	protected Tint tint;
 	protected boolean _needsConnectionInfo;
+	protected boolean _hasLocators;
 	protected BlockConnections blockConnections;
 	protected BlockStateHandler handler;
+	protected BlockLightData lightData;
 	protected AnimationModifiers extraAnimationHandler;
 	
 	public BlockState(String name, int dataVersion, BlockStateHandler handler) {
@@ -104,6 +110,8 @@ public class BlockState {
 		separateMeshForBlock = Config.separateMeshForBlocks.contains(name);
 		tint = Tints.getTint(name);
 		extraAnimationHandler = AnimationModifiers.getModifiersForBlockName(name);
+		_hasLocators = Locators.hasLocatorsForBlock(name);
+		lightData = Lighting.getBlockLightData(name);
 		if(MCWorldExporter.getApp().getWorld() != null) {
 			BlockConnectionsTranslation blockConnectionsTranslation = MCWorldExporter.getApp()
 													.getWorld().getBlockConnectionsTranslation();
@@ -200,6 +208,10 @@ public class BlockState {
 		return tint;
 	}
 	
+	public boolean hasLocators() {
+		return _hasLocators;
+	}
+	
 	public AnimationModifiers getExtraAnimationHandler() {
 		return extraAnimationHandler;
 	}
@@ -207,7 +219,7 @@ public class BlockState {
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
 		if(handler == null) {
 			return new BakedBlockState(name, new ArrayList<List<Model>>(), false, false, false, 
-					false, false, false, false, false, false, false, false, false, false, 0, false, null, false, null);
+					false, false, false, false, false, false, false, false, false, false, 0, false, null, false, false, null, null);
 		}
 		if(blockConnections != null && runBlockConnections) {
 			properties = (NbtTagCompound) properties.copy();
@@ -239,6 +251,16 @@ public class BlockState {
 	
 	public BlockStateHandler getHandler() {
 		return handler;
+	}
+	
+	public BlockLightData getLightData() {
+		return lightData;
+	}
+	
+	public BlockLightValues getLightValues(NbtTagCompound properties) {
+		if(lightData == null)
+			return null;
+		return lightData.get(properties);
 	}
 	
 }

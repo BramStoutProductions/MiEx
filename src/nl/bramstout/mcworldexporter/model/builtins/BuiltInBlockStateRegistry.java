@@ -77,6 +77,7 @@ public class BuiltInBlockStateRegistry {
 		builtins.put("dragon_head", new DefaultBlockStateConstructor(BlockStateSkull.class));
 		builtins.put("dragon_wall_head", new DefaultBlockStateConstructor(BlockStateSkull.class));
 		
+		builtins.put("minecraft:banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
 		builtins.put("minecraft:white_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
 		builtins.put("minecraft:orange_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));
 		builtins.put("minecraft:magenta_banner", new DefaultBlockStateConstructor(BlockStateBanner.class));

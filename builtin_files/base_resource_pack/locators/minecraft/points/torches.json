@@ -1,0 +1,132 @@
+[
+    {
+        "blocks": [ "minecraft:torch", "minecraft:copper_torch", "minecraft:soul_torch", "minecraft:redstone_torch" ],
+        "points": [
+            [ 8, 9, 8 ]
+        ]
+    },
+    {
+        "blocks": [
+            {
+                "id": "minecraft:wall_torch",
+                "state": {
+                    "facing": "east"
+                }
+            },
+            {
+                "id": "minecraft:copper_wall_torch",
+                "state": {
+                    "facing": "east"
+                }
+            },
+            {
+                "id": "minecraft:soul_wall_torch",
+                "state": {
+                    "facing": "east"
+                }
+            },
+            {
+                "id": "minecraft:redstone_wall_torch",
+                "state": {
+                    "facing": "east"
+                }
+            }
+        ],
+        "points": [
+            [ 3.4, 11.8, 8 ]
+        ]
+    },
+    {
+        "blocks": [
+            {
+                "id": "minecraft:wall_torch",
+                "state": {
+                    "facing": "west"
+                }
+            },
+            {
+                "id": "minecraft:copper_wall_torch",
+                "state": {
+                    "facing": "west"
+                }
+            },
+            {
+                "id": "minecraft:soul_wall_torch",
+                "state": {
+                    "facing": "west"
+                }
+            },
+            {
+                "id": "minecraft:redstone_wall_torch",
+                "state": {
+                    "facing": "west"
+                }
+            }
+        ],
+        "points": [
+            [ 12.6, 11.8, 8 ]
+        ]
+    },
+    {
+        "blocks": [
+            {
+                "id": "minecraft:wall_torch",
+                "state": {
+                    "facing": "north"
+                }
+            },
+            {
+                "id": "minecraft:copper_wall_torch",
+                "state": {
+                    "facing": "north"
+                }
+            },
+            {
+                "id": "minecraft:soul_wall_torch",
+                "state": {
+                    "facing": "north"
+                }
+            },
+            {
+                "id": "minecraft:redstone_wall_torch",
+                "state": {
+                    "facing": "north"
+                }
+            }
+        ],
+        "points": [
+            [ 8, 11.8, 12.6 ]
+        ]
+    },
+    {
+        "blocks": [
+            {
+                "id": "minecraft:wall_torch",
+                "state": {
+                    "facing": "south"
+                }
+            },
+            {
+                "id": "minecraft:copper_wall_torch",
+                "state": {
+                    "facing": "south"
+                }
+            },
+            {
+                "id": "minecraft:soul_wall_torch",
+                "state": {
+                    "facing": "south"
+                }
+            },
+            {
+                "id": "minecraft:redstone_wall_torch",
+                "state": {
+                    "facing": "south"
+                }
+            }
+        ],
+        "points": [
+            [ 8, 11.8, 3.4 ]
+        ]
+    }
+]

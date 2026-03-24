@@ -177,7 +177,7 @@ public class MapCreator {
 		int multiplier = colorId % 4;
 		int baseColorIndex = colorId / 4;
 
-		if(baseColorIndex < 0)
+		if(baseColorIndex < 0 || baseColorIndex >= BASE_COLORS.length)
 			return null;
 		
 		RGB baseColor = BASE_COLORS[baseColorIndex];

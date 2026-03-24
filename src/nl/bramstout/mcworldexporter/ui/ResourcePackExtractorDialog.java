@@ -163,7 +163,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
 		File resourcePackFolder = new File(FileUtil.getResourcePackDir(), resourcePack);
 		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-		ResourcePackSource source = new ResourcePackSource("Mods");
+		ResourcePackSource source = new ResourcePackSource("Mods", null);
 		findSources(modsFolder, source);
 		sources.add(source);
 	

@@ -42,6 +42,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.entity.builtins.EntityBuiltinsRegistry;
+import nl.bramstout.mcworldexporter.lighting.Lighting;
+import nl.bramstout.mcworldexporter.locators.Locators;
+import nl.bramstout.mcworldexporter.materials.Materials;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.modifier.Modifiers;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
@@ -134,6 +137,8 @@ public class Config {
 	public static float usdMetersPerUnit;
 	public static String defaultLocalisation;
 	public static boolean fillWorldBorders;
+	public static boolean calculateLighting;
+	public static boolean blockLightingAdditive;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -241,6 +246,8 @@ public class Config {
 		BiomeIds.load();
 		BlockIds.load();
 		Modifiers.load();
+		Locators.load();
+		Lighting.load();
 		
 		boolean updateChunkSize = defaultChunkSize == chunkSize;
 		int oldChunkSize = chunkSize;
@@ -486,6 +493,12 @@ public class Config {
 				if(data.has("fillWorldBorders"))
 					fillWorldBorders = data.get("fillWorldBorders").getAsBoolean();
 				
+				if(data.has("calculateLighting"))
+					calculateLighting = data.get("calculateLighting").getAsBoolean();
+				
+				if(data.has("blockLightingAdditive"))
+					blockLightingAdditive = data.get("blockLightingAdditive").getAsBoolean();
+				
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
@@ -494,6 +507,7 @@ public class Config {
 		transparentOcclusion.addAll(ResourcePackBedrockEdition.transparentBlocks);
 		BuiltInBlockStateRegistry.load();
 		EntityBuiltinsRegistry.load();
+		Materials.reload();
 	}
 	
 }

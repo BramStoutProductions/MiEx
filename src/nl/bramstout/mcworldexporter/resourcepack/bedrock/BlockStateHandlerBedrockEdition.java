@@ -118,6 +118,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 		Vector3f rotationPivot = null;
 		Vector3f scale = null;
 		Vector3f scalePivot = null;
+		String animation = null;
 		
 		MolangQuery molangQuery = new MolangQuery(name, properties, x, y, z);
 		
@@ -143,12 +144,20 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 				scale = part.getScale();
 			if(part.getScalePivot() != null)
 				scalePivot = part.getScalePivot();
+			if(part.getAnimation() != null)
+				animation = part.getAnimation();
+			if(animation.equals(""))
+				animation = null;
 		}
 		
 		int modelId = ModelRegistry.getIdForName(geometry, doubleSided);
 		Model model = ModelRegistry.getModel(modelId);
 		
 		model = new Model(model); // Make a copy of it
+		
+		if(animationHandler != null && animationHandler instanceof BlockAnimationHandlerBedrock) {
+			((BlockAnimationHandlerBedrock) animationHandler).applyAnimation(model, frame);
+		}
 		
 		List<ModelFace> removeFaces = new ArrayList<ModelFace>();
 		for(Entry<String, MolangExpression> entry : boneVisibility.entrySet()) {
@@ -298,7 +307,9 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 									state.isDoubleSided(), state.hasRandomAnimationXZOffset(), 
 									state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(),
 									state.getLodPriority(), state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), 
-									animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
+									state.hasLocators(), state.getLightValues(properties),
+									animationHandler == null ? (animation == null ? 
+											state.getExtraAnimationHandler() : new BlockAnimationHandlerBedrock(animation)) : animationHandler);
 	}
 
 	@Override

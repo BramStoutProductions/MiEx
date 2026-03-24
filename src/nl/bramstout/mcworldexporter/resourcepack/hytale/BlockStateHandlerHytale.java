@@ -140,7 +140,8 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 					state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 					state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 					state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), null);
+					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), state.hasLocators(), null,
+					null);
 		}
 		return variant.getBakedBlockState(properties, x, y, z, state, animationHandler, frame);
 	}

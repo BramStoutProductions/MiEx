@@ -137,4 +137,43 @@ public class LauncherJavaEdition extends Launcher{
 		return worldFolder.getAbsolutePath().startsWith(rootFolder.getAbsolutePath());
 	}
 	
+	@Override
+	public List<ResourcePackSource> getAllResourcePackSources() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		File resourcePacksFolder = new File(rootFolder, "resourcepacks");
+		if(resourcePacksFolder.exists() && resourcePacksFolder.isDirectory()) {
+			for(File f : resourcePacksFolder.listFiles()) {
+				if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
+					ResourcePackSource source = new ResourcePackSource(f.getName(), this);
+					source.addSource(ResourcePackSource.getHash(f), f);
+					sources.add(source);
+				}else if(f.isFile() && f.getName().endsWith(".zip")) {
+					ResourcePackSource source = new ResourcePackSource(f.getName(), this);
+					source.addSource(ResourcePackSource.getHash(f), f);
+					sources.add(source);
+				}
+			}
+		}
+		
+		File modsFolder = new File(rootFolder, "mods");
+		if(modsFolder.exists() && modsFolder.isDirectory()) {
+			searchFolderForMods(modsFolder, "", sources);
+		}
+		
+		return sources;
+	}
+	
+	private void searchFolderForMods(File folder, String parent, List<ResourcePackSource> sources) {
+		for(File f : folder.listFiles()) {
+			if(f.isDirectory()) {
+				searchFolderForMods(f, parent + f.getName() + "/", sources);
+			}else if(f.isFile() && f.getName().endsWith(".jar")) {
+				ResourcePackSource source = new ResourcePackSource(parent + f.getName(), this);
+				source.addSource(ResourcePackSource.getHash(f), f);
+				sources.add(source);
+			}
+		}
+	}
+	
 }

@@ -1,0 +1,15 @@
+[
+    {
+        "blocks": [ { "id":"minecraft:copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:exposed_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:weathered_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:oxidized_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:waxed_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:waxed_exposed_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:waxed_weathered_copper_bulb", "state": { "lit": true }},
+                    { "id":"minecraft:waxed_oxidized_copper_bulb", "state": { "lit": true }} ],
+        "points": [
+            [ 8, 8, 8 ]
+        ]
+    }
+]

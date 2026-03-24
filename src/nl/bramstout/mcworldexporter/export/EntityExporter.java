@@ -450,7 +450,9 @@ public class EntityExporter {
 							entity.setUniqueId(random.nextLong());
 						entity.setGlobalRandomSeed(globalSeed);
 						entities.add(entity);
-						chunk.getEntities().add(entity);
+						List<Entity> chunkEntities = chunk.getEntities();
+						if(chunkEntities != null)
+							chunkEntities.add(entity);
 						
 						if(entity.getAI() != null) {
 							for(String event : spawn.events) {

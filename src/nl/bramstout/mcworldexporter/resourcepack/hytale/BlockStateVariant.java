@@ -696,7 +696,9 @@ public class BlockStateVariant {
 				state.isLiquid(), state.isCaveBlock(), state.hasRandomOffset(), 
 				state.hasRandomYOffset(), state.isDoubleSided(), state.hasRandomAnimationXZOffset(),
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
-				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), animationHandler == null ? (this.looping ? this.animationHandler : null) : animationHandler);
+				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), state.hasLocators(),
+				state.getLightValues(properties),
+				animationHandler == null ? (this.looping ? this.animationHandler : state.getExtraAnimationHandler()) : animationHandler);
 	}
 	
 	private Model createCubeModel(int x, int y, int z, int permutation) {

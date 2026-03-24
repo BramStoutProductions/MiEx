@@ -112,7 +112,7 @@ public class LauncherTechnic extends Launcher{
 		if(instanceFolder != null) {
 			File modsFolder = new File(instanceFolder, "mods");
 			if(modsFolder.exists()) {
-				ResourcePackSource source = new ResourcePackSource("Technic Launcher " + instanceFolder.getName() + " Mods");
+				ResourcePackSource source = new ResourcePackSource("Technic Launcher " + instanceFolder.getName() + " Mods", this);
 				findSources(modsFolder, source);
 				sources.add(source);
 			}
@@ -148,6 +148,40 @@ public class LauncherTechnic extends Launcher{
 	@Override
 	public boolean ownsWorld(File worldFolder) {
 		return worldFolder.getAbsolutePath().startsWith(rootFile.getAbsolutePath());
+	}
+	
+	@Override
+	public List<ResourcePackSource> getAllResourcePackSources() {
+		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		
+		File instacesFolder = new File(rootFile, "modpacks");
+		if(instacesFolder.exists() && instacesFolder.isDirectory()) {
+			for(File instanceFolder : instacesFolder.listFiles()) {
+				File resourcePacksFolder = new File(instanceFolder, "resourcepacks");
+				if(resourcePacksFolder.exists() && resourcePacksFolder.isDirectory()) {
+					for(File f : resourcePacksFolder.listFiles()) {
+						if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
+							ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							sources.add(source);
+						}else if(f.isFile() && f.getName().endsWith(".zip")) {
+							ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							sources.add(source);
+						}
+					}
+				}
+				
+				File modsFolder = new File(instanceFolder, "mods");
+				if(modsFolder.exists()) {
+					ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + " Mods", this);
+					findSources(modsFolder, source);
+					sources.add(source);
+				}
+			}
+		}
+		
+		return sources;
 	}
 	
 }

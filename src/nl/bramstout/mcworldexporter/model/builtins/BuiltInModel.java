@@ -113,12 +113,14 @@ public class BuiltInModel {
 		private Expression rotation;
 		private boolean affineRotation;
 		private Expression tintIndex;
+		private Expression tintColor;
 		private Expression entityUVsMinU;
 		private Expression entityUVsMinV;
 		private Expression entityUVsMaxU;
 		private Expression entityUVsMaxV;
 		
-		public ElementFace(Direction dir, Expression texture, Expression shadingMode, Expression entityUVsMinU, Expression entityUVsMinV, 
+		public ElementFace(Direction dir, Expression texture, Expression shadingMode, Expression tintColor,
+							Expression entityUVsMinU, Expression entityUVsMinV, 
 							Expression entityUVsMaxU, Expression entityUVsMaxV, JsonObject data) {
 			this.dir = dir;
 			this.entityUVsMinU = entityUVsMinU;
@@ -127,6 +129,7 @@ public class BuiltInModel {
 			this.entityUVsMaxV = entityUVsMaxV;
 			this.texture = texture;
 			this.shadingMode = shadingMode;
+			this.tintColor = tintColor;
 			this.affineRotation = false;
 			if(data == null)
 				return;
@@ -151,6 +154,9 @@ public class BuiltInModel {
 			}
 			if(data.has("tintindex")) {
 				tintIndex = ExprParser.parseMultiExpression(data.get("tintindex").getAsString());
+			}
+			if(data.has("tintcolor")) {
+				tintColor = ExprParser.parseMultiExpression(data.get("tintcolor").getAsString());
 			}
 			
 			if(data.has("shadingMode")) {
@@ -253,6 +259,21 @@ public class BuiltInModel {
 				shadingModeStr = shadingMode.eval(context).asString().intern();
 			ModelFace face = new ModelFace(bounds, dir, faceData, context.model.isDoubleSided(), shadingModeStr);
 			if(face.isValid()) {
+				if(tintColor != null) {
+					ExprValue val = tintColor.eval(context);
+					if(!val.isNull()) {
+						float r = 1f;
+						float g = 1f;
+						float b = 1f;
+						try {
+							r = val.member("0").asFloat();
+							g = val.member("1").asFloat();
+							b = val.member("2").asFloat();
+							face.setFaceColour(r, g, b);
+						}catch(Exception ex) {}
+					}
+				}
+				
 				face.rotate(rotateData);
 				context.model.getFaces().add(face);
 			}
@@ -356,21 +377,26 @@ public class BuiltInModel {
 			}
 			Expression defaultTexture = null;
 			Expression defaultShadingMode = null;
+			Expression defaultTintColor = null;
 			if(data.has("texture"))
 				defaultTexture = ExprParser.parseMultiExpression(data.get("texture").getAsString());
 			if(data.has("shadingMode"))
 				defaultShadingMode = ExprParser.parseMultiExpression(data.get("shadingMode").getAsString());
+			if(data.has("tintcolor"))
+				defaultTintColor = ExprParser.parseMultiExpression(data.get("tintcolor").getAsString());
 			if(data.has("faces")) {
 				for(Entry<String, JsonElement> entry : data.getAsJsonObject("faces").entrySet()) {
 					Direction dir = Direction.getDirection(entry.getKey());
 					if(entry.getValue().isJsonObject()) {
-						addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, entityUVsMinU, entityUVsMinV, entityUVsMaxU, 
-												entityUVsMaxV, entry.getValue().getAsJsonObject()));
+						addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, defaultTintColor, 
+												entityUVsMinU, entityUVsMinV, entityUVsMaxU, entityUVsMaxV, 
+												entry.getValue().getAsJsonObject()));
 					}
 				}
 			}else {
 				for (Direction dir : Direction.CACHED_VALUES) {
-					addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, entityUVsMinU, entityUVsMinV, entityUVsMaxU, entityUVsMaxV, null));
+					addFace(new ElementFace(dir, defaultTexture, defaultShadingMode, defaultTintColor, 
+							entityUVsMinU, entityUVsMinV, entityUVsMaxU, entityUVsMaxV, null));
 				}
 			}
 		}

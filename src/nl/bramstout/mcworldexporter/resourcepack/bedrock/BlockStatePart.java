@@ -57,6 +57,7 @@ public class BlockStatePart {
 	private Vector3f scale;
 	private Vector3f scalePivot;
 	private boolean transparency;
+	private String animation;
 	
 	public BlockStatePart(String condition, JsonObject components) {
 		this.condition = new MolangConstantExpression(new MolangValue(true));
@@ -72,6 +73,7 @@ public class BlockStatePart {
 		this.scale = null;
 		this.scalePivot = null;
 		this.transparency = false;
+		this.animation = null;
 		
 		if(components.has("minecraft:geometry")) {
 			JsonElement geometryEl = components.get("minecraft:geometry");
@@ -150,6 +152,9 @@ public class BlockStatePart {
 				this.scalePivot = this.scalePivot.add(new Vector3f(8f, 8f, 8f));
 			}
 		}
+		if(components.has("miex:animation")) {
+			this.animation = components.get("miex:animation").getAsString();
+		}
 	}
 	
 	private Vector3f readVector3f(JsonElement el) {
@@ -202,6 +207,10 @@ public class BlockStatePart {
 	
 	public boolean hasTransparency() {
 		return transparency;
+	}
+	
+	public String getAnimation() {
+		return animation;
 	}
 
 }

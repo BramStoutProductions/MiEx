@@ -53,7 +53,12 @@ import nl.bramstout.mcworldexporter.export.processors.MeshProcessors;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMergerMode;
 import nl.bramstout.mcworldexporter.export.processors.RaytracingOptimiser;
 import nl.bramstout.mcworldexporter.export.processors.WriteProcessor;
+import nl.bramstout.mcworldexporter.lighting.BlockLightingCache;
+import nl.bramstout.mcworldexporter.lighting.Lighting;
+import nl.bramstout.mcworldexporter.locators.Locators;
+import nl.bramstout.mcworldexporter.locators.PointLocators;
 import nl.bramstout.mcworldexporter.materials.Materials;
+import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Direction;
@@ -91,10 +96,12 @@ public class ChunkExporter {
 	private Map<String, Mesh> meshes;
 	private Map<IndividualBlockId, FloatArray> individualBlocks;
 	private Map<AnimatedBlockId, AnimatedBlock> animatedBlocks;
+	private Map<String, List<Vector3f>> pointLocators;
 	private String name;
 	private String fgChunkName;
 	//private LODCache lodCache;
 	private CaveCache caveCache;
+	private BlockLightingCache lightingCache;
 	private Reference<char[]> charBuffer;
 
 	
@@ -112,15 +119,27 @@ public class ChunkExporter {
 		this.meshes = new HashMap<String, Mesh>();
 		this.individualBlocks = new HashMap<IndividualBlockId, FloatArray>();
 		this.animatedBlocks = new HashMap<AnimatedBlockId, AnimatedBlock>();
+		this.pointLocators = new HashMap<String, List<Vector3f>>();
 		this.name = name;
 		//this.lodCache = new LODCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
 		this.caveCache = null;
 		if(Config.fillInCaves)
 			this.caveCache = new CaveCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
+		this.lightingCache = null;
 		this.charBuffer = new Reference<char[]>();
 	}
 	
 	public void generateMeshes() {
+		if(Config.calculateLighting) {
+			int padding = Lighting.getMaxLightLevel() + 1;
+			int chunkPadding = (padding + 15) / 16;
+			this.lightingCache = new BlockLightingCache(
+					chunkX - chunkPadding, chunkZ - chunkPadding, 
+					chunkX + chunkSize + chunkPadding, chunkZ + chunkSize + chunkPadding, 
+					bounds.getMinY() - padding, bounds.getMaxY() + padding);
+			this.lightingCache.calculateLighting();
+		}
+		
 		for(int z = chunkZ; z < (chunkZ + chunkSize); ++z) {
 			for(int x = chunkX; x < (chunkX + chunkSize); ++x) {
 				final int fx = x;
@@ -322,15 +341,51 @@ public class ChunkExporter {
 											lodSize, lodYSize, occlusionHandler, modifierContext, modifiers, chunk);
 							}
 						}
+						
+						if(state.hasLocators()) {
+							handleLocators(blockId, wx, by, wz, offsetX, offsetY, offsetZ);
+						}
 					}
 				}
 			}
 		}
 		
 		if(!Config.exportEntityAsBlocks.isEmpty()) {
-			for(Entity entity : chunk.getEntities()) {
-				if(Config.exportEntityAsBlocks.contains(entity.getId())) {
-					handleEntity(entity, chunk);
+			List<Entity> entities = chunk.getEntities();
+			if(entities != null) {
+				for(Entity entity : entities) {
+					if(Config.exportEntityAsBlocks.contains(entity.getId())) {
+						handleEntity(entity, chunk);
+					}
+				}
+			}
+		}
+	}
+	
+	private void handleLocators(int[] blockId, int bx, int by, int bz, float offsetX, float offsetY, float offsetZ) {
+		Block block = BlockRegistry.getBlock(blockId[0]);
+		
+		float ox = ((float) bx) - worldOffsetX - 0.5f; 
+		float oy = ((float) by) - worldOffsetY; 
+		float oz = ((float) bz) - worldOffsetZ - 0.5f;
+		ox = ox * 16f + offsetX;
+		oy = oy * 16f + offsetY;
+		oz = oz * 16f + offsetZ;
+		Vector3f offset = new Vector3f(ox, oy, oz);
+		
+		List<Locators> locators = Locators.getLocatorForBlock(block.getName(), block.getProperties());
+		if(locators != null) {
+			for(Locators locator : locators) {
+				if(locator instanceof PointLocators) {
+					List<Vector3f> points = pointLocators.getOrDefault(locator.getName(), null);
+					if(points == null) {
+						points = new ArrayList<Vector3f>();
+						pointLocators.put(locator.getName(), points);
+					}
+					
+					for(Vector3f point : ((PointLocators) locator).getPoints()) {
+						points.add(new Vector3f(point.add(offset)));
+					}
 				}
 			}
 		}
@@ -1024,6 +1079,10 @@ public class ChunkExporter {
 			vertexColors = modifierContext.vertexColors;
 		}
 		
+		if(this.lightingCache != null) {
+			vertexColors = this.lightingCache.getLightingForFace(face, ix, iy, iz, vertexColors);
+		}
+		
 		
 		
 		String matTexture = texture;
@@ -1660,6 +1719,17 @@ public class ChunkExporter {
 				dos.writeFloat(blocks.getValue().get(i) * worldScale + worldOffsetXZ);
 				dos.writeFloat(blocks.getValue().get(i+1) * worldScale);
 				dos.writeFloat(blocks.getValue().get(i+2) * worldScale + worldOffsetXZ);
+			}
+		}
+		
+		dos.writeInt(pointLocators.size());
+		for(Entry<String, List<Vector3f>> locator : pointLocators.entrySet()) {
+			dos.writeUTF(locator.getKey());
+			dos.writeInt(locator.getValue().size());
+			for(Vector3f point : locator.getValue()) {
+				dos.writeFloat(point.x);
+				dos.writeFloat(point.y);
+				dos.writeFloat(point.z);
 			}
 		}
 

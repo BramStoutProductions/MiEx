@@ -47,6 +47,8 @@ public abstract class Launcher {
 	
 	public abstract List<ResourcePackSource> getResourcePackSourcesForWorld(World world);
 	
+	public abstract List<ResourcePackSource> getAllResourcePackSources();
+	
 	public abstract boolean ownsWorld(File worldFolder);
 	
 }
