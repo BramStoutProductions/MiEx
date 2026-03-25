@@ -14,15 +14,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_leggings' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_leggings') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_leggings'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid_leggings/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-4.5, -0.5, -2.5],
                     "to": [4.5, 12.5, 2.5],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [8, 10, 10, 16], "texture": "'#armor'"},
                         "east": {"uv": [7, 10, 8, 16], "texture": "'#armor'"},
@@ -32,7 +38,24 @@
                         "down": {"uv": [7, 8, 9, 10], "texture": "'#armor'"}
                     }
 		        }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-4.52, -0.52, -2.52],
+                        "to": [4.52, 12.52, 2.52],
+                        "faces": {
+                            "north": {"uv": [8, 10, 10, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [7, 10, 8, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [5, 10, 7, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [4, 10, 5, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [5, 8, 7, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [7, 8, 9, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     },
     "rightLeg": {
@@ -45,15 +68,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_leggings' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_leggings') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_leggings'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid_leggings/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-2.5, -12.5, -2.5],
                     "to": [2.5, 0.5, 2.5],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [3, 10, 4, 16], "texture": "'#armor'"},
                         "east": {"uv": [2, 10, 3, 16], "texture": "'#armor'"},
@@ -63,7 +92,24 @@
                         "down": {"uv": [2, 8, 3, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-2.52, -12.52, -2.52],
+                        "to": [2.52, 0.52, 2.52],
+                        "faces": {
+                            "north": {"uv": [3, 10, 4, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [2, 10, 3, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [1, 10, 2, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [0, 10, 1, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [1, 8, 2, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [2, 8, 3, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     },
     "leftLeg": {
@@ -76,15 +122,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_leggings' ? 'minecraft:entity/equipment/humanoid_leggings/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_leggings' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_leggings') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_leggings'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid_leggings/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-2.5, -12.5, -2.5],
                     "to": [2.5, 0.5, 2.5],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [4, 10, 3, 16], "texture": "'#armor'"},
                         "east": {"uv": [1, 10, 0, 16], "texture": "'#armor'"},
@@ -94,7 +146,24 @@
                         "down": {"uv": [3, 8, 2, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-2.52, -12.52, -2.52],
+                        "to": [2.52, 0.52, 2.52],
+                        "faces": {
+                            "north": {"uv": [4, 10, 3, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [1, 10, 0, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [2, 10, 1, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [3, 10, 2, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [2, 8, 1, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [3, 8, 2, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     }
 }
