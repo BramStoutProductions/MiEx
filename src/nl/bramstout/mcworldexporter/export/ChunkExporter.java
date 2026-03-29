@@ -493,7 +493,7 @@ public class ChunkExporter {
 				int cornerData = occlusionHandler.getCornerIndexForFace(face, faceIndex);
 				
 				addFace(meshes, state.getName(), blockId[0], dataVersion, face, model.getTexture(face.getTexture()), 
-						biomeInstance, biome, wx, by, wz, layer, wx, by, wz, 
+						biomeInstance, biome, wx, by, wz, layer, 
 						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), state.getTint(), model.isDoubleSided(), 
 						lodSize, lodYSize, state.isLodNoUVScale(), state.isLodNoScale(), false, state.getSeparateMeshForBlock(), 
 						ambientOcclusion, cornerData, modifierContext, modifiers, chunk);
@@ -510,10 +510,17 @@ public class ChunkExporter {
 
 		for(int j = 0; j < model.getFaces().size(); ++j) {
 			face = model.getFaces().get(j);
+			
+			int ix = (int) Math.floor(entity.getX());
+			int iy = (int) Math.floor(entity.getY());
+			int iz = (int) Math.floor(entity.getZ());
+			float ox = (entity.getX() - ix) * 16f;
+			float oy = (entity.getY() - iy) * 16f;
+			float oz = (entity.getZ() - iz) * 16f;
 				
 			addFace(meshes, entity.getId(), 0, 0, face, model.getTexture(face.getTexture()), 
-					null, null, (int) entity.getX(), (int) entity.getY(), (int) entity.getZ(), 0, entity.getX(), entity.getY(), entity.getZ(), 
-					0f, 0f, 0f, 0f, model.getExtraData(), null, model.isDoubleSided(), 
+					null, null, ix, iy, iz, 0, 
+					ox, oy, oz, 0f, model.getExtraData(), null, model.isDoubleSided(), 
 					1, 1, false, false, true, false, 
 					null, cornerData, null, null, chunk);
 		}
@@ -966,7 +973,7 @@ public class ChunkExporter {
 	private Color[] faceTint = null;
 	
 	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
-			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, int layer, float bx, float by, float bz, float ox, float oy, float oz, 
+			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, int layer, float ox, float oy, float oz, 
 			float uvOffsetY, String extraData, TintLayers tintLayers, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale, boolean lodNoScale, boolean noConnectedTextures, boolean separateMeshForBlock, 
 			AmbientOcclusion ambientOcclusion, int cornerData, ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
@@ -982,7 +989,7 @@ public class ChunkExporter {
 				ConnectedTexture connectedTexture = connectedTextures.getKey();
 				if(connectedTexture != null) {
 					if(connectedTexture.getFacesToConnect().contains(face.getDirection())) {
-						String newTexture = connectedTexture.getTexture((int) bx, (int) by, (int) bz, layer, face);
+						String newTexture = connectedTexture.getTexture(ix, iy, iz, layer, face);
 						if(newTexture != null)
 							texture = newTexture;
 						if(newTexture == ConnectedTexture.DELETE_FACE)
@@ -994,7 +1001,7 @@ public class ChunkExporter {
 					float faceOffset = 0.0125f;
 					for(ConnectedTexture overlayTexture : overlayTextures) {
 						if(overlayTexture.getFacesToConnect().contains(face.getDirection())) {
-							String newTexture = overlayTexture.getTexture((int) bx, (int) by, (int) bz, layer, face);
+							String newTexture = overlayTexture.getTexture(ix, iy, iz, layer, face);
 							if(newTexture != null && newTexture != ConnectedTexture.DELETE_FACE) {
 								ModelFace overlayFace = new ModelFace(face);
 								overlayFace.translate(((float) face.getDirection().x) * faceOffset, 
@@ -1017,7 +1024,7 @@ public class ChunkExporter {
 											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
 																					dataVersion, charBuffer);
 											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
-																						(int) bx, (int) by, (int) bz, layer);
+																						ix, iy, iz, layer);
 											overlayTint = blockState.getTint();
 										}else {
 											overlayTint = tintLayers;
@@ -1032,7 +1039,7 @@ public class ChunkExporter {
 								}
 								
 								addFace(meshes, blockName, blockId, dataVersion, overlayFace, newTexture, biome, blendedBiome,
-										ix, iy, iz, layer, bx, by, bz, ox, oy, oz, 
+										ix, iy, iz, layer, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
 										lodNoUVScale, lodNoScale, true, false, ambientOcclusion, cornerData,
 										modifierContext, modifiers, chunk);
@@ -1161,7 +1168,7 @@ public class ChunkExporter {
 		}
 		
 		mesh.addFace(face, 
-				bx - worldOffsetX - 0.5f + lodSizeF, by - worldOffsetY + lodYSizeF, bz - worldOffsetZ - 0.5f + lodSizeF, 
+				ix - worldOffsetX - 0.5f + lodSizeF, iy - worldOffsetY + lodYSizeF, iz - worldOffsetZ - 0.5f + lodSizeF, 
 				ox, oy, oz, uvOffsetY, lodScale, lodYScale, lodUVScale, lodYUVScale, atlas, 
 				tint, ambientOcclusion, cornerData, vertexColors, normal);
 	}

@@ -323,19 +323,26 @@ public class BlockStateVariant {
 		}
 		
 		if(data.has("TextureSideMask")) {
-			this.cubeTextureSideMask = "hytale:" + data.get("TextureSideMask").getAsString();
-			int sep = this.cubeTextureSideMask.lastIndexOf('.');
-			if(sep != -1)
-				this.cubeTextureSideMask = this.cubeTextureSideMask.substring(0, sep);
+			JsonElement el = data.get("TextureSideMask");
+			if(el.isJsonNull()) {
+				this.cubeTextureSideMask = null;
+			}else {
+				this.cubeTextureSideMask = "hytale:" + el.getAsString();
+				int sep = this.cubeTextureSideMask.lastIndexOf('.');
+				if(sep != -1)
+					this.cubeTextureSideMask = this.cubeTextureSideMask.substring(0, sep);
+			}
 		}
 		
 		if(data.has("CustomModel")) {
-			this.customModelId = data.get("CustomModel").getAsString();
-			if(this.customModelId.indexOf(':') == -1)
-				this.customModelId = "hytale:" + this.customModelId;
-			//String customModelId = "hytale:" + data.get("CustomModel").getAsString();
-			//int modelId = ModelRegistry.getIdForName(customModelId, false);
-			//this.customModel = ModelRegistry.getModel(modelId);
+			JsonElement el = data.get("CustomModel");
+			if(el.isJsonNull()) {
+				this.customModelId = null;
+			}else {
+				this.customModelId = el.getAsString();
+				if(this.customModelId.indexOf(':') == -1)
+					this.customModelId = "hytale:" + this.customModelId;
+			}
 		}
 		
 		if(data.has("CustomModelTexture")){
@@ -375,22 +382,32 @@ public class BlockStateVariant {
 			this.looping = data.get("Looping").getAsBoolean();
 		
 		if(data.has("RandomRotation")) {
-			String val = data.get("RandomRotation").getAsString();
-			for(RandomRotation rot : RandomRotation.values()) {
-				if(rot.id.equals(val)) {
-					this.randomRotation = rot;
-					break;
+			JsonElement el = data.get("RandomRotation");
+			if(el.isJsonNull()) {
+				this.randomRotation = RandomRotation.None;
+			}else {
+				String val = el.getAsString();
+				for(RandomRotation rot : RandomRotation.values()) {
+					if(rot.id.equals(val)) {
+						this.randomRotation = rot;
+						break;
+					}
 				}
 			}
 		}
 		
 		if(data.has("TransitionTexture")) {
-			this.transitionTexture = data.get("TransitionTexture").getAsString();
-			if(this.transitionTexture.indexOf(':') == -1)
-				this.transitionTexture = "hytale:" + this.transitionTexture;
-			int sep = this.transitionTexture.lastIndexOf('.');
-			if(sep != -1)
-				this.transitionTexture = this.transitionTexture.substring(0, sep);
+			JsonElement el = data.get("TransitionTexture");
+			if(el.isJsonNull()) {
+				this.transitionTexture = null;
+			}else {
+				this.transitionTexture = el.getAsString();
+				if(this.transitionTexture.indexOf(':') == -1)
+					this.transitionTexture = "hytale:" + this.transitionTexture;
+				int sep = this.transitionTexture.lastIndexOf('.');
+				if(sep != -1)
+					this.transitionTexture = this.transitionTexture.substring(0, sep);
+			}
 		}
 		
 		if(data.has("TransitionToGroups")) {

@@ -48,21 +48,16 @@ import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.entity.builtins.EntityBuiltinsRegistry;
 import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
 import nl.bramstout.mcworldexporter.image.ImageReader;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
 import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 import nl.bramstout.mcworldexporter.resourcepack.java.BlockStateHandlerJavaEdition;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 import nl.bramstout.mcworldexporter.ui.Popups;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
-import nl.bramstout.mcworldexporter.world.Chunk;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class ResourcePacks {
@@ -182,6 +177,8 @@ public class ResourcePacks {
 	
 	public static void setActiveResourcePacks(List<ResourcePack> packs) {
 		isLoading.set(true);
+		MCWorldExporter.getApp().getUI().getViewer().pauseRendering();
+
 		boolean hasLoadError = false;
 		try {
 			System.out.println("Setting Active Resource Packs (thread: " + Thread.currentThread().getName() + "):");
@@ -229,11 +226,7 @@ public class ResourcePacks {
 			synchronized(mutex) {
 				defaultColours.clear();
 			}
-			Atlas.readAtlasConfig();
 			Config.load();
-			BlockStateRegistry.clearBlockStateRegistry();
-			ModelRegistry.clearModelRegistry();
-			BiomeRegistry.recalculateTints();
 			
 			for(int i = activeResourcePacks.size()-1; i >= 0; --i) {
 				try {
@@ -244,20 +237,19 @@ public class ResourcePacks {
 					ex.printStackTrace();
 				}
 			}
+			MCWorldExporter.getApp().getUI().update();
+			MCWorldExporter.getApp().getUI().fullReRender();
+			BlockRegistry.clearBlockRegistry();
+			MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
 		}catch(Exception ex) {
 			isLoading.set(false);
+			MCWorldExporter.getApp().getUI().getViewer().resumeRendering();
 			throw ex;
 		}
-		isLoading.set(false);
 		
-		MCWorldExporter.getApp().getUI().update();
-		MCWorldExporter.getApp().getUI().fullReRender();
-		BlockRegistry.clearBlockRegistry();
-		Chunk.unloadAllLoadedChunks();
-		if(MCWorldExporter.getApp().getWorld() != null)
-			MCWorldExporter.getApp().getWorld().reloadFromResourcepack();
-		MCWorldExporter.getApp().getUI().getProgressBar().setText("");
-		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+		isLoading.set(false);
+		MCWorldExporter.getApp().getUI().getViewer().resumeRendering();
 		
 		if(hasLoadError) {
 			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), 

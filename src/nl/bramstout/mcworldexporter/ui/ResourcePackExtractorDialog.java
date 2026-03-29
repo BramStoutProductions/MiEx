@@ -50,14 +50,10 @@ import javax.swing.border.EmptyBorder;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.atlas.Atlas;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class ResourcePackExtractorDialog extends JDialog {
 
@@ -188,14 +184,7 @@ public class ResourcePackExtractorDialog extends JDialog {
 		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
 		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
 		
-		Atlas.readAtlasConfig();
 		Config.load();
-		BlockStateRegistry.clearBlockStateRegistry();
-		ModelRegistry.clearModelRegistry();
-		BiomeRegistry.recalculateTints();
-		ResourcePacks.doPostLoad();
-		MCWorldExporter.getApp().getUI().update();
-		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 
 }

@@ -50,12 +50,14 @@ public class ThreadPool {
 	private List<Worker> threads;
 	private Queue<Task> queue;
 	private int numThreads;
+	private AtomicInteger clearCounter;
 
 	public ThreadPool(String name, int memoryAllowedPerThread) {
 		this.name = name;
 		threads = new ArrayList<Worker>();
 		queue = new Queue<Task>();
 		numThreads = getNumThreads(memoryAllowedPerThread);
+		clearCounter = new AtomicInteger(0);
 
 		for (int i = 0; i < numThreads; i++) {
 			Worker worker = new Worker(this);
@@ -98,6 +100,20 @@ public class ThreadPool {
 	
 	public void submit(Task task) {
 		queue.push(task);
+	}
+	
+	public void clearQueue() {
+		queue.clear();
+		int currentClearCounter = clearCounter.addAndGet(1);
+		for(Worker worker : this.threads) {
+			while(worker.currentClearCounter.get() < currentClearCounter) {
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	public static class Task {
@@ -154,10 +170,12 @@ public class ThreadPool {
 
 		private ThreadPool pool;
 		private boolean stop;
+		private AtomicInteger currentClearCounter;
 
 		public Worker(ThreadPool pool) {
 			this.pool = pool;
 			this.stop = false;
+			this.currentClearCounter = new AtomicInteger(-1);
 		}
 		
 		public void stop() {
@@ -168,6 +186,7 @@ public class ThreadPool {
 		public void run() {
 			int counter = 0;
 			while (!this.stop) {
+				this.currentClearCounter.set(pool.clearCounter.get());
 				Thread.yield();
 				Task task = pool.queue.pop();
 				if (task == null) {

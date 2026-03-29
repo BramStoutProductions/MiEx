@@ -14,15 +14,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_boots' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_boots' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_boots' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_boots' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_boots') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_boots'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-3, -12.5, -3.01],
                     "to": [3, 1.5, 2.99],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [3, 10, 4, 16], "texture": "'#armor'"},
                         "east": {"uv": [2, 10, 3, 16], "texture": "'#armor'"},
@@ -32,7 +38,24 @@
                         "down": {"uv": [2, 8, 3, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-3.02, -12.52, -3.03],
+                        "to": [3.02, 1.52, 3.01],
+                        "faces": {
+                            "north": {"uv": [3, 10, 4, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [2, 10, 3, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [1, 10, 2, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [0, 10, 1, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [1, 8, 2, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [2, 8, 3, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     },
     "leftLeg": {
@@ -45,15 +68,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_boots' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_boots' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_boots' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_boots' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_boots' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_boots') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_boots'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-3, -12.5, -3],
                     "to": [3, 1.5, 3],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [4, 10, 3, 16], "texture": "'#armor'"},
                         "east": {"uv": [1, 10, 0, 16], "texture": "'#armor'"},
@@ -63,7 +92,24 @@
                         "down": {"uv": [3, 8, 2, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-3.02, -12.52, -3.02],
+                        "to": [3.02, 1.52, 3.02],
+                        "faces": {
+                            "north": {"uv": [4, 10, 3, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [1, 10, 0, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [2, 10, 1, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [3, 10, 2, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [2, 8, 1, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [3, 8, 2, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     }
 }

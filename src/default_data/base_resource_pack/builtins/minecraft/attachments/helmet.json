@@ -15,15 +15,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:golden_helmet' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_helmet' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:netherite_helmet' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:turtle_helmet' ? 'minecraft:entity/equipment/humanoid/turtle_scute' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:turtle_helmet' ? 'minecraft:entity/equipment/humanoid/turtle_scute' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_helmet' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_helmet') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_helmet'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-4.625, -0.625, -4.625],
                     "to": [4.625, 8.625, 4.625],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [6, 4, 8, 8], "texture": "'#armor'"},
                         "east": {"uv": [4, 4, 6, 8], "texture": "'#armor'"},
@@ -33,7 +39,24 @@
                         "down": {"uv": [4, 0, 6, 4], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-4.627, -0.627, -4.627],
+                        "to": [4.627, 8.627, 4.627],
+                        "faces": {
+                            "north": {"uv": [6, 4, 8, 8], "texture": "'#overlay'"},
+                            "east": {"uv": [4, 4, 6, 8], "texture": "'#overlay'"},
+                            "south": {"uv": [2, 4, 4, 8], "texture": "'#overlay'"},
+                            "west": {"uv": [0, 4, 2, 8], "texture": "'#overlay'"},
+                            "up": {"uv": [2, 0, 4, 4], "texture": "'#overlay'"},
+                            "down": {"uv": [4, 0, 6, 4], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     }
 }

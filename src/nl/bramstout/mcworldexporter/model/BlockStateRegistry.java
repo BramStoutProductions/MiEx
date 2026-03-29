@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.EntityRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockState.BuiltInBlockStateHandler;
@@ -184,23 +185,28 @@ public class BlockStateRegistry {
 	
 	public static void clearBlockStateRegistry() {
 		synchronized(mutex) {
-			registeredStates.clear();
-			nameToId.clear();
-			counter = 0;
+			synchronized(mutex2) {
+				registeredStates.clear();
+				nameToId.clear();
+				counter = 0;
+				bakedBlockStates.clear();
+				needsConnectionInfo.clear();
+				synchronized(missingBlockStates) {
+					missingBlockStates.clear();
+				}
+				synchronized(BiomeRegistry.missingBiomes) {
+					BiomeRegistry.missingBiomes.clear();
+				}
+				synchronized(EntityRegistry.missingEntities) {
+					EntityRegistry.missingEntities.clear();
+				}
+				ModelRegistry.clearModelRegistry();
+				BiomeRegistry.recalculateTints();
+				ResourcePacks.doPostLoad();
+			}
 		}
-		synchronized(mutex2) {
-			bakedBlockStates.clear();
-			needsConnectionInfo.clear();
-		}
-		synchronized(missingBlockStates) {
-			missingBlockStates.clear();
-		}
-		synchronized(BiomeRegistry.missingBiomes) {
-			BiomeRegistry.missingBiomes.clear();
-		}
-		synchronized(EntityRegistry.missingEntities) {
-			EntityRegistry.missingEntities.clear();
-		}
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 	
 }

@@ -128,6 +128,14 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 		ToolTips.registerDynamicTooltip(this, this);
 	}
 	
+	public void pauseRendering() {
+		renderer.pauseRendering();
+	}
+	
+	public void resumeRendering() {
+		renderer.resumeRendering();
+	}
+	
 	public void zoomIn() {
 		transform.zoomLevel += 1;
 		if (transform.zoomLevel > 8)

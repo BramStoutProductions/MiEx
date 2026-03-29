@@ -86,6 +86,10 @@ public class Queue<T> {
 		this.writeBlock = new AtomicReference<Block<T>>(this.readBlock.get());
 	}
 	
+	public void clear() {
+		readIndex.set(writeIndex.get());
+	}
+	
 	public void push(T value) {
 		// Get the current index for writing.
 		long index = writeIndex.getAndIncrement();

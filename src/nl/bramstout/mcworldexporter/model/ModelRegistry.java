@@ -107,12 +107,12 @@ public class ModelRegistry {
 	
 	public static void clearModelRegistry() {
 		synchronized(mutex) {
-			registeredModels.clear();
-			nameToId.clear();
-			counter = 0;
-		}
-		synchronized(missingModels) {
-			missingModels.clear();
+			synchronized(missingModels) {
+				registeredModels.clear();
+				nameToId.clear();
+				counter = 0;
+				missingModels.clear();
+			}
 		}
 	}
 	

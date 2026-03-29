@@ -49,14 +49,10 @@ import nl.bramstout.mcworldexporter.BuiltInFiles;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Preset;
-import nl.bramstout.mcworldexporter.atlas.Atlas;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.parallel.BackgroundThread;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class ResourcePackManager extends JPanel {
 
@@ -238,14 +234,7 @@ public class ResourcePackManager extends JPanel {
 						resourcePackSelector.reset(false);
 						resourcePackSelector.enableResourcePack(currentlyLoadedUUIDS);
 						
-						Atlas.readAtlasConfig();
 						Config.load();
-						BlockStateRegistry.clearBlockStateRegistry();
-						ModelRegistry.clearModelRegistry();
-						BiomeRegistry.recalculateTints();
-						ResourcePacks.doPostLoad();
-						MCWorldExporter.getApp().getUI().update();
-						MCWorldExporter.getApp().getUI().fullReRender();
 						repaint();
 					}
 				});
@@ -269,14 +258,7 @@ public class ResourcePackManager extends JPanel {
 				resourcePackSelector.reset(false);
 				resourcePackSelector.enableResourcePack(currentlyLoadedUUIDS);
 				
-				Atlas.readAtlasConfig();
 				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 				repaint();
 			}
 			
@@ -298,14 +280,7 @@ public class ResourcePackManager extends JPanel {
 				resourcePackSelector.reset(false);
 				resourcePackSelector.enableResourcePack(currentlyLoadedUUIDS);
 				
-				Atlas.readAtlasConfig();
 				Config.load();
-				BlockStateRegistry.clearBlockStateRegistry();
-				ModelRegistry.clearModelRegistry();
-				BiomeRegistry.recalculateTints();
-				ResourcePacks.doPostLoad();
-				MCWorldExporter.getApp().getUI().update();
-				MCWorldExporter.getApp().getUI().fullReRender();
 				repaint();
 			}
 			
@@ -338,14 +313,7 @@ public class ResourcePackManager extends JPanel {
 						resourcePackSelector.reset(false);
 						resourcePackSelector.enableResourcePack(currentlyLoadedUUIDS);
 						
-						Atlas.readAtlasConfig();
 						Config.load();
-						BlockStateRegistry.clearBlockStateRegistry();
-						ModelRegistry.clearModelRegistry();
-						BiomeRegistry.recalculateTints();
-						ResourcePacks.doPostLoad();
-						MCWorldExporter.getApp().getUI().update();
-						MCWorldExporter.getApp().getUI().fullReRender();
 						repaint();
 						
 						Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Built in files successfully installed", "Done", Popups.PLAIN_MESSAGE);

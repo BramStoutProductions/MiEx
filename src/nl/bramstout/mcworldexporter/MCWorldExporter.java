@@ -41,15 +41,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.commands.CommandSystem;
 import nl.bramstout.mcworldexporter.export.GeneratedTextures;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
 import nl.bramstout.mcworldexporter.launcher.MinecraftSave;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.parallel.ReadWriteMutex;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
@@ -58,7 +55,6 @@ import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.ui.MainWindow;
 import nl.bramstout.mcworldexporter.ui.Popups;
 import nl.bramstout.mcworldexporter.ui.ResourcePackSourcesExtractorDialog;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.World;
 import nl.bramstout.mcworldexporter.world.anvil.WorldAnvil;
 import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
@@ -119,16 +115,9 @@ public class MCWorldExporter {
 			ResourcePacks.init();
 			Noise.init();
 			Config.load();
-			Atlas.readAtlasConfig();
 			
 			resetExportBounds();
 			
-			BlockStateRegistry.clearBlockStateRegistry();
-			ModelRegistry.clearModelRegistry();
-			BiomeRegistry.recalculateTints();
-			ResourcePacks.doPostLoad();
-			MCWorldExporter.getApp().getUI().update();
-			MCWorldExporter.getApp().getUI().fullReRender();
 			MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
 		}catch(Exception ex) {
 			ex.printStackTrace();

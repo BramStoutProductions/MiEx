@@ -14,15 +14,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_chestplate' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_chestplate') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_chestplate'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-5, -1, -3],
                     "to": [5, 13, 3],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [8, 10, 10, 16], "texture": "'#armor'"},
                         "east": {"uv": [7, 10, 8, 16], "texture": "'#armor'"},
@@ -32,7 +38,24 @@
                         "down": {"uv": [7, 8, 9, 10], "texture": "'#armor'"}
                     }
 		        }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-5.02, -1.02, -3.02],
+                        "to": [5.02, 13.02, 3.02],
+                        "faces": {
+                            "north": {"uv": [8, 10, 10, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [7, 10, 8, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [5, 10, 7, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [4, 10, 5, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [5, 8, 7, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [7, 8, 9, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     },
     "rightShoulder": {
@@ -45,15 +68,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_chestplate' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_chestplate') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_chestplate'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-3, -11, -3],
                     "to": [3, 3, 3],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [13, 10, 14, 16], "texture": "'#armor'"},
                         "east": {"uv": [12, 10, 13, 16], "texture": "'#armor'"},
@@ -63,7 +92,24 @@
                         "down": {"uv": [12, 8, 13, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-3.02, -11.02, -3.02],
+                        "to": [3.02, 3.02, 3.02],
+                        "faces": {
+                            "north": {"uv": [13, 10, 14, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [12, 10, 13, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [11, 10, 12, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [10, 10, 11, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [11, 8, 12, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [12, 8, 13, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     },
     "leftShoulder": {
@@ -76,15 +122,21 @@
                 "armorTex = thisAttachment.name == 'minecraft:copper_chestplate' ? 'minecraft:entity/equipment/humanoid/copper' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:golden_chestplate' ? 'minecraft:entity/equipment/humanoid/gold' : armorTex",
                 "armorTex = thisAttachment.name == 'minecraft:diamond_chestplate' ? 'minecraft:entity/equipment/humanoid/diamond' : armorTex",
-                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex"
+                "armorTex = thisAttachment.name == 'minecraft:netherite_chestplate' ? 'minecraft:entity/equipment/humanoid/netherite' : armorTex",
+                "tint = thisAttachment.name == 'minecraft:leather_chestplate' ? Textures.getDyeTintColor(thisAttachment.state) : null",
+                "tint = ((thisAttachment.name == 'minecraft:leather_chestplate') && (tint == null)) ? Textures.intToRGB(10511680) : null",
+                "hasOverlay = thisAttachment.name == 'minecraft:leather_chestplate'",
+                "overlayTex = 'minecraft:entity/equipment/humanoid/leather_overlay'"
             ],
             "textures": {
-                "armor": "armorTex"
+                "armor": "armorTex",
+                "overlay": "overlayTex"
             },
             "elements": [
                 {
                     "from": [-3, -11, -3],
                     "to": [3, 3, 3],
+                    "tintcolor": "tint",
                     "faces": {
                         "north": {"uv": [14, 10, 13, 16], "texture": "'#armor'"},
                         "east": {"uv": [11, 10, 10, 16], "texture": "'#armor'"},
@@ -94,7 +146,24 @@
                         "down": {"uv": [13, 8, 12, 10], "texture": "'#armor'"}
                     }
                 }
-            ]
+            ],
+            "children": {
+                "condition": "hasOverlay",
+                "elements": [
+                    {
+                        "from": [-3.02, -11.02, -3.02],
+                        "to": [3.02, 3.02, 3.02],
+                        "faces": {
+                            "north": {"uv": [14, 10, 13, 16], "texture": "'#overlay'"},
+                            "east": {"uv": [11, 10, 10, 16], "texture": "'#overlay'"},
+                            "south": {"uv": [12, 10, 11, 16], "texture": "'#overlay'"},
+                            "west": {"uv": [13, 10, 12, 16], "texture": "'#overlay'"},
+                            "up": {"uv": [12, 8, 11, 10], "texture": "'#overlay'"},
+                            "down": {"uv": [13, 8, 12, 10], "texture": "'#overlay'"}
+                        }
+                    }
+                ]
+            }
         }
     }
 }

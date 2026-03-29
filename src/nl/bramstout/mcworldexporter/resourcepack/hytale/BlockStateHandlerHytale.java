@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
+import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class BlockStateHandlerHytale extends BlockStateHandler{
 	
@@ -64,7 +65,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 		
 		if(data.has("Parent")) {
 			String parentId = "hytale:" + data.get("Parent").getAsString();
-			BlockStateHandlerHytale parent = (BlockStateHandlerHytale)rp.getBlockStateHandler(parentId);
+			BlockStateHandlerHytale parent = (BlockStateHandlerHytale)ResourcePacks.getBlockStateHandler(parentId);
 			if(parent != null) {
 				for(Entry<String, BlockStateVariant> entry : parent.variants.entrySet()) {
 					this.variants.put(entry.getKey(), new BlockStateVariant(entry.getKey(), entry.getValue()));

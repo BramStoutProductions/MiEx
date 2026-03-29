@@ -76,12 +76,8 @@ import com.google.gson.stream.JsonReader;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
-import nl.bramstout.mcworldexporter.atlas.Atlas;
-import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
-import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 
 public class ExampleResourcePackDownloader extends JDialog {
 	
@@ -231,14 +227,7 @@ public class ExampleResourcePackDownloader extends JDialog {
 		MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
 		MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(activeResourcePackUUIDS);
 		
-		Atlas.readAtlasConfig();
 		Config.load();
-		BlockStateRegistry.clearBlockStateRegistry();
-		ModelRegistry.clearModelRegistry();
-		BiomeRegistry.recalculateTints();
-		ResourcePacks.doPostLoad();
-		MCWorldExporter.getApp().getUI().update();
-		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 	
 	public static void downloadExampleResourcePacks(String repository, List<String> packs) {

@@ -44,6 +44,7 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.IndexCache;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.translation.BlockConnectionsTranslation;
 import nl.bramstout.mcworldexporter.ui.Popups;
@@ -107,6 +108,10 @@ public abstract class World {
 	public abstract List<ResourcePackSource> getDependentResourcePacks();
 	
 	public void reloadFromResourcepack() {
+		_unpause();
+		forceReRender();
+		MCWorldExporter.getApp().getUI().update();
+		MCWorldExporter.getApp().getUI().fullReRender();
 	}
 	
 	public void pauseLoading() {
@@ -307,6 +312,7 @@ public abstract class World {
 		this.paused = false;
 		
 		BlockRegistry.clearBlockRegistry();
+		BlockStateRegistry.clearBlockStateRegistry();
 		
 		if(regions != null) {
 			for(Region region : regions) {

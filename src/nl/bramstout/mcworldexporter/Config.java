@@ -41,10 +41,12 @@ import java.util.Map.Entry;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.entity.builtins.EntityBuiltinsRegistry;
 import nl.bramstout.mcworldexporter.lighting.Lighting;
 import nl.bramstout.mcworldexporter.locators.Locators;
 import nl.bramstout.mcworldexporter.materials.Materials;
+import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInBlockStateRegistry;
 import nl.bramstout.mcworldexporter.modifier.Modifiers;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
@@ -237,6 +239,7 @@ public class Config {
 	}
 	
 	public static void load() {
+		Atlas.readAtlasConfig();
 		Tags.load();
 		Tints.load();
 		ConnectedTextures.load();
@@ -508,6 +511,7 @@ public class Config {
 		BuiltInBlockStateRegistry.load();
 		EntityBuiltinsRegistry.load();
 		Materials.reload();
+		BlockStateRegistry.clearBlockStateRegistry();
 	}
 	
 }

@@ -2382,7 +2382,7 @@ public class ExprValue {
 		
 		@NativeFunction 
 		public ExprValue getDyeTintColor(ExprContext context){
-			ExprValue arg0V = context.variables.getOrDefault("item", null);
+			ExprValue arg0V = context.variables.getOrDefault("arg0", null);
 			if(arg0V == null || arg0V.isNull())
 				return new ExprValue(new ExprValueNull());
 			

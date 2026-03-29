@@ -71,6 +71,8 @@ public class Renderer2D implements Runnable {
 
 	private AtomicBoolean renderRequested;
 	private AtomicBoolean clearBuffer;
+	private AtomicBoolean renderingActive;
+	private AtomicBoolean pauseRendering;
 
 	private int minChunkX;
 	private int minChunkZ;
@@ -98,6 +100,8 @@ public class Renderer2D implements Runnable {
 
 		renderRequested = new AtomicBoolean(false);
 		clearBuffer = new AtomicBoolean(false);
+		renderingActive = new AtomicBoolean(true);
+		pauseRendering = new AtomicBoolean(false);
 		bufferTransform = new CameraTransform();
 		frontBufferTransform = new CameraTransform();
 		frontBufferLock = new SpinLock();
@@ -272,8 +276,11 @@ public class Renderer2D implements Runnable {
 				lastTime = System.currentTimeMillis();
 				
 				// Pause rendering when the exporter is exporting.
-				if(Exporter.isExporting())
+				if(Exporter.isExporting() || ResourcePacks.isLoading.get() || pauseRendering.get()) {
+					renderingActive.set(false);
 					continue;
+				}
+				renderingActive.set(true);
 				
 				// Sample the height buffer
 				if(this.heightBuffer != null) {
@@ -495,6 +502,22 @@ public class Renderer2D implements Runnable {
 			}
 		}
 	}
+	
+	public void pauseRendering() {
+		pauseRendering.set(true);
+		while(renderingActive.get()) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		threadPool.clearQueue();
+	}
+	
+	public void resumeRendering() {
+		pauseRendering.set(false);
+	}
 
 	public void requestRender() {
 		renderRequested.set(true);
@@ -568,17 +591,6 @@ public class Renderer2D implements Runnable {
 					return;
 				}
 				
-				while(ResourcePacks.isLoading.get()) {
-					// If resource packs are currently being loaded in,
-					// we don't want to do any rendering yet.
-					// This is because loading in a chunk, causes things like
-					// block states and biomes to be registered, but we are
-					// still loading in the resource packs that define this.
-					// This can cause MiEx to end up in a state where it
-					// has block states or biomes that deal with only partial
-					// resource pack data.
-					Thread.sleep(10);
-				}
 				chunk.load();
 				chunk.renderChunkImage();
 				chunk.getChunkImage();

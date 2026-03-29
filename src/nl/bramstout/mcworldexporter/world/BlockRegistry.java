@@ -35,10 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.StringMap;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.world.anvil.chunkreader.BlockIds;
 
@@ -110,12 +110,8 @@ public class BlockRegistry {
 	}
 	
 	public static int getIdForName(String name, NbtTagCompound properties, int dataVersion, Reference<char[]> charBuffer) {
-		//if(!name.contains(":"))
-		//	name = "minecraft:" + name;
 		if(properties == null)
 			properties = EMPTY_COMPOUND;
-		//String idName = name + Integer.toHexString(properties.hashCode());
-		//String idName = getUniqueName(name, properties);
 		int nameLength = getUniqueName(name, properties, dataVersion, charBuffer);
 		Integer id = nameToId.getOrNull(charBuffer.value, nameLength);
 		if(id == null) {
@@ -140,17 +136,20 @@ public class BlockRegistry {
 	}
 	
 	public static void clearBlockRegistry() {
-		changeCounter.addAndGet(1);
 		synchronized(mutex) {
+			changeCounter.addAndGet(1);
 			registeredBlocks.clear();
 			nameToId.clear();
+			BlockIds.clear();
+			// Make sure that air always gets an id of 0
+			getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
+			MINECRAFT_WATER_SOURCE_BLOCK_ID = getIdForName("minecraft:water", null, Integer.MAX_VALUE, new Reference<char[]>());
+			
+			BlockStateRegistry.clearBlockStateRegistry();
+			Chunk.unloadAllLoadedChunks();
+			if(MCWorldExporter.getApp().getWorld() != null)
+				MCWorldExporter.getApp().getWorld().reloadFromResourcepack();
 		}
-		BlockIds.clear();
-		BlockStateRegistry.clearBlockStateRegistry();
-		ModelRegistry.clearModelRegistry();
-		// Make sure that air always gets an id of 0
-		getIdForName("minecraft:air", NbtTagCompound.newNonPooledInstance(""), Integer.MAX_VALUE, new Reference<char[]>());
-		MINECRAFT_WATER_SOURCE_BLOCK_ID = getIdForName("minecraft:water", null, Integer.MAX_VALUE, new Reference<char[]>());
 	}
 	
 	public static int getChangeCounter() {
