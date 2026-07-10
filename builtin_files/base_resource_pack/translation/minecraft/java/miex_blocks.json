@@ -41,5 +41,16 @@
                 }
             ]
         }
+    },
+    {
+        "minDataVersion": 0,
+        "maxDataVersion": 1519,
+        "translations": {
+            "minecraft:leaves": [
+                {
+                    "name": "minecraft:oak_leaves"
+                }
+            ]
+        }
     }
 ]
