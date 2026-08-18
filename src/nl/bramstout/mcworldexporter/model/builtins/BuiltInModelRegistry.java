@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.model.builtins;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,18 +40,22 @@ import nl.bramstout.mcworldexporter.model.Model;
 
 public class BuiltInModelRegistry {
 
-	public static Map<String, Class<? extends Model>> builtins = new HashMap<String, Class<? extends Model>>();
+	public static Map<String, Constructor<? extends Model>> builtins = new HashMap<String, Constructor<? extends Model>>();
 	
 	static {
-		builtins.put("minecraft:builtin/generated", ModelItemGenerated.class);
+		try {
+			builtins.put("minecraft:builtin/generated", ModelItemGenerated.class.getConstructor(String.class));
+		} catch (NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static Model newModel(String name) {
-		Class<? extends Model> classObj = builtins.get(name);
+		Constructor<? extends Model> constructor = builtins.get(name);
 		try {
-			return classObj.getConstructor(String.class).newInstance(name);
+			return constructor.newInstance(name);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
+				| SecurityException e) {
 			e.printStackTrace();
 		}
 		return null;

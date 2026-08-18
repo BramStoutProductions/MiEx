@@ -34,6 +34,7 @@ package nl.bramstout.mcworldexporter.launcher;
 import java.io.File;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -47,7 +48,7 @@ public abstract class Launcher {
 	
 	public abstract List<ResourcePackSource> getResourcePackSourcesForWorld(World world);
 	
-	public abstract List<ResourcePackSource> getAllResourcePackSources();
+	public abstract void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup);
 	
 	public abstract boolean ownsWorld(File worldFolder);
 	

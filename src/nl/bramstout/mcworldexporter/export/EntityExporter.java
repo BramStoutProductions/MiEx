@@ -84,17 +84,21 @@ public class EntityExporter {
 
 	private static class ModelKey{
 		
-		private String key;
+		//private String key;
 		private int hash;
 		
 		public ModelKey(Model model) {
-			key = "";
+			
+			/*key = "";
 			if(model != null) {
 				int faceHash = 0;
+				float[] points = new float[12];
 				for(ModelFace face : model.getFaces()) {
-					for(float f : face.getPoints())
+					face.getPoints(points);
+					for(float f : points)
 						faceHash = faceHash * 31 + Float.floatToRawIntBits(f);
-					for(float f : face.getUVs())
+					face.getUVs(points);
+					for(float f : points)
 						faceHash = faceHash * 31 + Float.floatToRawIntBits(f);
 					if(face.getVertexColors() != null)
 						for(float f : face.getVertexColors())
@@ -114,17 +118,55 @@ public class EntityExporter {
 					key += Float.toString(bone.rotation.y);
 					key += Float.toString(bone.rotation.z);
 				}
-				for(Entry<String, String> entry : model.getTextures().entrySet()) {
-					key += entry.getKey() + "=" + entry.getValue();
+				for(Entry<Long, Object> entry : model.getTextures().entrySet()) {
+					key += entry.getKey().toString() + "=" + entry.getValue().toString();
 				}
 			}
-			hash = key.hashCode();
+			hash = key.hashCode();*/
+			
+			if(model != null) {
+				float[] points = new float[12];
+				for(ModelFace face : model.getFaces()) {
+					face.getPoints(points);
+					for(float f : points)
+						hash = hash * 31 + Float.floatToRawIntBits(f);
+					face.getUVs(points);
+					for(float f : points)
+						hash = hash * 31 + Float.floatToRawIntBits(f);
+					if(face.hasVertexColor) {
+						hash = hash * 31 + Float.floatToRawIntBits(face.vertexColorR);
+						hash = hash * 31 + Float.floatToRawIntBits(face.vertexColorG);
+						hash = hash * 31 + Float.floatToRawIntBits(face.vertexColorB);
+					}
+					hash = hash * 31 + ((int) face.getTexture());
+					hash = hash * 31 + face.getDirection().id;
+				}
+				for(ModelBone bone : model.getBones()) {
+					hash = hash * 31 + bone.getName().hashCode();
+					if(bone.getParent() != null)
+						hash = hash * 31 + bone.getParent().getName().hashCode();
+					hash = hash * 31 + Float.floatToRawIntBits(bone.translation.x);
+					hash = hash * 31 + Float.floatToRawIntBits(bone.translation.y);
+					hash = hash * 31 + Float.floatToRawIntBits(bone.translation.z);
+					hash = hash * 31 + Float.floatToRawIntBits(bone.rotation.x);
+					hash = hash * 31 + Float.floatToRawIntBits(bone.rotation.y);
+					hash = hash * 31 + Float.floatToRawIntBits(bone.rotation.z);
+				}
+				for(int i = 0; i < model.getTextures().size(); ++i) {
+					hash = hash * 31 + ((int) model.getTextures().getKey(i));
+					hash = hash * 31 + ((int) model.getTextures().getLongValue(i));
+					String tex = model.getTextures().getObjValue(i);
+					if(tex != null)
+						hash = hash * 31 + tex.hashCode();
+				}
+			}
 		}
 		
 		@Override
 		public boolean equals(Object obj) {
 			if(obj instanceof ModelKey)
-				return key.equals(((ModelKey)obj).key);
+				//return key.equals(((ModelKey)obj).key);
+				return hash == ((ModelKey)obj).hash;
 			return false;
 		}
 		
@@ -478,6 +520,8 @@ public class EntityExporter {
 		// Get the models for the entities.
 		for(Entity entity : entities) {	
 			Model entityModel = entity.getModel();
+			entityModel.addRootBone();
+			entityModel.setImmoveable();
 			ModelKey modelKey = new ModelKey(entityModel);
 			
 			if(entityModel != null && !entityPrototypes.containsKey(modelKey)) {
@@ -624,7 +668,7 @@ public class EntityExporter {
 			dos.writeUTF(rootGroup.getName());
 			dos.writeInt(rootGroup.getNumChildren());
 			for(Mesh childMesh : rootGroup.getChildren()) {
-				childMesh.write(dos);
+				childMesh.write(dos, false);
 			}
 			counter += 1f;
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.85f + (counter / numPrototypes) * 0.05f);

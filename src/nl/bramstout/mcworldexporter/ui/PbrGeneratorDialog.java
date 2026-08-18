@@ -57,6 +57,8 @@ import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.pbr.PbrGenerator;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.ResourcePackBedrockEdition;
+import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 import nl.bramstout.mcworldexporter.resourcepack.java.ResourcePackJavaEdition;
 
 public class PbrGeneratorDialog extends JDialog {
@@ -190,7 +192,25 @@ public class PbrGeneratorDialog extends JDialog {
 		if(saveToResourcePack != null) {
 			File rpFolder = new File(FileUtil.getResourcePackDir(), saveToResourcePack);
 			rpFolder.mkdirs();
-			generator.saveToResourcePack = new ResourcePackJavaEdition(rpFolder);
+			
+			int numJavaEdition = 0;
+			int numBedrockEdition = 0;
+			int numHytale = 0;
+			for(ResourcePack rp : generator.resourcePacks) {
+				if(rp instanceof ResourcePackJavaEdition)
+					numJavaEdition++;
+				else if(rp instanceof ResourcePackBedrockEdition)
+					numBedrockEdition++;
+				else if(rp instanceof ResourcePackHytale)
+					numHytale++;
+			}
+			
+			if(numHytale >= numBedrockEdition && numHytale >= numJavaEdition)
+				generator.saveToResourcePack = new ResourcePackHytale(rpFolder);
+			else if(numBedrockEdition >= numJavaEdition)
+				generator.saveToResourcePack = new ResourcePackJavaEdition(rpFolder);
+			else
+				generator.saveToResourcePack = new ResourcePackJavaEdition(rpFolder);
 		}
 		
 		for(String s : utilityTexturesArray) {

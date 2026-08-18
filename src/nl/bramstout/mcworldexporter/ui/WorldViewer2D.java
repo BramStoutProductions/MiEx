@@ -412,6 +412,24 @@ public class WorldViewer2D extends JPanel implements MouseListener, MouseMotionL
 			regionI++;
 		}
 		
+		Point exportOriginPos = transform.toScreen(new Point(
+				MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX(), 
+				MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ()), 
+				getWidth(), getHeight());
+		g.setColor(new Color(255, 255, 255, 192));
+		g.drawLine(
+				exportOriginPos.ix() - 4, 
+				exportOriginPos.iy() - 4, 
+				exportOriginPos.ix() + 4, 
+				exportOriginPos.iy() + 4
+				);
+		g.drawLine(
+				exportOriginPos.ix() - 4, 
+				exportOriginPos.iy() + 4, 
+				exportOriginPos.ix() + 4, 
+				exportOriginPos.iy() - 4
+				);
+		
 		Point cursorCoordinates = transform.toWorld(new Point(cursorX, cursorY), getWidth(), getHeight());
 		renderer.setHeightSampleCoordinates(cursorCoordinates.ix(), cursorCoordinates.iy());
 		String xCoord = Integer.toString(cursorCoordinates.ix());

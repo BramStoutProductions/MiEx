@@ -82,7 +82,7 @@ public class Attachment {
 	
 	public Model getModel(AttachmentLocation location) {
 		if(handler == null) {
-			return new Model(name, null, false);
+			return new Model(name, null, false, false);
 		}
 		return handler.getModel(this, location);
 	}

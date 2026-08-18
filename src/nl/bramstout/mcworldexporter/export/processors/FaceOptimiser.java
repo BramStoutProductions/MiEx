@@ -47,7 +47,9 @@ import nl.bramstout.mcworldexporter.export.VertexColorSet;
 public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 
 	private Mesh tempMesh1 = new Mesh();
-	private int[][] facesPerVertex = null;
+	private int[] facesPerVertex = null;
+	private static final int maxFacesPerVertex = 10;
+	private static final int facesPerVertexStride = maxFacesPerVertex + 1;
 	
 	@Override
 	public void process(Mesh mesh, MeshProcessors manager) throws Exception {
@@ -81,15 +83,16 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		boolean[] processedFaces = new boolean[inMesh.getFaceIndices().size()/4];
 		if(inMesh.getNumSubsets() == 0) {
 			getFacesPerVertex(inMesh, null);
-			process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, null, combinedFace);
+			processMesh(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, null, combinedFace);
 		}else {
-			for(MeshSubset subset : inMesh.getSubsets()) {
+			for(int i = 0; i < inMesh.getSubsets().size(); ++i) {
+				MeshSubset subset = inMesh.getSubsets().get(i);
 				if((subset.getMatTexture() != null && (subset.isAnimatedTexture() || Config.noFaceOptimisation.contains(subset.getMatTexture()))) || 
 						(subset.getMatTexture() == null && (inMesh.hasAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getMatTexture())))) {
 					addFacesInSubset(inMesh, tempMesh1, subset);
 				}else {
 					getFacesPerVertex(inMesh, subset);
-					process(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, subset, combinedFace);
+					processMesh(inMesh, tempMesh1, processedFaces, facesPerVertex, 0, subset, combinedFace);
 				}
 			}
 		}
@@ -102,15 +105,16 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		
 		if(tempMesh1.getNumSubsets() == 0) {
 			getFacesPerVertex(tempMesh1, null);
-			process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, null, combinedFace);
+			processMesh(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, null, combinedFace);
 		}else {
-			for(MeshSubset subset : tempMesh1.getSubsets()) {
+			for(int i = 0; i < tempMesh1.getSubsets().size(); ++i) {
+				MeshSubset subset = tempMesh1.getSubsets().get(i);
 				if((subset.getMatTexture() != null && (subset.isAnimatedTexture() || Config.noFaceOptimisation.contains(subset.getMatTexture()))) || 
 						(subset.getMatTexture() == null && (inMesh.hasAnimatedTexture() || Config.noFaceOptimisation.contains(inMesh.getMatTexture())))) {
 					addFacesInSubset(tempMesh1, inMesh, subset);
 				}else {
 					getFacesPerVertex(tempMesh1, subset);
-					process(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, subset, combinedFace);
+					processMesh(tempMesh1, inMesh, processedFaces, facesPerVertex, 1, subset, combinedFace);
 				}
 			}
 		}
@@ -119,9 +123,9 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	private void getFacesPerVertex(Mesh mesh, MeshSubset subset){
 		int facesPerVertexSize = mesh.getVertices().size() / 3;
 		if(facesPerVertex == null) {
-			facesPerVertex = new int[facesPerVertexSize][];
-		}else if(facesPerVertex.length < facesPerVertexSize) {
-			facesPerVertex = Arrays.copyOf(facesPerVertex, facesPerVertexSize);
+			facesPerVertex = new int[facesPerVertexSize * facesPerVertexStride];
+		}else if(facesPerVertex.length < (facesPerVertexSize * facesPerVertexStride)) {
+			facesPerVertex = new int[facesPerVertexSize * facesPerVertexStride];
 			clearFacesPerVertex(mesh, subset);
 		}else {
 			clearFacesPerVertex(mesh, subset);
@@ -132,18 +136,17 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				for(int i = 0; i < 4; ++i) {
 					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
 					
-					if(facesPerVertex[vertexId] == null) {
-						facesPerVertex[vertexId] = new int[5];
-						facesPerVertex[vertexId][0] = 0;
-					}
-					int arrayLength = facesPerVertex[vertexId][0];
-					if((arrayLength+1) >= facesPerVertex[vertexId].length) {
+					int arrayLength = facesPerVertex[vertexId * facesPerVertexStride];
+					if((arrayLength+1) >= maxFacesPerVertex) {
 						// We hit the limit of the array, so increase the size.
-						facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+						//facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+						
+						// We hit the limit, so we're going to stop recording faces.
+						continue;
 					}
 					arrayLength += 1;
-					facesPerVertex[vertexId][arrayLength] = faceIndex;
-					facesPerVertex[vertexId][0] = arrayLength;
+					facesPerVertex[vertexId * facesPerVertexStride + arrayLength] = faceIndex;
+					facesPerVertex[vertexId * facesPerVertexStride] = arrayLength;
 				}
 			}
 		}else {
@@ -152,18 +155,17 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				for(int i = 0; i < 4; ++i) {
 					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
 					
-					if(facesPerVertex[vertexId] == null) {
-						facesPerVertex[vertexId] = new int[5];
-						facesPerVertex[vertexId][0] = 0;
-					}
-					int arrayLength = facesPerVertex[vertexId][0];
-					if((arrayLength+1) >= facesPerVertex[vertexId].length) {
+					int arrayLength = facesPerVertex[vertexId * facesPerVertexStride];
+					if((arrayLength+1) >= maxFacesPerVertex) {
 						// We hit the limit of the array, so increase the size.
-						facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+						//facesPerVertex[vertexId] = Arrays.copyOf(facesPerVertex[vertexId], arrayLength*2+1);
+						
+						// WE hit the limit, so we're going to stop recording faces.
+						continue;
 					}
 					arrayLength += 1;
-					facesPerVertex[vertexId][arrayLength] = faceIndex;
-					facesPerVertex[vertexId][0] = arrayLength;
+					facesPerVertex[vertexId * facesPerVertexStride + arrayLength] = faceIndex;
+					facesPerVertex[vertexId * facesPerVertexStride] = arrayLength;
 				}
 			}
 		}
@@ -173,16 +175,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		if(subset == null) {
 			int facesPerVertexSize = mesh.getVertices().size() / 3;
 			for(int i = 0; i < facesPerVertexSize; ++i) {
-				if(facesPerVertex[i] != null)
-					facesPerVertex[i][0] = 0;
+				facesPerVertex[i * facesPerVertexStride] = 0;
 			}
 		}else {
 			for(int faceIndexI = 0; faceIndexI < subset.getFaceIndices().size(); ++faceIndexI) {
 				int faceIndex = subset.getFaceIndices().get(faceIndexI);
 				for(int i = 0; i < 4; ++i) {
 					int vertexId = mesh.getFaceIndices().get(faceIndex * 4 + i);
-					if(facesPerVertex[vertexId] != null)
-						facesPerVertex[vertexId][0] = 0;
+					facesPerVertex[vertexId * facesPerVertexStride] = 0;
 				}
 			}
 		}
@@ -191,7 +191,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	private void addFacesInSubset(Mesh srcMesh, Mesh dstMesh, MeshSubset subset) {
 		MeshSubset dstSubset = null;
 		if(dstMesh.getNumSubsets() > 0) {
-			for(MeshSubset subset2 : dstMesh.getSubsets()) {
+			for(int i = 0; i < dstMesh.getSubsets().size(); ++i) {
+				MeshSubset subset2 = dstMesh.getSubsets().get(i);
 				if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
 						subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
 						subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
@@ -201,14 +202,16 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			}
 		}
 		if(dstSubset == null) {
-			dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
-					subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+			dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), 
+					subset.getMatTexture(), subset.isAnimatedTexture(), 
+					subset.getPurpose(), subset.isUnique(), subset.getUniqueId(),
+					subset.getFaceIndices().size());
 			dstMesh.addSubset(dstSubset);
 		}
 		for(int i = 0; i < subset.getFaceIndices().size(); ++i) {
 			int faceIndex = subset.getFaceIndices().get(i);
 			dstMesh.addFaceFromMesh(srcMesh, faceIndex, null, false);
-			dstSubset.getFaceIndices().add(dstMesh.getFaceCounts().size()-1);
+			dstSubset.getFaceIndices().add((dstMesh.getFaceIndices().size()/4)-1);
 		}
 	}
 	
@@ -256,19 +259,20 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				vertices[edgeId*3+2] = mesh.getVertices().get(vertexIndex*3+2);
 				
 				int uvIndex = mesh.getUvIndices().get(face * 4 + edgeId);
-				us[edgeId] = mesh.getUs().get(uvIndex);
-				vs[edgeId] = mesh.getVs().get(uvIndex);
-				initialUs[edgeId] = mesh.getUs().get(uvIndex);
-				initialVs[edgeId] = mesh.getVs().get(uvIndex);
+				us[edgeId] = mesh.getUVs().get(uvIndex*2);
+				vs[edgeId] = mesh.getUVs().get(uvIndex*2+1);
+				initialUs[edgeId] = mesh.getUVs().get(uvIndex*2);
+				initialVs[edgeId] = mesh.getUVs().get(uvIndex*2+1);
 				
-				int cornerUVIndex = mesh.getCornerUVIndices().get(face * 4 + edgeId);
-				cornerUVs[edgeId * 2] = mesh.getCornerUVs().get(cornerUVIndex * 2);
-				cornerUVs[edgeId * 2 + 1] = mesh.getCornerUVs().get(cornerUVIndex * 2 + 1);
-				
+				if(mesh.getCornerUVs() != null) {
+					int cornerUVIndex = mesh.getCornerUVIndices().get(face * 4 + edgeId);
+					cornerUVs[edgeId * 2] = mesh.getCornerUVs().get(cornerUVIndex * 2);
+					cornerUVs[edgeId * 2 + 1] = mesh.getCornerUVs().get(cornerUVIndex * 2 + 1);
+				}
 				//int aoIndex = mesh.getAOIndices().get(face * 4 + edgeId);
 				//ao[edgeId] = mesh.getAO().get(aoIndex);
 			}
-			int normalIndex = mesh.getNormalIndices().get(face*4);
+			int normalIndex = mesh.getNormalIndices().get(face);
 			normals[0] = mesh.getNormals().get(normalIndex*3);
 			normals[1] = mesh.getNormals().get(normalIndex*3+1);
 			normals[2] = mesh.getNormals().get(normalIndex*3+2);
@@ -375,22 +379,22 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			if(us[vert1] < us[vert2]) {
 				// vert1 has the minU and vert2 has the maxU
-				us[vert1] = Math.min(mesh.getUs().get(uvIndex1), mesh.getUs().get(uvIndex2)) + offsetU;
-				us[vert2] = Math.max(mesh.getUs().get(uvIndex1), mesh.getUs().get(uvIndex2)) + offsetU;
+				us[vert1] = Math.min(mesh.getUVs().get(uvIndex1*2), mesh.getUVs().get(uvIndex2*2)) + offsetU;
+				us[vert2] = Math.max(mesh.getUVs().get(uvIndex1*2), mesh.getUVs().get(uvIndex2*2)) + offsetU;
 			}else {
 				// vert1 has the maxU and vert2 has the minU
-				us[vert1] = Math.max(mesh.getUs().get(uvIndex1), mesh.getUs().get(uvIndex2)) + offsetU;
-				us[vert2] = Math.min(mesh.getUs().get(uvIndex1), mesh.getUs().get(uvIndex2)) + offsetU;
+				us[vert1] = Math.max(mesh.getUVs().get(uvIndex1*2), mesh.getUVs().get(uvIndex2*2)) + offsetU;
+				us[vert2] = Math.min(mesh.getUVs().get(uvIndex1*2), mesh.getUVs().get(uvIndex2*2)) + offsetU;
 			}
 			
 			if(vs[vert1] < vs[vert2]) {
 				// vert1 has the minV and vert2 has the maxV
-				vs[vert1] = Math.min(mesh.getVs().get(uvIndex1), mesh.getVs().get(uvIndex2)) + offsetV;
-				vs[vert2] = Math.max(mesh.getVs().get(uvIndex1), mesh.getVs().get(uvIndex2)) + offsetV;
+				vs[vert1] = Math.min(mesh.getUVs().get(uvIndex1*2+1), mesh.getUVs().get(uvIndex2*2+1)) + offsetV;
+				vs[vert2] = Math.max(mesh.getUVs().get(uvIndex1*2+1), mesh.getUVs().get(uvIndex2*2+1)) + offsetV;
 			}else {
 				// vert1 has the maxV and vert2 has the minV
-				vs[vert1] = Math.max(mesh.getVs().get(uvIndex1), mesh.getVs().get(uvIndex2)) + offsetV;
-				vs[vert2] = Math.min(mesh.getVs().get(uvIndex1), mesh.getVs().get(uvIndex2)) + offsetV;
+				vs[vert1] = Math.max(mesh.getUVs().get(uvIndex1*2+1), mesh.getUVs().get(uvIndex2*2+1)) + offsetV;
+				vs[vert2] = Math.min(mesh.getUVs().get(uvIndex1*2+1), mesh.getUVs().get(uvIndex2*2+1)) + offsetV;
 			}
 			
 			if(currentAtlasItem != null) {
@@ -419,7 +423,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 		
 	}
 	
-	private void process(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[][] facesPerVertex, 
+	private void processMesh(Mesh inMesh, Mesh outMesh, boolean[] processedFaces, int[] facesPerVertex, 
 								int edgeId, MeshSubset subset, CombinedFace combinedFace) {
 		// Get the atlas items if this mesh uses an atlas.
 		// If this mesh doesn't use an atlas, then Atlas.getItems()
@@ -443,7 +447,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				continue;
 			AtlasItem currentAtlasItem = null;
 			if(atlas != null) {
-				for(AtlasItem item : atlas) {
+				for(int i = 0; i < atlas.size(); ++i) {
+					AtlasItem item = atlas.get(i);
 					if(item.isInItem((combinedFace.us[0] + combinedFace.us[2])/2f, (combinedFace.vs[0]+combinedFace.vs[2])/2f)) {
 						currentAtlasItem = item;
 						break;
@@ -482,7 +487,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				if(subset != null) {
 					MeshSubset dstSubset = null;
 					if(outMesh.getNumSubsets() > 0) {
-						for(MeshSubset subset2 : outMesh.getSubsets()) {
+						for(int i = 0; i < outMesh.getSubsets().size(); ++i) {
+							MeshSubset subset2 = outMesh.getSubsets().get(i);
 							if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
 									subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
 									subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
@@ -492,11 +498,16 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 						}
 					}
 					if(dstSubset == null) {
-						dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
-								subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+						// Initial capacity is set to half,
+						// were we expect to be able to reduce
+						// the number of faces in half on average.
+						dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), 
+								subset.getMatTexture(), subset.isAnimatedTexture(), 
+								subset.getPurpose(), subset.isUnique(), subset.getUniqueId(),
+								subset.getFaceIndices().size() / 2);
 						outMesh.addSubset(dstSubset);
 					}
-					dstSubset.getFaceIndices().add(outMesh.getFaceCounts().size() - 1);
+					dstSubset.getFaceIndices().add((outMesh.getFaceIndices().size()/4) - 1);
 				}
 			}else if(processedFaces[faceIndex]) {
 				// We processed this face, but combinedFace isn't valid, so we want to reset
@@ -517,7 +528,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			if(subset != null) {
 				MeshSubset dstSubset = null;
 				if(outMesh.getNumSubsets() > 0) {
-					for(MeshSubset subset2 : outMesh.getSubsets()) {
+					for(int i = 0; i < outMesh.getSubsets().size(); i++) {
+						MeshSubset subset2 = outMesh.getSubsets().get(i);
 						if(subset2.getName() == subset.getName() && subset2.getTexture() == subset.getTexture() &&
 								subset2.getMatTexture() == subset.getMatTexture() && subset2.getPurpose() == subset.getPurpose() &&
 								subset2.isAnimatedTexture() == subset.isAnimatedTexture()) {
@@ -527,11 +539,13 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 					}
 				}
 				if(dstSubset == null) {
-					dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), subset.getMatTexture(), 
-							subset.isAnimatedTexture(), subset.getPurpose(), subset.isUnique(), subset.getUniqueId());
+					dstSubset = new MeshSubset(subset.getName(), subset.getTexture(), 
+							subset.getMatTexture(), subset.isAnimatedTexture(), 
+							subset.getPurpose(), subset.isUnique(), subset.getUniqueId(),
+							subset.getFaceIndices().size() / 2);
 					outMesh.addSubset(dstSubset);
 				}
-				dstSubset.getFaceIndices().add(outMesh.getFaceCounts().size() - 1);
+				dstSubset.getFaceIndices().add((outMesh.getFaceIndices().size()/4) - 1);
 			}
 		}
 	}
@@ -544,7 +558,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 	private float[] vertexColorValues6 = new float[4];
 	private float[] vertexColorValues7 = new float[4];
 	private float[] vertexColorValues8 = new float[4];
-	private void processFace(Mesh inMesh, boolean[] processedFaces, int[][] facesPerVertex, int faceIndex, 
+	private void processFace(Mesh inMesh, boolean[] processedFaces, int[] facesPerVertex, int faceIndex, 
 										int edgeId, CombinedFace combinedFace,
 										List<AtlasItem> atlas, AtlasItem currentAtlasItem) {
 		int origEdgeId = edgeId;
@@ -575,7 +589,7 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				vdZ /= vdLength;
 			}
 			
-			int normalId = inMesh.getNormalIndices().get(faceIndex*4);
+			int normalId = inMesh.getNormalIndices().get(faceIndex);
 			float normalX = inMesh.getNormals().get(normalId*3);
 			float normalY = inMesh.getNormals().get(normalId*3+1);
 			float normalZ = inMesh.getNormals().get(normalId*3+2);
@@ -591,14 +605,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			}
 			
 			int uvIndex1 = inMesh.getUvIndices().get(faceIndex * 4 + edgeId);
-			float u1 = inMesh.getUs().get(uvIndex1);
-			float v1 = inMesh.getVs().get(uvIndex1);
+			float u1 = inMesh.getUVs().get(uvIndex1*2);
+			float v1 = inMesh.getUVs().get(uvIndex1*2+1);
 			int uvIndex2 = inMesh.getUvIndices().get(faceIndex * 4 + ((edgeId+1)%4));
-			float u2 = inMesh.getUs().get(uvIndex2);
-			float v2 = inMesh.getVs().get(uvIndex2);
+			float u2 = inMesh.getUVs().get(uvIndex2*2);
+			float v2 = inMesh.getUVs().get(uvIndex2*2+1);
 			int uvIndex3 = inMesh.getUvIndices().get(faceIndex * 4 + ((edgeId+3)%4));
-			float u3 = inMesh.getUs().get(uvIndex3);
-			float v3 = inMesh.getVs().get(uvIndex3);
+			float u3 = inMesh.getUVs().get(uvIndex3*2);
+			float v3 = inMesh.getUVs().get(uvIndex3*2+1);
 			if(currentAtlasItem != null) {
 				// If we are using an atlas, make sure it's all in local space.
 				u1 = currentAtlasItem.uToLocal(u1);
@@ -613,7 +627,9 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			float uLength = Math.abs(uDir);
 			float vLength = Math.abs(vDir);
 			
-			int cornerUVIndex = inMesh.getCornerUVIndices().get(faceIndex * 4 + edgeId);
+			int cornerUVIndex = 0;
+			if(inMesh.getCornerUVIndices() != null)
+				cornerUVIndex = inMesh.getCornerUVIndices().get(faceIndex * 4 + edgeId);
 			
 			float ao0 = 1.0f;
 			float ao1 = 1.0f;
@@ -632,15 +648,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			boolean addedFace = false;
 			
-			int[] facesToCheck = facesPerVertex[vertexId1];
-			int facesToCheckSize = facesToCheck[0];
+			int facesToCheckSize = facesPerVertex[vertexId1 * facesPerVertexStride];
 			// Now try to find another face that also shares those vertices
 			for(int faceIndex2Index = 0; faceIndex2Index < facesToCheckSize; ++faceIndex2Index) {
-				int faceIndex2 = facesToCheck[faceIndex2Index+1];
+				int faceIndex2 = facesPerVertex[vertexId1 * facesPerVertexStride + faceIndex2Index+1];
 				if(processedFaces[faceIndex2] || faceIndex2 == faceIndex)
 					continue; // Already processed, so skip
 				
-				int normalId2 = inMesh.getNormalIndices().get(faceIndex2*4);
+				int normalId2 = inMesh.getNormalIndices().get(faceIndex2);
 				float normalX2 = inMesh.getNormals().get(normalId2*3);
 				float normalY2 = inMesh.getNormals().get(normalId2*3+1);
 				float normalZ2 = inMesh.getNormals().get(normalId2*3+2);
@@ -727,14 +742,14 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				// We have a face that shares an edge, so now check if it's a proper match.
 				// The UVs need to match in a repeating pattern.
 				int uvIndex2_1 = inMesh.getUvIndices().get(faceIndex2*4 + edgeId2);
-				float u2_1 = inMesh.getUs().get(uvIndex2_1);
-				float v2_1 = inMesh.getVs().get(uvIndex2_1);
+				float u2_1 = inMesh.getUVs().get(uvIndex2_1*2);
+				float v2_1 = inMesh.getUVs().get(uvIndex2_1*2+1);
 				int uvIndex2_2 = inMesh.getUvIndices().get(faceIndex2*4 + ((edgeId2+1)%4));
-				float u2_2 = inMesh.getUs().get(uvIndex2_2);
-				float v2_2 = inMesh.getVs().get(uvIndex2_2);
+				float u2_2 = inMesh.getUVs().get(uvIndex2_2*2);
+				float v2_2 = inMesh.getUVs().get(uvIndex2_2*2+1);
 				int uvIndex2_3 = inMesh.getUvIndices().get(faceIndex2*4 + ((edgeId2+3)%4));
-				float u2_3 = inMesh.getUs().get(uvIndex2_3);
-				float v2_3 = inMesh.getVs().get(uvIndex2_3);
+				float u2_3 = inMesh.getUVs().get(uvIndex2_3*2);
+				float v2_3 = inMesh.getUVs().get(uvIndex2_3*2+1);
 				if(currentAtlasItem != null) {
 					// If we are using an atlas, make sure the UVs are in local space.
 					u2_1 = currentAtlasItem.uToLocal(u2_1);
@@ -832,7 +847,8 @@ public class FaceOptimiser implements MeshProcessors.IMeshProcessor{
 				
 				if(inMesh.getAdditionalColorSets() != null) {
 					boolean colorSetNoMatch = false;
-					for(VertexColorSet colorSet : inMesh.getAdditionalColorSets()) {
+					for(int i = 0; i < inMesh.getAdditionalColorSets().size(); ++i) {
+						VertexColorSet colorSet = inMesh.getAdditionalColorSets().get(i);
 						vertexColorValues1[0] = 0f; vertexColorValues1[1] = 0f; vertexColorValues1[2] = 0f; vertexColorValues1[3] = 0f;
 						vertexColorValues2[0] = 0f; vertexColorValues2[1] = 0f; vertexColorValues2[2] = 0f; vertexColorValues2[3] = 0f;
 						vertexColorValues3[0] = 0f; vertexColorValues3[1] = 0f; vertexColorValues3[2] = 0f; vertexColorValues3[3] = 0f;

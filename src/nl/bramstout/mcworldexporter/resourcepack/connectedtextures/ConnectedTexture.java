@@ -156,26 +156,26 @@ public abstract class ConnectedTexture {
 	}
 	
 	protected Direction getUp(ModelFace face) {
-		float v0 = face.getUVs()[1];
-		float vRight = face.getUVs()[3];
-		float vUp = face.getUVs()[7];
+		float v0 = face.uvs0V;
+		float vRight = face.uvs1V;
+		float vUp = face.uvs3V;
 		
 		float dvRight = vRight - v0;
 		float dvUp = vUp - v0;
 		
-		float x0 = face.getPoints()[0];
-		float y0 = face.getPoints()[1];
-		float z0 = face.getPoints()[2];
-		float x1 = face.getPoints()[3];
-		float y1 = face.getPoints()[4];
-		float z1 = face.getPoints()[5];
+		float x0 = face.point0X;
+		float y0 = face.point0Y;
+		float z0 = face.point0Z;
+		float x1 = face.point1X;
+		float y1 = face.point1Y;
+		float z1 = face.point1Z;
 		boolean mirrored = v0 > vRight;
 		if(Math.abs(dvUp) > Math.abs(dvRight)) {
 			// Vertex 0 and 3 form a vertical line
 			// rather than vertex 0 and 1.
-			x1 = face.getPoints()[9];
-			y1 = face.getPoints()[10];
-			z1 = face.getPoints()[11];
+			x1 = face.point3X;
+			y1 = face.point3Y;
+			z1 = face.point3Z;
 			mirrored = v0 > vUp;
 		}
 		
@@ -210,9 +210,9 @@ public abstract class ConnectedTexture {
 	}
 	
 	protected Direction getLeft(Direction up, ModelFace face) {
-		float u0 = face.getUVs()[0];
-		float uRight = face.getUVs()[2];
-		float uUp = face.getUVs()[6];
+		float u0 = face.uvs0U;
+		float uRight = face.uvs1U;
+		float uUp = face.uvs3U;
 		
 		float duRight = uRight - u0;
 		float duUp = uUp - u0;

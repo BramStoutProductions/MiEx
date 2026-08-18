@@ -41,6 +41,7 @@ import java.util.Set;
 
 import nl.bramstout.mcworldexporter.pbr.nodes.PbrAttribute;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
+import nl.bramstout.mcworldexporter.resourcepack.hytale.ResourcePackHytale;
 
 public class PbrContext {
 	
@@ -113,16 +114,22 @@ public class PbrContext {
 	}
 	
 	private File getTexture(String id, String extension, ResourcePack resourcePack) {
+		String type = "textures";
+		String category = "assets";
+		if(resourcePack instanceof ResourcePackHytale) {
+			type = "";
+			category = "Common";
+		}
 		if(extension != null) {
-			return resourcePack.getResource(id, "textures", "assets", extension);
+			return resourcePack.getResource(id, type, category, extension);
 		}else {
-			File file = resourcePack.getResource(id, "textures", "assets", ".exr");
+			File file = resourcePack.getResource(id, type, category, ".exr");
 			if(file.exists())
 				return file;
-			file = resourcePack.getResource(id, "textures", "assets", ".tga");
+			file = resourcePack.getResource(id, type, category, ".tga");
 			if(file.exists())
 				return file;
-			file = resourcePack.getResource(id, "textures", "assets", ".png");
+			file = resourcePack.getResource(id, type, category, ".png");
 			return file;
 		}
 	}

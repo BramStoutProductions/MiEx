@@ -69,7 +69,8 @@ public class BlockStateSkull extends BlockState{
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		
 		List<Model> list = new ArrayList<Model>();
-		Model model = new Model("skull", null, false);
+		Model model = new Model("skull", null, false, false);
+		model.setImmoveable();
 		list.add(model);
 		models.add(list);
 		

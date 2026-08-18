@@ -33,7 +33,7 @@ package nl.bramstout.mcworldexporter.export;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -41,10 +41,12 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
 import nl.bramstout.mcworldexporter.export.BlendedBiome.WeightedColor;
-import nl.bramstout.mcworldexporter.export.ChunkExporter.AtlasKey;
+import nl.bramstout.mcworldexporter.export.ChunkExporter.MeshKey;
+import nl.bramstout.mcworldexporter.lighting.BlockLightingCache;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.modifier.nodes.ModifierNodeNoiseFloat;
@@ -105,6 +107,8 @@ public class AnimatedBlock {
 	private FloatArray positions;
 	private IntArray blockPositions;
 	private FloatArray timeOffsets;
+	private byte blockLightEmission;
+	private VertexColorSet[] colorSets;
 	
 	public AnimatedBlock(String name, AnimatedBlockId id, BlendedBiome blendedBiome, BlockAnimationHandler animationHandler) {
 		this.name = name;
@@ -117,9 +121,10 @@ public class AnimatedBlock {
 		this.timeOffsets = new FloatArray();
 		if(blendedBiome != null)
 			this.blendedBiome = new BlendedBiome(blendedBiome);
+		this.blockLightEmission = -1;
 	}
 	
-	public void addBlock(float x, float y, float z, int bx, int by, int bz, float timeOffset) {
+	public void addBlock(float x, float y, float z, int bx, int by, int bz, float timeOffset, BlockLightingCache lightingCache) {
 		this.positions.add(x);
 		this.positions.add(y);
 		this.positions.add(z);
@@ -127,11 +132,53 @@ public class AnimatedBlock {
 		this.blockPositions.add(by);
 		this.blockPositions.add(bz);
 		this.timeOffsets.add(timeOffset);
+		
+		if(lightingCache != null) {
+			// We have lighting to save.
+			// Create a dummy face and get the lighting for it.
+			ModelFace face = new ModelFace(new float[] {8f, 8f, 8f, 8f, 8f, 8f, 8f, 8f, 8f, 8f, 8f, 8f}, 
+					new float[] { 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f }, "", 0, Direction.NORTH, false, ModelFace.SHADING_MODE_STANDARD);
+			VertexColorSet.VertexColorFace[] vertexColors = lightingCache.getLightingForFace(face, bx, by, bz, null);
+			if(vertexColors != null) {
+				// Add the lighting data.
+				if(colorSets == null) {
+					colorSets = new VertexColorSet[0];
+				}
+				for(int i = 0; i < vertexColors.length; ++i) {
+					// Find the color set that matches.
+					int colorSetI = -1;
+					for(int j = 0; j < colorSets.length; ++j) {
+						if(colorSets[j].getName().equals(vertexColors[i].name)) {
+							colorSetI = j;
+							break;
+						}
+					}
+					if(colorSetI < 0) {
+						// Create a new color set if we have no match.
+						colorSets = Arrays.copyOf(colorSets, colorSets.length+1);
+						colorSetI = colorSets.length - 1;
+						colorSets[colorSetI] = new VertexColorSet(vertexColors[i].name, vertexColors[i].componentCount, 8);
+						
+						// If we already have some blocks in here, add in default values for them.
+						int numBlocks = positions.size()/3 - 1;
+						if(numBlocks > 0) {
+							int colorIndex = colorSets[colorSetI].addValue(1f, 1f, 1f, 1f);
+							for(int j = 0; j < numBlocks; ++j)
+								colorSets[colorSetI].addIndex(colorIndex);
+						}
+					}
+					
+					// Add in the data.
+					int colorIndex = colorSets[colorSetI].addValue(vertexColors[i].r0, vertexColors[i].g0, vertexColors[i].b0, vertexColors[i].a0);
+					colorSets[colorSetI].addIndex(colorIndex);
+				}
+			}
+		}
 	}
 	
 	public void addBlock(float x, float y, float z, int bx, int by, int bz, 
 			boolean withRandomTimeOffsetXZ, boolean withRandomTimeOffsetY, RandomOffsetMethod randomOffsetMethod, 
-			float randomOffsetNoiseScale) {
+			float randomOffsetNoiseScale, BlockLightingCache lightingCache) {
 		float timeOffset = 0f;
 		if(withRandomTimeOffsetXZ || withRandomTimeOffsetY) {
 			// Add some offset to it so that it doesn't perfectly line up with
@@ -155,7 +202,7 @@ public class AnimatedBlock {
 			// Make sure that it's a multiple of a frame.
 			timeOffset = (float) Math.floor(timeOffset * Config.animationFrameRate) / Config.animationFrameRate;
 		}
-		addBlock(x, y, z, bx, by, bz, timeOffset);
+		addBlock(x, y, z, bx, by, bz, timeOffset, lightingCache);
 	}
 	
 	public String getName() {
@@ -181,8 +228,28 @@ public class AnimatedBlock {
 	public FloatArray getTimeOffsets() {
 		return timeOffsets;
 	}
+	
+	public VertexColorSet[] getColorSets() {
+		return colorSets;
+	}
+	
+	public byte getBlockLightEmission() {
+		if(blockLightEmission == -1) {
+			Block block = BlockRegistry.getBlock(id.blockId);
+			int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
+			BlockState state = BlockStateRegistry.getState(stateId);
+			
+			BakedBlockState bakedState = state.getHandler().getAnimatedBakedBlockState(block.getProperties(), 
+					id.x, id.y, id.z, id.layer, state, null, 0);
+			
+			blockLightEmission = bakedState.getEmissiveLightLevel();
+			if(blockLightEmission < 0)
+				blockLightEmission = 0;
+		}
+		return blockLightEmission;
+	}
 
-	public void getMeshes(float frame, Map<String, Mesh> meshes) {
+	public void getMeshes(float frame, Map<MeshKey, Mesh> meshes) {
 		Block block = BlockRegistry.getBlock(id.blockId);
 		int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 		BlockState state = BlockStateRegistry.getState(stateId);
@@ -194,6 +261,7 @@ public class AnimatedBlock {
 		BakedBlockState bakedState = state.getHandler().getAnimatedBakedBlockState(block.getProperties(), 
 				id.x, id.y, id.z, id.layer, state, animationHandler, frame);
 		
+		byte blockLightEmission = bakedState.getEmissiveLightLevel();
 		
 		List<Model> models = new ArrayList<Model>();
 		bakedState.getModels(id.x, id.y, id.z, models);
@@ -202,51 +270,25 @@ public class AnimatedBlock {
 			for(ModelFace face : model.getFaces()) {
 				addFace(meshes, state.getName(), id.blockId, face, model.getTexture(face.getTexture()), 
 						model.getExtraData(), bakedState.getTint(), model.isDoubleSided(), blendedBiome,
-						model.isAnimatesTopology(), model.isAnimatesPoints(), model.isAnimatesUVs(), model.isAnimatesVertexColors());
+						model.isAnimatesTopology(), model.isAnimatesPoints(), model.isAnimatesUVs(), 
+						model.isAnimatesVertexColors(), blockLightEmission);
 			}
 		}
 	}
 	
-	private Map<String, String> atlasMappings = new HashMap<String, String>();
-	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
-	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
-	
-	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, String shadingMode) {
-		String meshName = atlasMappings.getOrDefault(originalTexture, null);
-		if(meshName != null)
-			return meshName;
-		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null, shadingMode);
-		meshName = atlasMappings2.getOrDefault(key, null);
-		if(meshName != null) {
-			atlasMappings.put(originalTexture, meshName);
-			return meshName;
-		}
-		
-		Integer counter = atlasMeshCounters.getOrDefault(item.atlas, null);
-		if(counter == null) {
-			counter = Integer.valueOf(0);
-		}
-		atlasMeshCounters.put(item.atlas, counter + 1);
-		
-		meshName = item.atlas + "_" + counter.toString() + "_";
-		if(hasBiomeColor)
-			meshName += "BIOME";
-		
-		atlasMappings.put(originalTexture, meshName);
-		atlasMappings2.put(key, meshName);
-		return meshName;
-	}
-	
 	private Color[] faceTint = new Color[1];
-	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, ModelFace face, String texture, 
+	private void addFace(Map<MeshKey, Mesh> meshes, String blockName, int blockId, ModelFace face, String texture, 
 			String extraData, TintLayers tintLayers, boolean doubleSided, BlendedBiome blendedBiome,
-			boolean animatesTopology, boolean animatesPoints, boolean animatesUVs, boolean animatesVertexColors) {
+			boolean animatesTopology, boolean animatesPoints, boolean animatesUVs, boolean animatesVertexColors,
+			byte blockLightEmission) {
 		if(texture == null || texture.equals(""))
 			return;
 		
 		String matTexture = texture;
-		String meshName = texture;
+		MeshKey meshKey = new MeshKey();
+		meshKey.texture = texture;
+		meshKey.blockLightEmission = blockLightEmission;
+		meshKey.doubleSided = face.isDoubleSided();
 		Color[] tint = null;
 		if(tintLayers != null) {
 			int tintIndex = face.getTintIndex();
@@ -277,25 +319,27 @@ public class AnimatedBlock {
 					Config.forceNoBiomeColor.contains(blockName))
 				tint = null;
 			else
-				meshName = meshName + "_BIOME";
+				meshKey.hasTint = true;
 		}
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
-			meshName = getMeshName(atlas, texture, tint != null, doubleSided, face.getShadingMode());
+			meshKey.atlasItem = atlas;
 			texture = atlas.atlas;
 		}
+		if(!face.getShadingMode().equals(ModelFace.SHADING_MODE_STANDARD))
+			meshKey.shadingMode = face.getShadingMode();
 		
-		Mesh mesh = meshes.getOrDefault(meshName, null);
+		Mesh mesh = meshes.getOrDefault(meshKey, null);
 		if(mesh == null) {
 			boolean animatedTexture = false;
 			MCMeta mcmeta = ResourcePacks.getMCMeta(texture);
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 
+			mesh = new Mesh(meshKey.createName(), MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided, 
 							face.getShadingMode(), 1024, 8);
 			mesh.setExtraData(extraData);
-			meshes.put(meshName, mesh);
+			meshes.put(meshKey, mesh);
 		}
 		if(animatesTopology)
 			mesh.setAnimatesTopology(true);
@@ -316,6 +360,7 @@ public class AnimatedBlock {
 		dos.writeInt(id.y);
 		dos.writeInt(id.z);
 		dos.writeFloat(duration);
+		dos.writeByte(getBlockLightEmission());
 		
 		dos.writeInt(positions.size());
 		for(int i = 0; i < positions.size(); i += 3) {
@@ -333,6 +378,15 @@ public class AnimatedBlock {
 			dos.writeFloat(timeOffsets.get(i));
 		
 		blendedBiome.write(dos);
+		
+		if(colorSets == null) {
+			dos.writeInt(0);
+		}else {
+			dos.writeInt(colorSets.length);
+			for(int i = 0; i < colorSets.length; ++i) {
+				colorSets[i].write(dos);
+			}
+		}
 	}
 	
 	public void read(LargeDataInputStream dis) throws IOException{
@@ -344,6 +398,7 @@ public class AnimatedBlock {
 		id.y = dis.readInt();
 		id.z = dis.readInt();
 		duration = dis.readFloat();
+		blockLightEmission = dis.readByte();
 		
 		positions.resize(dis.readInt());
 		for(int i = 0; i < positions.size(); ++i)
@@ -359,6 +414,16 @@ public class AnimatedBlock {
 		
 		blendedBiome = new BlendedBiome();
 		blendedBiome.read(dis);
+		
+		int numColorSets = dis.readInt();
+		if(numColorSets == 0) {
+			colorSets = null;
+		}else {
+			colorSets = new VertexColorSet[numColorSets];
+			for(int i = 0; i < colorSets.length; ++i) {
+				colorSets[i] = new VertexColorSet(dis);
+			}
+		}
 	}
 
 }

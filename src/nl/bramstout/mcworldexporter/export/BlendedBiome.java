@@ -258,21 +258,44 @@ public class BlendedBiome {
 		
 		public void addWeighted(Color color, float weight0, float weight1, float weight2, float weight3, 
 										float weight4, float weight5, float weight6, float weight7) {
-			color000.addWeighted(color, weight0);
+			color000.r += color.r * weight0;
+			color000.g += color.g * weight0;
+			color000.b += color.b * weight0;
 			weight000 += weight0;
-			color100.addWeighted(color, weight1);
+			
+			color100.r += color.r * weight1;
+			color100.g += color.g * weight1;
+			color100.b += color.b * weight1;
 			weight100 += weight1;
-			color001.addWeighted(color, weight2);
+			
+			color001.r += color.r * weight2;
+			color001.g += color.g * weight2;
+			color001.b += color.b * weight2;
 			weight001 += weight2;
-			color101.addWeighted(color, weight3);
+			
+			color101.r += color.r * weight3;
+			color101.g += color.g * weight3;
+			color101.b += color.b * weight3;
 			weight101 += weight3;
-			color010.addWeighted(color, weight4);
+			
+			color010.r += color.r * weight4;
+			color010.g += color.g * weight4;
+			color010.b += color.b * weight4;
 			weight010 += weight4;
-			color110.addWeighted(color, weight5);
+			
+			color110.r += color.r * weight5;
+			color110.g += color.g * weight5;
+			color110.b += color.b * weight5;
 			weight110 += weight5;
-			color011.addWeighted(color, weight6);
+			
+			color011.r += color.r * weight6;
+			color011.g += color.g * weight6;
+			color011.b += color.b * weight6;
 			weight011 += weight6;
-			color111.addWeighted(color, weight7);
+			
+			color111.r += color.r * weight7;
+			color111.g += color.g * weight7;
+			color111.b += color.b * weight7;
 			weight111 += weight7;
 		}
 		
@@ -434,15 +457,21 @@ public class BlendedBiome {
 	public void addBiome(Biome biome, float weight0, float weight1, float weight2, float weight3, 
 										float weight4, float weight5, float weight6, float weight7) {
 		this.empty = false;
-		for(int i = 0; i < biome.getColors().size(); ++i) {
-			if(biome.getColors().getValue(i) == null)
+		Color biomeColor = null;
+		int keyId = 0;
+		TokenMap<Color> biomeColors = biome.getColors();
+		int numBiomeColors = biomeColors.size();
+		for(int i = 0; i < numBiomeColors; ++i) {
+			biomeColor = biomeColors.getValue(i);
+			if(biomeColor == null)
 				continue;
-			WeightedColor color = colors.getOrDefault(biome.getColors().getKeyId(i), null);
+			keyId = biomeColors.getKeyId(i);
+			WeightedColor color = colors.getOrDefault(keyId, i, null);
 			if(color == null) {
 				color = new WeightedColor();
-				colors.put(biome.getColors().getKeyId(i), color);
+				colors.put(keyId, color);
 			}
-			color.addWeighted(biome.getColors().getValue(i), weight0, weight1, weight2, weight3, weight4, weight5, weight6, weight7);
+			color.addWeighted(biomeColor, weight0, weight1, weight2, weight3, weight4, weight5, weight6, weight7);
 		}
 	}
 	

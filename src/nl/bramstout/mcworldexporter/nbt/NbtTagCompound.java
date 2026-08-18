@@ -70,6 +70,33 @@ public class NbtTagCompound extends NbtTag{
 	private NbtTag data6;
 	private NbtTag data7;
 	
+	public NbtTag get(String name1, String name2, String name3, String name4) {
+		NbtTag res = get(name1);
+		if(res == null)
+			res = get(name2);
+		if(res == null)
+			res = get(name3);
+		if(res == null)
+			res = get(name4);
+		return res;
+	}
+	
+	public NbtTag get(String name1, String name2, String name3) {
+		NbtTag res = get(name1);
+		if(res == null)
+			res = get(name2);
+		if(res == null)
+			res = get(name3);
+		return res;
+	}
+	
+	public NbtTag get(String name1, String name2) {
+		NbtTag res = get(name1);
+		if(res == null)
+			res = get(name2);
+		return res;
+	}
+	
 	public NbtTag get(String name){	
 		if(data != null) {
 			for(int i = 0; i < dataSize; ++i) {

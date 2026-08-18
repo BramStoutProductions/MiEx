@@ -286,7 +286,8 @@ public class BuiltInBlockState extends BlockState{
 				BlockState state, BlockAnimationHandler animationHandler, float frame) {
 			List<List<Model>> models = new ArrayList<List<Model>>();
 			if(this.model.rootPart != null) {
-				Model model = new Model(state.getName(), null, state.isDoubleSided());
+				Model model = new Model(state.getName(), null, state.isDoubleSided(), false);
+				model.setImmoveable();
 				ExprContext context = new ExprContext(state.getName(), properties, needsConnectionInfo(), x, y, z, (float) x, (float) y, (float) z, 
 						frame, 0f, 0f, model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 
 						this.model.localGenerators, this.model.localFunctions);
@@ -341,7 +342,8 @@ public class BuiltInBlockState extends BlockState{
 
 		@Override
 		public boolean needsConnectionInfo() {
-			return isLocationDependent;
+			//return isLocationDependent;
+			return true;
 		}
 		
 		public int getResourcePackIndex() {

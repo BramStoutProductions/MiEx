@@ -37,6 +37,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -108,69 +109,73 @@ public class LauncherBedrockEdition extends Launcher{
 	}
 	
 	@Override
-	public List<ResourcePackSource> getAllResourcePackSources() {
-		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-
+	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {
 		for(String rootFolder : rootFolders) {
 			File resourcePacksFolder = new File(rootFolder, "resource_packs");
 			if(resourcePacksFolder.exists() && resourcePacksFolder.isDirectory()) {
 				for(File f : resourcePacksFolder.listFiles()) {
-					if(f.isDirectory() && new File(f, "manifest.json").exists()) {
-						ResourcePackSource source = new ResourcePackSource("resource_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}else if(f.isFile() && f.getName().endsWith(".zip")) {
-						ResourcePackSource source = new ResourcePackSource("resource_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}
+					asyncGroup.runTask(()->{
+						if(f.isDirectory() && new File(f, "manifest.json").exists()) {
+							ResourcePackSource source = new ResourcePackSource("resource_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}else if(f.isFile() && f.getName().endsWith(".zip")) {
+							ResourcePackSource source = new ResourcePackSource("resource_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}
+					});
 				}
 			}
 			File behaviorPacksFolder = new File(rootFolder, "behavior_packs");
 			if(behaviorPacksFolder.exists() && behaviorPacksFolder.isDirectory()) {
 				for(File f : behaviorPacksFolder.listFiles()) {
-					if(f.isDirectory() && new File(f, "manifest.json").exists()) {
-						ResourcePackSource source = new ResourcePackSource("behavior_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}else if(f.isFile() && f.getName().endsWith(".zip")) {
-						ResourcePackSource source = new ResourcePackSource("behavior_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}
+					asyncGroup.runTask(()->{
+						if(f.isDirectory() && new File(f, "manifest.json").exists()) {
+							ResourcePackSource source = new ResourcePackSource("behavior_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}else if(f.isFile() && f.getName().endsWith(".zip")) {
+							ResourcePackSource source = new ResourcePackSource("behavior_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}
+					});
 				}
 			}
 			File developmentResourcePacksFolder = new File(rootFolder, "development_resource_packs");
 			if(developmentResourcePacksFolder.exists() && developmentResourcePacksFolder.isDirectory()) {
 				for(File f : developmentResourcePacksFolder.listFiles()) {
-					if(f.isDirectory() && new File(f, "manifest.json").exists()) {
-						ResourcePackSource source = new ResourcePackSource("development_resource_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}else if(f.isFile() && f.getName().endsWith(".zip")) {
-						ResourcePackSource source = new ResourcePackSource("development_resource_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}
+					asyncGroup.runTask(()->{
+						if(f.isDirectory() && new File(f, "manifest.json").exists()) {
+							ResourcePackSource source = new ResourcePackSource("development_resource_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}else if(f.isFile() && f.getName().endsWith(".zip")) {
+							ResourcePackSource source = new ResourcePackSource("development_resource_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}
+					});
 				}
 			}
 			File developmentBehaviorPacksFolder = new File(rootFolder, "development_behavior_packs");
 			if(developmentBehaviorPacksFolder.exists() && developmentBehaviorPacksFolder.isDirectory()) {
 				for(File f : developmentBehaviorPacksFolder.listFiles()) {
-					if(f.isDirectory() && new File(f, "manifest.json").exists()) {
-						ResourcePackSource source = new ResourcePackSource("development_behavior_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}else if(f.isFile() && f.getName().endsWith(".zip")) {
-						ResourcePackSource source = new ResourcePackSource("development_behavior_packs/" + f.getName(), this);
-						source.addSource(ResourcePackSource.getHash(f), f);
-						sources.add(source);
-					}
+					asyncGroup.runTask(()->{
+						if(f.isDirectory() && new File(f, "manifest.json").exists()) {
+							ResourcePackSource source = new ResourcePackSource("development_behavior_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}else if(f.isFile() && f.getName().endsWith(".zip")) {
+							ResourcePackSource source = new ResourcePackSource("development_behavior_packs/" + f.getName(), this);
+							source.addSource(ResourcePackSource.getHash(f), f);
+							collector.addSource(source);
+						}
+					});
 				}
 			}
 		}
-		
-		return sources;
 	}
 
 }

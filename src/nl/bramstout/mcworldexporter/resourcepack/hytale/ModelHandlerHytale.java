@@ -32,7 +32,6 @@
 package nl.bramstout.mcworldexporter.resourcepack.hytale;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -374,9 +373,9 @@ public class ModelHandlerHytale extends ModelHandler{
 			if(data.has("doubleSided"))
 				this.doubleSided = data.get("doubleSided").getAsBoolean();
 			
-			this.shadingMode = "";
+			this.shadingMode = ModelFace.SHADING_MODE_STANDARD;
 			if(data.has("shadingMode"))
-				this.shadingMode = data.get("shadingMode").getAsString();
+				this.shadingMode = data.get("shadingMode").getAsString().toLowerCase().intern();
 			
 			this.unwrapMode = "custom";
 			if(data.has("unwrapMode"))
@@ -468,29 +467,20 @@ public class ModelHandlerHytale extends ModelHandler{
 				if(minV == maxV)
 					maxV = minV + 1;
 
-				modelFace.getUVs()[0] = minU;
-				modelFace.getUVs()[1] = minV;
+				modelFace.uvs0U = minU;
+				modelFace.uvs1V = minV;
 
-				modelFace.getUVs()[2] = maxU;
-				modelFace.getUVs()[3] = minV;
+				modelFace.uvs1U = maxU;
+				modelFace.uvs1V = minV;
 
-				modelFace.getUVs()[4] = maxU;
-				modelFace.getUVs()[5] = maxV;
+				modelFace.uvs2U = maxU;
+				modelFace.uvs2V = maxV;
 				
-				modelFace.getUVs()[6] = minU;
-				modelFace.getUVs()[7] = maxV;
+				modelFace.uvs3U = minU;
+				modelFace.uvs3V = maxV;
 				
 				if(uvs.angle != 0) {
-					float[] oldUVs = Arrays.copyOf(modelFace.getUVs(), modelFace.getUVs().length);
-					float rotation = uvs.angle;
-					float cosR = (float) Math.cos(Math.toRadians(rotation));
-					float sinR = (float) Math.sin(Math.toRadians(rotation));
-					float pivotX = minU;
-					float pivotY = maxV;
-					for(int i = 0; i < 8; i += 2) {
-						modelFace.getUVs()[i] = (oldUVs[i] - pivotX) * cosR + (oldUVs[i+1] - pivotY) * -sinR + pivotX;
-						modelFace.getUVs()[i+1] = (oldUVs[i] - pivotX) * sinR + (oldUVs[i+1] - pivotY) * cosR + pivotY;
-					}
+					modelFace.rotateUVsAffine(uvs.angle, minU, maxV);
 				}
 				
 				if(reverseDirections)

@@ -42,6 +42,7 @@ import nl.bramstout.mcworldexporter.Reference;
 import nl.bramstout.mcworldexporter.export.Noise;
 import nl.bramstout.mcworldexporter.model.BakedBlockState;
 import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
+import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.builtins.BlockStateLiquid;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
 import nl.bramstout.mcworldexporter.resourcepack.hytale.BlockStateVariant.CubeTextures;
@@ -51,11 +52,13 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 
 	private List<CubeTextures> cubeTextures;
 	private float cubeTexturesTotalWeight;
+	private String cubeShadingMode;
 	
 	public BlockStateHytaleLiquid(String name, int dataVersion, JsonObject data) {
 		super(name, dataVersion);
 		this.cubeTextures = new ArrayList<CubeTextures>();
 		this.cubeTexturesTotalWeight = 0f;
+		this.cubeShadingMode = ModelFace.SHADING_MODE_STANDARD;
 		
 		if(data.has("Textures")) {
 			this.cubeTextures.clear();
@@ -68,6 +71,12 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 					this.cubeTexturesTotalWeight += tex.weight;
 				}
 			}
+		}
+		if(data.has("Light"))
+			// Helps make sure that Lava is set up fullbright
+			this.cubeShadingMode = ModelFace.SHADING_MODE_FULLBRIGHT;
+		if(data.has("CubeShadingMode")) {
+			this.cubeShadingMode = data.get("CubeShadingMode").getAsString().toLowerCase().intern();
 		}
 	}
 	
@@ -112,7 +121,7 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 			flowTexture = textures.up;
 		}
 		
-		BakedBlockState bakedState = new BakedBlockStateHytaleLiquid(name, stillTexture, flowTexture);
+		BakedBlockState bakedState = new BakedBlockStateHytaleLiquid(name, stillTexture, flowTexture, cubeShadingMode);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}

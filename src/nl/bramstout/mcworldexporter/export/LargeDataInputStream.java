@@ -33,53 +33,108 @@ package nl.bramstout.mcworldexporter.export;
 
 import java.io.DataInput;
 import java.io.EOFException;
-import java.io.FilterInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UTFDataFormatException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
-public class LargeDataInputStream extends FilterInputStream implements DataInput {
+public class LargeDataInputStream implements DataInput {
 	
+	FileChannel channel;
+	byte[] buffer = null;
+	int bufferRead = 0;
 	long read = 0;
 
-	public LargeDataInputStream(InputStream in) {
-		super(in);
+	public LargeDataInputStream(File in) throws IOException {
+		channel = FileChannel.open(in.toPath(), StandardOpenOption.READ);
+	}
+	
+	public void close() throws IOException{
+		channel.close();
+	}
+	
+	public long length() throws IOException {
+		return channel.size();
+	}
+	
+	private void fillBuffer(byte[] buffer, int offset, int length) throws IOException {
+		ByteBuffer wrapped = ByteBuffer.wrap(buffer, offset, length);
+		channel.read(wrapped, read);
+	}
+	
+	private void fill() throws IOException {
+		fillBuffer(buffer, 0, buffer.length);
+		bufferRead = 0;
+	}
+	
+	private void ensureBufferSpace(int numBytes) throws IOException {
+		if(buffer == null) {
+			buffer = new byte[1024*1024];
+			fill();
+		}else {
+			if((buffer.length - bufferRead) < numBytes) {
+				fill();
+			}
+		}
+	}
+	
+	private int read() throws IOException{
+		return buffer[bufferRead++] & 0xFF;
+	}
+	
+	private int read(byte[] b) throws IOException{
+		return read(b, 0, b.length);
+	}
+	
+	private int read(byte[] b, int off, int len) throws IOException{
+		if(len > buffer.length) {
+			fillBuffer(b, off, len);
+			read += len;
+			fill();
+			return len;
+		}else {
+			ensureBufferSpace(len);
+			System.arraycopy(buffer, bufferRead, b, off, len);
+			bufferRead += len;
+			read += len;
+			return len;
+		}
 	}
 
 	@Override
 	public void readFully(byte[] b) throws IOException {
-		read += in.read(b);
+		read(b);
 	}
 
 	@Override
 	public void readFully(byte[] b, int off, int len) throws IOException {
-		read += in.read(b, off, len);
+		read(b, off, len);
+	}
+	
+	public void seek(long position) throws IOException{
+		read = position;
+		fill();
 	}
 
 	@Override
 	public int skipBytes(int n) throws IOException {
-		long skipped = in.skip(n);
-		read += skipped;
-		return (int) skipped;
+		read += n;
+		bufferRead += n;
+		return n;
 	}
 	
 	public void skipBytes(long n) throws IOException{
 		read += n;
-		while (n > 0) {
-            long ns = in.skip(n);
-            if (ns == 0) {
-            	if(in.read() == -1)
-            		throw new EOFException();
-            	ns = 1;
-            }
-            n -= ns;
-        }
+		bufferRead += n;
 	}
 
 	@Override
 	public boolean readBoolean() throws IOException {
+		ensureBufferSpace(1);
 		read += 1;
-		int data = in.read();
+		int data = read();
         if (data < 0)
             throw new EOFException();
 		return data > 0;
@@ -87,8 +142,9 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public byte readByte() throws IOException {
+		ensureBufferSpace(1);
 		read += 1;
-		int data = in.read();
+		int data = read();
         if (data < 0)
             throw new EOFException();
 		return (byte) data;
@@ -96,8 +152,9 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public int readUnsignedByte() throws IOException {
+		ensureBufferSpace(1);
 		read += 1;
-		int data = in.read();
+		int data = read();
         if (data < 0)
             throw new EOFException();
 		return (byte) (data & 0xFF);
@@ -105,9 +162,10 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public short readShort() throws IOException {
+		ensureBufferSpace(2);
 		read += 2;
-		int data1 = in.read();
-		int data2 = in.read();
+		int data1 = read();
+		int data2 = read();
         if (data1 < 0 || data2 < 0)
             throw new EOFException();
 		return (short) (data1 & 0xFF | ((data2 & 0xFF) << 8));
@@ -115,9 +173,10 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public int readUnsignedShort() throws IOException {
+		ensureBufferSpace(2);
 		read += 2;
-		int data1 = in.read();
-		int data2 = in.read();
+		int data1 = read();
+		int data2 = read();
         if (data1 < 0 || data2 < 0)
             throw new EOFException();
 		return data1 & 0xFF | ((data2 & 0xFF) << 8);
@@ -130,11 +189,12 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public int readInt() throws IOException {
+		ensureBufferSpace(4);
 		read += 4;
-		int data1 = in.read();
-		int data2 = in.read();
-		int data3 = in.read();
-		int data4 = in.read();
+		int data1 = read();
+		int data2 = read();
+		int data3 = read();
+		int data4 = read();
         if (data1 < 0 || data2 < 0 || data3 < 0 || data4 < 0)
             throw new EOFException();
 		return data1 & 0xFF | ((data2 & 0xFF) << 8) | ((data3 & 0xFF) << 16) | ((data4 & 0xFF) << 24);
@@ -142,15 +202,16 @@ public class LargeDataInputStream extends FilterInputStream implements DataInput
 
 	@Override
 	public long readLong() throws IOException {
+		ensureBufferSpace(8);
 		read += 8;
-		long data1 = in.read();
-		long data2 = in.read();
-		long data3 = in.read();
-		long data4 = in.read();
-		long data5 = in.read();
-		long data6 = in.read();
-		long data7 = in.read();
-		long data8 = in.read();
+		long data1 = read();
+		long data2 = read();
+		long data3 = read();
+		long data4 = read();
+		long data5 = read();
+		long data6 = read();
+		long data7 = read();
+		long data8 = read();
         if (data1 < 0 || data2 < 0 || data3 < 0 || data4 < 0 || data5 < 0 || data6 < 0 || data7 < 0 || data8 < 0)
             throw new EOFException();
 		return data1 & 0xFF | ((data2 & 0xFF) << 8) | ((data3 & 0xFF) << 16) | ((data4 & 0xFF) << 24) |

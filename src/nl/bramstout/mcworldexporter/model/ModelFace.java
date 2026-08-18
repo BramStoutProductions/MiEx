@@ -31,39 +31,120 @@
 
 package nl.bramstout.mcworldexporter.model;
 
-import java.util.Arrays;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.math.Matrix;
-import nl.bramstout.mcworldexporter.math.Vector3f;
 
 public class ModelFace {
+	
+	public static class FaceData{
+		
+		public String texture = null;
+		public int tintindex = -1;
+		public boolean hasUV = false;
+		public float uv0 = 0;
+		public float uv1 = 0;
+		public float uv2 = 0;
+		public float uv3 = 0;
+		public boolean hasRotation = false;
+		public float rotation = 0;
+		public boolean rotationMiEx = false;
+		
+		public FaceData() {}
+		
+		public FaceData(JsonObject data) {
+			if(data == null)
+				return;
+			if(data.has("texture"))
+				texture = data.get("texture").getAsString();
+			if(data.has("tintindex"))
+				tintindex = data.get("tintindex").getAsInt();
+			if(data.has("uv")) {
+				JsonArray uvs = data.getAsJsonArray("uv");
+				if(uvs.size() >= 4) {
+					uv0 = uvs.get(0).getAsFloat();
+					uv1 = uvs.get(1).getAsFloat();
+					uv2 = uvs.get(2).getAsFloat();
+					uv3 = uvs.get(3).getAsFloat();
+					hasUV = true;
+				}
+			}
+			if(data.has("rotation")) {
+				rotation = data.get("rotation").getAsFloat();
+				hasRotation = true;
+				if(data.has("rotationMiEx"))
+					rotationMiEx = data.get("rotationMiEx").getAsBoolean();
+			}
+		}
+		
+	}
 	
 	public static final String SHADING_MODE_STANDARD = "standard".intern();
 	public static final String SHADING_MODE_FLAT = "flat".intern();
 	public static final String SHADING_MODE_FULLBRIGHT = "fullbright".intern();
 	public static final String SHADING_MODE_REFLECTIVE = "reflective".intern();
 
-	private float points[];
-	private float uvs[];
-	private float vertexColors[];
+	public float point0X;
+	public float point0Y;
+	public float point0Z;
+	public float point1X;
+	public float point1Y;
+	public float point1Z;
+	public float point2X;
+	public float point2Y;
+	public float point2Z;
+	public float point3X;
+	public float point3Y;
+	public float point3Z;
+	public float uvs0U;
+	public float uvs0V;
+	public float uvs1U;
+	public float uvs1V;
+	public float uvs2U;
+	public float uvs2V;
+	public float uvs3U;
+	public float uvs3V;
+	public boolean hasVertexColor;
+	public float vertexColorR;
+	public float vertexColorG;
+	public float vertexColorB;
 	private long occludes;
 	private long occludedBy;
-	private String texture;
+	private long texture;
 	private Direction direction;
 	private boolean doubleSided;
 	private int tintIndex;
 	private String shadingMode;
 
 	public ModelFace(ModelFace other) {
-		points = Arrays.copyOf(other.points, other.points.length);
-		uvs = Arrays.copyOf(other.uvs, other.uvs.length);
-		vertexColors = null;
-		if(other.vertexColors != null)
-			vertexColors = Arrays.copyOf(other.vertexColors, other.vertexColors.length);
+		//points = Arrays.copyOf(other.points, other.points.length);
+		//uvs = Arrays.copyOf(other.uvs, other.uvs.length);
+		point0X = other.point0X;
+		point0Y = other.point0Y;
+		point0Z = other.point0Z;
+		point1X = other.point1X;
+		point1Y = other.point1Y;
+		point1Z = other.point1Z;
+		point2X = other.point2X;
+		point2Y = other.point2Y;
+		point2Z = other.point2Z;
+		point3X = other.point3X;
+		point3Y = other.point3Y;
+		point3Z = other.point3Z;
+		uvs0U = other.uvs0U;
+		uvs0V = other.uvs0V;
+		uvs1U = other.uvs1U;
+		uvs1V = other.uvs1V;
+		uvs2U = other.uvs2U;
+		uvs2V = other.uvs2V;
+		uvs3U = other.uvs3U;
+		uvs3V = other.uvs3V;
+		hasVertexColor = other.hasVertexColor;
+		vertexColorR = other.vertexColorR;
+		vertexColorG = other.vertexColorG;
+		vertexColorB = other.vertexColorB;
 		occludes = other.occludes;
 		occludedBy = other.occludedBy;
 		texture = other.texture;
@@ -77,45 +158,62 @@ public class ModelFace {
 			throw new RuntimeException("Incorrect number of points");
 		if(uvs.length != (4 * 2))
 			throw new RuntimeException("Incorrect number of uvs");
-		this.points = points;
-		this.uvs = uvs;
-		vertexColors = null;
+		//this.points = points;
+		//this.uvs = uvs;
+		point0X = points[0];
+		point0Y = points[1];
+		point0Z = points[2];
+		point1X = points[3];
+		point1Y = points[4];
+		point1Z = points[5];
+		point2X = points[6];
+		point2Y = points[7];
+		point2Z = points[8];
+		point3X = points[9];
+		point3Y = points[10];
+		point3Z = points[11];
+		uvs0U = uvs[0];
+		uvs0V = uvs[1];
+		uvs1U = uvs[2];
+		uvs1V = uvs[3];
+		uvs2U = uvs[4];
+		uvs2V = uvs[5];
+		uvs3U = uvs[6];
+		uvs3V = uvs[7];
+		hasVertexColor = false;
 		occludes = 0;
 		occludedBy = 0;
 		this.direction = direction;
 		this.doubleSided = doubleSided;
-		this.texture = texture;
+		this.texture = TextureRegistry.getIdFromTexture(texture, 0);
 		this.tintIndex = tintIndex;
 		this.shadingMode = shadingMode;
 		
-		float[] minMaxPoints2 = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateOcclusion(minMaxPoints2);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
-	public ModelFace(float[] minMaxPoints, Direction direction, JsonObject faceData, boolean doubleSided, String shadingMode) {
-		points = new float[4 * 3];
-		uvs = new float[4 * 2];
-		vertexColors = null;
+	public ModelFace(float[] minMaxPoints, Direction direction, FaceData faceData, boolean doubleSided, String shadingMode) {
+		//points = new float[4 * 3];
+		//uvs = new float[4 * 2];
+		hasVertexColor = false;
 		occludes = 0;
 		occludedBy = 0;
 		this.direction = direction;
 		this.doubleSided = doubleSided;
 		this.shadingMode = shadingMode;
 
-		texture = "";
-		if (faceData != null && faceData.has("texture"))
-			texture = faceData.get("texture").getAsString();
+		texture = 0L;
+		if (faceData != null && faceData.texture != null)
+			texture = TextureRegistry.getIdFromTexture(faceData.texture, 0);
 		
 		tintIndex = -1;
-		if(faceData != null && faceData.has("tintindex"))
-			tintIndex = faceData.get("tintindex").getAsInt();
+		if(faceData != null)
+			tintIndex = faceData.tintindex;
 
 		float minU = 0.0f;
 		float minV = 0.0f;
@@ -124,21 +222,21 @@ public class ModelFace {
 
 		switch (direction) {
 		case DOWN:
-			points[0] = minMaxPoints[0];
-			points[1] = minMaxPoints[1];
-			points[2] = minMaxPoints[2];
+			point0X = minMaxPoints[0];
+			point0Y = minMaxPoints[1];
+			point0Z = minMaxPoints[2];
 
-			points[3] = minMaxPoints[3];
-			points[4] = minMaxPoints[1];
-			points[5] = minMaxPoints[2];
+			point1X = minMaxPoints[3];
+			point1Y = minMaxPoints[1];
+			point1Z = minMaxPoints[2];
 
-			points[6] = minMaxPoints[3];
-			points[7] = minMaxPoints[1];
-			points[8] = minMaxPoints[5];
+			point2X = minMaxPoints[3];
+			point2Y = minMaxPoints[1];
+			point2Z = minMaxPoints[5];
 
-			points[9] = minMaxPoints[0];
-			points[10] = minMaxPoints[1];
-			points[11] = minMaxPoints[5];
+			point3X = minMaxPoints[0];
+			point3Y = minMaxPoints[1];
+			point3Z = minMaxPoints[5];
 
 			minU = minMaxPoints[0];
 			minV = minMaxPoints[2];
@@ -146,21 +244,21 @@ public class ModelFace {
 			maxV = minMaxPoints[5];
 			break;
 		case UP:
-			points[0] = minMaxPoints[0];
-			points[1] = minMaxPoints[4];
-			points[2] = minMaxPoints[5];
+			point0X = minMaxPoints[0];
+			point0Y = minMaxPoints[4];
+			point0Z = minMaxPoints[5];
 
-			points[3] = minMaxPoints[3];
-			points[4] = minMaxPoints[4];
-			points[5] = minMaxPoints[5];
+			point1X = minMaxPoints[3];
+			point1Y = minMaxPoints[4];
+			point1Z = minMaxPoints[5];
 
-			points[6] = minMaxPoints[3];
-			points[7] = minMaxPoints[4];
-			points[8] = minMaxPoints[2];
+			point2X = minMaxPoints[3];
+			point2Y = minMaxPoints[4];
+			point2Z = minMaxPoints[2];
 
-			points[9] = minMaxPoints[0];
-			points[10] = minMaxPoints[4];
-			points[11] = minMaxPoints[2];
+			point3X = minMaxPoints[0];
+			point3Y = minMaxPoints[4];
+			point3Z = minMaxPoints[2];
 
 			minU = minMaxPoints[0];
 			minV = minMaxPoints[2];
@@ -168,21 +266,21 @@ public class ModelFace {
 			maxV = minMaxPoints[5];
 			break;
 		case NORTH:
-			points[0] = minMaxPoints[3];
-			points[1] = minMaxPoints[1];
-			points[2] = minMaxPoints[2];
+			point0X = minMaxPoints[3];
+			point0Y = minMaxPoints[1];
+			point0Z = minMaxPoints[2];
 
-			points[3] = minMaxPoints[0];
-			points[4] = minMaxPoints[1];
-			points[5] = minMaxPoints[2];
+			point1X = minMaxPoints[0];
+			point1Y = minMaxPoints[1];
+			point1Z = minMaxPoints[2];
 
-			points[6] = minMaxPoints[0];
-			points[7] = minMaxPoints[4];
-			points[8] = minMaxPoints[2];
+			point2X = minMaxPoints[0];
+			point2Y = minMaxPoints[4];
+			point2Z = minMaxPoints[2];
 
-			points[9] = minMaxPoints[3];
-			points[10] = minMaxPoints[4];
-			points[11] = minMaxPoints[2];
+			point3X = minMaxPoints[3];
+			point3Y = minMaxPoints[4];
+			point3Z = minMaxPoints[2];
 
 			minU = minMaxPoints[0];
 			minV = minMaxPoints[1];
@@ -190,21 +288,21 @@ public class ModelFace {
 			maxV = minMaxPoints[4];
 			break;
 		case SOUTH:
-			points[0] = minMaxPoints[0];
-			points[1] = minMaxPoints[1];
-			points[2] = minMaxPoints[5];
+			point0X = minMaxPoints[0];
+			point0Y = minMaxPoints[1];
+			point0Z = minMaxPoints[5];
 
-			points[3] = minMaxPoints[3];
-			points[4] = minMaxPoints[1];
-			points[5] = minMaxPoints[5];
+			point1X = minMaxPoints[3];
+			point1Y = minMaxPoints[1];
+			point1Z = minMaxPoints[5];
 
-			points[6] = minMaxPoints[3];
-			points[7] = minMaxPoints[4];
-			points[8] = minMaxPoints[5];
+			point2X = minMaxPoints[3];
+			point2Y = minMaxPoints[4];
+			point2Z = minMaxPoints[5];
 
-			points[9] = minMaxPoints[0];
-			points[10] = minMaxPoints[4];
-			points[11] = minMaxPoints[5];
+			point3X = minMaxPoints[0];
+			point3Y = minMaxPoints[4];
+			point3Z = minMaxPoints[5];
 
 			minU = minMaxPoints[0];
 			minV = minMaxPoints[1];
@@ -212,21 +310,21 @@ public class ModelFace {
 			maxV = minMaxPoints[4];
 			break;
 		case WEST:
-			points[0] = minMaxPoints[0];
-			points[1] = minMaxPoints[1];
-			points[2] = minMaxPoints[2];
+			point0X = minMaxPoints[0];
+			point0Y = minMaxPoints[1];
+			point0Z = minMaxPoints[2];
 
-			points[3] = minMaxPoints[0];
-			points[4] = minMaxPoints[1];
-			points[5] = minMaxPoints[5];
+			point1X = minMaxPoints[0];
+			point1Y = minMaxPoints[1];
+			point1Z = minMaxPoints[5];
 
-			points[6] = minMaxPoints[0];
-			points[7] = minMaxPoints[4];
-			points[8] = minMaxPoints[5];
+			point2X = minMaxPoints[0];
+			point2Y = minMaxPoints[4];
+			point2Z = minMaxPoints[5];
 
-			points[9] = minMaxPoints[0];
-			points[10] = minMaxPoints[4];
-			points[11] = minMaxPoints[2];
+			point3X = minMaxPoints[0];
+			point3Y = minMaxPoints[4];
+			point3Z = minMaxPoints[2];
 
 			minU = minMaxPoints[2];
 			minV = minMaxPoints[1];
@@ -234,21 +332,21 @@ public class ModelFace {
 			maxV = minMaxPoints[4];
 			break;
 		case EAST:
-			points[0] = minMaxPoints[3];
-			points[1] = minMaxPoints[1];
-			points[2] = minMaxPoints[5];
+			point0X = minMaxPoints[3];
+			point0Y = minMaxPoints[1];
+			point0Z = minMaxPoints[5];
 
-			points[3] = minMaxPoints[3];
-			points[4] = minMaxPoints[1];
-			points[5] = minMaxPoints[2];
+			point1X = minMaxPoints[3];
+			point1Y = minMaxPoints[1];
+			point1Z = minMaxPoints[2];
 
-			points[6] = minMaxPoints[3];
-			points[7] = minMaxPoints[4];
-			points[8] = minMaxPoints[2];
+			point2X = minMaxPoints[3];
+			point2Y = minMaxPoints[4];
+			point2Z = minMaxPoints[2];
 
-			points[9] = minMaxPoints[3];
-			points[10] = minMaxPoints[4];
-			points[11] = minMaxPoints[5];
+			point3X = minMaxPoints[3];
+			point3Y = minMaxPoints[4];
+			point3Z = minMaxPoints[5];
 
 			minU = minMaxPoints[2];
 			minV = minMaxPoints[1];
@@ -257,72 +355,102 @@ public class ModelFace {
 			break;
 		}
 
-		if (faceData != null && faceData.has("uv")) {
-			minU = faceData.get("uv").getAsJsonArray().get(0).getAsFloat();
-			minV = 16.0f - faceData.get("uv").getAsJsonArray().get(3).getAsFloat();
-			maxU = faceData.get("uv").getAsJsonArray().get(2).getAsFloat();
-			maxV = 16.0f - faceData.get("uv").getAsJsonArray().get(1).getAsFloat();
+		if (faceData != null && faceData.hasUV) {
+			minU = faceData.uv0;
+			minV = 16.0f - faceData.uv3;
+			maxU = faceData.uv2;
+			maxV = 16.0f - faceData.uv1;
 		}
 
-		uvs[0] = minU;
-		uvs[1] = minV;
+		uvs0U = minU;
+		uvs0V = minV;
 
-		uvs[2] = maxU;
-		uvs[3] = minV;
+		uvs1U = maxU;
+		uvs1V = minV;
 
-		uvs[4] = maxU;
-		uvs[5] = maxV;
+		uvs2U = maxU;
+		uvs2V = maxV;
 		
-		uvs[6] = minU;
-		uvs[7] = maxV;
+		uvs3U = minU;
+		uvs3V = maxV;
 
-		if (faceData != null && faceData.has("rotation")) {
-			if(faceData.has("rotationMiEx") && faceData.get("rotationMiEx").getAsBoolean()) {
-				float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
-				float rotation = faceData.get("rotation").getAsFloat();
+		if (faceData != null && faceData.hasRotation) {
+			if(faceData.rotationMiEx) {
+				float ouvs0U = uvs0U;
+				float ouvs0V = uvs0V;
+				float ouvs1U = uvs1U;
+				float ouvs1V = uvs1V;
+				float ouvs2U = uvs2U;
+				float ouvs2V = uvs2V;
+				float ouvs3U = uvs3U;
+				float ouvs3V = uvs3V;
+				
+				float rotation = faceData.rotation;
 				float cosR = (float) Math.cos(Math.toRadians(rotation));
 				float sinR = (float) Math.sin(Math.toRadians(rotation));
-				float pivotX = (oldUVs[0] + oldUVs[2] + oldUVs[4] + oldUVs[6]) / 4.0f;
-				float pivotY = (oldUVs[1] + oldUVs[3] + oldUVs[5] + oldUVs[7]) / 4.0f;
-				for(int i = 0; i < 8; i += 2) {
-					uvs[i] = (oldUVs[i] - pivotX) * cosR + (oldUVs[i+1] - pivotY) * -sinR + pivotX;
-					uvs[i+1] = (oldUVs[i] - pivotX) * sinR + (oldUVs[i+1] - pivotY) * cosR + pivotY;
-				}
+				float pivotX = (ouvs0U + ouvs1U + ouvs2U + ouvs3U) / 4.0f;
+				float pivotY = (ouvs0V + ouvs1V + ouvs2V + ouvs3V) / 4.0f;
+				
+				uvs0U = (ouvs0U - pivotX) * cosR + (ouvs0V - pivotY) * -sinR + pivotX;
+				uvs0V = (ouvs0U - pivotX) * sinR + (ouvs0V - pivotY) * cosR + pivotY;
+
+				uvs1U = (ouvs1U - pivotX) * cosR + (ouvs1V - pivotY) * -sinR + pivotX;
+				uvs1V = (ouvs1U - pivotX) * sinR + (ouvs1V - pivotY) * cosR + pivotY;
+
+				uvs2U = (ouvs2U - pivotX) * cosR + (ouvs2V - pivotY) * -sinR + pivotX;
+				uvs2V = (ouvs2U - pivotX) * sinR + (ouvs2V - pivotY) * cosR + pivotY;
+
+				uvs3U = (ouvs3U - pivotX) * cosR + (ouvs3V - pivotY) * -sinR + pivotX;
+				uvs3V = (ouvs3U - pivotX) * sinR + (ouvs3V - pivotY) * cosR + pivotY;
 			}else {
-				float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
-				float rotation = faceData.get("rotation").getAsFloat();
+				float rotation = faceData.rotation;
 				while(rotation > 45f) {
-					for(int i = 0; i < 8; ++i)
-						uvs[i] = oldUVs[(i + 2) >= 8 ? (i + 2 - 8) : (i + 2)];
-					oldUVs = Arrays.copyOf(uvs, uvs.length);
+					float ouvs0U = uvs0U;
+					float ouvs0V = uvs0V;
+					float ouvs1U = uvs1U;
+					float ouvs1V = uvs1V;
+					float ouvs2U = uvs2U;
+					float ouvs2V = uvs2V;
+					float ouvs3U = uvs3U;
+					float ouvs3V = uvs3V;
+					
+					uvs0U = ouvs1U;
+					uvs0V = ouvs1V;
+					
+					uvs1U = ouvs2U;
+					uvs1V = ouvs2V;
+					
+					uvs2U = ouvs3U;
+					uvs2V = ouvs3V;
+					
+					uvs3U = ouvs0U;
+					uvs3V = ouvs0V;
+					
 					rotation -= 90f;
 				}
 			}
 		}
 
-		float[] minMaxPoints2 = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateOcclusion(minMaxPoints2);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	private void calculateDirection() {
-		float x1 = points[1*3+0] - points[0*3+0];
-		float y1 = points[1*3+1] - points[0*3+1];
-		float z1 = points[1*3+2] - points[0*3+2];
+		float x1 = point1X - point0X;
+		float y1 = point1Y - point0Y;
+		float z1 = point1Z - point0Z;
 		float length = (float) Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
 		x1 /= length;
 		y1 /= length;
 		z1 /= length;
 		
-		float x2 = points[3*3+0] - points[0*3+0];
-		float y2 = points[3*3+1] - points[0*3+1];
-		float z2 = points[3*3+2] - points[0*3+2];
+		float x2 = point3X - point0X;
+		float y2 = point3Y - point0Y;
+		float z2 = point3Z - point0Z;
 		length = (float) Math.sqrt(x2 * x2 + y2 * y2 + z2 * z2);
 		x2 /= length;
 		y2 /= length;
@@ -345,12 +473,13 @@ public class ModelFace {
 		}
 	}
 	
-	public void calculateOcclusion(float[] minMaxPoints) {
+	public void calculateOcclusion(float minX, float minY, float minZ,
+									float maxX, float maxY, float maxZ) {
 		occludes = 0;
 		occludedBy = 0;
-		if((minMaxPoints[3] - minMaxPoints[0]) > 0.01f && 
-				(minMaxPoints[4] - minMaxPoints[1]) > 0.01f &&
-				(minMaxPoints[5] - minMaxPoints[2]) > 0.01f) {
+		if((maxX - minX) > 0.01f && 
+				(maxY - minY) > 0.01f &&
+				(maxZ - minZ) > 0.01f) {
 			// If the face isn't perfectly aligned to an axis,
 			// then all three axis of the bounding box will be
 			// non-zero. In that case, this face also wouldn't
@@ -361,51 +490,46 @@ public class ModelFace {
 		
 		switch (direction) {
 		case DOWN:
-			if (minMaxPoints[1] > -0.02f && minMaxPoints[1] < 0.001f) {
-				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
-						minMaxPoints[5]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
-						minMaxPoints[5]) << (direction.id * 4);
+			if (minY > -0.02f && minY < 0.001f) {
+				occludes = getSideOccludes(minX, minZ, maxX, maxZ) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minX, minZ, maxX, maxZ) << (direction.id * 4);
 			}
 			break;
 		case UP:
-			if (minMaxPoints[4] > 15.999f && minMaxPoints[4] < 16.02f) {
-				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
-						minMaxPoints[5]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[2], minMaxPoints[3],
-						minMaxPoints[5]) << (direction.id * 4);
+			if (maxY > 15.999f && maxY < 16.02f) {
+				occludes = getSideOccludes(minX, minZ, maxX, maxZ) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minX, minZ, maxX, maxZ) << (direction.id * 4);
 			}
 			break;
 		case NORTH:
-			if (minMaxPoints[2] > -0.02f && minMaxPoints[2] < 0.001f) {
-				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
-						minMaxPoints[4]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
-						minMaxPoints[4]) << (direction.id * 4);
+			if (minZ > -0.02f && minZ < 0.001f) {
+				occludes = getSideOccludes(minX, minY, maxX, maxY) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minX, minY, maxX,
+						maxY) << (direction.id * 4);
 			}
 			break;
 		case SOUTH:
-			if (minMaxPoints[5] > 15.999f && minMaxPoints[5] < 16.02f) {
-				occludes = getSideOccludes(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
-						minMaxPoints[4]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[0], minMaxPoints[1], minMaxPoints[3],
-						minMaxPoints[4]) << (direction.id * 4);
+			if (maxZ > 15.999f && maxZ < 16.02f) {
+				occludes = getSideOccludes(minX, minY, maxX,
+						maxY) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minX, minY, maxX,
+						maxY) << (direction.id * 4);
 			}
 			break;
 		case WEST:
-			if (minMaxPoints[0] > -0.02f && minMaxPoints[0] < 0.001f) {
-				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
-						minMaxPoints[4]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
-						minMaxPoints[4]) << (direction.id * 4);
+			if (minX > -0.02f && minX < 0.001f) {
+				occludes = getSideOccludes(minZ, minY, maxZ,
+						maxY) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minZ, minY, maxZ,
+						maxY) << (direction.id * 4);
 			}
 			break;
 		case EAST:
-			if (minMaxPoints[3] > 15.999f && minMaxPoints[3] < 16.02f) {
-				occludes = getSideOccludes(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
-						minMaxPoints[4]) << (direction.id * 4);
-				occludedBy = getSideOccludedBy(minMaxPoints[2], minMaxPoints[1], minMaxPoints[5],
-						minMaxPoints[4]) << (direction.id * 4);
+			if (maxX > 15.999f && maxX < 16.02f) {
+				occludes = getSideOccludes(minZ, minY, maxZ,
+						maxY) << (direction.id * 4);
+				occludedBy = getSideOccludedBy(minZ, minY, maxZ,
+						maxY) << (direction.id * 4);
 			}
 			break;
 		}
@@ -454,41 +578,68 @@ public class ModelFace {
 	}
 	
 	public void transform(Matrix matrix) {
-		Vector3f v0 = new Vector3f(points[0], points[1], points[2]);
-		Vector3f v1 = new Vector3f(points[3], points[4], points[5]);
-		Vector3f v2 = new Vector3f(points[6], points[7], points[8]);
-		Vector3f v3 = new Vector3f(points[9], points[10], points[11]);
+		matrix.transformFace(this);
 		
-		v0 = matrix.transformPoint(v0);
-		v1 = matrix.transformPoint(v1);
-		v2 = matrix.transformPoint(v2);
-		v3 = matrix.transformPoint(v3);
-		
-		points[0] = v0.x; points[1] = v0.y; points[2] = v0.z;
-		points[3] = v1.x; points[4] = v1.y; points[5] = v1.z;
-		points[6] = v2.x; points[7] = v2.y; points[8] = v2.z;
-		points[9] = v3.x; points[10] = v3.y; points[11] = v3.z;
-		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
 		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	public void rotateUVs(float rotation) {
-		float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
 		while(rotation > 45f) {
-			for(int i = 0; i < 8; ++i)
-				uvs[i] = oldUVs[(i + 2) >= 8 ? (i + 2 - 8) : (i + 2)];
-			oldUVs = Arrays.copyOf(uvs, uvs.length);
+			float ouvs0U = uvs0U;
+			float ouvs0V = uvs0V;
+			float ouvs1U = uvs1U;
+			float ouvs1V = uvs1V;
+			float ouvs2U = uvs2U;
+			float ouvs2V = uvs2V;
+			float ouvs3U = uvs3U;
+			float ouvs3V = uvs3V;
+			
+			uvs0U = ouvs1U;
+			uvs0V = ouvs1V;
+			
+			uvs1U = ouvs2U;
+			uvs1V = ouvs2V;
+			
+			uvs2U = ouvs3U;
+			uvs2V = ouvs3V;
+			
+			uvs3U = ouvs0U;
+			uvs3V = ouvs0V;
+			
 			rotation -= 90f;
 		}
+	}
+	
+	public void rotateUVsAffine(float rotation, float pivotX, float pivotY) {
+		float ouvs0U = uvs0U;
+		float ouvs0V = uvs0V;
+		float ouvs1U = uvs1U;
+		float ouvs1V = uvs1V;
+		float ouvs2U = uvs2U;
+		float ouvs2V = uvs2V;
+		float ouvs3U = uvs3U;
+		float ouvs3V = uvs3V;
+		
+		float cosR = (float) Math.cos(Math.toRadians(rotation));
+		float sinR = (float) Math.sin(Math.toRadians(rotation));
+		
+		uvs0U = (ouvs0U - pivotX) * cosR + (ouvs0V - pivotY) * -sinR + pivotX;
+		uvs0V = (ouvs0U - pivotX) * sinR + (ouvs0V - pivotY) * cosR + pivotY;
+
+		uvs1U = (ouvs1U - pivotX) * cosR + (ouvs1V - pivotY) * -sinR + pivotX;
+		uvs1V = (ouvs1U - pivotX) * sinR + (ouvs1V - pivotY) * cosR + pivotY;
+
+		uvs2U = (ouvs2U - pivotX) * cosR + (ouvs2V - pivotY) * -sinR + pivotX;
+		uvs2V = (ouvs2U - pivotX) * sinR + (ouvs2V - pivotY) * cosR + pivotY;
+
+		uvs3U = (ouvs3U - pivotX) * cosR + (ouvs3V - pivotY) * -sinR + pivotX;
+		uvs3V = (ouvs3U - pivotX) * sinR + (ouvs3V - pivotY) * cosR + pivotY;
 	}
 
 	public void rotate(JsonObject rotateData) {
@@ -526,16 +677,13 @@ public class ModelFace {
 				rotateImpl(angleZ, rescale, "z", originX, originY, originZ);
 		}
 		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
 		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	private void rotateImpl(float angle, boolean rescale, String axis, float originX, float originY, float originZ) {
@@ -545,29 +693,79 @@ public class ModelFace {
 		if (rescale)
 			scaling = 1.0f / Math.max(cosR, sinR);
 
-		float[] oldPoints = Arrays.copyOf(points, points.length);
+		float opoint0X = point0X;
+		float opoint0Y = point0Y;
+		float opoint0Z = point0Z;
+		float opoint1X = point1X;
+		float opoint1Y = point1Y;
+		float opoint1Z = point1Z;
+		float opoint2X = point2X;
+		float opoint2Y = point2Y;
+		float opoint2Z = point2Z;
+		float opoint3X = point3X;
+		float opoint3Y = point3Y;
+		float opoint3Z = point3Z;
 
 		if (axis.equals("x")) {
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 2] = ((oldPoints[i + 2] - originZ) * cosR - (oldPoints[i + 1] - originY) * sinR) * scaling
-						+ originZ;
-				points[i + 1] = ((oldPoints[i + 2] - originZ) * sinR + (oldPoints[i + 1] - originY) * cosR) * scaling
-						+ originY;
-			}
+			point0Z = ((opoint0Z - originZ) * cosR - (opoint0Y - originY) * sinR) * scaling
+					+ originZ;
+			point0Y = ((opoint0Z - originZ) * sinR + (opoint0Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point1Z = ((opoint1Z - originZ) * cosR - (opoint1Y - originY) * sinR) * scaling
+					+ originZ;
+			point1Y = ((opoint1Z - originZ) * sinR + (opoint1Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point2Z = ((opoint2Z - originZ) * cosR - (opoint2Y - originY) * sinR) * scaling
+					+ originZ;
+			point2Y = ((opoint2Z - originZ) * sinR + (opoint2Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point3Z = ((opoint3Z - originZ) * cosR - (opoint3Y - originY) * sinR) * scaling
+					+ originZ;
+			point3Y = ((opoint3Z - originZ) * sinR + (opoint3Y - originY) * cosR) * scaling
+					+ originY;
 		} else if (axis.equals("y")) {
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = ((oldPoints[i + 0] - originX) * cosR - (oldPoints[i + 2] - originZ) * sinR) * scaling
-						+ originX;
-				points[i + 2] = ((oldPoints[i + 0] - originX) * sinR + (oldPoints[i + 2] - originZ) * cosR) * scaling
-						+ originZ;
-			}
+			point0X = ((opoint0X - originX) * cosR - (opoint0Z - originZ) * sinR) * scaling
+					+ originX;
+			point0Z = ((opoint0X - originX) * sinR + (opoint0Z - originZ) * cosR) * scaling
+					+ originZ;
+			
+			point1X = ((opoint1X - originX) * cosR - (opoint1Z - originZ) * sinR) * scaling
+					+ originX;
+			point1Z = ((opoint1X - originX) * sinR + (opoint1Z - originZ) * cosR) * scaling
+					+ originZ;
+			
+			point2X = ((opoint2X - originX) * cosR - (opoint2Z - originZ) * sinR) * scaling
+					+ originX;
+			point2Z = ((opoint2X - originX) * sinR + (opoint2Z - originZ) * cosR) * scaling
+					+ originZ;
+			
+			point3X = ((opoint3X - originX) * cosR - (opoint3Z - originZ) * sinR) * scaling
+					+ originX;
+			point3Z = ((opoint3X - originX) * sinR + (opoint3Z - originZ) * cosR) * scaling
+					+ originZ;
 		} else if (axis.equals("z")) {
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = ((oldPoints[i + 0] - originX) * cosR - (oldPoints[i + 1] - originY) * sinR) * scaling
-						+ originX;
-				points[i + 1] = ((oldPoints[i + 0] - originX) * sinR + (oldPoints[i + 1] - originY) * cosR) * scaling
-						+ originY;
-			}
+			point0X = ((opoint0X - originX) * cosR - (opoint0Y - originY) * sinR) * scaling
+					+ originX;
+			point0Y = ((opoint0X - originX) * sinR + (opoint0Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point1X = ((opoint1X - originX) * cosR - (opoint1Y - originY) * sinR) * scaling
+					+ originX;
+			point1Y = ((opoint1X - originX) * sinR + (opoint1Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point2X = ((opoint2X - originX) * cosR - (opoint2Y - originY) * sinR) * scaling
+					+ originX;
+			point2Y = ((opoint2X - originX) * sinR + (opoint2Y - originY) * cosR) * scaling
+					+ originY;
+			
+			point3X = ((opoint3X - originX) * cosR - (opoint3Y - originY) * sinR) * scaling
+					+ originX;
+			point3Y = ((opoint3X - originX) * sinR + (opoint3Y - originY) * cosR) * scaling
+					+ originY;
 		}
 	}
 	
@@ -576,22 +774,73 @@ public class ModelFace {
 	}
 
 	public void rotate(float rotateX, float rotateY, float rotateZ, boolean uvLock) {
+		rotate(rotateX, rotateY, rotateZ, 8f, 8f, 8f, uvLock);
+	}
+	
+	public void rotate(float rotateX, float rotateY, float rotateZ) {
+		rotate(rotateX, rotateY, rotateZ, 8f, 8f, 8f);
+	}
+	
+	public void rotate(float rotateX, float rotateY, float rotateZ,
+						float pivotX, float pivotY, float pivotZ) {
+		rotate(rotateX, rotateY, rotateZ, pivotX, pivotY, pivotZ, false);
+	}
+	
+	public void rotate(float rotateX, float rotateY, float rotateZ, 
+						float pivotX, float pivotY, float pivotZ, boolean uvLock) {
 		// X Rotation
 		float cosR = (float) Math.cos(Math.toRadians(rotateX));
 		float sinR = (float) Math.sin(Math.toRadians(rotateX));
-
-		if (rotateX != 0.0) {
-
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 2] = ((oldPoints[i + 2] - 8.0f) * cosR - (oldPoints[i + 1] - 8.0f) * sinR) + 8.0f;
-				points[i + 1] = ((oldPoints[i + 2] - 8.0f) * sinR + (oldPoints[i + 1] - 8.0f) * cosR) + 8.0f;
-			}
+		point0X -= pivotX;
+		point0Y -= pivotY;
+		point0Z -= pivotZ;
+		point1X -= pivotX;
+		point1Y -= pivotY;
+		point1Z -= pivotZ;
+		point2X -= pivotX;
+		point2Y -= pivotY;
+		point2Z -= pivotZ;
+		point3X -= pivotX;
+		point3Y -= pivotY;
+		point3Z -= pivotZ;
+		
+		float opoint0X = point0X;
+		float opoint0Y = point0Y;
+		float opoint0Z = point0Z;
+		float opoint1X = point1X;
+		float opoint1Y = point1Y;
+		float opoint1Z = point1Z;
+		float opoint2X = point2X;
+		float opoint2Y = point2Y;
+		float opoint2Z = point2Z;
+		float opoint3X = point3X;
+		float opoint3Y = point3Y;
+		float opoint3Z = point3Z;
+		
+		if (rotateX != 0.0f) {
+			point0Z = opoint0Z * cosR - opoint0Y * sinR;
+			point0Y = opoint0Z * sinR + opoint0Y * cosR;
+			
+			point1Z = opoint1Z * cosR - opoint1Y * sinR;
+			point1Y = opoint1Z * sinR + opoint1Y * cosR;
+			
+			point2Z = opoint2Z * cosR - opoint2Y * sinR;
+			point2Y = opoint2Z * sinR + opoint2Y * cosR;
+			
+			point3Z = opoint3Z * cosR - opoint3Y * sinR;
+			point3Y = opoint3Z * sinR + opoint3Y * cosR;
 
 			// UV lock X rotation
 			if (uvLock) {
 				if (direction == Direction.WEST || direction == Direction.EAST) {
-					float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
+					float ouvs0U = uvs0U;
+					float ouvs0V = uvs0V;
+					float ouvs1U = uvs1U;
+					float ouvs1V = uvs1V;
+					float ouvs2U = uvs2U;
+					float ouvs2V = uvs2V;
+					float ouvs3U = uvs3U;
+					float ouvs3V = uvs3V;
 					float rotation = rotateX;
 					if (direction == Direction.EAST)
 						rotation = -rotateX;
@@ -599,61 +848,62 @@ public class ModelFace {
 					float uvPivotV = 8.0f;
 					cosR = (float) Math.cos(Math.toRadians(rotation));
 					sinR = (float) Math.sin(Math.toRadians(rotation));
-					for (int i = 0; i < 8; i += 2) {
-						uvs[i] = ((oldUVs[i] - uvPivotU) * cosR - (oldUVs[i + 1] - uvPivotV) * sinR) + uvPivotU;
-						uvs[i + 1] = ((oldUVs[i] - uvPivotU) * sinR + (oldUVs[i + 1] - uvPivotV) * cosR) + uvPivotV;
-					}
+
+					uvs0U = ((ouvs0U - uvPivotU) * cosR - (ouvs0V - uvPivotV) * sinR) + uvPivotU;
+					uvs0V = ((ouvs0U - uvPivotU) * sinR + (ouvs0V - uvPivotV) * cosR) + uvPivotV;
+
+					uvs1U = ((ouvs1U - uvPivotU) * cosR - (ouvs1V - uvPivotV) * sinR) + uvPivotU;
+					uvs1V = ((ouvs1U - uvPivotU) * sinR + (ouvs1V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs2U = ((ouvs2U - uvPivotU) * cosR - (ouvs2V - uvPivotV) * sinR) + uvPivotU;
+					uvs2V = ((ouvs2U - uvPivotU) * sinR + (ouvs2V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs3U = ((ouvs3U - uvPivotU) * cosR - (ouvs3V - uvPivotV) * sinR) + uvPivotU;
+					uvs3V = ((ouvs3U - uvPivotU) * sinR + (ouvs3V - uvPivotV) * cosR) + uvPivotV;
 				}
 			}
-
-			// Update direction X rotation
-			float dirRotateX = rotateX;
-			if (dirRotateX < 0.0f)
-				dirRotateX += 360.0f;
-			while (dirRotateX > 45.0f) {
-				dirRotateX -= 90.0f;
-				switch (direction) {
-				case DOWN:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.UP;
-					break;
-				case UP:
-					direction = Direction.NORTH;
-					// Rotate UVs 180 degrees
-					if(uvLock)
-						for (int i = 0; i < uvs.length; ++i)
-							uvs[i] = 16.0f - uvs[i];
-					break;
-				case NORTH:
-					direction = Direction.DOWN;
-					// Rotate UVs 180 degrees
-					if(uvLock)
-						for (int i = 0; i < uvs.length; ++i)
-							uvs[i] = 16.0f - uvs[i];
-					break;
-				default:
-					break;
-				}
-			}
-
 		}
 
-		if (rotateY != 0.0) {
+		if (rotateY != 0.0f) {
 			// Rotate Y
 			cosR = (float) Math.cos(Math.toRadians(rotateY));
 			sinR = (float) Math.sin(Math.toRadians(rotateY));
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = ((oldPoints[i + 0] - 8.0f) * cosR - (oldPoints[i + 2] - 8.0f) * sinR) + 8.0f;
-				points[i + 2] = ((oldPoints[i + 0] - 8.0f) * sinR + (oldPoints[i + 2] - 8.0f) * cosR) + 8.0f;
-			}
+			opoint0X = point0X;
+			opoint0Y = point0Y;
+			opoint0Z = point0Z;
+			opoint1X = point1X;
+			opoint1Y = point1Y;
+			opoint1Z = point1Z;
+			opoint2X = point2X;
+			opoint2Y = point2Y;
+			opoint2Z = point2Z;
+			opoint3X = point3X;
+			opoint3Y = point3Y;
+			opoint3Z = point3Z;
+			
+			point0X = opoint0X * cosR - opoint0Z * sinR;
+			point0Z = opoint0X * sinR + opoint0Z * cosR;
 
+			point1X = opoint1X * cosR - opoint1Z * sinR;
+			point1Z = opoint1X * sinR + opoint1Z * cosR;
+
+			point2X = opoint2X * cosR - opoint2Z * sinR;
+			point2Z = opoint2X * sinR + opoint2Z * cosR;
+
+			point3X = opoint3X * cosR - opoint3Z * sinR;
+			point3Z = opoint3X * sinR + opoint3Z * cosR;
+			
 			// UV Lock Rotate Y
 			if (uvLock) {
 				if (direction == Direction.DOWN || direction == Direction.UP) {
-					float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
+					float ouvs0U = uvs0U;
+					float ouvs0V = uvs0V;
+					float ouvs1U = uvs1U;
+					float ouvs1V = uvs1V;
+					float ouvs2U = uvs2U;
+					float ouvs2V = uvs2V;
+					float ouvs3U = uvs3U;
+					float ouvs3V = uvs3V;
 					float rotation = rotateY;
 					if (direction == Direction.UP)
 						rotation = -rotateY;
@@ -661,314 +911,17 @@ public class ModelFace {
 					float uvPivotV = 8.0f;
 					cosR = (float) Math.cos(Math.toRadians(rotation));
 					sinR = (float) Math.sin(Math.toRadians(rotation));
-					for (int i = 0; i < 8; i += 2) {
-						uvs[i] = ((oldUVs[i] - uvPivotU) * cosR - (oldUVs[i + 1] - uvPivotV) * sinR) + uvPivotU;
-						uvs[i + 1] = ((oldUVs[i] - uvPivotU) * sinR + (oldUVs[i + 1] - uvPivotV) * cosR) + uvPivotV;
-					}
-				}
-			}
+					uvs0U = ((ouvs0U - uvPivotU) * cosR - (ouvs0V - uvPivotV) * sinR) + uvPivotU;
+					uvs0V = ((ouvs0U - uvPivotU) * sinR + (ouvs0V - uvPivotV) * cosR) + uvPivotV;
 
-			// Update direction Y rotation
-			float dirRotateY = rotateY;
-			if (dirRotateY < 0.0f)
-				dirRotateY += 360.0f;
-			while (dirRotateY > 45.0f) {
-				dirRotateY -= 90.0f;
-				switch (direction) {
-				case NORTH:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.WEST;
-					break;
-				case WEST:
-					direction = Direction.NORTH;
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		
-
-		// Z Rotation
-		if (rotateZ != 0.0) {
-			cosR = (float) Math.cos(Math.toRadians(rotateZ));
-			sinR = (float) Math.sin(Math.toRadians(rotateZ));
-
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 2] = ((oldPoints[i + 0] - 8.0f) * cosR - (oldPoints[i + 1] - 8.0f) * sinR) + 8.0f;
-				points[i + 1] = ((oldPoints[i + 0] - 8.0f) * sinR + (oldPoints[i + 1] - 8.0f) * cosR) + 8.0f;
-			}
-
-			// UV lock Z rotation
-			if (uvLock) {
-				if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-					float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
-					float rotation = rotateX;
-					if (direction == Direction.SOUTH)
-						rotation = -rotateX;
-					float uvPivotU = 8.0f;
-					float uvPivotV = 8.0f;
-					cosR = (float) Math.cos(Math.toRadians(rotation));
-					sinR = (float) Math.sin(Math.toRadians(rotation));
-					for (int i = 0; i < 8; i += 2) {
-						uvs[i] = ((oldUVs[i] - uvPivotU) * cosR - (oldUVs[i + 1] - uvPivotV) * sinR) + uvPivotU;
-						uvs[i + 1] = ((oldUVs[i] - uvPivotU) * sinR + (oldUVs[i + 1] - uvPivotV) * cosR) + uvPivotV;
-					}
-				}
-			}
-
-			// Update direction Z rotation
-			float dirRotateX = rotateZ;
-			if (dirRotateX < 0.0f)
-				dirRotateX += 360.0f;
-			while (dirRotateX > 45.0f) {
-				dirRotateX -= 90.0f;
-				switch (direction) {
-				case DOWN:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.UP;
-					break;
-				case UP:
-					direction = Direction.WEST;
-					// Rotate UVs 180 degrees
-					if(uvLock)
-						for (int i = 0; i < uvs.length; ++i)
-							uvs[i] = 16.0f - uvs[i];
-					break;
-				case WEST:
-					direction = Direction.DOWN;
-					// Rotate UVs 180 degrees
-					if(uvLock)
-						for (int i = 0; i < uvs.length; ++i)
-							uvs[i] = 16.0f - uvs[i];
-					break;
-				default:
-					break;
-				}
-			}
-
-		}
-		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateDirection();
-		calculateOcclusion(minMaxPoints);
-	}
-	
-	public void rotate(float rotateX, float rotateY, float rotateZ) {
-		// X Rotation
-		float cosR = (float) Math.cos(Math.toRadians(rotateX));
-		float sinR = (float) Math.sin(Math.toRadians(rotateX));
-
-		if (rotateX != 0.0) {
-
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 2] = ((oldPoints[i + 2] - 8.0f) * cosR - (oldPoints[i + 1] - 8.0f) * sinR) + 8.0f;
-				points[i + 1] = ((oldPoints[i + 2] - 8.0f) * sinR + (oldPoints[i + 1] - 8.0f) * cosR) + 8.0f;
-			}
-
-			// Update direction X rotation
-			float dirRotateX = rotateX;
-			if (dirRotateX < 0.0f)
-				dirRotateX += 360.0f;
-			while (dirRotateX > 45.0f) {
-				dirRotateX -= 90.0f;
-				switch (direction) {
-				case DOWN:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.UP;
-					// Rotate UVs 180 degrees
-					for (int i = 0; i < uvs.length; ++i)
-						uvs[i] = 16.0f - uvs[i];
-					break;
-				case UP:
-					direction = Direction.NORTH;
-					break;
-				case NORTH:
-					direction = Direction.DOWN;
-					// Rotate UVs 180 degrees
-					for (int i = 0; i < uvs.length; ++i)
-						uvs[i] = 16.0f - uvs[i];
-					break;
-				default:
-					break;
-				}
-			}
-
-		}
-
-		if (rotateY != 0.0) {
-			// Rotate Y
-			cosR = (float) Math.cos(Math.toRadians(rotateY));
-			sinR = (float) Math.sin(Math.toRadians(rotateY));
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = ((oldPoints[i + 0] - 8.0f) * cosR - (oldPoints[i + 2] - 8.0f) * sinR) + 8.0f;
-				points[i + 2] = ((oldPoints[i + 0] - 8.0f) * sinR + (oldPoints[i + 2] - 8.0f) * cosR) + 8.0f;
-			}
-
-			// Update direction Y rotation
-			float dirRotateY = rotateY;
-			if (dirRotateY < 0.0f)
-				dirRotateY += 360.0f;
-			while (dirRotateY > 45.0f) {
-				dirRotateY -= 90.0f;
-				switch (direction) {
-				case NORTH:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.WEST;
-					break;
-				case WEST:
-					direction = Direction.NORTH;
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		
-		if (rotateZ != 0.0) {
-			// Rotate Z
-			cosR = (float) Math.cos(Math.toRadians(rotateZ));
-			sinR = (float) Math.sin(Math.toRadians(rotateZ));
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = ((oldPoints[i + 0] - 8.0f) * cosR - (oldPoints[i + 1] - 8.0f) * sinR) + 8.0f;
-				points[i + 1] = ((oldPoints[i + 0] - 8.0f) * sinR + (oldPoints[i + 1] - 8.0f) * cosR) + 8.0f;
-			}
-
-			// Update direction Z rotation
-			float dirRotateZ = rotateZ;
-			if (dirRotateZ < 0.0f)
-				dirRotateZ += 360.0f;
-			while (dirRotateZ > 45.0f) {
-				dirRotateZ -= 90.0f;
-				switch (direction) {
-				case UP:
-					direction = Direction.WEST;
-					break;
-				case WEST:
-					direction = Direction.DOWN;
-					break;
-				case DOWN:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.UP;
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateDirection();
-		calculateOcclusion(minMaxPoints);
-	}
-	
-	
-	public void rotate(float rotateX, float rotateY, float rotateZ, float pivotX, float pivotY, float pivotZ) {
-		// X Rotation
-		float cosR = (float) Math.cos(Math.toRadians(rotateX));
-		float sinR = (float) Math.sin(Math.toRadians(rotateX));
-		for(int i = 0; i < 12; i += 3) {
-			points[i + 0] -= pivotX;
-			points[i + 1] -= pivotY;
-			points[i + 2] -= pivotZ;
-		}
-		
-		if (rotateX != 0.0f) {
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 2] = oldPoints[i + 2] * cosR - oldPoints[i + 1] * sinR;
-				points[i + 1] = oldPoints[i + 2] * sinR + oldPoints[i + 1] * cosR;
-			}
-
-			// Update direction X rotation
-			float dirRotateX = rotateX;
-			if (dirRotateX < 0.0f)
-				dirRotateX += 360.0f;
-			while (dirRotateX > 45.0f) {
-				dirRotateX -= 90.0f;
-				switch (direction) {
-				case DOWN:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.UP;
-				case UP:
-					direction = Direction.NORTH;
-					break;
-				case NORTH:
-					direction = Direction.DOWN;
-				default:
-					break;
-				}
-			}
-
-		}
-
-		if (rotateY != 0.0f) {
-			// Rotate Y
-			cosR = (float) Math.cos(Math.toRadians(rotateY));
-			sinR = (float) Math.sin(Math.toRadians(rotateY));
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = oldPoints[i + 0] * cosR - oldPoints[i + 2] * sinR;
-				points[i + 2] = oldPoints[i + 0] * sinR + oldPoints[i + 2] * cosR;
-			}
-
-			// Update direction Y rotation
-			float dirRotateY = rotateY;
-			if (dirRotateY < 0.0f)
-				dirRotateY += 360.0f;
-			while (dirRotateY > 45.0f) {
-				dirRotateY -= 90.0f;
-				switch (direction) {
-				case NORTH:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.SOUTH;
-					break;
-				case SOUTH:
-					direction = Direction.WEST;
-					break;
-				case WEST:
-					direction = Direction.NORTH;
-					break;
-				default:
-					break;
+					uvs1U = ((ouvs1U - uvPivotU) * cosR - (ouvs1V - uvPivotV) * sinR) + uvPivotU;
+					uvs1V = ((ouvs1U - uvPivotU) * sinR + (ouvs1V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs2U = ((ouvs2U - uvPivotU) * cosR - (ouvs2V - uvPivotV) * sinR) + uvPivotU;
+					uvs2V = ((ouvs2U - uvPivotU) * sinR + (ouvs2V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs3U = ((ouvs3U - uvPivotU) * cosR - (ouvs3V - uvPivotV) * sinR) + uvPivotU;
+					uvs3V = ((ouvs3U - uvPivotU) * sinR + (ouvs3V - uvPivotV) * cosR) + uvPivotV;
 				}
 			}
 		}
@@ -977,52 +930,83 @@ public class ModelFace {
 			// Rotate Z
 			cosR = (float) Math.cos(Math.toRadians(rotateZ));
 			sinR = (float) Math.sin(Math.toRadians(rotateZ));
-			float[] oldPoints = Arrays.copyOf(points, points.length);
-			for (int i = 0; i < 12; i += 3) {
-				points[i + 0] = oldPoints[i + 0] * cosR - oldPoints[i + 1] * sinR;
-				points[i + 1] = oldPoints[i + 0] * sinR + oldPoints[i + 1] * cosR;
-			}
+			opoint0X = point0X;
+			opoint0Y = point0Y;
+			opoint0Z = point0Z;
+			opoint1X = point1X;
+			opoint1Y = point1Y;
+			opoint1Z = point1Z;
+			opoint2X = point2X;
+			opoint2Y = point2Y;
+			opoint2Z = point2Z;
+			opoint3X = point3X;
+			opoint3Y = point3Y;
+			opoint3Z = point3Z;
+			
+			point0X = opoint0X * cosR - opoint0Y * sinR;
+			point0Y = opoint0X * sinR + opoint0Y * cosR;
 
-			// Update direction Z rotation
-			float dirRotateZ = rotateZ;
-			if (dirRotateZ < 0.0f)
-				dirRotateZ += 360.0f;
-			while (dirRotateZ > 45.0f) {
-				dirRotateZ -= 90.0f;
-				switch (direction) {
-				case UP:
-					direction = Direction.WEST;
-					break;
-				case WEST:
-					direction = Direction.DOWN;
-					break;
-				case DOWN:
-					direction = Direction.EAST;
-					break;
-				case EAST:
-					direction = Direction.UP;
-					break;
-				default:
-					break;
+			point1X = opoint1X * cosR - opoint1Y * sinR;
+			point1Y = opoint1X * sinR + opoint1Y * cosR;
+
+			point2X = opoint2X * cosR - opoint2Y * sinR;
+			point2Y = opoint2X * sinR + opoint2Y * cosR;
+
+			point3X = opoint3X * cosR - opoint3Y * sinR;
+			point3Y = opoint3X * sinR + opoint3Y * cosR;
+			
+			// UV lock Z rotation
+			if (uvLock) {
+				if (direction == Direction.NORTH || direction == Direction.SOUTH) {
+					float ouvs0U = uvs0U;
+					float ouvs0V = uvs0V;
+					float ouvs1U = uvs1U;
+					float ouvs1V = uvs1V;
+					float ouvs2U = uvs2U;
+					float ouvs2V = uvs2V;
+					float ouvs3U = uvs3U;
+					float ouvs3V = uvs3V;
+					float rotation = rotateX;
+					if (direction == Direction.SOUTH)
+						rotation = -rotateX;
+					float uvPivotU = 8.0f;
+					float uvPivotV = 8.0f;
+					cosR = (float) Math.cos(Math.toRadians(rotation));
+					sinR = (float) Math.sin(Math.toRadians(rotation));
+					uvs0U = ((ouvs0U - uvPivotU) * cosR - (ouvs0V - uvPivotV) * sinR) + uvPivotU;
+					uvs0V = ((ouvs0U - uvPivotU) * sinR + (ouvs0V - uvPivotV) * cosR) + uvPivotV;
+
+					uvs1U = ((ouvs1U - uvPivotU) * cosR - (ouvs1V - uvPivotV) * sinR) + uvPivotU;
+					uvs1V = ((ouvs1U - uvPivotU) * sinR + (ouvs1V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs2U = ((ouvs2U - uvPivotU) * cosR - (ouvs2V - uvPivotV) * sinR) + uvPivotU;
+					uvs2V = ((ouvs2U - uvPivotU) * sinR + (ouvs2V - uvPivotV) * cosR) + uvPivotV;
+					
+					uvs3U = ((ouvs3U - uvPivotU) * cosR - (ouvs3V - uvPivotV) * sinR) + uvPivotU;
+					uvs3V = ((ouvs3U - uvPivotU) * sinR + (ouvs3V - uvPivotV) * cosR) + uvPivotV;
 				}
 			}
 		}
-		for(int i = 0; i < 12; i += 3) {
-			points[i + 0] += pivotX;
-			points[i + 1] += pivotY;
-			points[i + 2] += pivotZ;
-		}
+		point0X += pivotX;
+		point0Y += pivotY;
+		point0Z += pivotZ;
+		point1X += pivotX;
+		point1Y += pivotY;
+		point1Z += pivotZ;
+		point2X += pivotX;
+		point2Y += pivotY;
+		point2Z += pivotZ;
+		point3X += pivotX;
+		point3Y += pivotY;
+		point3Z += pivotZ;
 		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
 		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	
@@ -1031,35 +1015,7 @@ public class ModelFace {
 		float scaleY = y ? -1f : 1f;
 		float scaleZ = z ? -1f : 1f;
 		
-		for(int i = 0; i < 4; ++i) {
-			points[i*3+0] = (points[i*3+0] - 8f) * scaleX + 8f;
-			points[i*3+1] = (points[i*3+1] - 8f) * scaleY + 8f;
-			points[i*3+2] = (points[i*3+2] - 8f) * scaleZ + 8f;
-		}
-		
-		if(x) {
-			if(direction == Direction.EAST || direction == Direction.WEST)
-				direction = direction.getOpposite();
-		}
-		if(y) {
-			if(direction == Direction.UP || direction == Direction.DOWN)
-				direction = direction.getOpposite();
-		}
-		if(z) {
-			if(direction == Direction.NORTH || direction == Direction.SOUTH)
-				direction = direction.getOpposite();
-		}
-		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		scale(scaleX, scaleY, scaleZ, 8f, 8f, 8f);
 	}
 	
 	public void mirror(boolean x, boolean y, boolean z, float pivotX, float pivotY, float pivotZ) {
@@ -1067,62 +1023,47 @@ public class ModelFace {
 		float scaleY = y ? -1f : 1f;
 		float scaleZ = z ? -1f : 1f;
 		
-		for(int i = 0; i < 4; ++i) {
-			points[i*3+0] = (points[i*3+0] - pivotX) * scaleX + pivotX;
-			points[i*3+1] = (points[i*3+1] - pivotY) * scaleY + pivotY;
-			points[i*3+2] = (points[i*3+2] - pivotZ) * scaleZ + pivotZ;
-		}
-		
-		if(x) {
-			if(direction == Direction.EAST || direction == Direction.WEST)
-				direction = direction.getOpposite();
-		}
-		if(y) {
-			if(direction == Direction.UP || direction == Direction.DOWN)
-				direction = direction.getOpposite();
-		}
-		if(z) {
-			if(direction == Direction.NORTH || direction == Direction.SOUTH)
-				direction = direction.getOpposite();
-		}
-		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
-		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		scale(scaleX, scaleY, scaleZ, pivotX, pivotY, pivotZ);
 	}
 	
 	public void reverseDirection() {
-		float[] oldPoints = Arrays.copyOf(points, points.length);
-		float[] oldUVs = Arrays.copyOf(uvs, uvs.length);
-		for(int i = 0; i < 4; ++i) {
-			points[i*3+0] = oldPoints[((4-i)%4)*3+0];
-			points[i*3+1] = oldPoints[((4-i)%4)*3+1];
-			points[i*3+2] = oldPoints[((4-i)%4)*3+2];
-			
-			uvs[i*2+0] = oldUVs[((4-i)%4)*2+0];
-			uvs[i*2+1] = oldUVs[((4-i)%4)*2+1];
-		}
+		float opoint1X = point1X;
+		float opoint1Y = point1Y;
+		float opoint1Z = point1Z;
+		float opoint3X = point3X;
+		float opoint3Y = point3Y;
+		float opoint3Z = point3Z;
+		float ouvs1U = uvs1U;
+		float ouvs1V = uvs1V;
+		float ouvs3U = uvs3U;
+		float ouvs3V = uvs3V;
 		
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
+		point1X = opoint3X;
+		point1Y = opoint3Y;
+		point1Z = opoint3Z;
+		point3X = opoint1X;
+		point3Y = opoint1Y;
+		point3Z = opoint1Z;
+		
+		uvs1U = ouvs3U;
+		uvs1V = ouvs3V;
+		uvs3U = ouvs1U;
+		uvs3V = ouvs1V;
+		
 		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	public void setTexture(String texture) {
+		setTexture(TextureRegistry.getIdFromTexture(texture, 0));
+	}
+	
+	public void setTexture(Long texture) {
 		this.texture = texture;
 	}
 	
@@ -1138,24 +1079,42 @@ public class ModelFace {
 		return occludedBy == 0 ? false : ((occlusion & occludedBy) == occludedBy);
 	}
 
-	public String getTexture() {
+	public long getTexture() {
 		return texture;
+	}
+	
+	public String getTextureString() {
+		return TextureRegistry.getTextureFromId(texture);
 	}
 
 	public boolean isValid() {
-		return !texture.isEmpty();
-	}
-
-	public float[] getPoints() {
-		return points;
-	}
-
-	public float[] getUVs() {
-		return uvs;
+		return texture != 0;
 	}
 	
-	public float[] getVertexColors() {
-		return vertexColors;
+	public void getPoints(float[] out) {
+		out[0] = point0X;
+		out[1] = point0Y;
+		out[2] = point0Z;
+		out[3] = point1X;
+		out[4] = point1Y;
+		out[5] = point1Z;
+		out[6] = point2X;
+		out[7] = point2Y;
+		out[8] = point2Z;
+		out[9] = point3X;
+		out[10] = point3Y;
+		out[11] = point3Z;
+	}
+	
+	public void getUVs(float[] out) {
+		out[0] = uvs0U;
+		out[1] = uvs0V;
+		out[2] = uvs1U;
+		out[3] = uvs1V;
+		out[4] = uvs2U;
+		out[5] = uvs2V;
+		out[6] = uvs3U;
+		out[7] = uvs3V;
 	}
 
 	public void noOcclusion() {
@@ -1179,65 +1138,69 @@ public class ModelFace {
 	}
 	
 	public void translate(float x, float y, float z) {
-		for(int i = 0; i < points.length; i += 3) {
-			points[i] += x;
-			points[i+1] += y;
-			points[i+2] += z;
-		}
+		point0X += x;
+		point0Y += y;
+		point0Z += z;
+		point1X += x;
+		point1Y += y;
+		point1Z += z;
+		point2X += x;
+		point2Y += y;
+		point2Z += z;
+		point3X += x;
+		point3Y += y;
+		point3Z += z;
 	}
 
 	public void scale(float scale) {
-		for(int i = 0; i < points.length; ++i) {
-			points[i] = (points[i] - 8.0f) * scale + 8.0f;
-		}
+		scale(scale, scale, scale, 8f, 8f, 8f);
 	}
 	
 	public void scale(float scaleX, float scaleY, float scaleZ) {
-		for(int i = 0; i < points.length; i += 3) {
-			points[i] = (points[i] - 8f) * scaleX + 8f;
-			points[i+1] = (points[i+1] - 8f) * scaleY + 8f;
-			points[i+2] = (points[i+2] - 8f) * scaleZ + 8f;
-		}
+		scale(scaleX, scaleY, scaleZ, 8f, 8f, 8f);
 	}
 	
 	public void scale(float scaleX, float scaleY, float scaleZ, float pivotX, float pivotY, float pivotZ) {
-		for(int i = 0; i < points.length; i += 3) {
-			points[i] = (points[i] - pivotX) * scaleX + pivotX;
-			points[i+1] = (points[i+1] - pivotY) * scaleY + pivotY;
-			points[i+2] = (points[i+2] - pivotZ) * scaleZ + pivotZ;
-		}
+		point0X = (point0X - pivotX) * scaleX + pivotX;
+		point0Y = (point0Y - pivotY) * scaleY + pivotY;
+		point0Z = (point0Z - pivotZ) * scaleZ + pivotZ;
+		
+		point1X = (point1X - pivotX) * scaleX + pivotX;
+		point1Y = (point1Y - pivotY) * scaleY + pivotY;
+		point1Z = (point1Z - pivotZ) * scaleZ + pivotZ;
+		
+		point2X = (point2X - pivotX) * scaleX + pivotX;
+		point2Y = (point2Y - pivotY) * scaleY + pivotY;
+		point2Z = (point2Z - pivotZ) * scaleZ + pivotZ;
+		
+		point3X = (point3X - pivotX) * scaleX + pivotX;
+		point3Y = (point3Y - pivotY) * scaleY + pivotY;
+		point3Z = (point3Z - pivotZ) * scaleZ + pivotZ;
 	}
 	
 	public void setFaceColour(float r, float g, float b) {
-		this.vertexColors = new float[4 * 3];
-		for(int i = 0; i < this.vertexColors.length; i += 3) {
-			this.vertexColors[i] = r;
-			this.vertexColors[i+1] = g;
-			this.vertexColors[i+2] = b;
-		}
+		this.hasVertexColor = true;
+		this.vertexColorR = r;
+		this.vertexColorG = g;
+		this.vertexColorB = b;
 	}
 	
 	public void setFaceColour(float r, float g, float b, boolean combine) {
 		if(combine) {
-			if(this.vertexColors == null) {
-				this.vertexColors = new float[4 * 3];
-				this.vertexColors[0] = 1f; this.vertexColors[1] = 1f; this.vertexColors[2] = 1f;
-				this.vertexColors[3] = 1f; this.vertexColors[4] = 1f; this.vertexColors[5] = 1f;
-				this.vertexColors[6] = 1f; this.vertexColors[7] = 1f; this.vertexColors[8] = 1f;
-				this.vertexColors[9] = 1f; this.vertexColors[10] = 1f; this.vertexColors[11] = 1f;
+			if(!this.hasVertexColor) {
+				this.hasVertexColor = true;
+				this.vertexColorR = 1f;
+				this.vertexColorG = 1f;
+				this.vertexColorB = 1f;
 			}
-			for(int i = 0; i < this.vertexColors.length; i += 3) {
-				this.vertexColors[i] *= r;
-				this.vertexColors[i+1] *= g;
-				this.vertexColors[i+2] *= b;
-			}
+			this.vertexColorR *= r;
+			this.vertexColorG *= g;
+			this.vertexColorB *= b;
 		}else {
-			this.vertexColors = new float[4 * 3];
-			for(int i = 0; i < this.vertexColors.length; i += 3) {
-				this.vertexColors[i] = r;
-				this.vertexColors[i+1] = g;
-				this.vertexColors[i+2] = b;
-			}
+			this.hasVertexColor = true;
+			this.vertexColorR = r;
+			this.vertexColorG = g;
+			this.vertexColorB = b;
 		}
 	}
 	
@@ -1247,10 +1210,6 @@ public class ModelFace {
 	
 	public void setFaceColour(Color colour, boolean combine) {
 		setFaceColour(colour.getR(), colour.getG(), colour.getB(), combine);
-	}
-	
-	public void setVertexColors(float[] vertexColors) {
-		this.vertexColors = vertexColors;
 	}
 
 	public boolean isDoubleSided() {
@@ -1262,13 +1221,13 @@ public class ModelFace {
 	}
 	
 	public void calculateNormal(float[] out) {
-		float x1 = points[1*3+0] - points[0*3+0];
-		float y1 = points[1*3+1] - points[0*3+1];
-		float z1 = points[1*3+2] - points[0*3+2];
+		float x1 = point1X - point0X;
+		float y1 = point1Y - point0Y;
+		float z1 = point1Z - point0Z;
 		
-		float x2 = points[3*3+0] - points[0*3+0];
-		float y2 = points[3*3+1] - points[0*3+1];
-		float z2 = points[3*3+2] - points[0*3+2];
+		float x2 = point3X - point0X;
+		float y2 = point3Y - point0Y;
+		float z2 = point3Z - point0Z;
 		
 		out[0] = y1 * z2 - z1 * y2;
 		out[1] = z1 * x2 - x1 * z2;
@@ -1289,16 +1248,13 @@ public class ModelFace {
 	}
 	
 	public void calculateOcclusion() {
-		float[] minMaxPoints = {
-				Math.min(points[0*3+0], points[2*3+0]),
-				Math.min(points[0*3+1], points[2*3+1]),
-				Math.min(points[0*3+2], points[2*3+2]),
-				Math.max(points[0*3+0], points[2*3+0]),
-				Math.max(points[0*3+1], points[2*3+1]),
-				Math.max(points[0*3+2], points[2*3+2]),
-		};
 		calculateDirection();
-		calculateOcclusion(minMaxPoints);
+		calculateOcclusion(Math.min(point0X, point2X),
+				Math.min(point0Y, point2Y),
+				Math.min(point0Z, point2Z),
+				Math.max(point0X, point2X),
+				Math.max(point0Y, point2Y),
+				Math.max(point0Z, point2Z));
 	}
 	
 	public void allowOcclusionIfFullyOccluded() {
@@ -1313,15 +1269,15 @@ public class ModelFace {
 	}
 
 	public float getCenterX() {
-		return (points[0] + points[3] + points[6] + points[9]) / 4f;
+		return (point0X + point1X + point2X + point3X) / 4f;
 	}
 	
 	public float getCenterY() {
-		return (points[1] + points[4] + points[7] + points[10]) / 4f;
+		return (point0Y + point1Y + point2Y + point3Y) / 4f;
 	}
 	
 	public float getCenterZ() {
-		return (points[2] + points[5] + points[8] + points[11]) / 4f;
+		return (point0Z + point1Z + point2Z + point3Z) / 4f;
 	}
 	
 	/**
@@ -1332,11 +1288,30 @@ public class ModelFace {
 	public boolean isOnTop(ModelFace other) {
 		if(other.direction != direction)
 			return false;
-		for(int i = 0; i < 12; i++) {
-			if(Math.floor(points[i] * 1000.0 + 0.5) != Math.floor(other.points[i] * 1000.0 + 0.5)) {
-				return false;
-			}
-		}
+		if(Math.floor(point0X * 1000.0 + 0.5) != Math.floor(other.point0X * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point0Y * 1000.0 + 0.5) != Math.floor(other.point0Y * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point0Z * 1000.0 + 0.5) != Math.floor(other.point0Z * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point1X * 1000.0 + 0.5) != Math.floor(other.point1X * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point1Y * 1000.0 + 0.5) != Math.floor(other.point1Y * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point1Z * 1000.0 + 0.5) != Math.floor(other.point1Z * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point2X * 1000.0 + 0.5) != Math.floor(other.point2X * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point2Y * 1000.0 + 0.5) != Math.floor(other.point2Y * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point2Z * 1000.0 + 0.5) != Math.floor(other.point2Z * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point3X * 1000.0 + 0.5) != Math.floor(other.point3X * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point3Y * 1000.0 + 0.5) != Math.floor(other.point3Y * 1000.0 + 0.5))
+			return false;
+		if(Math.floor(point3Z * 1000.0 + 0.5) != Math.floor(other.point3Z * 1000.0 + 0.5))
+			return false;
 		return true;
 	}
 
@@ -1344,21 +1319,41 @@ public class ModelFace {
 		JsonObject res = new JsonObject();
 		
 		JsonArray pointsArray = new JsonArray();
-		for(float point : points) {
-			pointsArray.add(point);
-		}
+		//for(float point : points) {
+		//	pointsArray.add(point);
+		//}
+		pointsArray.add(point0X);
+		pointsArray.add(point0Y);
+		pointsArray.add(point0Z);
+		pointsArray.add(point1X);
+		pointsArray.add(point1Y);
+		pointsArray.add(point1Z);
+		pointsArray.add(point2X);
+		pointsArray.add(point2Y);
+		pointsArray.add(point2Z);
+		pointsArray.add(point3X);
+		pointsArray.add(point3Y);
+		pointsArray.add(point3Z);
 		res.add("points", pointsArray);
 		JsonArray uvsArray = new JsonArray();
-		for(float uv : uvs) {
-			uvsArray.add(uv);
-		}
+		//for(float uv : uvs) {
+		//	uvsArray.add(uv);
+		//}
+		uvsArray.add(uvs0U);
+		uvsArray.add(uvs0V);
+		uvsArray.add(uvs1U);
+		uvsArray.add(uvs1V);
+		uvsArray.add(uvs2U);
+		uvsArray.add(uvs2V);
+		uvsArray.add(uvs3U);
+		uvsArray.add(uvs3V);
 		res.add("uvs", uvsArray);
-		if(vertexColors != null) {
+		if(hasVertexColor) {
 			JsonArray vertexColorsArray = new JsonArray();
-			for(float x : vertexColors) {
-				vertexColorsArray.add(x);
-			}
-			res.add("vertexColors", vertexColorsArray);
+			vertexColorsArray.add(vertexColorR);
+			vertexColorsArray.add(vertexColorG);
+			vertexColorsArray.add(vertexColorB);
+			res.add("vertexColor", vertexColorsArray);
 		}
 		res.addProperty("occludes", occludes);
 		res.addProperty("occludedBy", occludedBy);
@@ -1369,6 +1364,229 @@ public class ModelFace {
 		res.addProperty("shadingMode", shadingMode);
 		
 		return res;
+	}
+	
+	public float getPoint0X() {
+		return point0X;
+	}
+
+	public float getPoint0Y() {
+		return point0Y;
+	}
+
+	public float getPoint0Z() {
+		return point0Z;
+	}
+
+	public float getPoint1X() {
+		return point1X;
+	}
+
+	public float getPoint1Y() {
+		return point1Y;
+	}
+
+	public float getPoint1Z() {
+		return point1Z;
+	}
+
+	public float getPoint2X() {
+		return point2X;
+	}
+
+	public float getPoint2Y() {
+		return point2Y;
+	}
+
+	public float getPoint2Z() {
+		return point2Z;
+	}
+
+	public float getPoint3X() {
+		return point3X;
+	}
+
+	public float getPoint3Y() {
+		return point3Y;
+	}
+
+	public float getPoint3Z() {
+		return point3Z;
+	}
+
+	public float getUvs0U() {
+		return uvs0U;
+	}
+
+	public float getUvs0V() {
+		return uvs0V;
+	}
+
+	public float getUvs1U() {
+		return uvs1U;
+	}
+
+	public float getUvs1V() {
+		return uvs1V;
+	}
+
+	public float getUvs2U() {
+		return uvs2U;
+	}
+
+	public float getUvs2V() {
+		return uvs2V;
+	}
+
+	public float getUvs3U() {
+		return uvs3U;
+	}
+
+	public float getUvs3V() {
+		return uvs3V;
+	}
+	
+	public void setPoints(float[] points) {
+		point0X = points[0];
+		point0Y = points[1];
+		point0Z = points[2];
+		point1X = points[3];
+		point1Y = points[4];
+		point1Z = points[5];
+		point2X = points[6];
+		point2Y = points[7];
+		point2Z = points[8];
+		point3X = points[9];
+		point3Y = points[10];
+		point3Z = points[11];
+	}
+	
+	public void setUVs(float[] uvs) {
+		uvs0U = uvs[0];
+		uvs0V = uvs[1];
+		uvs1U = uvs[2];
+		uvs1V = uvs[3];
+		uvs2U = uvs[4];
+		uvs2V = uvs[5];
+		uvs3U = uvs[6];
+		uvs3V = uvs[7];
+	}
+	
+	/**
+	 * If this face sits perfectly on the unit cube,
+	 * then move it inwards slightly.
+	 */
+	public void moveTransparentFace(boolean inwards, boolean useDirection) {
+		float amt = inwards ? 0.01f : -0.01f;
+		switch(direction) {
+		case DOWN:
+		case UP:
+			if(Math.abs(point0Y-0f) < 0.001f && Math.abs(point1Y-0f) < 0.001f && 
+					Math.abs(point2Y-0f) < 0.001f && Math.abs(point3Y-0f) < 0.001f) {
+				if(useDirection && direction == Direction.UP)
+					amt = -amt;
+				point0Y += amt;
+				point1Y += amt;
+				point2Y += amt;
+				point3Y += amt;
+				
+			}
+			if(Math.abs(point0Y-16f) < 0.001f && Math.abs(point1Y-16f) < 0.001f && 
+					Math.abs(point2Y-16f) < 0.001f && Math.abs(point3Y-16f) < 0.001f) {
+				if(useDirection && direction == Direction.DOWN)
+					amt = -amt;
+				point0Y -= amt;
+				point1Y -= amt;
+				point2Y -= amt;
+				point3Y -= amt;
+			}
+			break;
+		case NORTH:
+		case SOUTH:
+			if(Math.abs(point0Z-0f) < 0.001f && Math.abs(point1Z-0f) < 0.001f && 
+					Math.abs(point2Z-0f) < 0.001f && Math.abs(point3Z-0f) < 0.001f) {
+				if(useDirection && direction == Direction.SOUTH)
+					amt = -amt;
+				point0Z += amt;
+				point1Z += amt;
+				point2Z += amt;
+				point3Z += amt;
+			}
+			if(Math.abs(point0Z-16f) < 0.001f && Math.abs(point1Z-16f) < 0.001f && 
+					Math.abs(point2Z-16f) < 0.001f && Math.abs(point3Z-16f) < 0.001f) {
+				if(useDirection && direction == Direction.NORTH)
+					amt = -amt;
+				point0Z -= amt;
+				point1Z -= amt;
+				point2Z -= amt;
+				point3Z -= amt;
+			}
+			break;
+		case EAST:
+		case WEST:
+			if(Math.abs(point0X-0f) < 0.001f && Math.abs(point1X-0f) < 0.001f && 
+					Math.abs(point2X-0f) < 0.001f && Math.abs(point3X-0f) < 0.001f) {
+				if(useDirection && direction == Direction.EAST)
+					amt = -amt;
+				point0X += amt;
+				point1X += amt;
+				point2X += amt;
+				point3X += amt;
+			}
+			if(Math.abs(point0X-16f) < 0.001f && Math.abs(point1X-16f) < 0.001f && 
+					Math.abs(point2X-16f) < 0.001f && Math.abs(point3X-16f) < 0.001f) {
+				if(useDirection && direction == Direction.WEST)
+					amt = -amt;
+				point0X -= amt;
+				point1X -= amt;
+				point2X -= amt;
+				point3X -= amt;
+			}
+			break;
+		}
+	}
+	
+	/**
+	 * If this face sits perfectly on the unit cub
+	 */
+	public boolean shouldMoveTransparentFace() {
+		switch(direction) {
+		case DOWN:
+		case UP:
+			if(Math.abs(point0Y-0f) < 0.001f && Math.abs(point1Y-0f) < 0.001f && 
+					Math.abs(point2Y-0f) < 0.001f && Math.abs(point3Y-0f) < 0.001f) {
+				return true;
+				
+			}
+			if(Math.abs(point0Y-16f) < 0.001f && Math.abs(point1Y-16f) < 0.001f && 
+					Math.abs(point2Y-16f) < 0.001f && Math.abs(point3Y-16f) < 0.001f) {
+				return true;
+			}
+			break;
+		case NORTH:
+		case SOUTH:
+			if(Math.abs(point0Z-0f) < 0.001f && Math.abs(point1Z-0f) < 0.001f && 
+					Math.abs(point2Z-0f) < 0.001f && Math.abs(point3Z-0f) < 0.001f) {
+				return true;
+			}
+			if(Math.abs(point0Z-16f) < 0.001f && Math.abs(point1Z-16f) < 0.001f && 
+					Math.abs(point2Z-16f) < 0.001f && Math.abs(point3Z-16f) < 0.001f) {
+				return true;
+			}
+			break;
+		case EAST:
+		case WEST:
+			if(Math.abs(point0X-0f) < 0.001f && Math.abs(point1X-0f) < 0.001f && 
+					Math.abs(point2X-0f) < 0.001f && Math.abs(point3X-0f) < 0.001f) {
+				return true;
+			}
+			if(Math.abs(point0X-16f) < 0.001f && Math.abs(point1X-16f) < 0.001f && 
+					Math.abs(point2X-16f) < 0.001f && Math.abs(point3X-16f) < 0.001f) {
+				return true;
+			}
+			break;
+		}
+		return false;
 	}
 
 }

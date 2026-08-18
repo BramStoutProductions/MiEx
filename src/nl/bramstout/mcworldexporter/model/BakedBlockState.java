@@ -38,6 +38,7 @@ import nl.bramstout.mcworldexporter.lighting.BlockLightValues;
 import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class BakedBlockState {
 	
@@ -132,7 +133,11 @@ public class BakedBlockState {
 		return name;
 	}
 	
-	public void getModels(int x, int y, int z, List<Model> res){
+	public void getModels(int x, int y, int z, List<Model> res) {
+		getModels(x, y, z, res, null);
+	}
+	
+	public void getModels(int x, int y, int z, List<Model> res, LayeredBlock layeredBlockCache){
 		float random = -1.0f;
 		List<Model> modelList;
 		Model m;

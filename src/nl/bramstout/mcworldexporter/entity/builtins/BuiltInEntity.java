@@ -219,7 +219,7 @@ public class BuiltInEntity extends EntityHandler{
 	
 	@Override
 	public Model getModel(Entity entity) {
-		Model model = new Model(entity.getId(), null, handler.model.doubleSided);
+		Model model = new Model(entity.getId(), null, handler.model.doubleSided, false);
 		ExprContext context = new ExprContext(entity.getId(), entity.getProperties(), handler.isLocationDependent, 
 				(int) Math.floor(entity.getX()), (int) Math.floor(entity.getY()), (int) Math.floor(entity.getZ()), 
 				entity.getX(), entity.getY(), entity.getZ(), 0f, entity.getPitch(), entity.getYaw(),
@@ -230,7 +230,6 @@ public class BuiltInEntity extends EntityHandler{
 		}catch(Exception ex) {
 			World.handleError(new RuntimeException("Error while evaluating entity " + name, ex));
 		}
-		model.addRootBone();
 		return model;
 	}
 

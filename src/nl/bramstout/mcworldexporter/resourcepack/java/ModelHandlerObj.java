@@ -293,7 +293,7 @@ public class ModelHandlerObj extends ModelHandler{
 		
 		// Add in the textures
 		for(int i = 0; i < textures.size(); ++i)
-			model.getTextures().put("#tex" + Integer.toString(i), textures.get(i));
+			model.addTexture("#tex" + Integer.toString(i), textures.get(i));
 		
 		// Add in the faces
 		model.getFaces().clear();

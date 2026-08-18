@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -35,6 +37,8 @@ import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.launcher.Launcher;
 import nl.bramstout.mcworldexporter.launcher.LauncherRegistry;
+import nl.bramstout.mcworldexporter.launcher.ResourcePackSourceCollector;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackDefaults;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
@@ -55,6 +59,9 @@ public class ResourcePackInstallerDialog extends JDialog{
 	private JTextField saveToInput;
 	private String availableSearchString;
 	private String sourcesSearchString;
+	private String launcherFilterString;
+	private ResourcePackSourceCollector collector;
+	private AsyncGroup asyncGroup;
 	
 	public ResourcePackInstallerDialog() {
 		super(MCWorldExporter.getApp().getUI(), Dialog.ModalityType.APPLICATION_MODAL);
@@ -83,9 +90,35 @@ public class ResourcePackInstallerDialog extends JDialog{
 		
 		
 		
+		JPanel availableLabelPanel = new JPanel();
+		availableLabelPanel.setLayout(new BoxLayout(availableLabelPanel, BoxLayout.X_AXIS));
+		availableLabelPanel.setBorder(new EmptyBorder(0,0,0,0));
+		availableLabelPanel.setAlignmentX(0f);
+		availableRootPanel.add(availableLabelPanel);
 		JLabel availableLabel = new JLabel("Available Sources");
 		availableLabel.setAlignmentX(0f);
-		availableRootPanel.add(availableLabel);
+		availableLabel.setMinimumSize(new Dimension(0, 18));
+		availableLabel.setPreferredSize(new Dimension(100, 18));
+		availableLabel.setMaximumSize(new Dimension(10000, 18));
+		availableLabelPanel.add(availableLabel);
+		
+		JComboBox<String> availableLauncherFilter = new JComboBox<String>();
+		availableLauncherFilter.addItem("All Launchers");
+		for(Launcher launcher : LauncherRegistry.getLaunchers()) {
+			availableLauncherFilter.addItem(launcher.getName());
+		}
+		availableLauncherFilter.setMinimumSize(new Dimension(0, 18));
+		availableLauncherFilter.setPreferredSize(new Dimension(160, 18));
+		availableLauncherFilter.setMaximumSize(new Dimension(10000, 18));
+		availableLabelPanel.add(availableLauncherFilter);
+		availableLauncherFilter.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setLauncherFilter((String) availableLauncherFilter.getSelectedItem());
+			}
+			
+		});
 		
 		SearchField availableSearchField = new SearchField();
 		availableSearchField.setPlaceholder("Search");
@@ -124,6 +157,32 @@ public class ResourcePackInstallerDialog extends JDialog{
 		availableScrollPane.setAlignmentX(0f);
 		availableRootPanel.add(availableScrollPane);
 		
+		JPanel availableProgressBar = new JPanel() {
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+			
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				if(collector.isProcessing() || (asyncGroup != null && !asyncGroup.isDone())) {
+					float progress = collector.getProgress();
+					if(asyncGroup != null)
+						progress *= asyncGroup.progress();
+					g.setColor(new Color(64, 96, 255));
+					g.fillRect(0, 0, (int) (progress * getWidth()), getHeight());
+				}
+			}
+			
+		};
+		availableProgressBar.setMinimumSize(new Dimension(0, 1));
+		availableProgressBar.setMaximumSize(new Dimension(100000, 1));
+		availableProgressBar.setPreferredSize(new Dimension(400, 1));
+		availableProgressBar.setAlignmentX(0f);
+		availableRootPanel.add(availableProgressBar);
+		
 		JPanel additionalSourcesPanel = new JPanel();
 		additionalSourcesPanel.setLayout(new BoxLayout(additionalSourcesPanel, BoxLayout.X_AXIS));
 		additionalSourcesPanel.setAlignmentX(0f);
@@ -155,6 +214,9 @@ public class ResourcePackInstallerDialog extends JDialog{
 		
 		JLabel sourcesLabel = new JLabel("Sources To Install");
 		sourcesLabel.setAlignmentX(0f);
+		sourcesLabel.setMinimumSize(new Dimension(0, 18));
+		sourcesLabel.setPreferredSize(new Dimension(260, 18));
+		sourcesLabel.setMaximumSize(new Dimension(10000, 18));
 		sourcesRootPanel.add(sourcesLabel);
 		
 		SearchField sourcesSearchField = new SearchField();
@@ -229,31 +291,37 @@ public class ResourcePackInstallerDialog extends JDialog{
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-				chooser.setApproveButtonText("Add");
-				chooser.setDialogTitle("Select Sources");
-				chooser.setMultiSelectionEnabled(true);
-				chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-				if (new File(FileUtil.getMinecraftRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getMinecraftRootDir()));
-				if (!FileUtil.getMultiMCRootDir().equals("") && new File(FileUtil.getMultiMCRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getMultiMCRootDir()));
-				if (!FileUtil.getTechnicRootDir().equals("") && new File(FileUtil.getTechnicRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getTechnicRootDir()));
-				chooser.setFileFilter(null);
-				chooser.setAcceptAllFileFilterUsed(false);
-				int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
-				if (result == JFileChooser.APPROVE_OPTION) {
-					for(File f : chooser.getSelectedFiles()) {
-						if(ResourcePacks.isValidResourcePackFile(f)) {
-							ResourcePackSource source = new ResourcePackSource(f.getName(), null);
-							source.addSource(ResourcePackSource.getHash(f), f);
-							enableSource(source);
-						}else if(f.isDirectory()) {
-							findSources(f);
+				collector.pause();
+				try {
+					JFileChooser chooser = new JFileChooser();
+					chooser.setApproveButtonText("Add");
+					chooser.setDialogTitle("Select Sources");
+					chooser.setMultiSelectionEnabled(true);
+					chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+					if (new File(FileUtil.getMinecraftRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getMinecraftRootDir()));
+					if (!FileUtil.getMultiMCRootDir().equals("") && new File(FileUtil.getMultiMCRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getMultiMCRootDir()));
+					if (!FileUtil.getTechnicRootDir().equals("") && new File(FileUtil.getTechnicRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getTechnicRootDir()));
+					chooser.setFileFilter(null);
+					chooser.setAcceptAllFileFilterUsed(false);
+					int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
+					if (result == JFileChooser.APPROVE_OPTION) {
+						for(File f : chooser.getSelectedFiles()) {
+							if(ResourcePacks.isValidResourcePackFile(f)) {
+								ResourcePackSource source = new ResourcePackSource(f.getName(), null);
+								source.addSource(ResourcePackSource.getHash(f), f);
+								enableSource(source);
+							}else if(f.isDirectory()) {
+								findSources(f);
+							}
 						}
 					}
+				}catch(Exception ex) {
+					ex.printStackTrace();
 				}
+				collector.unpause();
 			}
 		});
 		
@@ -273,31 +341,37 @@ public class ResourcePackInstallerDialog extends JDialog{
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JFileChooser chooser = new JFileChooser();
-				chooser.setApproveButtonText("Add");
-				chooser.setDialogTitle("Select Sources");
-				chooser.setMultiSelectionEnabled(true);
-				chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-				if (new File(FileUtil.getMinecraftRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getMinecraftRootDir()));
-				if (!FileUtil.getMultiMCRootDir().equals("") && new File(FileUtil.getMultiMCRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getMultiMCRootDir()));
-				if (!FileUtil.getTechnicRootDir().equals("") && new File(FileUtil.getTechnicRootDir()).exists())
-					chooser.setCurrentDirectory(new File(FileUtil.getTechnicRootDir()));
-				chooser.setFileFilter(null);
-				chooser.setAcceptAllFileFilterUsed(false);
-				int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
-				if (result == JFileChooser.APPROVE_OPTION) {
-					for(File f : chooser.getSelectedFiles()) {
-						if(ResourcePacks.isValidResourcePackFile(f)) {
-							ResourcePackSource source = new ResourcePackSource(f.getName(), null);
-							source.addSource(ResourcePackSource.getHash(f), f);
-							enableSource(source);
-						}else if(f.isDirectory()) {
-							findSources(f);
+				collector.pause();
+				try {
+					JFileChooser chooser = new JFileChooser();
+					chooser.setApproveButtonText("Add");
+					chooser.setDialogTitle("Select Sources");
+					chooser.setMultiSelectionEnabled(true);
+					chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+					if (new File(FileUtil.getMinecraftRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getMinecraftRootDir()));
+					if (!FileUtil.getMultiMCRootDir().equals("") && new File(FileUtil.getMultiMCRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getMultiMCRootDir()));
+					if (!FileUtil.getTechnicRootDir().equals("") && new File(FileUtil.getTechnicRootDir()).exists())
+						chooser.setCurrentDirectory(new File(FileUtil.getTechnicRootDir()));
+					chooser.setFileFilter(null);
+					chooser.setAcceptAllFileFilterUsed(false);
+					int result = chooser.showOpenDialog(MCWorldExporter.getApp().getUI());
+					if (result == JFileChooser.APPROVE_OPTION) {
+						for(File f : chooser.getSelectedFiles()) {
+							if(ResourcePacks.isValidResourcePackFile(f)) {
+								ResourcePackSource source = new ResourcePackSource(f.getName(), null);
+								source.addSource(ResourcePackSource.getHash(f), f);
+								enableSource(source);
+							}else if(f.isDirectory()) {
+								findSources(f);
+							}
 						}
 					}
+				}catch(Exception ex) {
+					ex.printStackTrace();
 				}
+				collector.unpause();
 			}
 		});
 		
@@ -310,6 +384,7 @@ public class ResourcePackInstallerDialog extends JDialog{
 					return;
 				}
 				
+				collector.pause();
 				List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
 				
 				for(Component comp : sourcesPanel.getComponents()) {
@@ -320,36 +395,52 @@ public class ResourcePackInstallerDialog extends JDialog{
 				
 				if(sources.isEmpty()) {
 					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "No sources!", "", Popups.ERROR_MESSAGE);
+					collector.unpause();
 					return;
 				}
 				
-				File resourcePackFolder = new File(FileUtil.getResourcePackDir(), saveToInput.getText());
-				
-				System.out.println("Installing resource pack from sources into " + saveToInput.getText());
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
-				
 				try {
-					ResourcePackDefaults.extractSourcesIntoResourcePack(sources, resourcePackFolder);
+					File resourcePackFolder = new File(FileUtil.getResourcePackDir(), saveToInput.getText());
+					
+					System.out.println("Installing resource pack from sources into " + saveToInput.getText());
+					MCWorldExporter.getApp().getUI().getProgressBar().setText("Extracting resources");
+					
+					try {
+						ResourcePackDefaults.extractSourcesIntoResourcePack(sources, resourcePackFolder);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+					
+					MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
+					MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+					MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
+					
+					// Reload everything
+					ResourcePacks.load();
+					List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
+					List<String> currentlyLoadedUUIDS = new ArrayList<String>();
+					for(ResourcePack pack : currentlyLoaded)
+						currentlyLoadedUUIDS.add(pack.getUUID());
+					
+					MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
+					MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
+					
+					Config.load();
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
-				
-				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0f);
-				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(true);
-				
-				// Reload everything
-				ResourcePacks.load();
-				List<ResourcePack> currentlyLoaded = ResourcePacks.getActiveResourcePacks();
-				List<String> currentlyLoadedUUIDS = new ArrayList<String>();
-				for(ResourcePack pack : currentlyLoaded)
-					currentlyLoadedUUIDS.add(pack.getUUID());
-				
-				MCWorldExporter.getApp().getUI().getResourcePackManager().reset(false);
-				MCWorldExporter.getApp().getUI().getResourcePackManager().enableResourcePack(currentlyLoadedUUIDS);
-				
-				Config.load();
+				collector.unpause();
 			}
+		});
+		
+		collector = new ResourcePackSourceCollector((List<ResourcePackSource> sources)->{
+			for(ResourcePackSource source : sources) {
+				availablePanel.add(new AvailableSource(source, this));
+			}
+			sortPanel(availablePanel);
+			invalidate();
+			revalidate();
+			repaint();
 		});
 	}
 	
@@ -409,12 +500,18 @@ public class ResourcePackInstallerDialog extends JDialog{
 	
 	public void sortPanel(JPanel panel) {
 		try {
+			if(panel.getComponentCount() > 500) {
+				// Don't bother doing the sort if we have over 500 items.
+				// At that moment, no-one is going to scroll through it
+				// and they will just use the search functionality.
+				return;
+			}
 			Runnable runnable = new Runnable() {
 
 				@Override
 				public void run() {
 					Component comps[] = panel.getComponents();
-					Arrays.sort(comps, new Comparator<Component>() {
+					Arrays.parallelSort(comps, new Comparator<Component>() {
 						
 						private int compareString(String s1, String s2) {
 							for(int i = 0; i < Math.min(s1.length(), s2.length()); ++i) {
@@ -473,17 +570,29 @@ public class ResourcePackInstallerDialog extends JDialog{
 		}
 	}
 	
+	private void setLauncherFilter(String name) {
+		if(name == null || name.equals("") || name.equals("All Launchers")) {
+			this.launcherFilterString = null;
+		}else {
+			this.launcherFilterString = name;
+		}
+		setPanelSearchString(this.availableSearchString, this.launcherFilterString, 
+				availablePanel, availableScrollPane);
+	}
+	
 	private void setSourcesSearchString(String searchString) {
 		this.sourcesSearchString = searchString;
-		setPanelSearchString(searchString, sourcesPanel, sourcesScrollPane);
+		setPanelSearchString(searchString, null, sourcesPanel, sourcesScrollPane);
 	}
 	
 	private void setAvailableSearchString(String searchString) {
 		this.availableSearchString = searchString;
-		setPanelSearchString(searchString, availablePanel, availableScrollPane);
+		setPanelSearchString(searchString, this.launcherFilterString, 
+				availablePanel, availableScrollPane);
 	}
 	
-	private void setPanelSearchString(String searchString, JPanel panel, JScrollPane scrollpane) {
+	private void setPanelSearchString(String searchString, String launcherFilter, 
+									JPanel panel, JScrollPane scrollpane) {
 		String[] searchStrings = null;
 		if(searchString != null) {
 			searchStrings = searchString.toLowerCase().split(" ");
@@ -495,12 +604,22 @@ public class ResourcePackInstallerDialog extends JDialog{
 				}else {
 					comp.setVisible(false);
 				}
+				if(launcherFilter != null) {
+					if(!((AvailableSource)comp).source.getLauncher().getName().equals(launcherFilter)) {
+						comp.setVisible(false);
+					}
+				}
 			}
 			if(comp instanceof ActiveSource) {
 				if(((ActiveSource)comp).matchesSearchString(searchStrings)) {
 					comp.setVisible(true);
 				}else {
 					comp.setVisible(false);
+				}
+				if(launcherFilter != null) {
+					if(!((ActiveSource)comp).source.getLauncher().getName().equals(launcherFilter)) {
+						comp.setVisible(false);
+					}
 				}
 			}
 		}
@@ -526,16 +645,17 @@ public class ResourcePackInstallerDialog extends JDialog{
 			saveToInput.setText("Install To Resource Pack");
 			
 			availablePanel.removeAll();
+			collector.unpause();
+			asyncGroup = new AsyncGroup();
 			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-				for(ResourcePackSource source : launcher.getAllResourcePackSources()) {
-					availablePanel.add(new AvailableSource(source, this));
-				}
+				asyncGroup.runTask(()->{					
+					launcher.getAllResourcePackSources(collector, asyncGroup);
+				});
 			}
-			
-			sortPanel(availablePanel);
-			invalidate();
-			revalidate();
-			repaint();
+		}else {
+			collector.pause();
+			availablePanel.removeAll();
+			sourcesPanel.removeAll();
 		}
 		super.setVisible(b);
 	}

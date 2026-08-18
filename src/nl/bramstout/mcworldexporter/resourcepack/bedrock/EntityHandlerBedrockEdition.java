@@ -283,20 +283,21 @@ public class EntityHandlerBedrockEdition extends EntityHandler{
 			
 			if(model == null) {
 				model = new Model(model2);
+				model.setImmoveable();
 				for(Entry<String, String> material : materialNames.entrySet()) {
-					model.getTextures().put(material.getKey(), BedrockMaterials.getTexture(material.getValue(), textureNames, tints));
+					model.addTexture(material.getKey(), BedrockMaterials.getTexture(material.getValue(), textureNames, tints));
 				}
 			}else{
 				// Combine the models.
 				String texPrefix = "#miex_" + renderControllerCounter + "_";
 				for(Entry<String, String> material : materialNames.entrySet()) {
-					model.getTextures().put(texPrefix + material.getKey(), 
+					model.addTexture(texPrefix + material.getKey(), 
 							BedrockMaterials.getTexture(material.getValue(), textureNames, tints));
 				}
 				int faceIndexOffset = model.getFaces().size();
 				for(ModelFace face : model2.getFaces()) {
 					ModelFace face2 = new ModelFace(face);
-					if(materialNames.containsKey(face2.getTexture())) {
+					if(materialNames.containsKey(face2.getTextureString())) {
 						face2.setTexture(texPrefix + face2.getTexture());
 					}else {
 						// Default to the '*' material

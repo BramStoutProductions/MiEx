@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 
 import nl.bramstout.mcworldexporter.Color;
@@ -81,9 +80,116 @@ import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.Chunk;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 import nl.bramstout.mcworldexporter.world.World;
 
 public class ChunkExporter {
+	
+	public static class MeshKey{
+		
+		public String texture;
+		public String blockName;
+		public boolean hasTint;
+		public String shadingMode;
+		public byte blockLightEmission;
+		public Atlas.AtlasItem atlasItem;
+		public Materials.MaterialTemplate materialTemplate;
+		public int materialTemplateHash;
+		public String materialTemplateHashStr;
+		public Set<String> colorSets;
+		public boolean doubleSided;
+		
+		private void setupMaterialTemplate() {
+			materialTemplate = Materials.getMaterial(texture, hasTint, doubleSided, colorSets, Exporter.currentExportFile.getParent(), 
+													shadingMode, blockLightEmission);
+			materialTemplateHash = materialTemplate.hashCode();
+			materialTemplateHashStr = Integer.toHexString(materialTemplateHash);
+		}
+		
+		public String createName() {
+			StringBuilder sb = new StringBuilder();
+			if(blockName != null) {
+				sb.append(blockName.replace(':', '_'));
+				sb.append('_');
+			}
+			if(atlasItem != null) {
+				sb.append(atlasItem.atlas);
+			}else {
+				if(texture.isEmpty()) {
+					sb.append("empty");
+				}else {
+					sb.append(texture);
+				}
+			}
+			if(materialTemplate == null)
+				setupMaterialTemplate();
+			sb.append('_');
+			sb.append(materialTemplateHashStr);
+			/*if(hasTint) {
+				sb.append("_BIOME");
+			}
+			if(shadingMode != null) {
+				sb.append('_');
+				sb.append(shadingMode);
+			}*/
+			return sb.toString();
+		}
+		
+		@Override
+		public int hashCode() {
+			int res = 0;
+			if(atlasItem != null) {
+				res = atlasItem.atlas.hashCode();
+			}else {
+				res = texture != null ? texture.hashCode() : 0;
+			}
+			res = res * 31 + (blockName != null ? blockName.hashCode() : 0);
+			if(materialTemplate == null)
+				setupMaterialTemplate();
+			res = res * 31 + materialTemplateHash;
+			//res = res * 31 + (hasTint ? 10 : 0);
+			//res = res * 31 + (shadingMode != null ? shadingMode.hashCode() : 0);
+			return res;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof MeshKey))
+				return false;
+			MeshKey other = (MeshKey) obj;
+			if(atlasItem != null || other.atlasItem != null) {
+				if(atlasItem == null || other.atlasItem == null)
+					return false;
+				if(!atlasItem.atlas.equals(other.atlasItem.atlas))
+					return false;
+			}else {
+				if((texture == null || other.texture == null) && texture != other.texture)
+					return false;
+				if(texture != null && !texture.equals(other.texture))
+					return false;
+			}
+			if(materialTemplate == null)
+				setupMaterialTemplate();
+			if(other.materialTemplate == null)
+				other.setupMaterialTemplate();
+			if(!materialTemplate.equals(other.materialTemplate))
+				return false;
+			if((blockName == null || other.blockName == null) && blockName != other.blockName)
+				return false;
+			if(blockName != null && !blockName.equals(other.blockName))
+				return false;
+			/*if((shadingMode == null || other.shadingMode == null) && shadingMode != other.shadingMode)
+				return false;
+			if(shadingMode != null && !shadingMode.equals(other.shadingMode))
+				return false;
+			if(hasTint != other.hasTint)
+				return false;*/
+			return true;
+		}
+		
+	}
+	
+	public static long maxChunkMemoryUsage = 16 * 1024 * 10124;
 	
 	private ExportBounds bounds;
 	private World world;
@@ -93,8 +199,10 @@ public class ChunkExporter {
 	private int worldOffsetX;
 	private int worldOffsetY;
 	private int worldOffsetZ;
-	private Map<String, Mesh> meshes;
-	private Map<IndividualBlockId, FloatArray> individualBlocks;
+	private Map<MeshKey, Mesh> meshes;
+	private Map<String, List<Long>> meshChunks;
+	private List<String> rootMeshes;
+	private Map<IndividualBlockId, IndividualBlock> individualBlocks;
 	private Map<AnimatedBlockId, AnimatedBlock> animatedBlocks;
 	private Map<String, List<Vector3f>> pointLocators;
 	private String name;
@@ -103,6 +211,12 @@ public class ChunkExporter {
 	private CaveCache caveCache;
 	private BlockLightingCache lightingCache;
 	private Reference<char[]> charBuffer;
+	private LayeredBlock layeredBlockCache;
+	private AmbientOcclusion ambientOcclusion;
+	private Occlusion occlusionHandler;
+	private float[] pointsCache;
+	private float[] uvsCache;
+	private MeshKey meshKeyCache;
 
 	
 	public ChunkExporter(ExportBounds bounds, World world, int chunkX, int chunkZ, int chunkSize, String name, String fgChunkName) {
@@ -116,8 +230,10 @@ public class ChunkExporter {
 		this.worldOffsetX = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetX();
 		this.worldOffsetY = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetY();
 		this.worldOffsetZ = MCWorldExporter.getApp().getExportBoundsList().get(0).getOffsetZ();
-		this.meshes = new HashMap<String, Mesh>();
-		this.individualBlocks = new HashMap<IndividualBlockId, FloatArray>();
+		this.meshes = new HashMap<MeshKey, Mesh>();
+		this.meshChunks = new HashMap<String, List<Long>>();
+		this.rootMeshes = new ArrayList<String>();
+		this.individualBlocks = new HashMap<IndividualBlockId, IndividualBlock>();
 		this.animatedBlocks = new HashMap<AnimatedBlockId, AnimatedBlock>();
 		this.pointLocators = new HashMap<String, List<Vector3f>>();
 		this.name = name;
@@ -127,9 +243,35 @@ public class ChunkExporter {
 			this.caveCache = new CaveCache(chunkX, chunkZ, chunkSize, bounds.getMinY(), bounds.getMaxY() - bounds.getMinY());
 		this.lightingCache = null;
 		this.charBuffer = new Reference<char[]>();
+		this.layeredBlockCache = new LayeredBlock();
+		this.ambientOcclusion = new AmbientOcclusion();
+		this.occlusionHandler = new Occlusion();
+		this.pointsCache = new float[12];
+		this.uvsCache = new float[8];
+		this.meshKeyCache = new MeshKey();
 	}
 	
-	public void generateMeshes() {
+	public long getMemoryUsage() {
+		long memory = 0;
+		
+		for(Mesh mesh : this.meshes.values()) {
+			memory += (long) mesh.estimateMemoryUsage();
+		}
+		
+		return memory;
+	}
+	
+	public void export(LargeDataOutputStream dos) throws Exception {
+		dos.writeUTF(name);
+		dos.writeByte((bounds.getFgChunks().contains(fgChunkName) || bounds.getFgChunks().isEmpty()) ? 
+				1 : 0); // Is foreground chunk
+		
+		generateMeshes(dos);
+		flushMeshes(dos);
+		writeEnd(dos);
+	}
+	
+	public void generateMeshes(LargeDataOutputStream dos) throws Exception {
 		if(Config.calculateLighting) {
 			int padding = Lighting.getMaxLightLevel() + 1;
 			int chunkPadding = (padding + 15) / 16;
@@ -149,16 +291,13 @@ public class ChunkExporter {
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
+				
+				if(getMemoryUsage() >= maxChunkMemoryUsage) {
+					flushMeshes(dos);
+				}
+				
 				MCWorldExporter.getApp().getUI().getProgressBar().finishedMesh(chunkSize * chunkSize);
 			}
-		}
-		
-		for(String bannedMaterial : Config.bannedMaterials) {
-			if(meshes.containsKey(bannedMaterial))
-				meshes.remove(bannedMaterial);
-			bannedMaterial = bannedMaterial + "_BIOME";
-			if(meshes.containsKey(bannedMaterial))
-				meshes.remove(bannedMaterial);
 		}
 	}
 	
@@ -213,8 +352,6 @@ public class ChunkExporter {
 		List<ModelFace> detailedOcclusionFaces = new ArrayList<ModelFace>();
 		boolean placeStone = false;
 		long occlusion = 0;
-		AmbientOcclusion ambientOcclusion = new AmbientOcclusion();
-		Occlusion occlusionHandler = new Occlusion();
 		ModifierContext modifierContext = new ModifierContext();
 		
 		for(by = minY; by < maxY; by += lodYSize) {
@@ -375,7 +512,8 @@ public class ChunkExporter {
 		
 		List<Locators> locators = Locators.getLocatorForBlock(block.getName(), block.getProperties());
 		if(locators != null) {
-			for(Locators locator : locators) {
+			for(int i = 0; i < locators.size(); ++i) {
+				Locators locator = locators.get(i);
 				if(locator instanceof PointLocators) {
 					List<Vector3f> points = pointLocators.getOrDefault(locator.getName(), null);
 					if(points == null) {
@@ -398,17 +536,13 @@ public class ChunkExporter {
 										needsConnectionInfo ? blockId[2] : 0,
 										needsConnectionInfo ? blockId[3] : 0,
 										needsConnectionInfo ? layer : 0);
-		FloatArray array = individualBlocks.getOrDefault(id, null);
-		if(array == null) {
-			array = new FloatArray();
-			array.add(wx*16 + offsetX - worldOffsetX * 16);
-			array.add(by*16 + offsetY - worldOffsetY * 16 + 8.0f);
-			array.add(wz*16 + offsetZ - worldOffsetZ * 16);
-			individualBlocks.put(id, array);
+		IndividualBlock individualBlock = individualBlocks.getOrDefault(id, null);
+		if(individualBlock == null) {
+			individualBlock = new IndividualBlock(id);
+			individualBlock.addBlock(wx, by, wz, layer, offsetX, offsetY, offsetZ, worldOffsetX, worldOffsetY, worldOffsetZ, lightingCache);
+			individualBlocks.put(id, individualBlock);
 		}else {
-			array.add(wx*16 + offsetX - worldOffsetX * 16);
-			array.add(by*16 + offsetY - worldOffsetY * 16 + 8.0f);
-			array.add(wz*16 + offsetZ - worldOffsetZ * 16);
+			individualBlock.addBlock(wx, by, wz, layer, offsetX, offsetY, offsetZ, worldOffsetX, worldOffsetY, worldOffsetZ, lightingCache);
 		}
 	}
 	
@@ -449,7 +583,8 @@ public class ChunkExporter {
 		animatedBlock.addBlock(wx*16 + offsetX - worldOffsetX * 16, 
 				wy*16 + offsetY - worldOffsetY * 16, 
 				wz*16 + offsetZ - worldOffsetZ * 16, wx, wy, wz, 
-				randomOffsetXZ, randomOffsetY, randomOffsetMethod, randomOffsetNoiseScale);
+				randomOffsetXZ, randomOffsetY, randomOffsetMethod, randomOffsetNoiseScale,
+				lightingCache);
 	}
 	
 	private void handleBlock(List<Model> models, BakedBlockState state, int[] blockId, int dataVersion, long occlusion, 
@@ -458,7 +593,7 @@ public class ChunkExporter {
 							Biome biomeInstance, BlendedBiome biome, int lodSize, int lodYSize, Occlusion occlusionHandler,
 							ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
 		models.clear();
-		state.getModels(blockId[1], blockId[2], blockId[3], models);
+		state.getModels(blockId[1], blockId[2], blockId[3], models, layeredBlockCache);
 		
 		if(Config.subdivideModelsForCorners) {
 			/**
@@ -472,10 +607,12 @@ public class ChunkExporter {
 			 * 
 			 * So, we need to subdivide those faces to solve this.
 			 */
-			Subdivider.subdivideModelForOcclusion(models, occlusion);
+			Subdivider.subdivideModelForOcclusion(models, occlusion, pointsCache, uvsCache);
 		}
 		
-		occlusionHandler.calculateCornerDataForModel(models, state, occlusion, detailedOcclusionFaces);
+		occlusionHandler.calculateOcclusionDataForModel(models, state, occlusion, detailedOcclusionFaces);
+		
+		byte blockLightEmission = state.getEmissiveLightLevel();
 		
 		Model model;
 		ModelFace face;
@@ -496,7 +633,7 @@ public class ChunkExporter {
 						biomeInstance, biome, wx, by, wz, layer, 
 						offsetX, offsetY, offsetZ, uvOffsetY, model.getExtraData(), state.getTint(), model.isDoubleSided(), 
 						lodSize, lodYSize, state.isLodNoUVScale(), state.isLodNoScale(), false, state.getSeparateMeshForBlock(), 
-						ambientOcclusion, cornerData, modifierContext, modifiers, chunk);
+						ambientOcclusion, cornerData, blockLightEmission, modifierContext, modifiers, chunk);
 				
 				faceIndex++;
 			}
@@ -504,25 +641,34 @@ public class ChunkExporter {
 	}
 	
 	private void handleEntity(Entity entity, Chunk chunk) {
+		int ix = (int) Math.floor(entity.getX());
+		int iy = (int) Math.floor(entity.getY());
+		int iz = (int) Math.floor(entity.getZ());
+		
+		if(!bounds.isInExportRegion(ix, iy, iz))
+			return;
+		
+		float ox = (entity.getX() - ix) * 16f;
+		float oy = (entity.getY() - iy) * 16f;
+		float oz = (entity.getZ() - iz) * 16f;
 		Model model = entity.getModel();
 		ModelFace face;
 		int cornerData = 0;
+		float pitch = entity.getPitch();
+		float yaw = entity.getYaw();
 
 		for(int j = 0; j < model.getFaces().size(); ++j) {
 			face = model.getFaces().get(j);
-			
-			int ix = (int) Math.floor(entity.getX());
-			int iy = (int) Math.floor(entity.getY());
-			int iz = (int) Math.floor(entity.getZ());
-			float ox = (entity.getX() - ix) * 16f;
-			float oy = (entity.getY() - iy) * 16f;
-			float oz = (entity.getZ() - iz) * 16f;
+			if(pitch != 0f || yaw != 0f) {
+				face = new ModelFace(face);
+				face.rotate(pitch, yaw, 0f, 0f, 0f, 0f);
+			}
 				
 			addFace(meshes, entity.getId(), 0, 0, face, model.getTexture(face.getTexture()), 
 					null, null, ix, iy, iz, 0, 
 					ox, oy, oz, 0f, model.getExtraData(), null, model.isDoubleSided(), 
 					1, 1, false, false, true, false, 
-					null, cornerData, null, null, chunk);
+					null, cornerData, (byte) 0, null, null, chunk);
 		}
 	}
 	
@@ -911,73 +1057,15 @@ public class ChunkExporter {
 		res.normalise();
 	}
 	
-	public static class AtlasKey{
-		
-		public String atlasTexture;
-		public Materials.MaterialTemplate materialTemplate;
-		
-		public AtlasKey(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, 
-						Set<String> colorSets, String shadingMode) {
-			atlasTexture = item.atlas;
-			materialTemplate = Materials.getMaterial(originalTexture, hasBiomeColor, isDoubleSided, colorSets, "", shadingMode);
-		}
-		
-		@Override
-		public int hashCode() {
-			return Objects.hash(atlasTexture, materialTemplate);
-		}
-		
-		@Override
-		public boolean equals(Object obj) {
-			if(!(obj instanceof AtlasKey))
-				return false;
-			return ((AtlasKey) obj).atlasTexture.equals(atlasTexture) && 
-					(((AtlasKey)obj).materialTemplate == materialTemplate ||
-					(((AtlasKey)obj).materialTemplate != null &&
-					((AtlasKey) obj).materialTemplate.equals(materialTemplate)));
-		}
-		
-	}
-	
-	private Map<String, String> atlasMappings = new HashMap<String, String>();
-	private Map<AtlasKey, String> atlasMappings2 = new HashMap<AtlasKey, String>();
-	private Map<String, Integer> atlasMeshCounters = new HashMap<String, Integer>();
-	
-	private String getMeshName(Atlas.AtlasItem item, String originalTexture, boolean hasBiomeColor, boolean isDoubleSided, String shadingMode) {
-		String meshName = atlasMappings.getOrDefault(originalTexture, null);
-		if(meshName != null)
-			return meshName;
-		
-		AtlasKey key = new AtlasKey(item, originalTexture, hasBiomeColor, isDoubleSided, null, shadingMode);
-		meshName = atlasMappings2.getOrDefault(key, null);
-		if(meshName != null) {
-			atlasMappings.put(originalTexture, meshName);
-			return meshName;
-		}
-		
-		Integer counter = atlasMeshCounters.getOrDefault(item.atlas, null);
-		if(counter == null) {
-			counter = Integer.valueOf(0);
-		}
-		atlasMeshCounters.put(item.atlas, counter + 1);
-		
-		meshName = item.atlas + "_" + counter.toString() + "_";
-		if(hasBiomeColor)
-			meshName += "BIOME";
-		
-		atlasMappings.put(originalTexture, meshName);
-		atlasMappings2.put(key, meshName);
-		return meshName;
-	}
-	
 	private Color[] faceTint = null;
 	
-	private void addFace(Map<String, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
+	private void addFace(Map<MeshKey, Mesh> meshes, String blockName, int blockId, int dataVersion, ModelFace face, String texture, 
 			Biome biome, BlendedBiome blendedBiome, int ix, int iy, int iz, int layer, float ox, float oy, float oz, 
 			float uvOffsetY, String extraData, TintLayers tintLayers, boolean doubleSided, int lodSize, int lodYSize,
 			boolean lodNoUVScale, boolean lodNoScale, boolean noConnectedTextures, boolean separateMeshForBlock, 
-			AmbientOcclusion ambientOcclusion, int cornerData, ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
-		if(texture == null || texture.equals(""))
+			AmbientOcclusion ambientOcclusion, int cornerData, byte blockLightEmission, 
+			ModifierContext modifierContext, Modifiers modifiers, Chunk chunk) {
+		if(texture == null || texture.equals("") || Config.bannedMaterials.contains(texture))
 			return;
 		
 		// Connected textures
@@ -1042,7 +1130,7 @@ public class ChunkExporter {
 										ix, iy, iz, layer, ox, oy, oz, 
 										uvOffsetY, extraData, overlayTint, doubleSided, lodSize, lodYSize, 
 										lodNoUVScale, lodNoScale, true, false, ambientOcclusion, cornerData,
-										modifierContext, modifiers, chunk);
+										blockLightEmission, modifierContext, modifiers, chunk);
 							}
 						}
 					}
@@ -1065,11 +1153,10 @@ public class ChunkExporter {
 			modifierContext.faceTintR = 1f;
 			modifierContext.faceTintG = 1f;
 			modifierContext.faceTintB = 1f;
-			float[] faceTint = face.getVertexColors();
-			if(faceTint != null) {
-				modifierContext.faceTintR = faceTint[0];
-				modifierContext.faceTintG = faceTint[1];
-				modifierContext.faceTintB = faceTint[2];
+			if(face.hasVertexColor) {
+				modifierContext.faceTintR = face.vertexColorR;
+				modifierContext.faceTintG = face.vertexColorG;
+				modifierContext.faceTintB = face.vertexColorB;
 			}
 			modifierContext.faceTintIndex = face.getTintIndex();
 			modifierContext.faceDirection = face.getDirection();
@@ -1093,7 +1180,14 @@ public class ChunkExporter {
 		
 		
 		String matTexture = texture;
-		String meshName = texture;
+		meshKeyCache.materialTemplate = null;
+		meshKeyCache.texture = texture;
+		meshKeyCache.blockName = null;
+		meshKeyCache.atlasItem = null;
+		meshKeyCache.hasTint = false;
+		meshKeyCache.shadingMode = null;
+		meshKeyCache.blockLightEmission = blockLightEmission;
+		meshKeyCache.doubleSided = face.isDoubleSided();
 		if(faceTint == null || faceTint.length != (Config.smoothBiomeColors ? 8 : 1)) {
 			faceTint = new Color[Config.smoothBiomeColors ? 8 : 1];
 		}
@@ -1130,7 +1224,10 @@ public class ChunkExporter {
 					Config.forceNoBiomeColor.contains(blockName))
 				tint = null;
 			else
-				meshName = meshName + "_BIOME";
+				meshKeyCache.hasTint = true;
+		}
+		if(!face.getShadingMode().equals(ModelFace.SHADING_MODE_STANDARD)) {
+			meshKeyCache.shadingMode = face.getShadingMode();
 		}
 		float lodSizeF = ((float) ((lodNoScale ? 1 : lodSize)-1)) / 2.0f;
 		float lodYSizeF = ((float) (lodYSize-1)) / 2.0f;
@@ -1140,7 +1237,7 @@ public class ChunkExporter {
 		float lodYUVScale = lodNoUVScale ? 1.0f : lodYScale;
 		Atlas.AtlasItem atlas = Atlas.getAtlasItem(texture);
 		if(atlas != null) {
-			meshName = getMeshName(atlas, texture, tint != null, doubleSided, face.getShadingMode());
+			meshKeyCache.atlasItem = atlas;
 			texture = atlas.atlas;
 			// When using an atlas, we can't just scale up the UVs.
 			lodUVScale = Math.min(lodUVScale, (float) atlas.padding);
@@ -1151,20 +1248,22 @@ public class ChunkExporter {
 			lodYUVScale = lodUVScale;
 				
 		if(separateMeshForBlock) {
-			meshName = blockName.replace(':', '_') + "_" + meshName;
+			meshKeyCache.blockName = blockName;
 		}
 		
-		Mesh mesh = meshes.getOrDefault(meshName, null);
+		Mesh mesh = meshes.getOrDefault(meshKeyCache, null);
 		if(mesh == null) {
 			boolean animatedTexture = false;
 			MCMeta mcmeta = ResourcePacks.getMCMeta(texture);
 			if(mcmeta != null)
 				animatedTexture = mcmeta.isAnimate() || mcmeta.isInterpolate();
 			
-			mesh = new Mesh(meshName, MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided,
+			mesh = new Mesh(meshKeyCache.createName(), MeshPurpose.UNDEFINED, texture, matTexture, animatedTexture, doubleSided,
 							face.getShadingMode(), 1024, 8);
 			mesh.setExtraData(extraData);
-			meshes.put(meshName, mesh);
+			mesh.setBlockLightEmission(blockLightEmission);
+			meshes.put(meshKeyCache, mesh);
+			meshKeyCache = new MeshKey();
 		}
 		
 		mesh.addFace(face, 
@@ -1237,7 +1336,7 @@ public class ChunkExporter {
 			
 			if(state.isDetailedOcclusion() && currentState.isDetailedOcclusion()) {
 				OCCLUSION_MODELS.clear();
-				state.getModels(OCCLUSION_BLOCK_ID[1], OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], OCCLUSION_MODELS);
+				state.getModels(OCCLUSION_BLOCK_ID[1], OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], OCCLUSION_MODELS, layeredBlockCache);
 				Model model;
 				ModelFace face;
 				for(int i = 0; i < OCCLUSION_MODELS.size(); ++i) {
@@ -1661,7 +1760,7 @@ public class ChunkExporter {
 		System.gc();
 	}
 	
-	public void optimiseAndWriteMeshes(LargeDataOutputStream dos) throws Exception {
+	public void flushMeshes(LargeDataOutputStream dos) throws Exception{
 		float threshold = (bounds.getFgChunks().contains(fgChunkName) || bounds.getFgChunks().isEmpty()) ? 
 				Config.fgFullnessThreshold : Config.bgFullnessThreshold;
 		
@@ -1680,53 +1779,66 @@ public class ChunkExporter {
 		WriteProcessor writeProcessor = new WriteProcessor(dos);
 		processors.addProcessor(writeProcessor);
 		
+		int meshMergerId = -1;
+		if(Config.useGeometrySubsets)
+			meshMergerId = processors.beginMeshMerger(MeshMergerMode.MERGE);
+		
+		IndexCacheFlat indexCache = new IndexCacheFlat(16);
+		for(Entry<MeshKey, Mesh> mesh : meshes.entrySet()) {
+			mesh.getValue().packVertices(indexCache);
+			processors.process(mesh.getValue());
+			if(!rootMeshes.contains(mesh.getValue().getName()))
+				rootMeshes.add(mesh.getValue().getName());
+		}
+		if(meshMergerId >= 0)
+			processors.endMeshMerger(meshMergerId);
+		
+		for(Entry<String, Long> entry : writeProcessor.getMeshLocations().entrySet()) {
+			List<Long> meshChunksVal = meshChunks.getOrDefault(entry.getKey(), null);
+			if(meshChunksVal == null) {
+				meshChunksVal = new ArrayList<Long>();
+				meshChunks.put(entry.getKey(), meshChunksVal);
+			}
+			meshChunksVal.add(entry.getValue());
+		}
+		
+		meshes.clear();
+		
+		System.gc();
+	}
+	
+	public void writeEnd(LargeDataOutputStream dos) throws Exception {
 		// Pretty much all of the code assumes that a block is 16 units.
 		// In order to not break any of that, we do the scaling here.
 		float worldScale = Config.blockSizeInUnits / 16.0f;
 		float worldOffsetXZ = Config.blockCenteredXZOnOrigin ? 0f : (Config.blockSizeInUnits * 0.5f);
 		
-		int meshMergerId = -1;
-		if(Config.useGeometrySubsets)
-			meshMergerId = processors.beginMeshMerger(MeshMergerMode.MERGE);
+		long endLocation = dos.size();
 		
-		dos.writeUTF(name);
-		dos.writeByte((bounds.getFgChunks().contains(fgChunkName) || bounds.getFgChunks().isEmpty()) ? 
-				1 : 0); // Is foreground chunk
+		// Location of mesh chunks
+		dos.writeInt(meshChunks.size());
+		for(Entry<String, List<Long>> entry : meshChunks.entrySet()) {
+			dos.writeUTF(entry.getKey());
+			dos.writeInt(entry.getValue().size());
+			for(Long val : entry.getValue()) {
+				dos.writeLong(val.longValue());
+			}
+		}
+		
+		// Root meshes
+		dos.writeInt(rootMeshes.size());
+		for(int i = 0; i < rootMeshes.size(); ++i)
+			dos.writeUTF(rootMeshes.get(i));
 		
 		// Animated blocks
 		dos.writeInt(animatedBlocks.size());
 		for(AnimatedBlock animatedBlock : animatedBlocks.values()) {
 			animatedBlock.write(dos, worldScale, worldOffsetXZ);
 		}
-		
-		//dos.writeInt(meshes.size());
-		//dos.writeInt(meshes.size());
-		//System.out.println(name + ": " + meshes.size());
-		for(Entry<String, Mesh> mesh : meshes.entrySet()) {
-			processors.process(mesh.getValue());
-
-			MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
-		}
-		if(meshMergerId >= 0)
-			processors.endMeshMerger(meshMergerId);
-		
-
-		MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
-		dos.writeByte(0); // Array of meshes end with a 0
-		
 				
 		dos.writeInt(individualBlocks.size());
-		for(Entry<IndividualBlockId, FloatArray> blocks : individualBlocks.entrySet()) {
-			dos.writeInt(blocks.getKey().getBlockId());
-			dos.writeInt(blocks.getKey().getX());
-			dos.writeInt(blocks.getKey().getY());
-			dos.writeInt(blocks.getKey().getZ());
-			dos.writeInt(blocks.getValue().size()/3);
-			for(int i = 0; i < blocks.getValue().size(); i += 3) {
-				dos.writeFloat(blocks.getValue().get(i) * worldScale + worldOffsetXZ);
-				dos.writeFloat(blocks.getValue().get(i+1) * worldScale);
-				dos.writeFloat(blocks.getValue().get(i+2) * worldScale + worldOffsetXZ);
-			}
+		for(Entry<IndividualBlockId, IndividualBlock> blocks : individualBlocks.entrySet()) {
+			blocks.getValue().write(dos);
 		}
 		
 		dos.writeInt(pointLocators.size());
@@ -1739,8 +1851,8 @@ public class ChunkExporter {
 				dos.writeFloat(point.z);
 			}
 		}
-
-		MCWorldExporter.getApp().getUI().getProgressBar().finishedOptimising(meshes.size() + 2);
+		
+		dos.writeLong(endLocation);
 	}
 
 }

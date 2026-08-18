@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.gson.GsonBuilder;
@@ -294,7 +295,8 @@ public class Materials {
 		}
 		
 		public boolean evaluateCondition(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-										Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
+										Set<String> colorSets, String currentWorkingDirectory, String shadingMode,
+										byte blockLightEmission) {
 			for(String condition : this.condition.split("&&")) {
 				boolean invert = false;
 				if(condition.startsWith("!")) {
@@ -349,6 +351,7 @@ public class Materials {
 					int endIndex = shadingModeName.indexOf('@');
 					if(endIndex >= 0)
 						shadingModeName = shadingModeName.substring(0, endIndex);
+					shadingModeName = shadingModeName.toLowerCase();
 					
 					boolean isShadingMode = shadingMode.equals(shadingModeName);
 					
@@ -360,6 +363,13 @@ public class Materials {
 						if(!isShadingMode)
 							return false;
 						continue;
+					}
+				}
+				if(condition.equals("@emitsBlockLight@")) {
+					if(invert) {
+						return blockLightEmission == 0;
+					}else {
+						return blockLightEmission > 0;
 					}
 				}
 				String fullPath = condition.replace("@texture@", texture);
@@ -383,35 +393,35 @@ public class Materials {
 					checkInterpolated = true;
 					fullPath = fullPath.substring(0, fullPath.length() - 13);
 				}
-				File file = getTextureFile(fullPath, currentWorkingDirectory);
+				FileInfo file = getTextureFile(fullPath, currentWorkingDirectory);
 				if(invert && (!checkAlpha && !checkCutout && !checkAnimated && !checkInterpolated)) {
-					if(file != null && file.exists())
+					if(file != null && file.exists)
 						return false;
 				}else {
-					if(file == null || !file.exists())
+					if(file == null || !file.exists)
 						return false;
 				}
 				
 				if(checkAlpha) {
 					if(invert) {
-						if(FileUtil.hasAlpha(file))
+						if(file.hasAlpha)
 							return false;
 					}else {
-						if(!FileUtil.hasAlpha(file))
+						if(!file.hasAlpha)
 							return false;
 					}
 				}
 				if(checkCutout) {
 					if(invert) {
-						if(FileUtil.hasCutout(file))
+						if(file.hasCutout)
 							return false;
 					}else {
-						if(!FileUtil.hasCutout(file))
+						if(!file.hasCutout)
 							return false;
 					}
 				}
 				if(checkAnimated || checkInterpolated) {
-					MCMeta mcmeta = ResourcePacks.getMCMeta(fullPath);
+					MCMeta mcmeta = file.mcMeta;
 					if(mcmeta == null)
 						return false;
 					if(checkAnimated) {
@@ -520,12 +530,14 @@ public class Materials {
 		}
 		
 		public MaterialTemplate flatten(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-										Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
+										Set<String> colorSets, String currentWorkingDirectory, String shadingMode,
+										byte blockLightEmission) {
 			MaterialTemplate material = new MaterialTemplate(name, 0);
 			material.shadingGroup = shadingGroup;
 			material.networks.add(new MaterialNetwork());
 			for(MaterialNetwork network : networks) {
-				if(!network.evaluateCondition(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, shadingMode))
+				if(!network.evaluateCondition(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, 
+												shadingMode, blockLightEmission))
 					continue;
 				try {
 					material.networks.get(0).override(network, true);
@@ -550,8 +562,77 @@ public class Materials {
 	private static List<List<MaterialTemplate>> templates = null;
 	public static MaterialNetwork sharedNodes = new MaterialNetwork();
 	
+	private static class MaterialKey{
+		
+		public String texture;
+		public boolean hasBiomeColor;
+		public boolean isDoubleSided;
+		public Set<String> colorSets;
+		public String currentWorkingDirectory;
+		public String shadingNode;
+		public byte blockLightEmission;
+		
+		public MaterialKey(String texture, boolean hasBiomeColor, boolean isDoubleSided, Set<String> colorSets,
+				String currentWorkingDirectory, String shadingNode, byte blockLightEmission) {
+			super();
+			this.texture = texture;
+			this.hasBiomeColor = hasBiomeColor;
+			this.isDoubleSided = isDoubleSided;
+			this.colorSets = colorSets;
+			this.currentWorkingDirectory = currentWorkingDirectory;
+			this.shadingNode = shadingNode;
+			this.blockLightEmission = blockLightEmission;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(blockLightEmission, colorSets, currentWorkingDirectory, hasBiomeColor, isDoubleSided,
+					shadingNode, texture);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			MaterialKey other = (MaterialKey) obj;
+			return blockLightEmission == other.blockLightEmission && Objects.equals(colorSets, other.colorSets)
+					&& Objects.equals(currentWorkingDirectory, other.currentWorkingDirectory)
+					&& hasBiomeColor == other.hasBiomeColor && isDoubleSided == other.isDoubleSided
+					&& Objects.equals(shadingNode, other.shadingNode) && Objects.equals(texture, other.texture);
+		}
+		
+	}
+	
+	private static final Map<MaterialKey, MaterialTemplate> TEMPLATE_CACHE = new HashMap<MaterialKey, MaterialTemplate>();
+	
+	public static void clearCaches() {
+		TEMPLATE_CACHE.clear();
+	}
+	
 	public static MaterialTemplate getMaterial(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
-												Set<String> colorSets, String currentWorkingDirectory, String shadingMode) {
+			Set<String> colorSets, String currentWorkingDirectory, String shadingMode,
+			byte blockLightEmission) {
+		MaterialKey key = new MaterialKey(texture, hasBiomeColor, isDoubleSided, colorSets, 
+				currentWorkingDirectory, shadingMode, blockLightEmission);
+		
+		synchronized(TEMPLATE_CACHE) {
+			MaterialTemplate mat = TEMPLATE_CACHE.getOrDefault(key, null);
+			if(mat == null) {
+				mat = getMaterialRaw(texture, hasBiomeColor, isDoubleSided, colorSets,
+									currentWorkingDirectory, shadingMode, blockLightEmission);
+				TEMPLATE_CACHE.put(key, mat);
+			}
+			return mat;
+		}
+	}
+	
+	public static MaterialTemplate getMaterialRaw(String texture, boolean hasBiomeColor, boolean isDoubleSided, 
+												Set<String> colorSets, String currentWorkingDirectory, String shadingMode,
+												byte blockLightEmission) {
 		if(templates == null) {
 			synchronized(templatesMutex) {
 				if(templates == null)
@@ -576,7 +657,8 @@ public class Materials {
 							currentTemplate = template;
 				}
 				if(currentTemplate != null)
-					return currentTemplate.flatten(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, shadingMode);
+					return currentTemplate.flatten(texture, hasBiomeColor, isDoubleSided, colorSets, currentWorkingDirectory, 
+													shadingMode, blockLightEmission);
 			}
 		}catch(Exception ex) {
 			System.out.println("Failed to get material for texture " + texture);
@@ -813,7 +895,52 @@ public class Materials {
 		return attr;
 	}
 	
-	public static File getTextureFile(String texture, String currentWorkingDirectory) {
+	public static class FileInfo{
+		
+		public final File file;
+		public final boolean exists;
+		public final boolean hasAlpha;
+		public final boolean hasCutout;
+		public final MCMeta mcMeta;
+		
+		public FileInfo(String textureFile, File file) {
+			this.file = file;
+			if(this.file != null) {
+				this.exists = file.exists();
+				if(this.exists) {
+					this.hasAlpha = FileUtil.hasAlpha(file);
+					this.hasCutout = FileUtil.hasCutout(file);
+					this.mcMeta = ResourcePacks.getMCMeta(textureFile);
+				}else {
+					this.hasAlpha = false;
+					this.hasCutout = false;
+					this.mcMeta = null;
+				}
+			}else {
+				this.exists = false;
+				this.hasAlpha = false;
+				this.hasCutout = false;
+				this.mcMeta = null;
+			}
+		}
+		
+	}
+	
+	public static Map<String, FileInfo> TEXTURE_FILE_CACHE = new HashMap<String, FileInfo>();
+	
+	public static FileInfo getTextureFile(String texture, String currentWorkingDirectory) {
+		synchronized(TEXTURE_FILE_CACHE) {
+			FileInfo info = TEXTURE_FILE_CACHE.getOrDefault(texture, null);
+			if(info != null)
+				return info;
+			File file = getTextureFileRaw(texture, currentWorkingDirectory);
+			info = new FileInfo(texture, file);
+			TEXTURE_FILE_CACHE.put(texture, info);
+			return info;
+		}
+	}
+	
+	public static File getTextureFileRaw(String texture, String currentWorkingDirectory) {
 		if(texture.startsWith(".")) {
 			File file = new File(currentWorkingDirectory, texture + ".exr");
 			if(file.exists())
@@ -826,10 +953,12 @@ public class Materials {
 		if(texture.contains(".")) {
 			String[] tokens = texture.split("\\.");
 			String extension = tokens[tokens.length-1];
-			String filename = tokens[0];
-			for(int i = 1; i < tokens.length-1; ++i)
-				filename = filename + "." + tokens[i];
-			return ResourcePacks.getFile(filename, "textures", "." + extension, "assets");
+			if(extension.equals("png") || extension.equals("tga") || extension.equals("exr")) {
+				String filename = tokens[0];
+				for(int i = 1; i < tokens.length-1; ++i)
+					filename = filename + "." + tokens[i];
+				return ResourcePacks.getFile(filename, "textures", "." + extension, "assets");
+			}
 		}
 		File file = ResourcePacks.getTexture(texture);
 		if(file != null && file.exists())

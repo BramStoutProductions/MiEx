@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import nl.bramstout.mcworldexporter.model.builtins.BuiltInModelRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
@@ -48,6 +49,7 @@ public class ModelRegistry {
 	private static Map<String, Integer> nameToId = new HashMap<String, Integer>();
 	private static Object mutex = new Object();
 	private static int counter = 0;
+	private static AtomicInteger uniqueCounter = new AtomicInteger();
 	public static List<String> missingModels = new ArrayList<String>();
 	
 	public static int getIdForName(String name, boolean doubleSided) {
@@ -72,7 +74,12 @@ public class ModelRegistry {
 		return id.intValue();
 	}
 	
+	public static int getNextUniqueId() {
+		return uniqueCounter.getAndAdd(1);
+	}
+	
 	public static int getNextId(Model model) {
+		uniqueCounter.getAndAdd(1);
 		synchronized(mutex) {
 			counter++;
 			if(registeredModels.size() <= counter)
@@ -102,7 +109,9 @@ public class ModelRegistry {
 			// Make sure that there is a valid handler anyways.
 			handler = new ModelHandlerJavaEdition(null);
 		}
-		return new Model(name, handler, doubleSided);
+		Model model = new Model(name, handler, doubleSided, true);
+		model.setImmoveable();
+		return model;
 	}
 	
 	public static void clearModelRegistry() {

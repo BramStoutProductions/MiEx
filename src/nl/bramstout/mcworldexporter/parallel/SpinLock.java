@@ -42,14 +42,13 @@ public class SpinLock {
 	}
 	
 	public void aqcuire() {
-		while(lock.getAndIncrement() != 0) {
-			lock.decrementAndGet();
+		while(!lock.compareAndSet(0, 1)) {
 			Thread.yield();
 		}
 	}
 	
 	public void release() {
-		lock.decrementAndGet();
+		lock.set(0);
 	}
 	
 }

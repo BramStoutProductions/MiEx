@@ -98,7 +98,8 @@ public abstract class Locators {
 	}
 	
 	public boolean isInSelection(String name, NbtTagCompound properties) {
-		for(Selection sel : selections) {
+		for(int i = 0; i < selections.size(); ++i) {
+			Selection sel = selections.get(i);
 			if(sel.isInSelection(name, properties))
 				return true;
 		}
@@ -177,7 +178,8 @@ public abstract class Locators {
 			return null;
 		
 		List<Locators> locators2 = new ArrayList<Locators>();
-		for(Locators locator : locators) {
+		for(int i = 0; i < locators.size(); ++i) {
+			Locators locator = locators.get(i);
 			if(locator.isInSelection(name, properties)) {
 				locators2.add(locator);
 			}

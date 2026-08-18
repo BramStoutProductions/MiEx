@@ -124,8 +124,8 @@ public class VertexColorSet {
 	private String name;
 	private int componentCount;
 	private FloatArray values;
-	private IntArray indices;
-	private IndexCache cache;
+	private VarIntArray indices;
+	private IndexCacheFlat cache;
 	
 	public VertexColorSet(String name, int componentCount, int capacity) {
 		this.name = name;
@@ -133,20 +133,24 @@ public class VertexColorSet {
 		if(this.componentCount < 1 || this.componentCount > 4)
 			throw new RuntimeException("Invalid component count");
 		values = new FloatArray(capacity * componentCount);
-		indices = new IntArray(capacity);
-		cache = new IndexCache();
+		indices = new VarIntArray(capacity);
+		cache = null;
 	}
 	
 	public VertexColorSet(LargeDataInputStream dis) throws IOException{
-		cache = new IndexCache();
+		cache = null;
 		read(dis);
+	}
+	
+	public int getMemoryUsage() {
+		return values.getMemoryUsage() + indices.getMemoryUsage();
 	}
 	
 	public FloatArray getValues() {
 		return values;
 	}
 	
-	public IntArray getIndices() {
+	public VarIntArray getIndices() {
 		return indices;
 	}
 	
@@ -164,7 +168,8 @@ public class VertexColorSet {
 	public void clear() {
 		values.clear();
 		indices.clear();
-		cache.clear();
+		if(cache != null)
+			cache.clear();
 	}
 	
 	public void expandComponentCount(int newComponentCount) {
@@ -176,7 +181,7 @@ public class VertexColorSet {
 		componentCount = newComponentCount;
 		FloatArray oldValues = values;
 		values = new FloatArray(oldValues.size() / oldComponentCount * newComponentCount);
-		cache.clear();
+		cache = null;
 		int numItems = oldValues.size() / oldComponentCount;
 		for(int i = 0; i < numItems; ++i) {
 			_vertexColor[0] = 0f;
@@ -326,8 +331,14 @@ public class VertexColorSet {
 	}
 	
 	public int addValue(float r) {
-		if(this.componentCount != 1)
-			throw new RuntimeException("Invalid component count");
+		if(this.componentCount == 2)
+			return addValue(r, 1.0f);
+		if(this.componentCount == 3)
+			return addValue(r, 1.0f, 1.0f);
+		if(this.componentCount == 4)
+			return addValue(r, 1.0f, 1.0f, 1.0f);
+		if(!Float.isFinite(r))
+			r = 0.0f;
 		int index = -1;
 		float[] values = this.values.getData();
 		for(int i = this.values.size() - 1; i >= 0; i--) {
@@ -344,8 +355,16 @@ public class VertexColorSet {
 	}
 	
 	public int addValue(float r, float g) {
-		if(this.componentCount != 2)
-			throw new RuntimeException("Invalid component count");
+		if(this.componentCount == 1)
+			return addValue(r);
+		if(this.componentCount == 3)
+			return addValue(r, g, 1.0f);
+		if(this.componentCount == 4)
+			return addValue(r, g, 1.0f, 1.0f);
+		if(!Float.isFinite(r))
+			r = 0.0f;
+		if(!Float.isFinite(g))
+			g = 0.0f;
 		int index = -1;
 		float[] values = this.values.getData();
 		for(int i = this.values.size() - 2; i >= 0; i-=2) {
@@ -364,21 +383,33 @@ public class VertexColorSet {
 	}
 	
 	public int addValue(float r, float g, float b) {
-		if(this.componentCount != 3)
-			throw new RuntimeException("Invalid component count");
+		if(this.componentCount == 1)
+			return addValue(r);
+		if(this.componentCount == 2)
+			return addValue(r, g);
+		if(this.componentCount == 4)
+			return addValue(r, g, b, 1.0f);
+		if(!Float.isFinite(r))
+			r = 0.0f;
+		if(!Float.isFinite(g))
+			g = 0.0f;
+		if(!Float.isFinite(b))
+			b = 0.0f;
 		
-		long colorKey = ((long)(r * 4096f)) | (((long)(g * 4096f)) << 16) | (((long)(b * 4096f)) << 32);
-		int index = cache.getOrDefault(colorKey, -1);
-		if(index == -1) {
-			index = this.values.size() / 3;
-			cache.put(colorKey, index);
-			this.values.add(r);
-			this.values.add(g);
-			this.values.add(b);
+		if(cache != null) {
+			long colorKey = ((long)(r * 4096f)) | (((long)(g * 4096f)) << 16) | (((long)(b * 4096f)) << 32);
+			int index = cache.getOrDefault(colorKey, -1);
+			if(index == -1) {
+				index = this.values.size() / 3;
+				cache.put(colorKey, index);
+				this.values.add(r);
+				this.values.add(g);
+				this.values.add(b);
+			}
+			return index;
 		}
-		return index;
 		
-		/*int index = -1;
+		int index = -1;
 		float[] values = this.values.getData();
 		for(int i = this.values.size() - 3; i >= 0; i-=3) {
 			if(Math.abs(values[i] - r) < 0.0001f && 
@@ -393,13 +424,37 @@ public class VertexColorSet {
 			this.values.add(r);
 			this.values.add(g);
 			this.values.add(b);
+			if(index >= 64) {
+				// Switch over to cache.
+				cache = new IndexCacheFlat(128);
+				for(int i = 0; i <= index; ++i) {
+					r = this.values.get(i * 3);
+					g = this.values.get(i * 3 + 1);
+					b = this.values.get(i * 3 + 2);
+					long colorKey = ((long)(r * 4096f)) | (((long)(g * 4096f)) << 16) | (((long)(b * 4096f)) << 32);
+					cache.put(colorKey, i);
+				}
+			}
 		}
-		return index;*/
+		return index;
 	}
 	
 	public int addValue(float r, float g, float b, float a) {
-		if(this.componentCount != 4)
-			throw new RuntimeException("Invalid component count");
+		if(this.componentCount == 1)
+			return addValue(r);
+		if(this.componentCount == 2)
+			return addValue(r, g);
+		if(this.componentCount == 3)
+			return addValue(r, g, b);
+		if(!Float.isFinite(r))
+			r = 0.0f;
+		if(!Float.isFinite(g))
+			g = 0.0f;
+		if(!Float.isFinite(b))
+			b = 0.0f;
+		if(!Float.isFinite(a))
+			a = 0.0f;
+		
 		int index = -1;
 		float[] values = this.values.getData();
 		for(int i = this.values.size() - 4; i >= 0; i-=4) {
@@ -509,7 +564,7 @@ public class VertexColorSet {
 		int[] indicesTmp = new int[numIndices];
 		for(int i = 0; i < numIndices; ++i)
 			indicesTmp[i] = dis.readInt();
-		this.indices = new IntArray(indicesTmp);
+		this.indices = new VarIntArray(indicesTmp);
 	}
 
 }

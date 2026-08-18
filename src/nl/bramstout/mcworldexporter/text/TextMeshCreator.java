@@ -39,11 +39,11 @@ import java.util.PrimitiveIterator.OfInt;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.model.ModelFace.FaceData;
 import nl.bramstout.mcworldexporter.resourcepack.Font;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
@@ -265,13 +265,12 @@ public class TextMeshCreator {
 				0f, 0f, 0f, 1f, 1f, 0f
 		};
 		Direction dir = Direction.SOUTH;
-		JsonObject faceData = new JsonObject();
-		JsonArray uvArray = new JsonArray();
-		uvArray.add(0.0f);
-		uvArray.add(0.0f);
-		uvArray.add(1.0f);
-		uvArray.add(1.0f);
-		faceData.add("uv", uvArray);
+		FaceData faceData = new FaceData();
+		faceData.uv0 = 0.0f;
+		faceData.uv1 = 0.0f;
+		faceData.uv2 = 1.0f;
+		faceData.uv3 = 1.0f;
+		faceData.hasUV = true;
 		OfInt it = text.codePoints().iterator();
 		
 		Color currentColor = defaultColor;
@@ -367,11 +366,11 @@ public class TextMeshCreator {
 				xOffset += distanceBetweenChars;
 			
 			if(charInfo.getTexture() != null) {
-				addCharacterQuad(charInfo, xOffset, yOffset, 0f, minMaxPoints, dir, faceData, uvArray,
+				addCharacterQuad(charInfo, xOffset, yOffset, 0f, minMaxPoints, dir, faceData,
 									currentColor, isItalic, shadingMode, outputFaces);
 				if(isBold) {
 					xOffset += 1f/8f;
-					addCharacterQuad(charInfo, xOffset, yOffset, 0.01f, minMaxPoints, dir, faceData, uvArray,
+					addCharacterQuad(charInfo, xOffset, yOffset, 0.01f, minMaxPoints, dir, faceData,
 							currentColor, isItalic, shadingMode, outputFaces);
 				}
 				
@@ -385,7 +384,7 @@ public class TextMeshCreator {
 					addCharacterQuad(underlineInfo, 
 							xOffset - distanceBetweenChars / 2f - (isBold ? 1f/8f : 0f), 
 							yOffset - 2f/8f, 0.02f, minMaxPoints, dir, 
-							faceData, uvArray, currentColor, isItalic, shadingMode, outputFaces);
+							faceData, currentColor, isItalic, shadingMode, outputFaces);
 				}
 				if(isStrikethrough) {
 					Font.Character underlineInfo = new Font.Character(
@@ -397,7 +396,7 @@ public class TextMeshCreator {
 					addCharacterQuad(underlineInfo, 
 							xOffset - distanceBetweenChars / 2f - (isBold ? 1f/8f : 0f), 
 							yOffset + 4f/8f, 0.02f, minMaxPoints, dir, 
-							faceData, uvArray, currentColor, isItalic, shadingMode, outputFaces);
+							faceData, currentColor, isItalic, shadingMode, outputFaces);
 				}
 			}
 			
@@ -431,13 +430,13 @@ public class TextMeshCreator {
 	}
 	
 	private static void addCharacterQuad(Font.Character charInfo, float xOffset, float yOffset, float zOffset,
-										float[] minMaxPoints, Direction dir, JsonObject faceData, JsonArray uvArray,
+										float[] minMaxPoints, Direction dir, FaceData faceData,
 										Color currentColor, boolean isItalic, String shadingMode, List<ModelFace> outputFaces) {
-		faceData.addProperty("texture", charInfo.getTexture());
-		uvArray.set(0, new JsonPrimitive(charInfo.getTexU() * 16f));
-		uvArray.set(1, new JsonPrimitive(charInfo.getTexV() * 16f));
-		uvArray.set(2, new JsonPrimitive((charInfo.getTexU() + charInfo.getTexWidth()) * 16f));
-		uvArray.set(3, new JsonPrimitive((charInfo.getTexV() + charInfo.getTexHeight()) * 16f));
+		faceData.texture = charInfo.getTexture();
+		faceData.uv0 = charInfo.getTexU() * 16f;
+		faceData.uv1 = charInfo.getTexV() * 16f;
+		faceData.uv2 = (charInfo.getTexU() + charInfo.getTexWidth()) * 16f;
+		faceData.uv3 = (charInfo.getTexV() + charInfo.getTexHeight()) * 16f;
 		
 		minMaxPoints[0] = xOffset;
 		minMaxPoints[1] = yOffset + charInfo.getAscent() - charInfo.getHeight();
@@ -452,10 +451,10 @@ public class TextMeshCreator {
 		if(isItalic) {
 			float bottomOffset = (charInfo.getAscent() - charInfo.getHeight()) * (2f/8f) - (1f/8f);
 			float topOffset = (charInfo.getAscent()) * (2f/8f) - (1f/8f);
-			face.getPoints()[0] += bottomOffset;
-			face.getPoints()[3] += bottomOffset;
-			face.getPoints()[6] += topOffset;
-			face.getPoints()[9] += topOffset;
+			face.point0X += bottomOffset;
+			face.point1X += bottomOffset;
+			face.point2X += topOffset;
+			face.point3X += topOffset;
 		}
 		
 		outputFaces.add(face);

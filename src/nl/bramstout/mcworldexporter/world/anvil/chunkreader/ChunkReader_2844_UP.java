@@ -106,6 +106,7 @@ public class ChunkReader_2844_UP extends ChunkReader{
 		int longIndex = 0;
 		int idIndex = 0;
 		long paletteIndex = 0;
+		boolean freeBlockProperties = false;
 		
 		for (NbtTag tag : sections.getData()) {
 			section = (NbtTagCompound) tag;
@@ -123,12 +124,19 @@ public class ChunkReader_2844_UP extends ChunkReader{
 				}
 				i = 0;
 				for (NbtTag block : palette.getData()) {
-					blockName = ((NbtTagString) ((NbtTagCompound) block).get("Name")).getData();
+					freeBlockProperties = false;
+					if(block instanceof NbtTagCompound) {
+						blockName = ((NbtTagString) ((NbtTagCompound) block).get("Name", "id", "")).getData();
+						blockProperties = (NbtTagCompound) ((NbtTagCompound) block).get("Properties", "properties");
+					}else if(block instanceof NbtTagString) {
+						blockName = ((NbtTagString) block).getData();
+						blockProperties = null;
+					}else {
+						throw new RuntimeException("Unsupported block data");
+					}
 					if(blockName.equals("cave_air") || blockName.equals("minecraft:cave_air") || 
 							blockName.equals("void_air") || blockName.equals("minecraft:void_air"))
 						blockName = "minecraft:air";
-					blockProperties = (NbtTagCompound) ((NbtTagCompound) block).get("Properties");
-					boolean freeBlockProperties = false;
 					if(blockProperties == null) {
 						blockProperties = NbtTagCompound.newInstance("");
 						freeBlockProperties = true;

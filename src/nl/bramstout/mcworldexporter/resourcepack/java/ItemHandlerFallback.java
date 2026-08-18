@@ -501,7 +501,7 @@ public class ItemHandlerFallback extends ItemHandler{
 			ArrayList<Color> tints = new ArrayList<Color>();
 			tints.add(dye);
 			
-			Model model2 = new Model(model.getName(), null, model.isDoubleSided());
+			Model model2 = new Model(model.getName(), null, model.isDoubleSided(), false);
 			model2.addModel(model, tints);
 			model = model2;
 		}

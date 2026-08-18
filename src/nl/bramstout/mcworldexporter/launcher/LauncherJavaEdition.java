@@ -41,6 +41,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.Util;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -138,40 +139,40 @@ public class LauncherJavaEdition extends Launcher{
 	}
 	
 	@Override
-	public List<ResourcePackSource> getAllResourcePackSources() {
-		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-		
+	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {
 		File resourcePacksFolder = new File(rootFolder, "resourcepacks");
 		if(resourcePacksFolder.exists() && resourcePacksFolder.isDirectory()) {
 			for(File f : resourcePacksFolder.listFiles()) {
-				if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
-					ResourcePackSource source = new ResourcePackSource(f.getName(), this);
-					source.addSource(ResourcePackSource.getHash(f), f);
-					sources.add(source);
-				}else if(f.isFile() && f.getName().endsWith(".zip")) {
-					ResourcePackSource source = new ResourcePackSource(f.getName(), this);
-					source.addSource(ResourcePackSource.getHash(f), f);
-					sources.add(source);
-				}
+				asyncGroup.runTask(()->{
+					if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
+						ResourcePackSource source = new ResourcePackSource(f.getName(), this);
+						source.addSource(ResourcePackSource.getHash(f), f);
+						collector.addSource(source);
+					}else if(f.isFile() && f.getName().endsWith(".zip")) {
+						ResourcePackSource source = new ResourcePackSource(f.getName(), this);
+						source.addSource(ResourcePackSource.getHash(f), f);
+						collector.addSource(source);
+					}
+				});
 			}
 		}
 		
 		File modsFolder = new File(rootFolder, "mods");
 		if(modsFolder.exists() && modsFolder.isDirectory()) {
-			searchFolderForMods(modsFolder, "", sources);
+			searchFolderForMods(modsFolder, "", collector, asyncGroup);
 		}
-		
-		return sources;
 	}
 	
-	private void searchFolderForMods(File folder, String parent, List<ResourcePackSource> sources) {
+	private void searchFolderForMods(File folder, String parent, ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {
 		for(File f : folder.listFiles()) {
 			if(f.isDirectory()) {
-				searchFolderForMods(f, parent + f.getName() + "/", sources);
+				searchFolderForMods(f, parent + f.getName() + "/", collector, asyncGroup);
 			}else if(f.isFile() && f.getName().endsWith(".jar")) {
-				ResourcePackSource source = new ResourcePackSource(parent + f.getName(), this);
-				source.addSource(ResourcePackSource.getHash(f), f);
-				sources.add(source);
+				asyncGroup.runTask(()->{
+					ResourcePackSource source = new ResourcePackSource(parent + f.getName(), this);
+					source.addSource(ResourcePackSource.getHash(f), f);
+					collector.addSource(source);
+				});
 			}
 		}
 	}

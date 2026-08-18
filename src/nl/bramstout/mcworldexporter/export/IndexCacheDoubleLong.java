@@ -140,8 +140,8 @@ public class IndexCacheDoubleLong {
 	private int initialCapacity;
 	
 	public IndexCacheDoubleLong() {
-		maxSize = 128;
-		initialCapacity = 32;
+		maxSize = 512;
+		initialCapacity = 512;
 		leafNodes = new LeafNode[16];
 		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
 		keys1 = new long[16];
@@ -184,9 +184,9 @@ public class IndexCacheDoubleLong {
 				leafNodes = Arrays.copyOf(leafNodes, leafNodes.length * 2);
 				keys1 = Arrays.copyOf(keys1, keys1.length * 2);
 				keys2 = Arrays.copyOf(keys2, keys2.length * 2);
-				maxSize = (maxSize * 3) / 2;
-				for(int i = 0; i < numNodes; ++i)
-					leafNodes[i].maxSize = maxSize;
+				//maxSize = (maxSize * 3) / 2;
+				//for(int i = 0; i < numNodes; ++i)
+				//	leafNodes[i].maxSize = maxSize;
 			}
 			
 			// Move over the elements to make space.
@@ -209,14 +209,20 @@ public class IndexCacheDoubleLong {
 	}
 	
 	public void clear() {
-		maxSize = 128;
-		initialCapacity = 32;
-		leafNodes = new LeafNode[16];
-		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
-		keys1 = new long[16];
-		keys1[0] = 0;
-		keys2 = new long[16];
-		keys2[0] = 0;
+//		maxSize = 128;
+//		initialCapacity = 128;
+//		leafNodes = new LeafNode[16];
+//		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
+//		keys1 = new long[16];
+//		keys1[0] = 0;
+//		keys2 = new long[16];
+//		keys2[0] = 0;
+//		numNodes = 1;
+		for(int i = 0; i < numNodes; ++i) {
+			leafNodes[i].size = 0;
+			keys1[i] = 0;
+			keys2[i] = 0;
+		}
 		numNodes = 1;
 	}
 	

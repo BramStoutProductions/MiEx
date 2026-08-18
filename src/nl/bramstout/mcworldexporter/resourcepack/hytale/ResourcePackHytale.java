@@ -35,6 +35,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,6 +46,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.Pair;
 import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.entity.spawning.EntitySpawner;
 import nl.bramstout.mcworldexporter.model.BlockState;
@@ -612,7 +614,64 @@ public class ResourcePackHytale extends ResourcePack{
 	}
 
 	@Override
-	public void getTextures(List<Entry<String, File>> out, TextureGroup... groups) {}
+	public void getTextures(List<Entry<String, File>> out, TextureGroup... groups) {
+		Set<String> encounteredResourceIds = new HashSet<String>();
+		for(File rootFolder : getFoldersReversed()) {
+			List<String> folderNames = new ArrayList<String>();
+			for(TextureGroup group : groups)
+				getFoldersForTextureGroup(folderNames, group);
+			
+			for(int i = 0; i < folderNames.size(); ++i) {
+				File subFolder = new File(rootFolder, "Common/" + folderNames.get(i));
+				if(subFolder.exists() && subFolder.isDirectory()) {
+					getTexturesInFolder(out, subFolder, "hytale:" + folderNames.get(i) + "/", 
+										encounteredResourceIds);
+				}
+			}
+		}
+	}
+	
+	private void getTexturesInFolder(List<Entry<String, File>> out, File folder, String parent, 
+										Set<String> encounteredResourceIds) {
+		for(File file : folder.listFiles()) {
+			if(file.isDirectory()) {
+				getTexturesInFolder(out, file, parent + file.getName() + "/", encounteredResourceIds);
+			}else if(file.isFile()) {
+				int dotIndex = file.getName().lastIndexOf((int) '.');
+				if(dotIndex < 0)
+					continue;
+				String extension = file.getName().substring(dotIndex);
+				if(extension.equalsIgnoreCase(".exr") || extension.equalsIgnoreCase(".tga") || extension.equalsIgnoreCase(".png")) {
+					String id = parent + file.getName().substring(0, dotIndex);
+					
+					if(encounteredResourceIds.contains(id))
+						continue;
+					encounteredResourceIds.add(id);
+					
+					out.add(new Pair<String, File>(id, file));
+				}
+			}
+		}
+	}
+	
+	private void getFoldersForTextureGroup(List<String> out, TextureGroup group) {
+		switch(group) {
+		case BLOCKS:
+			out.add("Blocks");
+			out.add("BlockTextures");
+			out.add("Resources");
+			out.add("Items");
+			break;
+		case ENTITY:
+			out.add("Characters");
+			out.add("Cosmetics");
+			out.add("NPC");
+			out.add("TintGradients");
+			break;
+		default:
+			break;
+		}
+	}
 
 	@Override
 	public void getColorMaps(Set<String> colorMaps) {}

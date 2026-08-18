@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.resourcepack.bedrock;
 
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
+import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
@@ -54,29 +55,37 @@ public class ModelHandlerCross extends ModelHandler{
 				-8f,  0f, -8f,
 				 8f, 16f,  8f
 		};
-		model.addFace(points, uvs, Direction.NORTH, "#north");
+		ModelFace face = model.addFace(points, uvs, Direction.NORTH, "#north");
+		face.point0X = -8f; face.point0Y =  0f; face.point0Z = -8f;
+		face.point1X =  8f; face.point1Y =  0f; face.point1Z =  8f;
+		face.point2X =  8f; face.point2Y = 16f; face.point2Z = 8f;
+		face.point3X = -8f; face.point3Y = 16f; face.point3Z = -8f;
+		face.calculateOcclusion();
 		
 		// South
-		points = new float[] {
-				-8f,  0f,  8f,
-				 8f, 16f, -8f
-		};
-		model.addFace(points, uvs, Direction.SOUTH, "#south");
+		face = model.addFace(points, uvs, Direction.SOUTH, "#south");
+		face.point0X =  8f; face.point0Y =  0f; face.point0Z = -8f;
+		face.point1X = -8f; face.point1Y =  0f; face.point1Z =  8f;
+		face.point2X = -8f; face.point2Y = 16f; face.point2Z =  8f;
+		face.point3X =  8f; face.point3Y = 16f; face.point3Z = -8f;
+		face.calculateOcclusion();
 		
 		if(!model.isDoubleSided()) {
 			// East
-			points = new float[] {
-					-8f,  0f,  8f,
-					 8f, 16f,  -8f
-			};
-			model.addFace(points, uvs, Direction.EAST, "#east");
+			face = model.addFace(points, uvs, Direction.EAST, "#east");
+			face.point0X =  8f; face.point0Y =  0f; face.point0Z =  8f;
+			face.point1X = -8f; face.point1Y =  0f; face.point1Z = -8f;
+			face.point2X = -8f; face.point2Y = 16f; face.point2Z = -8f;
+			face.point3X =  8f; face.point3Y = 16f; face.point3Z =  8f;
+			face.calculateOcclusion();
 			
 			// West
-			points = new float[] {
-					-8f,  0f, -8f,
-					 8f, 16f,  8f
-			};
-			model.addFace(points, uvs, Direction.WEST, "#west");
+			face = model.addFace(points, uvs, Direction.WEST, "#west");
+			face.point0X = -8f; face.point0Y =  0f; face.point0Z =  8f;
+			face.point1X =  8f; face.point1Y =  0f; face.point1Z = -8f;
+			face.point2X =  8f; face.point2Y = 16f; face.point2Z = -8f;
+			face.point3X = -8f; face.point3Y = 16f; face.point3Z =  8f;
+			face.calculateOcclusion();
 		}
 	}
 	

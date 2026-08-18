@@ -630,13 +630,13 @@ public class BlockLightingCache {
 			forceSide = false;
 		
 		LightingData vert0 = interpolate(lc000, lc001, lc010, lc011, lc100, lc101, lc110, lc111, dir, 
-				face.getPoints()[0], face.getPoints()[1], face.getPoints()[2], forceSide);
+				face.point0X, face.point0Y, face.point0Z, forceSide);
 		LightingData vert1 = interpolate(lc000, lc001, lc010, lc011, lc100, lc101, lc110, lc111, dir, 
-				face.getPoints()[3], face.getPoints()[4], face.getPoints()[5], forceSide);
+				face.point1X, face.point1Y, face.point1Z, forceSide);
 		LightingData vert2 = interpolate(lc000, lc001, lc010, lc011, lc100, lc101, lc110, lc111, dir, 
-				face.getPoints()[6], face.getPoints()[7], face.getPoints()[8], forceSide);
+				face.point2X, face.point2Y, face.point2Z, forceSide);
 		LightingData vert3 = interpolate(lc000, lc001, lc010, lc011, lc100, lc101, lc110, lc111, dir, 
-				face.getPoints()[9], face.getPoints()[10], face.getPoints()[11], forceSide);
+				face.point3X, face.point3Y, face.point3Z, forceSide);
 		
 		if(vert0.colors.length > 0 && vertexColors == null) {
 			vertexColors = new VertexColorSet.VertexColorFace[0];

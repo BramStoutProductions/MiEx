@@ -148,6 +148,7 @@ public class ExportBounds {
 	public boolean excludeRegionsAsAir;
 	public boolean actAsExcludeRegion;
 	public boolean onlyIndividualBlocks;
+	public boolean defaultValues;
 	
 	public ExportBounds(String name) {
 		this.name = name;
@@ -175,6 +176,7 @@ public class ExportBounds {
 		excludeRegionsAsAir = false;
 		actAsExcludeRegion = true;
 		onlyIndividualBlocks = false;
+		defaultValues = true;
 	}
 	
 	public ExportBounds(String name, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, 
@@ -213,6 +215,7 @@ public class ExportBounds {
 		this.excludeRegionsAsAir = excludeRegionsAsAir;
 		this.actAsExcludeRegion = actAsExcludeRegion;
 		this.onlyIndividualBlocks = onlyIndividualBlocks;
+		this.defaultValues = false;
 	}
 	
 	public boolean isInExcludeRegion(int x, int y, int z) {
@@ -226,7 +229,8 @@ public class ExportBounds {
 		// Export regions can also be exclude regions themselves,
 		// so lets check if this block isn't in any other export region.
 		boolean foundItself = false;
-		for(ExportBounds exportRegion : MCWorldExporter.getApp().getExportBoundsList()) {
+		for(int i = 0; i < MCWorldExporter.getApp().getExportBoundsList().size(); ++i) {
+			ExportBounds exportRegion = MCWorldExporter.getApp().getExportBoundsList().get(i);
 			if(exportRegion == this) {
 				foundItself = true;
 				continue;
@@ -428,6 +432,7 @@ public class ExportBounds {
 		this.maxX = Math.max(minX, maxX);
 		this.maxY = Math.max(minY, maxY);
 		this.maxZ = Math.max(minZ, maxZ);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -437,59 +442,70 @@ public class ExportBounds {
 		minZ = ((minZ+8) >> 4) << 4;
 		maxX = ((maxX+8) >> 4) << 4 - 1;
 		maxZ = ((maxZ+8) >> 4) << 4 - 1;
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void snapToChunksMinX() {
 		minX = ((minX+8) >> 4) << 4;
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	public void snapToChunksMinZ() {
 		minZ = ((minZ+8) >> 4) << 4;
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	public void snapToChunksMaxX() {
 		maxX = ((maxX+8) >> 4) << 4 - 1;
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	public void snapToChunksMaxZ() {
 		maxZ = ((maxZ+8) >> 4) << 4 - 1;
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMinX(int minX) {
 		this.minX = Math.min(minX, maxX);
 		this.maxX = Math.max(minX, maxX);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMinY(int minY) {
 		this.minY = Math.min(minY, maxY);
 		this.maxY = Math.max(minY, maxY);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMinZ(int minZ) {
 		this.minZ = Math.min(minZ, maxZ);
 		this.maxZ = Math.max(minZ, maxZ);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMaxX(int maxX) {
 		this.minX = Math.min(minX, maxX);
 		this.maxX = Math.max(minX, maxX);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMaxY(int maxY) {
 		this.minY = Math.min(minY, maxY);
 		this.maxY = Math.max(minY, maxY);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
 	public void setMaxZ(int maxZ) {
 		this.minZ = Math.min(minZ, maxZ);
 		this.maxZ = Math.max(minZ, maxZ);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -500,6 +516,7 @@ public class ExportBounds {
 		maxX = Math.max(maxX, x);
 		maxY = Math.max(maxY, y);
 		maxZ = Math.max(maxZ, z);
+		this.defaultValues = false;
 		MCWorldExporter.getApp().getUI().update();
 	}
 	
@@ -749,6 +766,7 @@ public class ExportBounds {
 		excludeRegionsAsAir = dis.readBoolean();
 		actAsExcludeRegion = dis.readBoolean();
 		onlyIndividualBlocks = dis.readBoolean();
+		this.defaultValues = false;
 	}
 	
 	public String toString() {
@@ -879,6 +897,7 @@ public class ExportBounds {
 				ex.printStackTrace();
 			}
 		}
+		this.defaultValues = false;
 	}
 	
 }

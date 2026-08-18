@@ -208,6 +208,8 @@ public class WorldBedrock extends World{
 	protected void findRegions() {
 		synchronized(regionMutex) {
 			regions = new Region[16];
+			regionIdCache.clear();
+			regionId.set(0);
 		}
 	}
 	

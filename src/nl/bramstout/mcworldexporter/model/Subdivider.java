@@ -35,7 +35,8 @@ import java.util.List;
 
 public class Subdivider {
 	
-	public static void subdivideModelForOcclusion(List<Model> models, long occlusion) {
+	public static void subdivideModelForOcclusion(List<Model> models, long occlusion, 
+					float[] points, float[] uvs) {
 		// First we need to check the occlusion data to see 
 		// if we even need to do any subdivisions.
 		byte[] needsSubdivides = new byte[] { 0, 0, 0, 0, 0, 0 };
@@ -87,7 +88,7 @@ public class Subdivider {
 							face = model.getFaces().get(j);
 						}
 						
-						face2Hor = subdivideFaceHorizontal(face);
+						face2Hor = subdivideFaceHorizontal(face, points, uvs);
 						if(face2Hor != null)
 							model.getFaces().add(face2Hor);
 					//}
@@ -104,14 +105,14 @@ public class Subdivider {
 							face = model.getFaces().get(j);
 						}
 						
-						ModelFace face2Vert = subdivideFaceVertical(face);
+						ModelFace face2Vert = subdivideFaceVertical(face, points, uvs);
 						if(face2Vert != null)
 							model.getFaces().add(face2Vert);
 						
 						if(face2Hor != null) {
 							// We had previously subdivided the face horizontally,
 							// so we also need to vertically subdivide the second face.
-							face2Vert = subdivideFaceVertical(face2Hor);
+							face2Vert = subdivideFaceVertical(face2Hor, points, uvs);
 							if(face2Vert != null)
 								model.getFaces().add(face2Vert);
 						}
@@ -220,7 +221,7 @@ public class Subdivider {
 	 * @param faceA
 	 * @return The second face created by the subdivision
 	 */
-	private static ModelFace subdivideFaceHorizontal(ModelFace faceA) {
+	private static ModelFace subdivideFaceHorizontal(ModelFace faceA, float[] points, float[] uvs) {
 		// 0: x plane, 1: y plane, 2: z plane.
 		int planeId = 0;
 		switch(faceA.getDirection()) {
@@ -244,7 +245,7 @@ public class Subdivider {
 			break;
 		}
 		
-		return subdivideFace(faceA, planeId);
+		return subdivideFace(faceA, planeId, points, uvs);
 	}
 	
 	/***
@@ -253,7 +254,7 @@ public class Subdivider {
 	 * @param faceA
 	 * @return The second face created by the subdivision
 	 */
-	private static ModelFace subdivideFaceVertical(ModelFace faceA) {
+	private static ModelFace subdivideFaceVertical(ModelFace faceA, float[] points, float[] uvs) {
 		// 0: x plane, 1: y plane, 2: z plane.
 		int planeId = 0;
 		switch(faceA.getDirection()) {
@@ -277,19 +278,20 @@ public class Subdivider {
 			break;
 		}
 		
-		return subdivideFace(faceA, planeId);
+		return subdivideFace(faceA, planeId, points, uvs);
 	}
 	
-	private static ModelFace subdivideFace(ModelFace faceA, int planeId) {
+	private static ModelFace subdivideFace(ModelFace faceA, int planeId, float[] points, float[] uvs) {
 		// First we need to find the edge pair to split on.
 		// And the distance along the edge of the split.
 		int edgeId = 0;
 		float t = -1f;
+		faceA.getPoints(points);
 		
-		t = calcSplit(faceA.getPoints(), planeId, 0);
+		t = calcSplit(points, planeId, 0);
 		if(t < 0f) {
 			// No proper split, so check the other edge pair.
-			t = calcSplit(faceA.getPoints(), planeId, 1);
+			t = calcSplit(points, planeId, 1);
 			edgeId = 1;
 		}
 		
@@ -302,13 +304,13 @@ public class Subdivider {
 		// based on t
 		ModelFace faceB = new ModelFace(faceA);
 		
-		moveFace(faceA, t, edgeId);
-		moveFace(faceB, 1f - t, edgeId + 2);
+		moveFace(faceA, t, edgeId, points, uvs);
+		moveFace(faceB, 1f - t, edgeId + 2, points, uvs);
 		
 		return faceB;
 	}
 	
-	private static void moveFace(ModelFace face, float t, int edgeId) {
+	private static void moveFace(ModelFace face, float t, int edgeId, float[] points, float[] uvs) {
 		int i00 = ((edgeId    ) & 0b11) * 3;
 		int i10 = ((edgeId + 3) & 0b11) * 3;
 		int i01 = ((edgeId + 1) & 0b11) * 3;
@@ -317,30 +319,31 @@ public class Subdivider {
 		int uvi10 = ((edgeId + 3) & 0b11) * 2;
 		int uvi01 = ((edgeId + 1) & 0b11) * 2;
 		int uvi11 = ((edgeId + 2) & 0b11) * 2;
-		face.getPoints()[i01  ] = (face.getPoints()[i01  ] - face.getPoints()[i00  ]) * t + face.getPoints()[i00  ];
-		face.getPoints()[i01+1] = (face.getPoints()[i01+1] - face.getPoints()[i00+1]) * t + face.getPoints()[i00+1];
-		face.getPoints()[i01+2] = (face.getPoints()[i01+2] - face.getPoints()[i00+2]) * t + face.getPoints()[i00+2];
+		face.getPoints(points);
+		points[i01  ] = (points[i01  ] - points[i00  ]) * t + points[i00  ];
+		points[i01+1] = (points[i01+1] - points[i00+1]) * t + points[i00+1];
+		points[i01+2] = (points[i01+2] - points[i00+2]) * t + points[i00+2];
 		
-		face.getPoints()[i11  ] = (face.getPoints()[i11  ] - face.getPoints()[i10  ]) * t + face.getPoints()[i10  ];
-		face.getPoints()[i11+1] = (face.getPoints()[i11+1] - face.getPoints()[i10+1]) * t + face.getPoints()[i10+1];
-		face.getPoints()[i11+2] = (face.getPoints()[i11+2] - face.getPoints()[i10+2]) * t + face.getPoints()[i10+2];
+		points[i11  ] = (points[i11  ] - points[i10  ]) * t + points[i10  ];
+		points[i11+1] = (points[i11+1] - points[i10+1]) * t + points[i10+1];
+		points[i11+2] = (points[i11+2] - points[i10+2]) * t + points[i10+2];
+		face.setPoints(points);
 		
+		face.getUVs(uvs);
+		uvs[uvi01  ] = (uvs[uvi01  ] - uvs[uvi00  ]) * t + uvs[uvi00  ];
+		uvs[uvi01+1] = (uvs[uvi01+1] - uvs[uvi00+1]) * t + uvs[uvi00+1];
 		
-		face.getUVs()[uvi01  ] = (face.getUVs()[uvi01  ] - face.getUVs()[uvi00  ]) * t + face.getUVs()[uvi00  ];
-		face.getUVs()[uvi01+1] = (face.getUVs()[uvi01+1] - face.getUVs()[uvi00+1]) * t + face.getUVs()[uvi00+1];
+		uvs[uvi11  ] = (uvs[uvi11  ] - uvs[uvi10  ]) * t + uvs[uvi10  ];
+		uvs[uvi11+1] = (uvs[uvi11+1] - uvs[uvi10+1]) * t + uvs[uvi10+1];
+		face.setUVs(uvs);
 		
-		face.getUVs()[uvi11  ] = (face.getUVs()[uvi11  ] - face.getUVs()[uvi10  ]) * t + face.getUVs()[uvi10  ];
-		face.getUVs()[uvi11+1] = (face.getUVs()[uvi11+1] - face.getUVs()[uvi10+1]) * t + face.getUVs()[uvi10+1];
-		
-		float[] minMaxPoints = {
-				Math.min(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.min(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.min(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-				Math.max(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.max(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.max(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-		};
-		face.calculateOcclusion(minMaxPoints);
+		face.calculateOcclusion(
+				Math.min(face.point0X, face.point2X),
+				Math.min(face.point0Y, face.point2Y),
+				Math.min(face.point0Z, face.point2Z),
+				Math.max(face.point0X, face.point2X),
+				Math.max(face.point0Y, face.point2Y),
+				Math.max(face.point0Z, face.point2Z));
 	}
 	
 	private static float calcSplit(float[] points, int planeId, int edgeId) {

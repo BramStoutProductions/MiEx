@@ -44,7 +44,9 @@ import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.model.ModelFace.FaceData;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.model.TextureRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 
@@ -79,9 +81,9 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 				if(!varName.startsWith("#"))
 					varName = "#" + varName;
 				textures.put(varName, texName);
+				model.addTexture(varName, texName);
 			}
 		}
-		model.getTextures().putAll(textures);
 		
 		if (data.has("parent")) {
 			String parentName = data.get("parent").getAsString();
@@ -90,7 +92,8 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 			if (parentModel != null) {
 				model.setParentModel(parentModel);
 				model.getTextures().putAll(parentModel.getTextures());
-				model.getTextures().putAll(textures);
+				for(Entry<String, String> entry : textures.entrySet())
+					model.addTexture(entry.getKey(), entry.getValue());
 				
 				// In case of a model that depends on settings of this model,
 				// we call this function. Most likely, it will return itself
@@ -130,8 +133,8 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 					if(transformData.has("translation")) {
 						JsonArray translationData = transformData.getAsJsonArray("translation");
 						if(translationData.size() >= 3) {
-							matrix = Matrix.translate(translationData.get(0).getAsFloat(), translationData.get(1).getAsFloat(), 
-									translationData.get(2).getAsFloat()).mult(matrix);
+							matrix = Matrix.translate(-translationData.get(0).getAsFloat(), translationData.get(1).getAsFloat(), 
+									-translationData.get(2).getAsFloat()).mult(matrix);
 						}
 					}
 					matrix = Matrix.translate(8f, 8f, 8f).mult(matrix);
@@ -191,7 +194,7 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 					
 					String shadingMode = ModelFace.SHADING_MODE_STANDARD;
 					if(element.has("shadingMode"))
-						shadingMode = element.get("shadingMode").getAsString().intern();
+						shadingMode = element.get("shadingMode").getAsString().toLowerCase().intern();
 
 					if (element.has("faces")) {
 						JsonObject faceObj = element.get("faces").getAsJsonObject();
@@ -233,10 +236,10 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 							}
 							String shadingMode2 = shadingMode;
 							if(face.getValue().getAsJsonObject().has("shadingMode"))
-								shadingMode2 = face.getValue().getAsJsonObject().get("shadingMode").getAsString().intern();
+								shadingMode2 = face.getValue().getAsJsonObject().get("shadingMode").getAsString().toLowerCase().intern();
 
 							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
-									face.getValue().getAsJsonObject(), model.isDoubleSided(), shadingMode2);
+									new FaceData(face.getValue().getAsJsonObject()), model.isDoubleSided(), shadingMode2);
 							if (modelFace.isValid()) {
 								modelFace.rotate(rotateData);
 								for(ModelFace modelFace2 : model.getFaces()) {
@@ -276,10 +279,9 @@ public class ModelHandlerJavaEdition extends ModelHandler{
 									continue;
 							}
 
-							JsonObject faceData = null;
-							if (model.getTextures().keySet().size() > 0) {
-								faceData = new JsonObject();
-								faceData.addProperty("texture", (String) (model.getTextures().keySet().toArray()[0]));
+							FaceData faceData = new FaceData();
+							if (model.getTextures().size() > 0) {
+								faceData.texture = TextureRegistry.getTextureFromId(model.getTextures().getKey(0));
 							}
 							ModelFace modelFace = new ModelFace(new float[] { minX, minY, minZ, maxX, maxY, maxZ }, dir,
 									faceData, model.isDoubleSided(), shadingMode);

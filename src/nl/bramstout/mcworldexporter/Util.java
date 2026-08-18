@@ -42,6 +42,9 @@ public class Util {
 	private static int underscoreCodePoint = "_".codePointAt(0);
 	
 	public static String makeSafeName(String str) {
+		if(str.length() == 0) {
+			str = "empty";
+		}
 		int[] codePoints = new int[str.length()];
 		for(int i = 0; i < str.length(); ++i) {
 			int codePoint = str.codePointAt(i);

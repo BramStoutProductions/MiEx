@@ -36,16 +36,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Color;
+import nl.bramstout.mcworldexporter.LongKeyMap;
 import nl.bramstout.mcworldexporter.export.IntArray;
 import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.math.Vector3f;
 import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
+import nl.bramstout.mcworldexporter.model.ModelFace.FaceData;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
@@ -67,8 +68,11 @@ public class Model {
 	private boolean animatesUVs;
 	private boolean animatesVertexColors;
 	private IntArray newFaces;
+	protected boolean moveable;
+	protected ModelSource source;
+	protected String animation;
 
-	protected Map<String, String> textures;
+	protected LongKeyMap<String> textures;
 	protected List<ModelFace> faces;
 	protected List<ModelBone> bones;
 	protected List<ModelLocator> locators;
@@ -77,12 +81,14 @@ public class Model {
 		this.name = other.name;
 		this.id = other.id;
 		this.parentModel = other.parentModel;
-		this.textures = new HashMap<String, String>(other.textures);
+		this.textures = new LongKeyMap<String>(other.textures);
 		this.faces = new ArrayList<ModelFace>();
 		this.weight = other.weight;
 		this.occludes = other.occludes;
 		this.extraData = other.extraData;
 		this.defaultTexture = other.defaultTexture;
+		this.source = other.source;
+		this.animation = other.animation;
 		this.displayTransforms = new HashMap<String, Matrix>(other.displayTransforms);
 		for (int i = 0; i < other.faces.size(); ++i) {
 			this.faces.add(new ModelFace(other.faces.get(i)));
@@ -117,12 +123,14 @@ public class Model {
 		this.newFaces = null;
 		if(other.newFaces != null)
 			this.newFaces = new IntArray(other.newFaces);
+		
+		this.moveable = true;
 	}
 
-	public Model(String name, ModelHandler handler, boolean doubleSided) {
+	public Model(String name, ModelHandler handler, boolean doubleSided, boolean storeInRegistry) {
 		this.name = name;
 		this.parentModel = null;
-		this.textures = new HashMap<String, String>();
+		this.textures = new LongKeyMap<String>();
 		this.faces = new ArrayList<ModelFace>();
 		this.bones = new ArrayList<ModelBone>();
 		this.locators = new ArrayList<ModelLocator>();
@@ -132,10 +140,15 @@ public class Model {
 		this.doubleSided = doubleSided;
 		this.defaultTexture = null;
 		this.displayTransforms = new HashMap<String, Matrix>();
+		this.source = ModelSource.UNDEFINED;
 		this.handler = handler;
 		this.newFaces = null;
-
-		this.id = ModelRegistry.getNextId(this);
+		this.animation = null;
+		
+		if(storeInRegistry)
+			this.id = ModelRegistry.getNextId(this);
+		else
+			this.id = ModelRegistry.getNextUniqueId();
 
 		if(handler != null)
 			handler.getGeometry(this);
@@ -144,12 +157,13 @@ public class Model {
 		for(int i = 0; i < faces.size(); ++i)
 			occludes |= faces.get(i).getOccludes();
 
+		this.moveable = true;
 	}
 	
-	public Model(String name, ModelHandler handler, boolean doubleSided, BlockAnimationHandler animationHandler, float frame) {
+	public Model(String name, ModelHandler handler, boolean doubleSided, BlockAnimationHandler animationHandler, float frame, int id) {
 		this.name = name;
 		this.parentModel = null;
-		this.textures = new HashMap<String, String>();
+		this.textures = new LongKeyMap<String>();
 		this.faces = new ArrayList<ModelFace>();
 		this.bones = new ArrayList<ModelBone>();
 		this.locators = new ArrayList<ModelLocator>();
@@ -160,8 +174,10 @@ public class Model {
 		this.defaultTexture = null;
 		this.displayTransforms = new HashMap<String, Matrix>();
 		this.handler = handler;
+		this.source = ModelSource.UNDEFINED;
+		this.animation = null;
 
-		this.id = ModelRegistry.getNextId(this);
+		this.id = id;
 
 		if(handler != null)
 			handler.getGeometry(this, animationHandler, frame);
@@ -170,10 +186,15 @@ public class Model {
 		for(int i = 0; i < faces.size(); ++i)
 			occludes |= faces.get(i).getOccludes();
 
+		this.moveable = true;
+	}
+	
+	public void setImmoveable() {
+		this.moveable = false;
 	}
 	
 	public Model getAnimatedVersion(BlockAnimationHandler animationHandler, float frame) {
-		return new Model(name, handler, doubleSided, animationHandler, frame);
+		return new Model(name, handler, doubleSided, animationHandler, frame, this.id);
 	}
 	
 	/**
@@ -200,7 +221,7 @@ public class Model {
 		if(textures.size() == 0)
 			defaultTexture = new DefaultTexture("", false);
 		else if(faces.size() == 0) {
-			String key = (String) textures.keySet().iterator().next();
+			long key = textures.size() > 0 ? textures.getKey(0) : 0;
 			defaultTexture = new DefaultTexture(getTexture(key), true);
 		}else {
 			ModelFace face = faces.get(0);
@@ -215,13 +236,23 @@ public class Model {
 		return defaultTexture;
 	}
 
-	public String getTexture(String name) {
-		String path = textures.get(name);
-		if (path == null)
-			return textures.getOrDefault("*", "");
-		if (path.startsWith("#"))
-			return getTexture(path);
-		return path;
+	public String getTexture(long name) {
+		int texIndex = textures.getIndex(name);
+		if (texIndex == -1) {
+			texIndex = textures.getIndex(TextureRegistry.ASTERISK);
+			if(texIndex == -1)
+				return TextureRegistry.getTextureFromId(name);
+			long texLong = textures.getLongValue(texIndex);
+			if(texLong != 0)
+				return getTexture(texLong);
+			String texStr = textures.getObjValue(texIndex);
+			return texStr;
+		}
+		long texLong = textures.getLongValue(texIndex);
+		if(texLong != 0)
+			return getTexture(texLong);
+		String texStr = textures.getObjValue(texIndex);
+		return texStr;
 	}
 
 	public String getName() {
@@ -230,6 +261,14 @@ public class Model {
 
 	public int getId() {
 		return id;
+	}
+	
+	public ModelSource getSource() {
+		return source;
+	}
+	
+	public void setModelSource(ModelSource source) {
+		this.source = source;
 	}
 
 	public List<ModelFace> getFaces() {
@@ -258,7 +297,7 @@ public class Model {
 		return null;
 	}
 	
-	public Map<String, String> getTextures(){
+	public LongKeyMap<String> getTextures(){
 		return textures;
 	}
 	
@@ -306,6 +345,13 @@ public class Model {
 		this.animatesVertexColors = animatesVertexColors;
 	}
 	
+	public String getAnimation() {
+		return animation;
+	}
+	
+	public void setAnimation(String animation){
+		this.animation = animation;
+	}
 	public void captureNewFaces() {
 		if(this.newFaces == null)
 			this.newFaces = new IntArray();
@@ -321,17 +367,43 @@ public class Model {
 	}
 
 	public float[] getBoundingBox() {
-		float[] res = new float[] { 0f, 0f, 0f, 0f, 0f, 0f};
+		float[] res = new float[] { 10000f, 10000f, 10000f, -10000f, -10000f, -10000f};
+		if(faces.size() == 0) {
+			for(int i = 0; i < 6; ++i)
+				res[i] = 0.0f;
+		}
 		for(ModelFace face : faces) {
-			for(int i = 0; i < 12; i += 3) {
-				res[0] = Math.min(res[0], face.getPoints()[i]);
-				res[1] = Math.min(res[1], face.getPoints()[i + 1]);
-				res[2] = Math.min(res[2], face.getPoints()[i + 2]);
-				
-				res[3] = Math.max(res[3], face.getPoints()[i]);
-				res[4] = Math.max(res[4], face.getPoints()[i + 1]);
-				res[5] = Math.max(res[5], face.getPoints()[i + 2]);
-			}
+			res[0] = Math.min(res[0], face.point0X);
+			res[1] = Math.min(res[1], face.point0Y);
+			res[2] = Math.min(res[2], face.point0Z);
+			
+			res[3] = Math.max(res[3], face.point0X);
+			res[4] = Math.max(res[4], face.point0Y);
+			res[5] = Math.max(res[5], face.point0Z);
+			
+			res[0] = Math.min(res[0], face.point1X);
+			res[1] = Math.min(res[1], face.point1Y);
+			res[2] = Math.min(res[2], face.point1Z);
+			
+			res[3] = Math.max(res[3], face.point1X);
+			res[4] = Math.max(res[4], face.point1Y);
+			res[5] = Math.max(res[5], face.point1Z);
+			
+			res[0] = Math.min(res[0], face.point2X);
+			res[1] = Math.min(res[1], face.point2Y);
+			res[2] = Math.min(res[2], face.point2Z);
+			
+			res[3] = Math.max(res[3], face.point2X);
+			res[4] = Math.max(res[4], face.point2Y);
+			res[5] = Math.max(res[5], face.point2Z);
+			
+			res[0] = Math.min(res[0], face.point3X);
+			res[1] = Math.min(res[1], face.point3Y);
+			res[2] = Math.min(res[2], face.point3Z);
+			
+			res[3] = Math.max(res[3], face.point3X);
+			res[4] = Math.max(res[4], face.point3Y);
+			res[5] = Math.max(res[5], face.point3Z);
 		}
 		return res;
 	}
@@ -456,10 +528,23 @@ public class Model {
 	}
 
 	public void addTexture(String name, String value) {
-		textures.put(name, value);
+		long id = TextureRegistry.getIdFromTexture(name, 0);
+		long texLong = 0;
+		String texStr = value;
+		if(value.startsWith("#")) {
+			texLong = TextureRegistry.getIdFromTexture(value, 0);
+			texStr = null;
+		}
+		textures.put(id, texLong, texStr);
 	}
 	
 	public void addModel(Model other) {
+		addModel(other, false);
+	}
+	
+	public void addModel(Model other, boolean move) {
+		if(move && other.moveable == false)
+			move = false;
 		if(other.getFaces().isEmpty())
 			return;
 		// It could be that we have mixed doubleSidedness.
@@ -489,18 +574,21 @@ public class Model {
 			}
 		}
 		
-		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
-		for(Entry<String, String> entry : other.getTextures().entrySet()) {
-			String tex = entry.getValue();
-			if(tex.startsWith("#"))
-				tex = texPrefix + tex.substring(1);
-			textures.put(texPrefix + entry.getKey().substring(1), tex);
+		int texPrefix = other.getId();
+		//String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
+		for(int i = 0; i < other.getTextures().size(); ++i) {
+			long key = other.getTextures().getKey(i);
+			long texLong = other.getTextures().getLongValue(i);
+			String texStr = other.getTextures().getObjValue(i);
+			if(texLong != 0)
+				texLong = TextureRegistry.prefixId(texLong, texPrefix);
+			textures.put(TextureRegistry.prefixId(key, texPrefix), texLong, texStr);
 		}
 		for(ModelFace face : other.getFaces()) {
-			ModelFace copy = new ModelFace(face);
-			if(face.getTexture().startsWith("#")) {
-				copy.setTexture(texPrefix + face.getTexture().substring(1));
-			}
+			ModelFace copy = face;
+			if(!move)
+				copy = new ModelFace(face);
+			copy.setTexture(TextureRegistry.prefixId(face.getTexture(), texPrefix));
 			if(this.newFaces != null)
 				this.newFaces.add(faces.size());
 			faces.add(copy);
@@ -513,9 +601,20 @@ public class Model {
 				faces.add(backFace);
 			}
 		}
+		if(move) {
+			other.faces.clear();
+			other.bones.clear();
+			other.locators.clear();
+		}
 	}
 	
 	public void addModel(Model other, List<Color> tints) {
+		addModel(other, tints, false);
+	}
+	
+	public void addModel(Model other, List<Color> tints, boolean move) {
+		if(move && other.moveable == false)
+			move = false;
 		if(other.getFaces().isEmpty())
 			return;
 		// It could be that we have mixed doubleSidedness.
@@ -545,18 +644,21 @@ public class Model {
 			}
 		}
 		
-		String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
-		for(Entry<String, String> entry : other.getTextures().entrySet()) {
-			String tex = entry.getValue();
-			if(tex.startsWith("#"))
-				tex = texPrefix + tex.substring(1);
-			textures.put(texPrefix + entry.getKey().substring(1), tex);
+		int texPrefix = other.getId();
+		//String texPrefix = "#" + Integer.toHexString(other.getId()) + "_";
+		for(int i = 0; i < other.getTextures().size(); ++i) {
+			long key = other.getTextures().getKey(i);
+			long texLong = other.getTextures().getLongValue(i);
+			String texStr = other.getTextures().getObjValue(i);
+			if(texLong != 0)
+				texLong = TextureRegistry.prefixId(texLong, texPrefix);
+			textures.put(TextureRegistry.prefixId(key, texPrefix), texLong, texStr);
 		}
 		for(ModelFace face : other.getFaces()) {
-			ModelFace copy = new ModelFace(face);
-			if(face.getTexture().startsWith("#")) {
-				copy.setTexture(texPrefix + face.getTexture().substring(1));
-			}
+			ModelFace copy = face;
+			if(!move)
+				copy = new ModelFace(face);
+			copy.setTexture(TextureRegistry.prefixId(face.getTexture(), texPrefix));
 			if(tints != null) {
 				if(copy.getTintIndex() >= 0 && copy.getTintIndex() < tints.size()) {
 					Color color = tints.get(face.getTintIndex());
@@ -577,6 +679,11 @@ public class Model {
 				faces.add(backFace);
 			}
 		}
+		if(move) {
+			other.faces.clear();
+			other.bones.clear();
+			other.locators.clear();
+		}
 	}
 	
 	public void addRootBone() {
@@ -594,8 +701,8 @@ public class Model {
 	}
 
 	public ModelFace addFace(float[] minMaxPoints, Direction dir, String texture, String shadingMode) {
-		JsonObject faceData = new JsonObject();
-		faceData.addProperty("texture", texture);
+		FaceData faceData = new FaceData();
+		faceData.texture = texture;
 
 		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided, shadingMode);
 		if (modelFace.isValid()) {
@@ -615,6 +722,10 @@ public class Model {
 		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, tintIndex);
 	}
 	
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, int tintIndex, String shadingMode) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, 0f, 0f, tintIndex, shadingMode);
+	}
+	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
 							float rotX, float rotY) {
 		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, -1);
@@ -623,6 +734,11 @@ public class Model {
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
 								float rotX, float rotY, int tintIndex) {
 		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, tintIndex);
+	}
+	
+	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
+								float rotX, float rotY, int tintIndex, String shadingMode) {
+		return addFace(minMaxPoints, minMaxUVs, dir, texture, rotX, rotY, 0f, tintIndex, shadingMode);
 	}
 	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
@@ -643,18 +759,19 @@ public class Model {
 	
 	public ModelFace addFace(float[] minMaxPoints, float[] minMaxUVs, Direction dir, String texture, 
 								float rotX, float rotY, float uvRot, int tintIndex, String shadingMode) {
-		JsonObject faceData = new JsonObject();
-		faceData.addProperty("texture", texture);
-		faceData.addProperty("tintindex", tintIndex);
-		if(minMaxUVs != null) {
-			JsonArray uvData = new JsonArray();
-			for (int i = 0; i < minMaxUVs.length; ++i)
-				uvData.add(minMaxUVs[i]);
-			faceData.add("uv", uvData);
+		FaceData faceData = new FaceData();
+		faceData.texture = texture;
+		faceData.tintindex = tintIndex;
+		if(minMaxUVs != null && minMaxUVs.length >= 4) {
+			faceData.uv0 = minMaxUVs[0];
+			faceData.uv1 = minMaxUVs[1];
+			faceData.uv2 = minMaxUVs[2];
+			faceData.uv3 = minMaxUVs[3];
+			faceData.hasUV = true;
 		}
 		if(uvRot != 0f) {
-			faceData.addProperty("rotation", uvRot);
-			faceData.addProperty("rotationMiEx", true);
+			faceData.rotation = uvRot;
+			faceData.rotationMiEx = true;
 		}
 
 		ModelFace modelFace = new ModelFace(minMaxPoints, dir, faceData, doubleSided, shadingMode);
@@ -752,6 +869,22 @@ public class Model {
 		}
 	}
 	
+	/**
+	 * Moves all faces directly on the unit cube's faces
+	 * slightly inwards.
+	 */
+	public void moveTransparentFaces() {
+		for(ModelFace face : faces)
+			face.moveTransparentFace(false, true);
+	}
+	
+	public boolean shouldMoveTransparentFaces() {
+		for(ModelFace face : faces)
+			if(face.shouldMoveTransparentFace())
+				return true;
+		return false;
+	}
+	
 	public void calculateOcclusions() {
 		for(ModelFace face : faces)
 			face.calculateOcclusion();
@@ -781,9 +914,16 @@ public class Model {
 		res.addProperty("occludes", occludes);
 		res.addProperty("extraData", extraData);
 		res.addProperty("doubleSided", doubleSided);
+		if(animation != null)
+			res.addProperty("animation", animation);
 		JsonObject texturesObject = new JsonObject();
-		for(Entry<String, String> entry : textures.entrySet()) {
-			texturesObject.addProperty(entry.getKey(), entry.getValue());
+		for(int i = 0; i < textures.size(); ++i) {
+			String key = TextureRegistry.getTextureFromId(textures.getKey(i));
+			long texLong = textures.getLongValue(i);
+			String texStr = textures.getObjValue(i);
+			if(texLong != 0)
+				texStr = TextureRegistry.getTextureFromId(texLong);
+			texturesObject.addProperty(key, texStr);
 		}
 		res.add("textures", texturesObject);
 		JsonArray facesArray = new JsonArray();

@@ -71,10 +71,12 @@ public class BlockStateBanner extends BlockState{
 			List<List<Model>> models = new ArrayList<List<Model>>();
 			
 			List<Model> list = new ArrayList<Model>();
-			Model modelBase = new Model("banner_base", null, false);
+			Model modelBase = new Model("banner_base", null, false, false);
+			modelBase.setImmoveable();
 			list.add(modelBase);
 			models.add(list);
-			Model modelBanner = new Model("banner", null, false);
+			Model modelBanner = new Model("banner", null, false, false);
+			modelBanner.setImmoveable();
 			models.add(Arrays.asList(modelBanner));
 			
 			boolean isWall = state.getName().contains("wall");

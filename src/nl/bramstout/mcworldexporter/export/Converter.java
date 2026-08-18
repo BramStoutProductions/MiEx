@@ -31,9 +31,7 @@
 
 package nl.bramstout.mcworldexporter.export;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -66,9 +64,9 @@ public abstract class Converter {
 			
 			LargeDataInputStream dis = null;
 			try {
-				dis = new LargeDataInputStream(new BufferedInputStream(new FileInputStream(file)));
+				dis = new LargeDataInputStream(file);
 				int version = dis.readInt();
-				if(version != 2) {
+				if(version != 3) {
 					dis.close();
 					throw new IOException("Unsupport input file version");
 				}

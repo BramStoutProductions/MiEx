@@ -49,6 +49,7 @@ import nl.bramstout.mcworldexporter.math.Matrix;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
+import nl.bramstout.mcworldexporter.model.ModelFace.FaceData;
 
 public class BuiltInModel {
 
@@ -165,7 +166,7 @@ public class BuiltInModel {
 		}
 		
 		public void addFaceToModel(ExprContext context, float[] bounds, JsonObject rotateData) {
-			JsonObject faceData = new JsonObject();
+			FaceData faceData = new FaceData();
 			
 			if(entityUVsMinU != null) {
 				float minU = entityUVsMinU.eval(context).asFloat();
@@ -223,40 +224,39 @@ public class BuiltInModel {
 					uvH = height * uvHeight;
 					break;
 				}
-				JsonArray uv = new JsonArray();
-				uv.add(uvX);
-				uv.add(uvY);
-				uv.add(uvX + uvW);
-				uv.add(uvY + uvH);
-				faceData.add("uv", uv);
+				faceData.uv0 = uvX;
+				faceData.uv1 = uvY;
+				faceData.uv2 = uvX + uvW;
+				faceData.uv3 = uvY + uvH;
+				faceData.hasUV = true;
 			}
 			
 			if(minU != null) {
-				JsonArray uv = new JsonArray();
-				uv.add(minU.eval(context).asFloat());
-				uv.add(minV.eval(context).asFloat());
-				uv.add(maxU.eval(context).asFloat());
-				uv.add(maxV.eval(context).asFloat());
-				faceData.add("uv", uv);
+				faceData.uv0 = minU.eval(context).asFloat();
+				faceData.uv1 = minV.eval(context).asFloat();
+				faceData.uv2 = maxU.eval(context).asFloat();
+				faceData.uv3 = maxV.eval(context).asFloat();
+				faceData.hasUV = true;
 			}
 			if(texture != null) {
 				String textureStr = texture.eval(context).asString();
 				if(!textureStr.startsWith("#"))
 					textureStr = "#" + textureStr;
-				faceData.addProperty("texture", textureStr);
+				faceData.texture = textureStr;
 			}
 			if(rotation != null) {
-				faceData.addProperty("rotation", rotation.eval(context).asInt());
+				faceData.rotation = rotation.eval(context).asInt();
+				faceData.hasRotation = true;
 			}
 			if(affineRotation) {
-				faceData.addProperty("rotationMiEx", true);
+				faceData.rotationMiEx = true;
 			}
 			if(tintIndex != null) {
-				faceData.addProperty("tintindex", tintIndex.eval(context).asInt());
+				faceData.tintindex = (int) tintIndex.eval(context).asInt();
 			}
 			String shadingModeStr = ModelFace.SHADING_MODE_STANDARD;
 			if(shadingMode != null)
-				shadingModeStr = shadingMode.eval(context).asString().intern();
+				shadingModeStr = shadingMode.eval(context).asString().toLowerCase().intern();
 			ModelFace face = new ModelFace(bounds, dir, faceData, context.model.isDoubleSided(), shadingModeStr);
 			if(face.isValid()) {
 				if(tintColor != null) {

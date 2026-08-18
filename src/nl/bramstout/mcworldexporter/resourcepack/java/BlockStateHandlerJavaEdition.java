@@ -48,13 +48,16 @@ import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.BlockAnimationHandlerBedrock;
 
 public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 
 	private List<BlockStatePart> parts;
+	private String animation;
 	
 	public BlockStateHandlerJavaEdition(String name, JsonObject data) {
 		this.parts = new ArrayList<BlockStatePart>();
+		this.animation = null;
 		
 		if(data == null)
 			return;
@@ -71,6 +74,9 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 			}
 		}
 		
+		if(data.has("animation"))
+			this.animation = data.get("animation").getAsString();
+		
 		if(Config.noOcclusion.contains(name)) {
 			for(BlockStatePart part : parts)
 				part.noOcclusion();
@@ -84,7 +90,8 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 	
 	@Override
 	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
-			BlockAnimationHandler animationHandler, float frame) {
+			BlockAnimationHandler animationHandler, float frame) {		
+		String animation = null;
 		List<List<Model>> models = new ArrayList<List<Model>>();
 		BlockStatePart part = null;
 		for(int i = 0; i < parts.size(); ++i) {
@@ -95,17 +102,41 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 					// so make sure to make a copy of the models.
 					List<Model> partModels = new ArrayList<Model>();
 					for(Model model : part.models) {
-						partModels.add(new Model(model));
+						Model copy = new Model(model);
+						copy.setImmoveable();
+						partModels.add(copy);
 					}
 					models.add(partModels);
 				}else {
 					models.add(part.models);
+					if(animation == null) {
+						for(Model model : part.models) {
+							animation = model.getAnimation();
+							if(animation != null)
+								break;
+						}
+					}
 				}
 			}
 		}
 		
+		if(this.animation != null)
+			animation = this.animation;
+		
 		if(animationHandler != null && state.getExtraAnimationHandler() != null) {
 			state.getExtraAnimationHandler().applyAnimation(models, properties, x, y, z, layer, state, frame);
+		}
+		
+		if(Config.moveTransparentFaces && state.isTransparentOcclusion() && !state.isLeavesOcclusion()) {
+			for(List<Model> models2 : models) {
+				for(int i = 0; i < models2.size(); ++i) {
+					if(models2.get(i).shouldMoveTransparentFaces()) {
+						Model copy = new Model(models2.get(i));
+						copy.moveTransparentFaces();
+						models2.set(i, copy);
+					}
+				}
+			}
 		}
 		
 		Tint tint = state.getTint();
@@ -119,7 +150,8 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 				state.hasRandomAnimationYOffset(), state.isLodNoUVScale(), state.isLodNoScale(), state.getLodPriority(), 
 				state.isSeparateMeshForBlock(), tintColor, state.needsConnectionInfo(), state.hasLocators(),
 				state.getLightValues(properties),
-				animationHandler == null ? state.getExtraAnimationHandler() : animationHandler);
+				animationHandler == null ? (animation == null ? 
+						state.getExtraAnimationHandler() : new BlockAnimationHandlerBedrock(animation)) : animationHandler);
 	}
 
 	@Override

@@ -50,12 +50,12 @@ public class AttachmentHandlerItem extends AttachmentHandler{
 		
 		ItemHandler itemHandler = ResourcePacks.getItemHandler(attachment.getName(), attachment.getProperties());
 		if(itemHandler == null)
-			return new Model(attachment.getName(), null, false);
+			return new Model(attachment.getName(), null, false, false);
 		
 		Model model = itemHandler.getModel(attachment.getName(), attachment.getProperties(), displayContext);
 	
 		if(model == null)
-			return new Model(attachment.getName(), null, false);
+			return new Model(attachment.getName(), null, false, false);
 		
 		model.applyTransformation(displayContext);
 		return model;

@@ -35,10 +35,10 @@ public class Color {
 	
 	public static ColorGamut GAMUT = ColorGamut.ACEScg;
 	
-	float r;
-	float g;
-	float b;
-	float a;
+	public float r;
+	public float g;
+	public float b;
+	public float a;
 	
 	public Color() {
 		r = 1.0f;

@@ -60,6 +60,10 @@ public class FloatArray {
 		this.size = size;
 	}
 	
+	public void resizeFast(int size) {
+		this.size = size;
+	}
+	
 	public void set(int index, float value) {
 		if(index >= data.length) {
 			this.data = Arrays.copyOf(this.data, Math.max(this.data.length * 2, index + 1));
@@ -91,6 +95,10 @@ public class FloatArray {
 	
 	public void clear() {
 		this.size = 0;
+	}
+	
+	public int getMemoryUsage() {
+		return data.length * 4;
 	}
 
 }

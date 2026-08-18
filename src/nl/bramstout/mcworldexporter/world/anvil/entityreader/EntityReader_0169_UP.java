@@ -55,8 +55,23 @@ public class EntityReader_0169_UP extends EntityReader{
 			NbtTagCompound entityTag = (NbtTagCompound) tag;
 			String name = ((NbtTagString)entityTag.get("id")).getData();
 			Entity entity = EntityRegistry.getEntity(name, entityTag);
-			if(entity != null)
+			if(entity != null) {
 				chunk._getEntities().add(entity);
+			}else {
+				// If we don't support this entity but it has passengers,
+				// then check if we support the passengers.
+				NbtTag passengersTag = entityTag.get("Passengers");
+				if(passengersTag != null && passengersTag instanceof NbtTagList) {
+					for(NbtTag passengerTag : ((NbtTagList) passengersTag).getData()) {
+						NbtTagCompound passengerEntityTag = (NbtTagCompound) passengerTag;
+						String passengerName = ((NbtTagString)passengerEntityTag.get("id")).getData();
+						Entity passengerEntity = EntityRegistry.getEntity(passengerName, passengerEntityTag);
+						if(passengerEntity != null) {
+							chunk._getEntities().add(passengerEntity);
+						}
+					}
+				}
+			}
 		}
 	}
 

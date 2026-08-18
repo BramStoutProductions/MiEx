@@ -48,6 +48,7 @@ import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelBone;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelLocator;
+import nl.bramstout.mcworldexporter.model.ModelSource;
 import nl.bramstout.mcworldexporter.resourcepack.BlockAnimationHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
@@ -58,12 +59,14 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 	private JsonObject data;
 	private int textureWidth;
 	private int textureHeight;
+	private String animation;
 	
 	public ModelHandlerBedrockEdition(String parent, JsonObject data) {
 		this.parent = parent;
 		this.data = data;
 		this.textureWidth = 64;
 		this.textureHeight = 64;
+		this.animation = null;
 		
 		if(parent != null) {
 			ModelHandler parentHandler = ResourcePacks.getModelHandler(parent);
@@ -85,6 +88,9 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			if(data.has("textureheight"))
 				textureHeight = data.get("textureheight").getAsInt();
 		}
+		
+		if(data.has("animation"))
+			this.animation = data.get("animation").getAsString();
 	}
 	
 	@Override
@@ -109,7 +115,11 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 			}
 		}
 		
+		
 		addBones(textureWidth, textureHeight, model);
+		
+		model.setModelSource(ModelSource.BEDROCK_MODEL);
+		model.setAnimation(animation);
 	}
 	
 	@Override
@@ -608,9 +618,10 @@ public class ModelHandlerBedrockEdition extends ModelHandler{
 						origin.x, origin.y, origin.z,
 						origin.x + size.x, origin.y + size.y, origin.z + size.z
 				};
+				// Flip vMin and vMax to get the correct result.
 				float[] uvs = new float[] {
-					u0, v0,
-					u0 + uvWidth, v0 + uvHeight
+					u0, v0 + uvHeight,
+					u0 + uvWidth, v0
 				};
 				uvs[0] *= textureScaleU;
 				uvs[1] *= textureScaleV;

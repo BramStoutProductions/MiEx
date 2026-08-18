@@ -141,6 +141,7 @@ public class Config {
 	public static boolean fillWorldBorders;
 	public static boolean calculateLighting;
 	public static boolean blockLightingAdditive;
+	public static boolean moveTransparentFaces;
 	
 	private static void parseList(String key, JsonObject data, List<String> list) {
 		if(data.has(key + ".remove")) {
@@ -501,6 +502,9 @@ public class Config {
 				
 				if(data.has("blockLightingAdditive"))
 					blockLightingAdditive = data.get("blockLightingAdditive").getAsBoolean();
+				
+				if(data.has("moveTransparentFaces"))
+					moveTransparentFaces = data.get("moveTransparentFaces").getAsBoolean();
 				
 			}catch(Exception ex) {
 				ex.printStackTrace();

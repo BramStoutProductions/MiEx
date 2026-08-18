@@ -79,16 +79,18 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		return null;
 	}
 	
-	public void getModels(int x, int y, int z, List<Model> res){
-		int level00 = getLevel(x-1, y, z-1);
-		int level10 = getLevel(x  , y, z-1);
-		int level20 = getLevel(x+1, y, z-1);
-		int level01 = getLevel(x-1, y, z);
-		int level11 = getLevel(x  , y, z);
-		int level21 = getLevel(x+1, y, z);
-		int level02 = getLevel(x-1, y, z+1);
-		int level12 = getLevel(x  , y, z+1);
-		int level22 = getLevel(x+1, y, z+1);
+	public void getModels(int x, int y, int z, List<Model> res, LayeredBlock layeredBlockCache){
+		if(layeredBlockCache == null)
+			layeredBlockCache = new LayeredBlock();
+		int level00 = getLevel(x-1, y, z-1, layeredBlockCache);
+		int level10 = getLevel(x  , y, z-1, layeredBlockCache);
+		int level20 = getLevel(x+1, y, z-1, layeredBlockCache);
+		int level01 = getLevel(x-1, y, z, layeredBlockCache);
+		int level11 = getLevel(x  , y, z, layeredBlockCache);
+		int level21 = getLevel(x+1, y, z, layeredBlockCache);
+		int level02 = getLevel(x-1, y, z+1, layeredBlockCache);
+		int level12 = getLevel(x  , y, z+1, layeredBlockCache);
+		int level22 = getLevel(x+1, y, z+1, layeredBlockCache);
 		int isWaterLogged = 0;
 		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 		Block currentBlock = BlockRegistry.getBlock(currentBlockId);
@@ -147,7 +149,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 								int level01, int level11, int level21,
 								int level02, int level12, int level22, 
 								int blockBelow, int isWaterLogged) {
-		Model model = new Model(getName(), null, true);
+		Model model = new Model(getName(), null, true, false);
+		model.setImmoveable();
 		
 		model.addTexture("#still", stillTexture);
 		model.addTexture("#flow", flowTexture);
@@ -219,10 +222,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		if(height11 < 16f) {
 			ModelFace topFace = model.addFace(minMaxPoints, gradientLength > 0f ? minMaxUVs : minMaxUVsStill, Direction.UP, gradientLength > 0f ? "#flow" : "#still", angle, 0);
 			// Clamp the height to prevent z-fighting.
-			topFace.getPoints()[0*3+1] = Math.min(cheight01, 15.99f);
-			topFace.getPoints()[1*3+1] = Math.min(cheight11, 15.99f);
-			topFace.getPoints()[2*3+1] = Math.min(cheight10, 15.99f);
-			topFace.getPoints()[3*3+1] = Math.min(cheight00, 15.99f);
+			topFace.point0Y = Math.min(cheight01, 15.99f);
+			topFace.point1Y = Math.min(cheight11, 15.99f);
+			topFace.point2Y = Math.min(cheight10, 15.99f);
+			topFace.point3Y = Math.min(cheight00, 15.99f);
 		}
 		//BakedBlockState blockBelow = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z), x, y-1, z);
 		//if(blockBelow == null || !(blockBelow.hasLiquid() || blockBelow.isTransparentOcclusion() || blockBelow.isLeavesOcclusion()))
@@ -231,10 +234,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		if(height10 <= 0f) {
 			ModelFace northFace = model.addFace(minMaxPoints, minMaxUVs, Direction.NORTH, "#flow", 0);
-			northFace.getPoints()[2*3+1] = cheight00;
-			northFace.getPoints()[3*3+1] = cheight10;
-			northFace.getUVs()[2*2+1] = cheight00 * 0.5f + 4.0f;
-			northFace.getUVs()[3*2+1] = cheight10 * 0.5f + 4.0f;
+			northFace.point2Y = cheight00;
+			northFace.point3Y = cheight10;
+			northFace.uvs2V = cheight00 * 0.5f + 4.0f;
+			northFace.uvs3V = cheight10 * 0.5f + 4.0f;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -248,10 +251,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		if(height12 <= 0f) {
 			ModelFace southFace = model.addFace(minMaxPoints, minMaxUVs, Direction.SOUTH, "#flow", 0);
-			southFace.getPoints()[2*3+1] = cheight11;
-			southFace.getPoints()[3*3+1] = cheight01;
-			southFace.getUVs()[2*2+1] = cheight11 * 0.5f + 4.0f;
-			southFace.getUVs()[3*2+1] = cheight01 * 0.5f + 4.0f;
+			southFace.point2Y = cheight11;
+			southFace.point3Y = cheight01;
+			southFace.uvs2V = cheight11 * 0.5f + 4.0f;
+			southFace.uvs3V = cheight01 * 0.5f + 4.0f;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -265,10 +268,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		if(height01 <= 0f) {
 			ModelFace westFace = model.addFace(minMaxPoints, minMaxUVs, Direction.WEST, "#flow", 0);
-			westFace.getPoints()[2*3+1] = cheight01;
-			westFace.getPoints()[3*3+1] = cheight00;
-			westFace.getUVs()[2*2+1] = cheight01 * 0.5f + 4.0f;
-			westFace.getUVs()[3*2+1] = cheight00 * 0.5f + 4.0f;
+			westFace.point2Y = cheight01;
+			westFace.point3Y = cheight00;
+			westFace.uvs2V = cheight01 * 0.5f + 4.0f;
+			westFace.uvs3V = cheight00 * 0.5f + 4.0f;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -282,10 +285,10 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		if(height21 <= 0f) {
 			ModelFace eastFace = model.addFace(minMaxPoints, minMaxUVs, Direction.EAST, "#flow", 0);
-			eastFace.getPoints()[2*3+1] = cheight10;
-			eastFace.getPoints()[3*3+1] = cheight11;
-			eastFace.getUVs()[2*2+1] = cheight10 * 0.5f + 4.0f;
-			eastFace.getUVs()[3*2+1] = cheight11 * 0.5f + 4.0f;
+			eastFace.point2Y = cheight10;
+			eastFace.point3Y = cheight11;
+			eastFace.uvs2V = cheight10 * 0.5f + 4.0f;
+			eastFace.uvs3V = cheight11 * 0.5f + 4.0f;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -300,8 +303,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		return model;
 	}
 	
-	private Block getLiquidBlock(int x, int y, int z) {
-		LayeredBlock blocks = new LayeredBlock();
+	private Block getLiquidBlock(int x, int y, int z, LayeredBlock blocks) {
 		MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, blocks);
 		
 		Block firstBlock = null;
@@ -337,8 +339,8 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		return liquidBlock == null ? firstBlock : liquidBlock;
 	}
 	
-	private int getLevel(int x, int y, int z) {
-		Block block = getLiquidBlock(x, y, z);
+	private int getLevel(int x, int y, int z, LayeredBlock layeredBlockCache) {
+		Block block = getLiquidBlock(x, y, z, layeredBlockCache);
 		
 
 		
@@ -351,7 +353,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		
 		// Check the block above. If there is a liquid block above, then this block should be
 		// a full liquid block. Which is the size of an entire block (a source block is less tall).
-		Block blockAbove = getLiquidBlock(x, y + 1, z);
+		Block blockAbove = getLiquidBlock(x, y + 1, z, layeredBlockCache);
 		//BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z), x, y + 1, z);
 		if(blockAbove != null && blockAbove.isLiquid()) {
 			return 8;
@@ -380,7 +382,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 			for(int j = y; j <= y+1; ++j) {
 				for(int k = z-1; k <= z+1; ++k) {
 					for(int i = x-1; i <= x+1; ++i) {
-						blockAbove = getLiquidBlock(i, j, k);
+						blockAbove = getLiquidBlock(i, j, k, layeredBlockCache);
 						blockAboveState = null;
 						if(blockAbove != null)
 							blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), i, j, k, 0);

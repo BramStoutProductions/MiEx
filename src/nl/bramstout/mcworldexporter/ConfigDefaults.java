@@ -128,6 +128,7 @@ public class ConfigDefaults {
 	public static boolean fillWorldBorders;
 	public static boolean calculateLighting;
 	public static boolean blockLightingAdditive;
+	public static boolean moveTransparentFaces;
 	
 	static {
 		liquid.addAll(Arrays.asList(
@@ -245,7 +246,8 @@ public class ConfigDefaults {
 				"minecraft:item_frame", "minecraft:frame",
 		        "minecraft:ItemFrame", "minecraft:glow_item_frame",
 		        "minecraft:glow_frame", "minecraft:GlowItemFrame",
-		        "minecraft:painting"
+		        "minecraft:painting", "minecraft:block_display",
+		        "minecraft:item_display"
 				));
 		
 		lodPriority.put("grass_block", 200);
@@ -310,6 +312,7 @@ public class ConfigDefaults {
 		fillWorldBorders = false;
 		calculateLighting = false;
 		blockLightingAdditive = false;
+		moveTransparentFaces = true;
 	}
 	
 	public static void loadDefaults() {

@@ -45,13 +45,15 @@ public class MeshSubset {
 	private long uniqueId;
 	
 	public MeshSubset(String name, String texture, String matTexture, 
-						boolean animatedTexture, MeshPurpose purpose, boolean isUnique, long uniqueId) {
+						boolean animatedTexture, MeshPurpose purpose, 
+						boolean isUnique, long uniqueId,
+						int initialCapacity) {
 		this.name = name;
 		this.texture = texture;
 		this.matTexture = matTexture;
 		this.animatedTexture = animatedTexture;
 		this.purpose = purpose;
-		this.faceIndices = new IntArray(1);
+		this.faceIndices = new IntArray(initialCapacity);
 		this.unique = isUnique;
 		this.uniqueId = uniqueId;
 	}
@@ -82,6 +84,33 @@ public class MeshSubset {
 		if(animatedTexture != other.animatedTexture)
 			return false;
 		if(unique != other.unique)
+			return false;
+		return true;
+	}
+	
+	public boolean equals(String otherTexture, String otherMatTexture, boolean otherAnimatedTexture, 
+			boolean otherUnique, long otherUniqueId, MeshPurpose otherPurpose) {
+		if(texture == null) {
+			if(otherTexture != null)
+				return false;
+		}else {
+			if(!texture.equals(otherTexture))
+				return false;
+		}
+		if(matTexture == null) {
+			if(otherMatTexture != null)
+				return false;
+		}else {
+			if(!matTexture.equals(otherMatTexture))
+				return false;
+		}
+		if(animatedTexture != otherAnimatedTexture)
+			return false;
+		if(unique != otherUnique)
+			return false;
+		if(unique && uniqueId != otherUniqueId)
+			return false;
+		if(purpose != otherPurpose)
 			return false;
 		return true;
 	}
@@ -162,6 +191,7 @@ public class MeshSubset {
 		}
 		dos.writeBoolean(animatedTexture);
 		dos.writeBoolean(unique);
+		dos.writeLong(uniqueId);
 		dos.writeInt(purpose.id);
 		int numFaceIndices = faceIndices.size();
 		dos.writeInt(numFaceIndices);
@@ -181,6 +211,7 @@ public class MeshSubset {
 			matTexture = null;
 		animatedTexture = dis.readBoolean();
 		unique = dis.readBoolean();
+		uniqueId = dis.readLong();
 		purpose = MeshPurpose.fromId(dis.readInt());
 		int numFaceIndices = dis.readInt();
 		if(faceIndices == null)

@@ -135,12 +135,7 @@ public class ProgressBar extends JPanel {
 	}
 	
 	public void finishedMesh(int numMeshes) {
-		progress += 1.0f / ((float) numMeshes) / ((float) numChunks) * 0.75f;
-		progressChanged();
-	}
-	
-	public void finishedOptimising(int numMeshes) {
-		progress += 1.0f / ((float) numMeshes) / ((float) numChunks) * 0.25f;
+		progress += 1.0f / ((float) numMeshes) / ((float) numChunks);
 		progressChanged();
 	}
 	

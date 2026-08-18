@@ -132,8 +132,8 @@ public class IndexCache {
 	private int initialCapacity;
 	
 	public IndexCache() {
-		maxSize = 128;
-		initialCapacity = 32;
+		maxSize = 1024;
+		initialCapacity = 128;
 		leafNodes = new LeafNode[16];
 		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
 		keys = new long[16];
@@ -183,7 +183,8 @@ public class IndexCache {
 				leafNodes[i+1] = leafNodes[i];
 				keys[i+1] = keys[i];
 			}
-			leafNodes[index+1] = new LeafNode(maxSize, maxSize);
+			if(leafNodes[index+1] == null)
+				leafNodes[index+1] = new LeafNode(maxSize, maxSize);
 			leafNodes[index].split(leafNodes[index+1]);
 			keys[index] = leafNodes[index].keys[0];
 			keys[index+1] = leafNodes[index+1].keys[0];
@@ -194,12 +195,16 @@ public class IndexCache {
 	}
 	
 	public void clear() {
-		maxSize = 128;
-		initialCapacity = 32;
-		leafNodes = new LeafNode[16];
-		leafNodes[0] = new LeafNode(initialCapacity, maxSize);
-		keys = new long[16];
-		keys[0] = 0;
+		//maxSize = 128;
+		//initialCapacity = 32;
+		//leafNodes = new LeafNode[16];
+		//leafNodes[0] = new LeafNode(initialCapacity, maxSize);
+		//keys = new long[16];
+		//keys[0] = 0;
+		for(int i = 0; i < numNodes; ++i) {
+			leafNodes[i].size = 0;
+			keys[i] = 0;
+		}
 		numNodes = 1;
 	}
 	

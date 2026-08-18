@@ -90,6 +90,8 @@ public class AnimationModifiers extends BlockAnimationHandler{
 		modifierContext.blockY = y;
 		modifierContext.blockZ = z;
 		float[] normal = new float[3];
+		float[] points = new float[12];
+		float[] uvs = new float[8];
 		
 		for(ModelFace face : model.getFaces()) {
 			modifierContext.faceCenterX = face.getCenterX();
@@ -102,28 +104,29 @@ public class AnimationModifiers extends BlockAnimationHandler{
 			modifierContext.faceTintR = 1f;
 			modifierContext.faceTintG = 1f;
 			modifierContext.faceTintB = 1f;
-			float[] faceTint = face.getVertexColors();
-			if(faceTint != null) {
-				modifierContext.faceTintR = faceTint[0];
-				modifierContext.faceTintG = faceTint[1];
-				modifierContext.faceTintB = faceTint[2];
+			if(face.hasVertexColor) {
+				modifierContext.faceTintR = face.vertexColorR;
+				modifierContext.faceTintG = face.vertexColorG;
+				modifierContext.faceTintB = face.vertexColorB;
 			}
 			modifierContext.faceTintIndex = face.getTintIndex();
 			modifierContext.faceDirection = face.getDirection();
 			
+			face.getPoints(points);
+			face.getUVs(uvs);
 			for(int i = 0; i < 4; ++i) {
-				modifierContext.vertexX = face.getPoints()[i*3+0];
-				modifierContext.vertexY = face.getPoints()[i*3+1];
-				modifierContext.vertexZ = face.getPoints()[i*3+2];
-				modifierContext.vertexU = face.getUVs()[i*2+0];
-				modifierContext.vertexV = face.getUVs()[i*2+1];
+				modifierContext.vertexX = points[i*3+0];
+				modifierContext.vertexY = points[i*3+1];
+				modifierContext.vertexZ = points[i*3+2];
+				modifierContext.vertexU = uvs[i*2+0];
+				modifierContext.vertexV = uvs[i*2+1];
 				float tintR = 1f;
 				float tintG = 1f;
 				float tintB = 1f;
-				if(faceTint != null) {
-					modifierContext.vertexR = faceTint[i*3+0];
-					modifierContext.vertexG = faceTint[i*3+1];
-					modifierContext.vertexB = faceTint[i*3+2];
+				if(face.hasVertexColor) {
+					modifierContext.vertexR = face.vertexColorR;
+					modifierContext.vertexG = face.vertexColorG;
+					modifierContext.vertexB = face.vertexColorB;
 					tintR = modifierContext.vertexR;
 					tintG = modifierContext.vertexG;
 					tintB = modifierContext.vertexB;
@@ -142,22 +145,28 @@ public class AnimationModifiers extends BlockAnimationHandler{
 					modifier.run(modifierContext);
 				}
 				
-				face.getPoints()[i*3+0] = modifierContext.vertexX;
-				face.getPoints()[i*3+1] = modifierContext.vertexY;
-				face.getPoints()[i*3+2] = modifierContext.vertexZ;
-				face.getUVs()[i*2+0] = modifierContext.vertexU;
-				face.getUVs()[i*2+1] = modifierContext.vertexV;
+				points[i*3+0] = modifierContext.vertexX;
+				points[i*3+1] = modifierContext.vertexY;
+				points[i*3+2] = modifierContext.vertexZ;
+				uvs[i*2+0] = modifierContext.vertexU;
+				uvs[i*2+1] = modifierContext.vertexV;
 				if(tintR != modifierContext.vertexR || tintG != modifierContext.vertexG || tintB != modifierContext.vertexB) {
 					// Vertex tint was set.
-					if(face.getVertexColors() == null) {
+					if(!face.hasVertexColor) {
 						// Make sure that we have the vertex colours set up.
 						face.setFaceColour(1f, 1f, 1f);
 					}
-					face.getVertexColors()[i*3+0] = modifierContext.vertexR;
-					face.getVertexColors()[i*3+1] = modifierContext.vertexG;
-					face.getVertexColors()[i*3+2] = modifierContext.vertexB;
+					//face.getVertexColors()[i*3+0] = modifierContext.vertexR;
+					//face.getVertexColors()[i*3+1] = modifierContext.vertexG;
+					//face.getVertexColors()[i*3+2] = modifierContext.vertexB;
+					// TODO: ModelFace currently only supports a solid colour
+					// for all its vertices. Decide on whether to keep that
+					// restriction or change it.
+					face.setFaceColour(modifierContext.vertexR, modifierContext.vertexG, modifierContext.vertexB);
 				}
 			}
+			face.setPoints(points);
+			face.setUVs(uvs);
 		}
 	}
 	

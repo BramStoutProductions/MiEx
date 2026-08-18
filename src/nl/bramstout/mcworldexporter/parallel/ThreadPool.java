@@ -120,6 +120,7 @@ public class ThreadPool {
 		public Runnable runnable;
 		private AtomicInteger future;
 		private AtomicInteger taskCounter;
+		public boolean dontClearRunnable = false;
 
 		public Task(Runnable runnable) {
 			this.runnable = runnable;
@@ -136,6 +137,10 @@ public class ThreadPool {
 			this.future.addAndGet(1);
 			if(taskCounter != null)
 				taskCounter.decrementAndGet();
+			if(!dontClearRunnable) {
+				// Set runnable to null to clear memory.
+				runnable = null;
+			}
 		}
 
 		public void waitUntilTaskIsDone() {
@@ -216,6 +221,7 @@ public class ThreadPool {
 					ex.printStackTrace();
 				}
 				task.done();
+				task = null;
 			}
 		}
 

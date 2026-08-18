@@ -33,6 +33,8 @@ package nl.bramstout.mcworldexporter.math;
 
 import java.util.Arrays;
 
+import nl.bramstout.mcworldexporter.model.ModelFace;
+
 public class Matrix {
 	
 	public float[] data;
@@ -81,6 +83,50 @@ public class Matrix {
 		res.y = point.x * data[1*4 + 0] + point.y * data[1*4 + 1] + point.z * data[1*4 + 2] + data[1*4 + 3];
 		res.z = point.x * data[2*4 + 0] + point.y * data[2*4 + 1] + point.z * data[2*4 + 2] + data[2*4 + 3];
 		return res;
+	}
+	
+	public void transformFace(ModelFace face) {
+		float x = face.point0X;
+		float y = face.point0Y;
+		float z = face.point0Z;
+		
+		face.point0X = x * data[0*4 + 0] + y * data[0*4 + 1] + z * data[0*4 + 2] + data[0*4 + 3];
+		face.point0Y = x * data[1*4 + 0] + y * data[1*4 + 1] + z * data[1*4 + 2] + data[1*4 + 3];
+		face.point0Z = x * data[2*4 + 0] + y * data[2*4 + 1] + z * data[2*4 + 2] + data[2*4 + 3];
+		
+		x = face.point1X;
+		y = face.point1Y;
+		z = face.point1Z;
+		
+		face.point1X = x * data[0*4 + 0] + y * data[0*4 + 1] + z * data[0*4 + 2] + data[0*4 + 3];
+		face.point1Y = x * data[1*4 + 0] + y * data[1*4 + 1] + z * data[1*4 + 2] + data[1*4 + 3];
+		face.point1Z = x * data[2*4 + 0] + y * data[2*4 + 1] + z * data[2*4 + 2] + data[2*4 + 3];
+		
+		x = face.point2X;
+		y = face.point2Y;
+		z = face.point2Z;
+		
+		face.point2X = x * data[0*4 + 0] + y * data[0*4 + 1] + z * data[0*4 + 2] + data[0*4 + 3];
+		face.point2Y = x * data[1*4 + 0] + y * data[1*4 + 1] + z * data[1*4 + 2] + data[1*4 + 3];
+		face.point2Z = x * data[2*4 + 0] + y * data[2*4 + 1] + z * data[2*4 + 2] + data[2*4 + 3];
+		
+		x = face.point3X;
+		y = face.point3Y;
+		z = face.point3Z;
+		
+		face.point3X = x * data[0*4 + 0] + y * data[0*4 + 1] + z * data[0*4 + 2] + data[0*4 + 3];
+		face.point3Y = x * data[1*4 + 0] + y * data[1*4 + 1] + z * data[1*4 + 2] + data[1*4 + 3];
+		face.point3Z = x * data[2*4 + 0] + y * data[2*4 + 1] + z * data[2*4 + 2] + data[2*4 + 3];
+	}
+	
+	public void transformPoint(float[] data, int offset) {
+		float x = data[offset];
+		float y = data[offset + 1];
+		float z = data[offset + 2];
+		
+		data[offset] = 		x * data[0*4 + 0] + y * data[0*4 + 1] + z * data[0*4 + 2] + data[0*4 + 3];
+		data[offset + 1] = 	x * data[1*4 + 0] + y * data[1*4 + 1] + z * data[1*4 + 2] + data[1*4 + 3];
+		data[offset + 2] = 	x * data[2*4 + 0] + y * data[2*4 + 1] + z * data[2*4 + 2] + data[2*4 + 3];
 	}
 	
 	public Vector3f transformDirection(Vector3f point) {

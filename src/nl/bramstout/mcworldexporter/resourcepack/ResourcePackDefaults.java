@@ -40,8 +40,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -448,10 +448,8 @@ public class ResourcePackDefaults {
 		// Jar files we only extract the assets and data folder.
 		System.out.println("    Extracting file " + source.getPath());
 		
-		// TODO: We will have manifest.json and pack.mcmeta files, which will need to be merged.
-		
 		if(source.isDirectory()) {
-			extractFolderToResourcePack(source, resourcePack, startProgress, progressRange);
+			extractFolderToResourcePack(source, resourcePack, "", startProgress, progressRange);
 		}else if(source.isFile()) {
 			if(source.getName().endsWith(".zip")) {
 				extractZipToResourcePack(source, resourcePack, startProgress, progressRange);
@@ -461,13 +459,13 @@ public class ResourcePackDefaults {
 		}
 	}
 	
-	private static void extractFolderToResourcePack(File source, File dst, float startProgress, float progressRange) {
+	private static void extractFolderToResourcePack(File source, File dst, String entryName, float startProgress, float progressRange) {
 		if(source.isDirectory()) {
 			File[] files = source.listFiles();
 			float numFiles = (float) files.length;
 			float progress = startProgress;
 			for(File file : files) {
-				extractFolderToResourcePack(file, new File(dst, file.getName()), progress, progressRange / numFiles);
+				extractFolderToResourcePack(file, new File(dst, file.getName()), entryName + "/" + file.getName(), progress, progressRange / numFiles);
 				progress += progressRange / numFiles;
 				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(progress);
 			}
@@ -475,7 +473,16 @@ public class ResourcePackDefaults {
 			try {
 				if(!dst.getParentFile().exists())
 					dst.getParentFile().mkdirs();
-				Files.copy(source.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				
+				FileInputStream is = new FileInputStream(source);
+				try {
+					byte[] data = is.readAllBytes();
+					installFile(data, entryName.substring(1), dst); // substring(1) to remove leading slash
+				}catch(Exception ex) {
+					is.close();
+					throw ex;
+				}
+				is.close();
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
@@ -489,7 +496,6 @@ public class ResourcePackDefaults {
 			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
 			try {
 			    ZipEntry entry = null;
-			    byte[] bytesIn = new byte[64*1024*1024];
 			    
 			    while ((entry = zipIn.getNextEntry()) != null) {
 			    	String entryName = entry.getName();
@@ -509,19 +515,8 @@ public class ResourcePackDefaults {
 				        if (!entry.isDirectory()) {
 				        	File dir = outFile.getParentFile();
 				        	dir.mkdirs();
-				            OutputStream os = new FileOutputStream(outFile);
-				            try {
-				            	int read = 0;
-					            while ((read = zipIn.read(bytesIn)) != -1) {
-					                os.write(bytesIn, 0, read);
-					                if(size == -1L)
-					                	// Couldn't get the size, so increment bytesRead here.
-					                	bytesRead += read;
-					            }
-				            }catch(Exception ex) {
-				            	ex.printStackTrace();
-				            }
-				            os.close();
+				        	byte[] data = zipIn.readAllBytes();
+				        	installFile(data, entryName, outFile);
 				        }
 				        zipIn.closeEntry();
 			    	}catch(Exception ex) {
@@ -529,7 +524,10 @@ public class ResourcePackDefaults {
 			    	}
 			    }
 			}catch(Exception ex) {
-				ex.printStackTrace();
+				// Ignore some errors that are fine.
+				if(!ex.getMessage().equals("only DEFLATED entries can have EXT descriptor")) {
+					ex.printStackTrace();
+				}
 			}
 		    zipIn.close();
 		}catch(Exception ex) {
@@ -544,7 +542,6 @@ public class ResourcePackDefaults {
 			ZipInputStream zipIn = new ZipInputStream(new FileInputStream(source));
 			try {
 			    ZipEntry entry = null;
-			    byte[] bytesIn = new byte[64*1024*1024];
 			    
 			    while ((entry = zipIn.getNextEntry()) != null) {
 			    	String entryName = entry.getName();
@@ -576,19 +573,8 @@ public class ResourcePackDefaults {
 				        if (!entry.isDirectory()) {
 				        	File dir = outFile.getParentFile();
 				        	dir.mkdirs();
-				            OutputStream os = new FileOutputStream(outFile);
-				            try {
-				            	int read = 0;
-					            while ((read = zipIn.read(bytesIn)) != -1) {
-					                os.write(bytesIn, 0, read);
-					                if(size == -1)
-					                	// Couldn't get the size, so increment bytesRead here.
-					                	bytesRead += read;
-					            }
-				            }catch(Exception ex) {
-				            	ex.printStackTrace();
-				            }
-				            os.close();
+				        	byte[] data = zipIn.readAllBytes();
+				        	installFile(data, entryName, outFile);
 				        }
 				        zipIn.closeEntry();
 			    	}catch(Exception ex) {
@@ -601,6 +587,93 @@ public class ResourcePackDefaults {
 		    zipIn.close();
 		}catch(Exception ex) {
 			ex.printStackTrace();
+		}
+	}
+	
+	private static void installFile(byte[] data, String entryName, File outFile) throws IOException{
+		// When extracting multiple resource packs to be combined into one
+		// there might be some files that can't just be overwritten and
+		// instead need to be merged.
+		if(entryName.equals("textures/terrain_texture.json") && outFile.exists()) {
+			JsonObject dstData = Json.read(outFile).getAsJsonObject();
+			JsonObject srcData = Json.readString(new String(data, Charset.forName("UTF-8"))).getAsJsonObject();
+			
+			if(srcData.has("texture_data")) {
+				JsonObject srcTextureData = srcData.getAsJsonObject("texture_data");
+				if(dstData.has("texture_data")) {
+					JsonObject dstTextureData = dstData.getAsJsonObject("texture_data");
+					for(Entry<String, JsonElement> entry : srcTextureData.entrySet()) {
+						dstTextureData.add(entry.getKey(), entry.getValue());
+					}
+					dstData.add("texture_data", dstTextureData);
+				}else {
+					dstData.add("texture_data", srcTextureData);
+				}
+			}
+			
+			Json.writeJson(outFile, dstData);
+		}else if(entryName.equals("textures/item_texture.json") && outFile.exists()) {
+			JsonObject dstData = Json.read(outFile).getAsJsonObject();
+			JsonObject srcData = Json.readString(new String(data, Charset.forName("UTF-8"))).getAsJsonObject();
+			
+			if(srcData.has("texture_data")) {
+				JsonObject srcTextureData = srcData.getAsJsonObject("texture_data");
+				if(dstData.has("texture_data")) {
+					JsonObject dstTextureData = dstData.getAsJsonObject("texture_data");
+					for(Entry<String, JsonElement> entry : srcTextureData.entrySet()) {
+						dstTextureData.add(entry.getKey(), entry.getValue());
+					}
+					dstData.add("texture_data", dstTextureData);
+				}else {
+					dstData.add("texture_data", srcTextureData);
+				}
+			}
+			
+			Json.writeJson(outFile, dstData);
+		}else if(entryName.equals("textures/flipbook_textures.json") && outFile.exists()) {
+			JsonArray dstData = Json.read(outFile).getAsJsonArray();
+			JsonArray srcData = Json.readString(new String(data, Charset.forName("UTF-8"))).getAsJsonArray();
+			
+			for(JsonElement item : srcData.asList()) {
+				dstData.add(item);
+			}
+			
+			Json.writeJson(outFile, dstData);
+		}else if(entryName.equals("blocks.json") && outFile.exists()) {
+			JsonObject dstData = Json.read(outFile).getAsJsonObject();
+			JsonObject srcData = Json.readString(new String(data, Charset.forName("UTF-8"))).getAsJsonObject();
+			
+			for(Entry<String, JsonElement> entry : srcData.entrySet()) {
+				dstData.add(entry.getKey(), entry.getValue());
+			}
+			
+			Json.writeJson(outFile, dstData);
+		}else if(entryName.equals("biomes_client.json") && outFile.exists()) {
+			JsonObject dstData = Json.read(outFile).getAsJsonObject();
+			JsonObject srcData = Json.readString(new String(data, Charset.forName("UTF-8"))).getAsJsonObject();
+			
+			if(srcData.has("biomes")) {
+				JsonObject srcBiomes = srcData.getAsJsonObject("biomes");
+				if(dstData.has("biomes")) {
+					JsonObject dstBiomes = dstData.getAsJsonObject("biomes");
+					for(Entry<String, JsonElement> entry : srcBiomes.entrySet()) {
+						dstBiomes.add(entry.getKey(), entry.getValue());
+					}
+					dstData.add("biomes", dstBiomes);
+				}else {
+					dstData.add("biomes", srcBiomes);
+				}
+			}
+			
+			Json.writeJson(outFile, dstData);
+		}else {
+			OutputStream os = new FileOutputStream(outFile);
+	        try {
+	        	os.write(data, 0, data.length);
+	        }catch(Exception ex) {
+	        	ex.printStackTrace();
+	        }
+	        os.close();
 		}
 	}
 	

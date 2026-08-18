@@ -37,6 +37,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -130,8 +131,6 @@ public class LauncherSavesDirectory extends Launcher{
 	}
 	
 	@Override
-	public List<ResourcePackSource> getAllResourcePackSources() {
-		return new ArrayList<ResourcePackSource>();
-	}
+	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {}
 
 }

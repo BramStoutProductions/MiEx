@@ -31,10 +31,8 @@
 
 package nl.bramstout.mcworldexporter.export.usd;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -66,10 +64,13 @@ import nl.bramstout.mcworldexporter.Util;
 import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel3D;
 import nl.bramstout.mcworldexporter.export.AnimatedBlock;
 import nl.bramstout.mcworldexporter.export.AnimatedBlock.AnimatedBlockId;
+import nl.bramstout.mcworldexporter.export.ChunkExporter.MeshKey;
 import nl.bramstout.mcworldexporter.export.Converter;
 import nl.bramstout.mcworldexporter.export.ExportData;
 import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.export.FloatArray;
+import nl.bramstout.mcworldexporter.export.IndexCacheFlat;
+import nl.bramstout.mcworldexporter.export.IndividualBlock;
 import nl.bramstout.mcworldexporter.export.IndividualBlockId;
 import nl.bramstout.mcworldexporter.export.LargeDataInputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
@@ -107,22 +108,25 @@ public class USDConverter extends Converter{
 		
 		private String matTexture;
 		private boolean hasBiomeColor;
+		private String shadingMode;
 		
-		public MatKey(String matTexture, boolean hasBiomeColor) {
+		public MatKey(String matTexture, boolean hasBiomeColor, String shadingMode) {
 			this.matTexture = matTexture;
 			this.hasBiomeColor = hasBiomeColor;
+			this.shadingMode = shadingMode;
 		}
 		
 		@Override
 		public int hashCode() {
-			return matTexture.hashCode();
+			return matTexture.hashCode() * 31 + shadingMode.hashCode();
 		}
 		
 		@Override
 		public boolean equals(Object obj) {
 			if(!(obj instanceof MatKey))
 				return false;
-			return ((MatKey) obj).matTexture.equals(matTexture) && ((MatKey) obj).hasBiomeColor == hasBiomeColor;
+			return ((MatKey) obj).matTexture.equals(matTexture) && ((MatKey) obj).hasBiomeColor == hasBiomeColor &&
+					((MatKey)obj).shadingMode.equals(shadingMode);
 		}
 		
 	}
@@ -131,15 +135,21 @@ public class USDConverter extends Converter{
 		String texture;
 		Materials.MaterialTemplate materialTemplate;
 		boolean hasBiomeColor;
+		String shadingMode;
+		byte blockLightEmission;
 		
 		public Texture(String texture, String matTexture, boolean hasBiomeColor, boolean isDoubleSided, 
-						Set<String> colorSets, String shadingMode, Map<MatKey, Materials.MaterialTemplate> templates) {
+						Set<String> colorSets, String shadingMode, byte blockLightEmission,
+						Map<MatKey, Materials.MaterialTemplate> templates) {
 			this.texture = texture;
-			MatKey matKey = new MatKey(matTexture, hasBiomeColor);
+			this.shadingMode = shadingMode;
+			this.blockLightEmission = blockLightEmission;
+			MatKey matKey = new MatKey(matTexture, hasBiomeColor, shadingMode);
 			this.materialTemplate = templates.getOrDefault(matKey, null);
 			if(this.materialTemplate == null) {
 				this.materialTemplate = Materials.getMaterial(matTexture, hasBiomeColor, isDoubleSided, colorSets,
-										Exporter.currentExportFile.getParentFile().getAbsolutePath(), shadingMode);
+										Exporter.currentExportFile.getParentFile().getAbsolutePath(), shadingMode, 
+										this.blockLightEmission);
 				templates.put(matKey, materialTemplate);
 			}
 			this.hasBiomeColor = hasBiomeColor;
@@ -151,18 +161,20 @@ public class USDConverter extends Converter{
 				if(((Texture) obj).materialTemplate == null) {
 					return ((Texture)obj).texture.equals(texture) && 
 							((Texture)obj).materialTemplate == materialTemplate && 
-							((Texture)obj).hasBiomeColor == hasBiomeColor;
+							((Texture)obj).hasBiomeColor == hasBiomeColor &&
+							((Texture)obj).shadingMode.equals(shadingMode);
 				}
 				return ((Texture)obj).texture.equals(texture) && 
 						((Texture)obj).materialTemplate.equals(materialTemplate) && 
-						((Texture)obj).hasBiomeColor == hasBiomeColor;
+						((Texture)obj).hasBiomeColor == hasBiomeColor &&
+						((Texture)obj).shadingMode.equals(shadingMode);
 			}
 			return false;
 		}
 		
 		@Override
 		public int hashCode() {
-			return Objects.hash(texture, materialTemplate);
+			return Objects.hash(texture, materialTemplate, shadingMode);
 		}
 	}
 	
@@ -174,7 +186,7 @@ public class USDConverter extends Converter{
 		}
 	}
 	
-	private static ThreadPool threadPool = new ThreadPool("USD_Converter", 2048);
+	private static ThreadPool threadPool = new ThreadPool("USD_Converter", 512);
 	
 	private LargeDataInputStream dis;
 	private File inputFile;
@@ -210,7 +222,7 @@ public class USDConverter extends Converter{
 	
 	@Override
 	public void init() throws Exception {
-		dis = new LargeDataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
+		dis = new LargeDataInputStream(inputFile);
 	}
 	
 	@Override
@@ -223,7 +235,7 @@ public class USDConverter extends Converter{
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Converting to USD");
 		int version = dis.readInt();
-		if(version != 2)
+		if(version != 3)
 			throw new IOException("Unsupport input file version");
 		
 		long individualBlocksOffset = dis.readLong();
@@ -403,7 +415,7 @@ public class USDConverter extends Converter{
 		File entitiesFile = new File(inputFile.getParentFile(), entitiesFilename);
 		Map<String, Texture> usedTexturesEntities = new HashMap<String, Texture>();
 		
-		convertEntities(new LargeDataInputStream(new BufferedInputStream(new FileInputStream(entitiesFile))),
+		convertEntities(new LargeDataInputStream(entitiesFile),
 						new File(chunksFolder, "entities.usd"), usedTexturesEntities);
 		writer.beginDef("Xform", "entities");
 		writer.beginMetaData();
@@ -685,7 +697,9 @@ public class USDConverter extends Converter{
 		
 		List<Task> futures = new ArrayList<Task>();
 		for(int chunkId = 0; chunkId < numChunks; ++chunkId) {
-			futures.add(threadPool.submit(new ConvertChunkTask(new File(inputFile.getParentFile(), chunkFilenames[chunkId]), chunksFolder)));
+			Task task = threadPool.submit(new ConvertChunkTask(new File(inputFile.getParentFile(), chunkFilenames[chunkId]), chunksFolder));
+			futures.add(task);
+			task.dontClearRunnable = true;
 		}
 		
 		for(Task future : futures) {
@@ -727,11 +741,13 @@ public class USDConverter extends Converter{
 		public boolean isFG;
 		public String name;
 		public Map<String, Texture> usedTextures;
-		public Map<IndividualBlockId, List<Float>> instancers;
+		public Map<IndividualBlockId, IndividualBlock> instancers;
 		public Map<MatKey, MaterialTemplate> templates;
 		public List<AnimatedBlock> animatedBlocks;
 		public Map<AnimatedBlockId, Map<String, Mesh>> animatedBlockBaseMeshes;
 		public Map<AnimatedBlockId, Map<String, String>> animatedBlockMats;
+		public Map<String, List<Long>> meshLocations;
+		public List<String> rootMeshes;
 		
 		public ConvertChunkTask(File inputFile, File chunksFolder) {
 			this.inputFile = inputFile;
@@ -739,34 +755,44 @@ public class USDConverter extends Converter{
 			this.isFG = true;
 			this.name = "";
 			this.usedTextures = new HashMap<String, Texture>();
-			this.instancers = new HashMap<IndividualBlockId, List<Float>>();
+			this.instancers = new HashMap<IndividualBlockId, IndividualBlock>();
 			this.templates = new HashMap<MatKey, MaterialTemplate>();
 			this.animatedBlocks = new ArrayList<AnimatedBlock>();
 			this.animatedBlockBaseMeshes = new HashMap<AnimatedBlockId, Map<String, Mesh>>();
 			this.animatedBlockMats = new HashMap<AnimatedBlockId, Map<String, String>>();
+			this.meshLocations = new HashMap<String, List<Long>>();
+			this.rootMeshes = new ArrayList<String>();
 		}
 		
 		@Override
 		public void run() {
 			LargeDataInputStream dis = null;
 			try {
-				dis = new LargeDataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
+				dis = new LargeDataInputStream(inputFile);
 				
-				String chunkName = dis.readUTF();
-				this.name = chunkName;
+				this.name = dis.readUTF();
+				this.isFG = dis.readBoolean();
 				
-				boolean isFG = dis.readByte() > 0;
-				this.isFG = isFG;
+				dis.seek(dis.length() - 8);
+				long metadataPosition = dis.readLong();
+				dis.seek(metadataPosition);
 				
-				int numAnimatedBlocks = dis.readInt();
-				for(int i = 0; i < numAnimatedBlocks; ++i) {
-					AnimatedBlock animatedBlock = new AnimatedBlock(null, null, null, null);
-					animatedBlock.read(dis);
-					animatedBlocks.add(animatedBlock);
+				int numMeshes = dis.readInt();
+				for(int i = 0; i < numMeshes; ++i) {
+					String meshName = dis.readUTF();
+					int numMeshChunks = dis.readInt();
+					List<Long> meshChunks = new ArrayList<Long>();
+					for(int j = 0; j < numMeshChunks; ++j)
+						meshChunks.add(dis.readLong());
+					this.meshLocations.put(meshName, meshChunks);
 				}
 				
-				USDWriter chunkWriter = new USDWriter(new File(chunksFolder, chunkName + ".usd"));
-				USDWriter chunkRenderWriter = new USDWriter(new File(chunksFolder, chunkName + "_render.usd"));
+				int numRootMeshes = dis.readInt();
+				for(int i = 0; i < numRootMeshes; ++i)
+					this.rootMeshes.add(dis.readUTF());
+				
+				USDWriter chunkWriter = new USDWriter(new File(chunksFolder, this.name + ".usd"));
+				USDWriter chunkRenderWriter = new USDWriter(new File(chunksFolder, this.name + "_render.usd"));
 				chunkWriter.beginMetaData();
 				chunkWriter.writeMetaDataString("defaultPrim", "chunk");
 				chunkWriter.endMetaData();
@@ -787,9 +813,12 @@ public class USDConverter extends Converter{
 				chunkRenderWriter.endMetaData();
 				chunkRenderWriter.beginChildren();
 				
-				
-				writeMeshes(dis, chunkWriter, chunkRenderWriter, 
-									usedTextures, templates, null, "/chunk/materials.");
+				int numAnimatedBlocks = dis.readInt();
+				for(int i = 0; i < numAnimatedBlocks; ++i) {
+					AnimatedBlock animatedBlock = new AnimatedBlock(null, null, null, null);
+					animatedBlock.read(dis);
+					animatedBlocks.add(animatedBlock);
+				}
 				
 				int numIndividualBlocks = dis.readInt();
 				for(int individualBlockId = 0; individualBlockId < numIndividualBlocks; ++individualBlockId) {
@@ -810,6 +839,10 @@ public class USDConverter extends Converter{
 					chunkRenderWriter.endChildren();
 					chunkRenderWriter.endDef();
 				}
+				
+				writeMeshes(dis, chunkWriter, chunkRenderWriter, 
+									usedTextures, templates, null, "/chunk/materials.",
+									meshLocations, rootMeshes);
 				
 				// Write animation file first, since it populates animatedBlockBaseMeshes
 				writeAnimationFile();
@@ -848,21 +881,10 @@ public class USDConverter extends Converter{
 		}
 		
 		private void readIndividualBlock(LargeDataInputStream dis) throws IOException{
-			int blockId = dis.readInt();
-			int blockX = dis.readInt();
-			int blockY = dis.readInt();
-			int blockZ = dis.readInt();
-			int numInstances = dis.readInt();
+			IndividualBlock individualBlock = new IndividualBlock(null);
+			individualBlock.read(dis);
 			
-			List<Float> points = new ArrayList<Float>(numInstances*3);
-			
-			for(int instanceId = 0; instanceId < numInstances; ++instanceId) {
-				points.add(dis.readFloat());
-				points.add(dis.readFloat());
-				points.add(dis.readFloat());
-			}
-			
-			instancers.put(new IndividualBlockId(blockId, blockX, blockY, blockZ, 0), points);
+			instancers.put(individualBlock.getId(), individualBlock);
 		}
 		
 		private void writePointLocator(LargeDataInputStream dis, USDWriter chunkWriter, USDWriter chunkRenderWriter) throws IOException{
@@ -958,6 +980,26 @@ public class USDConverter extends Converter{
 				chunkWriter.writeAttributeName("int[]", "protoIndices", false);
 				chunkWriter.writeAttributeValueIntArray(indices);
 				
+				if(animatedBlock.getColorSets() != null) {
+					for(VertexColorSet colorSet : animatedBlock.getColorSets()) {
+						String typeName = "float[]";
+						if(colorSet.getComponentCount() == 2)
+							typeName = "float2[]";
+						else if(colorSet.getComponentCount() == 3)
+							typeName = "color3f[]";
+						else if(colorSet.getComponentCount() == 4)
+							typeName = "color4f[]";
+						
+						FloatArray flatValues = colorSet.getFlatValues();
+						
+						chunkWriter.writeAttributeName(typeName, "primvars:" + colorSet.getName(), false);
+						chunkWriter.writeAttributeValuePointNfArray(flatValues.getData(), flatValues.size(), colorSet.getComponentCount());
+						chunkWriter.beginMetaData();
+						chunkWriter.writeMetaData("interpolation", "\"faceVarying\"");
+						chunkWriter.endMetaData();
+					}
+				}
+				
 				chunkWriter.beginOver("Prototypes");
 				chunkWriter.beginChildren();
 				for(Integer timeOffsetId : timeOffsets) {
@@ -990,6 +1032,8 @@ public class USDConverter extends Converter{
 			List<Integer> indices = new ArrayList<Integer>();
 			List<Float> positions = new ArrayList<Float>();
 			float timeOffsetMergeRadius = Config.animatedBlocksPointInstancerTimeOffsetMergeRadius;
+			Map<String, List<Float>> colorSets = new HashMap<String, List<Float>>();
+			Map<String, Integer> colorSetComponentCounts = new HashMap<String, Integer>();
 			
 			for(AnimatedBlock animatedBlock : animatedBlocks) {
 				String blockName = animatedBlock.getName() + "_" + 
@@ -1005,6 +1049,31 @@ public class USDConverter extends Converter{
 				Map<String, Mesh> baseMeshes = animatedBlockBaseMeshes.get(animatedBlock.getId());
 				if(baseMeshes == null)
 					continue;
+				
+				if(animatedBlock.getColorSets() != null) {
+					for(VertexColorSet colorSet : animatedBlock.getColorSets()) {
+						List<Float> values = colorSets.getOrDefault(colorSet.getName(), null);
+						if(values == null) {
+							values = new ArrayList<Float>();
+							colorSets.put(colorSet.getName(), values);
+							colorSetComponentCounts.put(colorSet.getName(), colorSet.getComponentCount());
+							
+							if(positions.size() > 0) {
+								// Fill in with default data if needed.
+								for(int i = 0; i < positions.size()/3; ++i) {
+									for(int j = 0; j < colorSet.getComponentCount(); ++j) {
+										values.add(1.0f);
+									}
+								}
+							}
+						}
+						
+						FloatArray flatValues = colorSet.getFlatValues();
+						for(int i = 0; i < flatValues.size(); ++i) {
+							values.add(flatValues.get(i));
+						}
+					}
+				}
 				
 				for(int blockIndex = 0; blockIndex < numBlocks; ++blockIndex) {
 					float timeOffset = animatedBlock.getTimeOffsets().get(blockIndex);
@@ -1044,6 +1113,23 @@ public class USDConverter extends Converter{
 			
 			chunkWriter.writeAttributeName("int[]", "protoIndices", false);
 			chunkWriter.writeAttributeValueIntArray(indices);
+			
+			for(Entry<String, List<Float>> colorSet : colorSets.entrySet()) {
+				int componentCount = colorSetComponentCounts.get(colorSet.getKey()).intValue();
+				String typeName = "float[]";
+				if(componentCount == 2)
+					typeName = "float2[]";
+				else if(componentCount == 3)
+					typeName = "color3f[]";
+				else if(componentCount == 4)
+					typeName = "color4f[]";
+				
+				chunkWriter.writeAttributeName(typeName, "primvars:" + colorSet.getKey(), false);
+				chunkWriter.writeAttributeValuePointNfArray(colorSet.getValue(), colorSet.getValue().size(), componentCount);
+				chunkWriter.beginMetaData();
+				chunkWriter.writeMetaData("interpolation", "\"faceVarying\"");
+				chunkWriter.endMetaData();
+			}
 			
 			chunkWriter.beginOver("Prototypes");
 			chunkWriter.beginChildren();
@@ -1240,13 +1326,13 @@ public class USDConverter extends Converter{
 			
 			float fps = Config.animationFrameRate;
 			int numFrames = (int) Math.floor(animatedBlock.getDuration() * fps) + 1;
-			Map<String, List<Mesh>> meshes = new HashMap<String, List<Mesh>>();
-			Map<String, Mesh> meshesMap = new HashMap<String, Mesh>();
+			Map<MeshKey, List<Mesh>> meshes = new HashMap<MeshKey, List<Mesh>>();
+			Map<MeshKey, Mesh> meshesMap = new HashMap<MeshKey, Mesh>();
 			for(int i = 0; i < numFrames; ++i) {
 				meshesMap.clear();
 				animatedBlock.getMeshes(((float) i) / fps, meshesMap);
-				Set<String> missingMeshes = new HashSet<String>(meshes.keySet());
-				for(Entry<String, Mesh> mesh : meshesMap.entrySet()) {
+				Set<MeshKey> missingMeshes = new HashSet<MeshKey>(meshes.keySet());
+				for(Entry<MeshKey, Mesh> mesh : meshesMap.entrySet()) {
 					List<Mesh> frameMeshes = meshes.getOrDefault(mesh.getKey(), null);
 					if(frameMeshes == null) {
 						frameMeshes = new ArrayList<Mesh>();
@@ -1261,7 +1347,7 @@ public class USDConverter extends Converter{
 					frameMeshes.add(mesh.getValue());
 					missingMeshes.remove(mesh.getKey());
 				}
-				for(String mesh : missingMeshes) {
+				for(MeshKey mesh : missingMeshes) {
 					List<Mesh> mesh2 = meshes.getOrDefault(mesh, null);
 					if(mesh2 != null)
 						mesh2.add(null);
@@ -1275,14 +1361,14 @@ public class USDConverter extends Converter{
 				manifestWriter.beginDef("Xform", blockName);
 				manifestWriter.beginChildren();
 				
-				for(Entry<String, List<Mesh>> mesh : meshes.entrySet()) {
-					writeAnimatedMesh(animatedBlock, mesh.getKey(), mesh.getValue(), writer, manifestWriter, false);
+				for(Entry<MeshKey, List<Mesh>> mesh : meshes.entrySet()) {
+					writeAnimatedMesh(animatedBlock, mesh.getKey().createName(), mesh.getValue(), writer, manifestWriter, false);
 				}
 				
 				writer.endChildren();
 				manifestWriter.endChildren();
 			}else {
-				for(Entry<String, List<Mesh>> mesh : meshes.entrySet()) {
+				for(Entry<MeshKey, List<Mesh>> mesh : meshes.entrySet()) {
 					writeAnimatedMesh(animatedBlock, blockName, mesh.getValue(), writer, manifestWriter, true);
 				}
 			}
@@ -1291,8 +1377,8 @@ public class USDConverter extends Converter{
 		private void writeAnimatedBaseMesh(AnimatedBlock block, String meshName, Mesh mesh, 
 											USDWriter writer) throws IOException{
 			Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.isDoubleSided(), 
-											mesh.getColorSetNames(), mesh.getShadingMode(), templates);
-			String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
+											mesh.getColorSetNames(), mesh.getShadingMode(), block.getBlockLightEmission(), templates);
+			String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor, textureObj.shadingMode);
 			usedTextures.put(matName, textureObj);
 			
 			Map<String, String> mats = animatedBlockMats.getOrDefault(block.getId(), null);
@@ -1345,7 +1431,7 @@ public class USDConverter extends Converter{
 			if(mesh.isAnimatesTopology())
 				writer.writeAttributeValue("[]");
 			else 
-				writer.writeAttributeValueIntArray(mesh.getFaceCounts().getData(), mesh.getFaceCounts().size());
+				writer.writeAttributeValueIntArray(4, mesh.getFaceIndices().size()/4);
 			
 			
 			if(Config.useIndexedUVs) {
@@ -1353,7 +1439,7 @@ public class USDConverter extends Converter{
 				if(mesh.isAnimatesTopology() || mesh.isAnimatesUVs())
 					writer.writeAttributeValue("[]");
 				else 
-					writer.writeAttributeValuePoint2fArray(mesh.getUs().getData(), mesh.getVs().getData(), mesh.getUs().size());
+					writer.writeAttributeValuePoint2fArray(mesh.getUVs().getData(), mesh.getUVs().size());
 				writer.beginMetaData();
 				writer.writeMetaData("interpolation", "\"faceVarying\"");
 				writer.endMetaData();
@@ -1379,7 +1465,7 @@ public class USDConverter extends Converter{
 			}
 			
 			
-			if(Config.calculateCornerUVs) {
+			if(Config.calculateCornerUVs && mesh.getCornerUVs() != null) {
 				if(Config.useIndexedUVs) {
 					writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
 					if(mesh.isAnimatesTopology() || mesh.isAnimatesUVs())
@@ -1426,7 +1512,7 @@ public class USDConverter extends Converter{
 				if(mesh.isAnimatesTopology() || mesh.isAnimatesPoints())
 					writer.writeAttributeValue("[]");
 				else 
-					writer.writeAttributeValueIntArray(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size());
+					writer.writeAttributeValueIntArrayRepeat(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size(), 4);
 			}else {
 				writer.writeAttributeName("normal3f[]", "primvars:normals", false);
 				if(mesh.isAnimatesTopology() || mesh.isAnimatesPoints()) {
@@ -1655,7 +1741,7 @@ public class USDConverter extends Converter{
 					Mesh mesh2 = meshes.get(i);
 					writer.writeTimeSampleTime((float) i);
 					if(mesh2 != null)
-						writer.writeAttributeValueIntArray(mesh2.getFaceCounts().getData(), mesh2.getFaceCounts().size(), true);
+						writer.writeAttributeValueIntArray(4, mesh2.getFaceIndices().size()/4, true);
 					else
 						writer.writeAttributeValue("[]", true);
 				}
@@ -1671,7 +1757,7 @@ public class USDConverter extends Converter{
 						Mesh mesh2 = meshes.get(i);
 						writer.writeTimeSampleTime((float) i);
 						if(mesh2 != null)
-							writer.writeAttributeValuePoint2fArray(mesh2.getUs().getData(), mesh2.getVs().getData(), mesh2.getUs().size(), true);
+							writer.writeAttributeValuePoint2fArray(mesh2.getUVs().getData(), mesh2.getUVs().size(), true);
 						else
 							writer.writeAttributeValue("[]", true);
 					}
@@ -1712,7 +1798,7 @@ public class USDConverter extends Converter{
 			}
 			
 			if(mesh.isAnimatesTopology() || mesh.isAnimatesUVs()) {
-				if(Config.calculateCornerUVs) {
+				if(Config.calculateCornerUVs && mesh.getCornerUVs() != null) {
 					if(Config.useIndexedUVs) {
 						writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
 						manifestWriter.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
@@ -1784,7 +1870,7 @@ public class USDConverter extends Converter{
 						Mesh mesh2 = meshes.get(i);
 						writer.writeTimeSampleTime((float) i);
 						if(mesh2 != null)
-							writer.writeAttributeValueIntArray(mesh2.getNormalIndices().getData(), mesh2.getNormalIndices().size(), true);
+							writer.writeAttributeValueIntArrayRepeat(mesh2.getNormalIndices().getData(), mesh2.getNormalIndices().size(), true, 4);
 						else
 							writer.writeAttributeValue("[]", true);
 					}
@@ -2008,11 +2094,72 @@ public class USDConverter extends Converter{
 	private static void writeMeshes(LargeDataInputStream dis, USDWriter proxyWriter, 
 									USDWriter renderWriter, Map<String, Texture> usedTextures, 
 									Map<MatKey, MaterialTemplate> templates, Kind kind, 
-									String materialsPrim) throws IOException {
-		while(true) {
-			boolean hasNext = writeSingleMesh(dis, proxyWriter, renderWriter, usedTextures, templates, kind, materialsPrim);
-			if(!hasNext)
-				break;
+									String materialsPrim, Map<String, List<Long>> meshLocations,
+									List<String> rootMeshes) throws IOException {
+		for(String rootMesh : rootMeshes) {
+			writeSingleMesh(dis, proxyWriter, renderWriter, usedTextures, 
+					templates, kind, materialsPrim, meshLocations, rootMesh);
+		}
+	}
+	
+	private static Mesh readChunkedMesh(LargeDataInputStream dis, Map<String, List<Long>> meshLocations, 
+			String meshName) throws IOException{
+		Mesh mesh = null;
+		boolean multipleChunks = false;
+		List<Long> locations = meshLocations.getOrDefault(meshName, null);
+		if(locations != null) {
+			for(Long location : locations) {
+				dis.seek(location.longValue());
+				Mesh meshChunk = readMesh(dis, true);
+				if(meshChunk != null) {
+					if(mesh == null) {
+						mesh = meshChunk;
+					}else {
+						mesh.appendMesh(meshChunk, false);
+						multipleChunks = true;
+					}
+				}
+			}
+		}
+		if(mesh != null && !(mesh instanceof MeshGroup) && multipleChunks)
+			mesh.packVertices(new IndexCacheFlat(1));
+		if(mesh != null && mesh instanceof MeshGroup) {
+			for(String childName : ((MeshGroup)mesh).getChildNames()) {
+				Mesh childMesh = readChunkedMesh(dis, meshLocations, childName);
+				if(childMesh != null)
+					((MeshGroup) mesh).getChildren().add(childMesh);
+			}
+		}
+		return mesh;
+	}
+	
+	private static void writeSingleMesh(LargeDataInputStream dis, USDWriter proxyWriter, 
+				USDWriter renderWriter, Map<String, Texture> usedTextures, 
+				Map<MatKey, MaterialTemplate> templates, Kind kind, 
+				String materialsPrim, Map<String, List<Long>> meshLocations, String meshName) throws IOException {
+		Mesh mesh = readChunkedMesh(dis, meshLocations, meshName);
+		if(mesh == null)
+			return;
+		
+		if(mesh instanceof MeshGroup) {
+			// Write out the group to the proxy file.
+			writeGroup((MeshGroup) mesh, proxyWriter, MeshPurpose.PROXY, usedTextures, templates, kind, materialsPrim);
+			
+			if(renderWriter != proxyWriter) {
+				// We're using a separate render writer, so we want to write it out
+				// to the render writer as well.
+				writeGroup((MeshGroup) mesh, renderWriter, MeshPurpose.RENDER, usedTextures, templates, kind, materialsPrim);
+			}
+		}else {
+			// It's a normal mesh.
+			// Write out the mesh to the render file.
+			writeMesh(mesh, proxyWriter, MeshPurpose.PROXY, usedTextures, templates, kind, materialsPrim);
+			
+			if(renderWriter != proxyWriter) {
+				// We're using a separate render writer, so we want to write it out
+				// to the render writer as well.
+				writeMesh(mesh, renderWriter, MeshPurpose.RENDER, usedTextures, templates, kind, materialsPrim);
+			}
 		}
 	}
 	
@@ -2020,7 +2167,7 @@ public class USDConverter extends Converter{
 				USDWriter renderWriter, Map<String, Texture> usedTextures, 
 				Map<MatKey, MaterialTemplate> templates, Kind kind, 
 				String materialsPrim) throws IOException {
-		Mesh mesh = readMesh(dis);
+		Mesh mesh = readMesh(dis, false);
 		if(mesh == null)
 			return false;
 		
@@ -2100,8 +2247,8 @@ public class USDConverter extends Converter{
 		}
 		
 		Texture textureObj = new Texture(mesh.getTexture(), mesh.getMatTexture(), mesh.hasColors(), mesh.isDoubleSided(), 
-										mesh.getColorSetNames(), mesh.getShadingMode(), templates);
-		String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor);
+										mesh.getColorSetNames(), mesh.getShadingMode(), mesh.getBlockLightEmission(), templates);
+		String matName = MaterialWriter.getMaterialName(textureObj.texture, textureObj.materialTemplate, textureObj.hasBiomeColor, textureObj.shadingMode);
 		usedTextures.put(matName, textureObj);
 		
 		writer.beginDef("Mesh", meshName);
@@ -2153,11 +2300,11 @@ public class USDConverter extends Converter{
 		writer.writeAttributeValueIntArray(mesh.getFaceIndices().getData(), mesh.getFaceIndices().size());
 		
 		writer.writeAttributeName("int[]", "faceVertexCounts", false);
-		writer.writeAttributeValueIntArray(mesh.getFaceCounts().getData(), mesh.getFaceCounts().size());
+		writer.writeAttributeValueIntArray(4, mesh.getFaceIndices().size()/4);
 		
 		if(Config.useIndexedUVs) {
 			writer.writeAttributeName("texCoord2f[]", "primvars:st", false);
-			writer.writeAttributeValuePoint2fArray(mesh.getUs().getData(), mesh.getVs().getData(), mesh.getUs().size());
+			writer.writeAttributeValuePoint2fArray(mesh.getUVs().getData(), mesh.getUVs().size());
 			writer.beginMetaData();
 			writer.writeMetaData("interpolation", "\"faceVarying\"");
 			writer.endMetaData();
@@ -2175,7 +2322,7 @@ public class USDConverter extends Converter{
 			writer.endMetaData();
 		}
 		
-		if(Config.calculateCornerUVs) {
+		if(Config.calculateCornerUVs && mesh.getCornerUVs() != null) {
 			if(Config.useIndexedUVs) {
 				writer.writeAttributeName("texCoord2f[]", "primvars:uvCornerST", false);
 				writer.writeAttributeValuePoint2fArray(mesh.getCornerUVs().getData(), mesh.getCornerUVs().size());
@@ -2206,7 +2353,7 @@ public class USDConverter extends Converter{
 			writer.endMetaData();
 			
 			writer.writeAttributeName("int[]", "primvars:normals:indices", false);
-			writer.writeAttributeValueIntArray(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size());
+			writer.writeAttributeValueIntArrayRepeat(mesh.getNormalIndices().getData(), mesh.getNormalIndices().size(), 4);
 		}else {
 			FloatArray flatNormals = new FloatArray();
 			mesh.getFlatNormals(flatNormals);
@@ -2377,8 +2524,8 @@ public class USDConverter extends Converter{
 				writer.writeAttributeValueIntArray(subset.getFaceIndices().getData(), subset.getFaceIndices().size());
 				if(subset.getMatTexture() != null) {
 					Texture textureObj2 = new Texture(subset.getTexture(), subset.getMatTexture(), mesh.hasColors(), 
-							mesh.isDoubleSided(), mesh.getColorSetNames(), mesh.getShadingMode(), templates);
-					String matName = MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor);
+							mesh.isDoubleSided(), mesh.getColorSetNames(), mesh.getShadingMode(), mesh.getBlockLightEmission(), templates);
+					String matName = MaterialWriter.getMaterialName(textureObj2.texture, textureObj2.materialTemplate, textureObj2.hasBiomeColor, textureObj2.shadingMode);
 					usedTextures.put(matName, textureObj2);
 					writer.writeAttributeName("rel", "material:binding", false);
 					writer.writeAttributeValue("<" + materialsPrim + matName + ">");
@@ -2514,14 +2661,14 @@ public class USDConverter extends Converter{
 		}
 	}
 	
-	private static Mesh readMesh(LargeDataInputStream dis) throws IOException {
+	private static Mesh readMesh(LargeDataInputStream dis, boolean chunked) throws IOException {
 		byte meshType = dis.readByte();
 		if(meshType == 0) {
 			return null;
 		}else if(meshType == 1) {
 			return new Mesh(dis);
 		}else if(meshType == 2) {
-			return new MeshGroup(dis);
+			return new MeshGroup(dis, chunked);
 		}
 		return null;
 	}
@@ -2645,17 +2792,45 @@ public class USDConverter extends Converter{
 			List<String> prototypes = new ArrayList<String>();
 			List<Integer> indices = new ArrayList<Integer>();
 			List<Float> positions = new ArrayList<Float>();
-			for(Entry<IndividualBlockId, List<Float>> instancer : chunk.instancers.entrySet()) {
+			Map<String, List<Float>> colorSets = new HashMap<String, List<Float>>();
+			Map<String, Integer> colorSetComponentCounts = new HashMap<String, Integer>();
+			for(Entry<IndividualBlockId, IndividualBlock> instancer : chunk.instancers.entrySet()) {
 				IndividualBlockInfo baseInfo = individualBlocksRegistry.get(instancer.getKey());
 				int prototypeIndex = prototypes.size();
 				prototypes.add("/world/individualBlocksBaseMeshes/" + baseInfo.path);
-				
-				for(int i = 0; i < instancer.getValue().size()/3; ++i) {
-					indices.add(Integer.valueOf(prototypeIndex));
-					positions.add(instancer.getValue().get(i*3+0));
-					positions.add(instancer.getValue().get(i*3+1));
-					positions.add(instancer.getValue().get(i*3+2));
+
+				if(instancer.getValue().getColorSets() != null) {
+					for(VertexColorSet colorSet : instancer.getValue().getColorSets()) {
+						List<Float> values = colorSets.getOrDefault(colorSet.getName(), null);
+						if(values == null) {
+							values = new ArrayList<Float>();
+							colorSets.put(colorSet.getName(), values);
+							colorSetComponentCounts.put(colorSet.getName(), colorSet.getComponentCount());
+							
+							if(positions.size() > 0) {
+								// Fill in with default data if needed.
+								for(int i = 0; i < positions.size()/3; ++i) {
+									for(int j = 0; j < colorSet.getComponentCount(); ++j) {
+										values.add(1.0f);
+									}
+								}
+							}
+						}
+						
+						FloatArray flatValues = colorSet.getFlatValues();
+						for(int i = 0; i < flatValues.size(); ++i) {
+							values.add(flatValues.get(i));
+						}
+					}
 				}
+				
+				for(int i = 0; i < instancer.getValue().getPositions().size()/3; ++i) {
+					indices.add(Integer.valueOf(prototypeIndex));
+					positions.add(instancer.getValue().getPositions().get(i*3+0));
+					positions.add(instancer.getValue().getPositions().get(i*3+1));
+					positions.add(instancer.getValue().getPositions().get(i*3+2));
+				}
+				
 			}
 			
 			writer.beginDef("PointInstancer", "individual_blocks");
@@ -2673,10 +2848,27 @@ public class USDConverter extends Converter{
 			writer.writeAttributeName("int[]", "protoIndices", false);
 			writer.writeAttributeValueIntArray(indices);
 			
+			for(Entry<String, List<Float>> colorSet : colorSets.entrySet()) {
+				int componentCount = colorSetComponentCounts.get(colorSet.getKey()).intValue();
+				String typeName = "float[]";
+				if(componentCount == 2)
+					typeName = "float2[]";
+				else if(componentCount == 3)
+					typeName = "color3f[]";
+				else if(componentCount == 4)
+					typeName = "color4f[]";
+				
+				writer.writeAttributeName(typeName, "primvars:" + colorSet.getKey(), false);
+				writer.writeAttributeValuePointNfArray(colorSet.getValue(), colorSet.getValue().size(), componentCount);
+				writer.beginMetaData();
+				writer.writeMetaData("interpolation", "\"faceVarying\"");
+				writer.endMetaData();
+			}
+			
 			writer.endChildren();
 			writer.endDef();
 		}else {
-			for(Entry<IndividualBlockId, List<Float>> instancer : chunk.instancers.entrySet()) {
+			for(Entry<IndividualBlockId, IndividualBlock> instancer : chunk.instancers.entrySet()) {
 				IndividualBlockInfo baseInfo = individualBlocksRegistry.get(instancer.getKey());
 				
 				if(Config.usePointInstancersForIndividualBlocks) {
@@ -2690,16 +2882,36 @@ public class USDConverter extends Converter{
 					writer.writeAttributeValuePrimPathArray(new String[] {"/world/individualBlocksBaseMeshes/" + baseInfo.path});
 					
 					writer.writeAttributeName("point3f[]", "positions", false);
-					writer.writeAttributeValuePoint3fArray(instancer.getValue(), instancer.getValue().size());
+					writer.writeAttributeValuePoint3fArray(instancer.getValue().getPositions().getData(), instancer.getValue().getPositions().size());
 					
 					writer.writeAttributeName("int[]", "protoIndices", false);
-					int[] indices = new int[instancer.getValue().size()/3];
+					int[] indices = new int[instancer.getValue().getPositions().size()/3];
 					writer.writeAttributeValueIntArray(indices);
+					
+					if(instancer.getValue().getColorSets() != null) {
+						for(VertexColorSet colorSet : instancer.getValue().getColorSets()) {
+							String typeName = "float[]";
+							if(colorSet.getComponentCount() == 2)
+								typeName = "float2[]";
+							else if(colorSet.getComponentCount() == 3)
+								typeName = "color3f[]";
+							else if(colorSet.getComponentCount() == 4)
+								typeName = "color4f[]";
+							
+							FloatArray flatValues = colorSet.getFlatValues();
+							
+							writer.writeAttributeName(typeName, "primvars:" + colorSet.getName(), false);
+							writer.writeAttributeValuePointNfArray(flatValues.getData(), flatValues.size(), colorSet.getComponentCount());
+							writer.beginMetaData();
+							writer.writeMetaData("interpolation", "\"faceVarying\"");
+							writer.endMetaData();
+						}
+					}
 					
 					writer.endChildren();
 					writer.endDef();
 				}else {
-					for(int i = 0; i < instancer.getValue().size()/3; ++i) {
+					for(int i = 0; i < instancer.getValue().getPositions().size()/3; ++i) {
 						writer.beginDef("Xform", baseInfo.path.replace("_class_", "") + "_" + i);
 						writer.beginMetaData();
 						writer.writeInherit("/world/individualBlocksBaseMeshes/" + baseInfo.path);
@@ -2709,9 +2921,9 @@ public class USDConverter extends Converter{
 						writer.beginChildren();
 						
 						writer.writeAttributeName("double3", "xformOp:translate", false);
-						writer.writeAttributeValuePoint3f(instancer.getValue().get(i*3),
-															instancer.getValue().get(i*3+1),
-															instancer.getValue().get(i*3+2));
+						writer.writeAttributeValuePoint3f(instancer.getValue().getPositions().get(i*3),
+															instancer.getValue().getPositions().get(i*3+1),
+															instancer.getValue().getPositions().get(i*3+2));
 						writer.writeAttributeName("token[]", "xformOpOrder", true);
 						writer.writeAttributeValueStringArray(new String[] { "xformOp:translate" });
 						

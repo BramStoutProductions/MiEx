@@ -209,6 +209,7 @@ public class BlockStateVariant {
 	private List<CubeTextures> cubeTextures;
 	private float cubeTexturesTotalWeight;
 	private String cubeTextureSideMask;
+	private String cubeShadingMode;
 	private String customModelId;
 	private List<ModelTexture> customModelTextures;
 	private float customModelTexturesTotalWeight;
@@ -238,6 +239,7 @@ public class BlockStateVariant {
 		this.cubeTextures = new ArrayList<CubeTextures>();
 		this.cubeTexturesTotalWeight = 0f;
 		this.cubeTextureSideMask = null;
+		this.cubeShadingMode = ModelFace.SHADING_MODE_STANDARD;
 		this.customModelId = null;
 		this.customModelTextures = new ArrayList<ModelTexture>();
 		this.customModelTexturesTotalWeight = 0f;
@@ -272,6 +274,7 @@ public class BlockStateVariant {
 			this.cubeTextures.add(new CubeTextures(tex));
 		this.cubeTexturesTotalWeight = other.cubeTexturesTotalWeight;
 		this.cubeTextureSideMask = other.cubeTextureSideMask;
+		this.cubeShadingMode = other.cubeShadingMode;
 		this.customModelId = other.customModelId;
 		this.customModelTextures = new ArrayList<ModelTexture>();
 		for(ModelTexture tex : other.customModelTextures)
@@ -332,6 +335,10 @@ public class BlockStateVariant {
 				if(sep != -1)
 					this.cubeTextureSideMask = this.cubeTextureSideMask.substring(0, sep);
 			}
+		}
+		
+		if(data.has("CubeShadingMode")) {
+			this.cubeShadingMode = data.get("CubeShadingMode").getAsString().toLowerCase().intern();
 		}
 		
 		if(data.has("CustomModel")) {
@@ -719,7 +726,8 @@ public class BlockStateVariant {
 	}
 	
 	private Model createCubeModel(int x, int y, int z, int permutation) {
-		Model model = new Model("", null, false);
+		Model model = new Model("", null, false, false);
+		model.setImmoveable();
 		
 		float u0 = 0;
 		float v0 = 0;
@@ -735,37 +743,37 @@ public class BlockStateVariant {
 				 0f,  0f,  0f,
 				 16f, 16f, 16f
 		};
-		ModelFace faceNorth = model.addFace(points, uvs, Direction.NORTH, "#north", biomeTintNorth);
+		ModelFace faceNorth = model.addFace(points, uvs, Direction.NORTH, "#north", biomeTintNorth, cubeShadingMode);
 		if(this.tintsNorth != null && this.tintsNorth.length > 0 && faceNorth.getTintIndex() < 0) {
 			faceNorth.setFaceColour(this.tintsNorth[0].getR(), this.tintsNorth[0].getG(), this.tintsNorth[0].getB());
 		}
 		
 		// South
-		ModelFace faceSouth = model.addFace(points, uvs, Direction.SOUTH, "#south", biomeTintSouth);
+		ModelFace faceSouth = model.addFace(points, uvs, Direction.SOUTH, "#south", biomeTintSouth, cubeShadingMode);
 		if(this.tintsSouth != null && this.tintsSouth.length > 0 && faceSouth.getTintIndex() < 0) {
 			faceSouth.setFaceColour(this.tintsSouth[0].getR(), this.tintsSouth[0].getG(), this.tintsSouth[0].getB());
 		}
 		
 		// West
-		ModelFace faceWest = model.addFace(points, uvs, Direction.WEST, "#west", biomeTintWest);
+		ModelFace faceWest = model.addFace(points, uvs, Direction.WEST, "#west", biomeTintWest, cubeShadingMode);
 		if(this.tintsWest != null && this.tintsWest.length > 0 && faceWest.getTintIndex() < 0) {
 			faceWest.setFaceColour(this.tintsWest[0].getR(), this.tintsWest[0].getG(), this.tintsWest[0].getB());
 		}
 		
 		// East
-		ModelFace faceEast = model.addFace(points, uvs, Direction.EAST, "#east", biomeTintEast);
+		ModelFace faceEast = model.addFace(points, uvs, Direction.EAST, "#east", biomeTintEast, cubeShadingMode);
 		if(this.tintsEast != null && this.tintsEast.length > 0 && faceEast.getTintIndex() < 0) {
 			faceEast.setFaceColour(this.tintsEast[0].getR(), this.tintsEast[0].getG(), this.tintsEast[0].getB());
 		}
 		
 		// Up
-		ModelFace faceUp = model.addFace(points, uvs, Direction.UP, "#up", biomeTintUp);
+		ModelFace faceUp = model.addFace(points, uvs, Direction.UP, "#up", biomeTintUp, cubeShadingMode);
 		if(this.tintsUp != null && this.tintsUp.length > 0 && faceUp.getTintIndex() < 0) {
 			faceUp.setFaceColour(this.tintsUp[0].getR(), this.tintsUp[0].getG(), this.tintsUp[0].getB());
 		}
 
 		// Down
-		ModelFace faceDown = model.addFace(points, uvs, Direction.DOWN, "#down", biomeTintDown);
+		ModelFace faceDown = model.addFace(points, uvs, Direction.DOWN, "#down", biomeTintDown, cubeShadingMode);
 		if(this.tintsDown != null && this.tintsDown.length > 0 && faceDown.getTintIndex() < 0) {
 			faceDown.setFaceColour(this.tintsDown[0].getR(), this.tintsDown[0].getG(), this.tintsDown[0].getB());
 		}
@@ -776,25 +784,25 @@ public class BlockStateVariant {
 					 16.01f, 16f, 16.01f
 			};
 			
-			ModelFace faceNorth2 = model.addFace(points, uvs, Direction.NORTH, "#sideMask", 100);
+			ModelFace faceNorth2 = model.addFace(points, uvs, Direction.NORTH, "#sideMask", 100, cubeShadingMode);
 			if(this.tintsNorth != null && this.tintsNorth.length > 0 && faceNorth.getTintIndex() < 0) {
 				faceNorth2.setFaceColour(this.tintsNorth[0].getR(), this.tintsNorth[0].getG(), this.tintsNorth[0].getB());
 			}
 			
 			// South
-			ModelFace faceSouth2 = model.addFace(points, uvs, Direction.SOUTH, "#sideMask", 100);
+			ModelFace faceSouth2 = model.addFace(points, uvs, Direction.SOUTH, "#sideMask", 100, cubeShadingMode);
 			if(this.tintsSouth != null && this.tintsSouth.length > 0 && faceSouth.getTintIndex() < 0) {
 				faceSouth2.setFaceColour(this.tintsSouth[0].getR(), this.tintsSouth[0].getG(), this.tintsSouth[0].getB());
 			}
 			
 			// West
-			ModelFace faceWest2 = model.addFace(points, uvs, Direction.WEST, "#sideMask", 100);
+			ModelFace faceWest2 = model.addFace(points, uvs, Direction.WEST, "#sideMask", 100, cubeShadingMode);
 			if(this.tintsWest != null && this.tintsWest.length > 0 && faceWest.getTintIndex() < 0) {
 				faceWest2.setFaceColour(this.tintsWest[0].getR(), this.tintsWest[0].getG(), this.tintsWest[0].getB());
 			}
 			
 			// East
-			ModelFace faceEast2 = model.addFace(points, uvs, Direction.EAST, "#sideMask", 100);
+			ModelFace faceEast2 = model.addFace(points, uvs, Direction.EAST, "#sideMask", 100, cubeShadingMode);
 			if(this.tintsEast != null && this.tintsEast.length > 0 && faceEast.getTintIndex() < 0) {
 				faceEast2.setFaceColour(this.tintsEast[0].getR(), this.tintsEast[0].getG(), this.tintsEast[0].getB());
 			}
@@ -827,6 +835,7 @@ public class BlockStateVariant {
 		Model model = null;
 		if(animationHandler != null) {
 			model = customModel.getAnimatedVersion(animationHandler, frame);
+			model.setImmoveable();
 			if(animationHandler.isAnimatesTopology())
 				model.setAnimatesTopology(true);
 			if(animationHandler.isAnimatesPoints())
@@ -837,6 +846,7 @@ public class BlockStateVariant {
 				model.setAnimatesVertexColors(true);
 		}else {
 			model = new Model(customModel);
+			model.setImmoveable();
 		}
 		
 		ModelTexture textures = getModelTextureForPermutation(permutation);
@@ -874,42 +884,42 @@ public class BlockStateVariant {
 			// but since we don't know what the texture is when loading in
 			// the model, we needed to defer it to now. So, now we can update
 			// the UVs to take into account the texture resolution.
-			face.getUVs()[0] = face.getUVs()[0] * texScaleU;
-			face.getUVs()[1] = 16f - face.getUVs()[1] * texScaleV;
-			face.getUVs()[2] = face.getUVs()[2] * texScaleU;
-			face.getUVs()[3] = 16f - face.getUVs()[3] * texScaleV;
-			face.getUVs()[4] = face.getUVs()[4] * texScaleU;
-			face.getUVs()[5] = 16f - face.getUVs()[5] * texScaleV;
-			face.getUVs()[6] = face.getUVs()[6] * texScaleU;
-			face.getUVs()[7] = 16f - face.getUVs()[7] * texScaleV;
+			face.uvs0U = face.uvs0U * texScaleU;
+			face.uvs0V = 16f - face.uvs0V * texScaleV;
+			face.uvs1U = face.uvs1U * texScaleU;
+			face.uvs1V = 16f - face.uvs1V * texScaleV;
+			face.uvs2U = face.uvs2U * texScaleU;
+			face.uvs2V = 16f - face.uvs2V * texScaleV;
+			face.uvs3U = face.uvs3U * texScaleU;
+			face.uvs3V = 16f - face.uvs3V * texScaleV;
 			
 			
-			if(face.getTexture().equals("#north")) {
+			if(face.getTextureString().equals("#north")) {
 				face.setTintIndex(biomeTintNorth);
 				
 				if(this.tintsNorth != null && this.tintsNorth.length > 0 && face.getTintIndex() < 0)
 					face.setFaceColour(this.tintsNorth[0].getR(), this.tintsNorth[0].getG(), this.tintsNorth[0].getB());
-			}else if(face.getTexture().equals("#south")) {
+			}else if(face.getTextureString().equals("#south")) {
 				face.setTintIndex(biomeTintSouth);
 				
 				if(this.tintsSouth != null && this.tintsSouth.length > 0 && face.getTintIndex() < 0)
 					face.setFaceColour(this.tintsSouth[0].getR(), this.tintsSouth[0].getG(), this.tintsSouth[0].getB());
-			}else if(face.getTexture().equals("#east")) {
+			}else if(face.getTextureString().equals("#east")) {
 				face.setTintIndex(biomeTintEast);
 				
 				if(this.tintsEast != null && this.tintsEast.length > 0 && face.getTintIndex() < 0)
 					face.setFaceColour(this.tintsEast[0].getR(), this.tintsEast[0].getG(), this.tintsEast[0].getB());
-			}else if(face.getTexture().equals("#west")) {
+			}else if(face.getTextureString().equals("#west")) {
 				face.setTintIndex(biomeTintWest);
 				
 				if(this.tintsWest != null && this.tintsWest.length > 0 && face.getTintIndex() < 0)
 					face.setFaceColour(this.tintsWest[0].getR(), this.tintsWest[0].getG(), this.tintsWest[0].getB());
-			}else if(face.getTexture().equals("#up")) {
+			}else if(face.getTextureString().equals("#up")) {
 				face.setTintIndex(biomeTintUp);
 				
 				if(this.tintsUp != null && this.tintsUp.length > 0 && face.getTintIndex() < 0)
 					face.setFaceColour(this.tintsUp[0].getR(), this.tintsUp[0].getG(), this.tintsUp[0].getB());
-			}else if(face.getTexture().equals("#down")) {
+			}else if(face.getTextureString().equals("#down")) {
 				face.setTintIndex(biomeTintDown);
 				
 				if(this.tintsDown != null && this.tintsDown.length > 0 && face.getTintIndex() < 0)

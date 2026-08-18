@@ -33,8 +33,6 @@ package nl.bramstout.mcworldexporter.materials;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import nl.bramstout.mcworldexporter.Config;
@@ -56,16 +54,18 @@ public abstract class MaterialWriter {
 	public static class MatKey{
 		
 		private String texture;
+		private String shadingMode;
 		private Materials.MaterialTemplate template;
 		
-		public MatKey(String texture, Materials.MaterialTemplate template) {
+		public MatKey(String texture, String shadingMode, Materials.MaterialTemplate template) {
 			this.texture = texture;
+			this.shadingMode = shadingMode;
 			this.template = template;
 		}
 		
 		@Override
 		public int hashCode() {
-			return Objects.hash(texture, template);
+			return Objects.hash(texture, shadingMode, template);
 		}
 		
 		@Override
@@ -73,23 +73,34 @@ public abstract class MaterialWriter {
 			if(!(obj instanceof MatKey))
 				return false;
 			if(((MatKey) obj).template == null)
-				return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template == template;
-			return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template.equals(template);
+				return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template == template && ((MatKey)obj).shadingMode.equals(shadingMode);
+			return ((MatKey) obj).texture.equals(texture) && ((MatKey) obj).template.equals(template) && ((MatKey)obj).shadingMode.equals(shadingMode);
 		}
 		
 	}
 	
-	private static Map<MatKey, String> mats = new HashMap<MatKey, String>();
-	private static Map<String, Integer> matCounters = new HashMap<String, Integer>();
+	//private static Map<MatKey, String> mats = new HashMap<MatKey, String>();
+	//private static Map<String, Integer> matCounters = new HashMap<String, Integer>();
 	
 	public static void clearCounters() {
-		mats.clear();
-		matCounters.clear();
+		Materials.TEXTURE_FILE_CACHE.clear();
+		//mats.clear();
+		//matCounters.clear();
 	}
 	
-	public static String getMaterialName(String texture, Materials.MaterialTemplate template, boolean hasBiomeColor) {
-		synchronized(mats) {
-		MatKey matkey = new MatKey(texture, template);
+	public static String getMaterialName(String texture, Materials.MaterialTemplate template, boolean hasBiomeColor, String shadingMode) {
+		String matName = Util.makeSafeName(texture) + "_" + Integer.toHexString(template.hashCode());
+		if(Config.maxMaterialNameLength > 0 && (matName.length()+5) >= Config.maxMaterialNameLength) {
+			String hashStr = Integer.toHexString(matName.hashCode());
+			int hashChars = Math.min(hashStr.length(), Config.maxMaterialNameLength / 2);
+			int keepChars = Config.maxMaterialNameLength - hashChars - 5;
+			
+			matName = matName.substring(matName.length()-keepChars) + hashStr.substring(0, hashChars);
+		}
+		return "MAT_" + matName;
+		
+		/*synchronized(mats) {
+		MatKey matkey = new MatKey(texture, shadingMode, template);
 		String matName = mats.getOrDefault(matkey, null);
 		//if(matName == null) {
 				//matName = mats.getOrDefault(matkey, null);
@@ -100,10 +111,12 @@ public abstract class MaterialWriter {
 				
 				if(counter == null) {
 					matCounters.put(texture, 1);
-					matName = Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME" : "");
+					matName = Util.makeSafeName(texture) + (hasBiomeColor ? "_BIOME" : "") + 
+							(shadingMode.equals(ModelFace.SHADING_MODE_STANDARD) ? "" : ("_" + shadingMode));
 				}else {
 					matCounters.put(texture, counter+1);
-					matName = Util.makeSafeName(texture) + "_" + counter.toString() + (hasBiomeColor ? "_BIOME" : "");
+					matName = Util.makeSafeName(texture) + "_" + counter.toString() + (hasBiomeColor ? "_BIOME" : "") + 
+							(shadingMode.equals(ModelFace.SHADING_MODE_STANDARD) ? "" : ("_" + shadingMode));
 				}
 				
 				if(Config.maxMaterialNameLength > 0 && (matName.length()+4) >= Config.maxMaterialNameLength) {
@@ -120,7 +133,7 @@ public abstract class MaterialWriter {
 		//}
 		
 		return "MAT_" + matName;
-		}
+		}*/
 	}
 	
 	public abstract void writeMaterial(String matName, MaterialTemplate material, String texture, boolean hasBiomeColor,

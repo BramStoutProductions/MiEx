@@ -47,6 +47,9 @@ public class Occlusion {
 	private int[][] edgeToFaces;
 	private int edgeToFacesSize;
 	private long[] faceCenters;
+	private float[] points;
+	private float[] pointsMin;
+	private float[] pointsMax;
 	
 	public Occlusion() {
 		occlusionData = new boolean[32];
@@ -56,6 +59,9 @@ public class Occlusion {
 		edgeToFaces = new int[32][];
 		edgeToFacesSize = 0;
 		faceCenters = new long[32*3];
+		points = new float[12];
+		pointsMin = new float[12];
+		pointsMax = new float[12];
 	}
 	
 	private int calcEdgeOffset(ModelFace face) {
@@ -71,10 +77,10 @@ public class Occlusion {
 		// and goes to the right in UV space. If this doesn't match
 		// with our UVs, then we need to adjust the edge index.
 		// We can do this by calculating the offset to apply to the edge index.
-		float u0 = face.getUVs()[0];
-		float v0 = face.getUVs()[1];
-		float u1 = face.getUVs()[2];
-		float v1 = face.getUVs()[3];
+		float u0 = face.uvs0U;
+		float v0 = face.uvs0V;
+		float u1 = face.uvs1U;
+		float v1 = face.uvs1V;
 		float du = u1 - u0;
 		float dv = v1 - v0;
 		// We assume that the vector (du, dv) can point in one of four
@@ -101,14 +107,16 @@ public class Occlusion {
 		return edgeOffset;
 	}
 	
-	public void calculateCornerDataForModel(List<Model> models, BakedBlockState state, long occlusion, 
+	public void calculateOcclusionDataForModel(List<Model> models, BakedBlockState state, long occlusion, 
 											List<ModelFace> detailedOcclusionFaces) {
-		edgeIndexCache.clear();
-		for(int i = 0; i < edgeToFacesSize; ++i) {
-			if(edgeToFaces[i] != null)
-				edgeToFaces[i][0] = 0;
+		if(Config.calculateCornerUVs) {
+			edgeIndexCache.clear();
+			for(int i = 0; i < edgeToFacesSize; ++i) {
+				if(edgeToFaces[i] != null)
+					edgeToFaces[i][0] = 0;
+			}
+			edgeToFacesSize = 0;
 		}
-		edgeToFacesSize = 0;
 		
 		Model model = null;
 		ModelFace face = null;
@@ -126,6 +134,7 @@ public class Occlusion {
 			
 			for(int j = 0; j < model.getFaces().size(); ++j) {
 				face = model.getFaces().get(j);
+				face.getPoints(points);
 				
 				// Calculate whether the face is occluded
 				occlusionData[faceIndex] = false;
@@ -134,7 +143,8 @@ public class Occlusion {
 					occlusionData[faceIndex] = true;
 				else if(state.isDetailedOcclusion() && face.getOccludedBy() != 0) {
 					boolean occluded = false;
-					for(ModelFace face2 : detailedOcclusionFaces) {
+					for(int ii = 0; ii < detailedOcclusionFaces.size(); ++ii) {
+						ModelFace face2 = detailedOcclusionFaces.get(ii);
 						if(getDetailedOcclusion(face, face2)) {
 							occluded = true;
 							break;
@@ -150,16 +160,16 @@ public class Occlusion {
 					float centerY = 0f;
 					float centerZ = 0f;
 					for(int edgeIndex = 0; edgeIndex < 4; ++edgeIndex) {
-						float x0 = face.getPoints()[edgeIndex * 3];
-						float y0 = face.getPoints()[edgeIndex * 3 + 1];
-						float z0 = face.getPoints()[edgeIndex * 3 + 2];
+						float x0 = points[edgeIndex * 3];
+						float y0 = points[edgeIndex * 3 + 1];
+						float z0 = points[edgeIndex * 3 + 2];
 						centerX += x0;
 						centerY += y0;
 						centerZ += z0;
 						
-						float x1 = face.getPoints()[((edgeIndex + 1) % 4) * 3];
-						float y1 = face.getPoints()[((edgeIndex + 1) % 4) * 3 + 1];
-						float z1 = face.getPoints()[((edgeIndex + 1) % 4) * 3 + 2];
+						float x1 = points[((edgeIndex + 1) % 4) * 3];
+						float y1 = points[((edgeIndex + 1) % 4) * 3 + 1];
+						float z1 = points[((edgeIndex + 1) % 4) * 3 + 2];
 						
 						long edgeId1 = positionToIndex(x0, y0, z0);
 						long edgeId2 = positionToIndex(x1, y1, z1);
@@ -229,6 +239,7 @@ public class Occlusion {
 				}
 				
 				face = model.getFaces().get(j);
+				face.getPoints(points);
 				
 				int edgeOffset = calcEdgeOffset(face);
 				
@@ -242,13 +253,13 @@ public class Occlusion {
 				long centerZ = faceCenters[faceIndex*3 + 2];
 				
 				for(int edgeIndex = 0; edgeIndex < 4; ++edgeIndex) {
-					float x0 = face.getPoints()[edgeIndex * 3];
-					float y0 = face.getPoints()[edgeIndex * 3 + 1];
-					float z0 = face.getPoints()[edgeIndex * 3 + 2];
+					float x0 = points[edgeIndex * 3];
+					float y0 = points[edgeIndex * 3 + 1];
+					float z0 = points[edgeIndex * 3 + 2];
 					
-					float x1 = face.getPoints()[((edgeIndex + 1) % 4) * 3];
-					float y1 = face.getPoints()[((edgeIndex + 1) % 4) * 3 + 1];
-					float z1 = face.getPoints()[((edgeIndex + 1) % 4) * 3 + 2];
+					float x1 = points[((edgeIndex + 1) % 4) * 3];
+					float y1 = points[((edgeIndex + 1) % 4) * 3 + 1];
+					float z1 = points[((edgeIndex + 1) % 4) * 3 + 2];
 					
 					long edgeId1 = positionToIndex(x0, y0, z0);
 					long edgeId2 = positionToIndex(x1, y1, z1);
@@ -319,40 +330,38 @@ public class Occlusion {
 	private boolean getDetailedOcclusion(ModelFace faceA, ModelFace faceB) {
 		if(faceA.getDirection() != faceB.getDirection() && faceA.getDirection() != faceB.getDirection().getOpposite())
 			return false;
-		float[] minMaxA = getMinMaxPoints(faceA);
-		float[] minMaxB = getMinMaxPoints(faceB);
+		getMinMaxPoints(faceA, pointsMin);
+		getMinMaxPoints(faceB, pointsMax);
 		switch(faceA.getDirection()) {
 		case UP:
 		case DOWN:
-			if(faceA.getPoints()[1] != faceB.getPoints()[1])
+			if(faceA.point0Y != faceB.point0Y)
 				return false;
-			return faceOccludedByOtherFace(minMaxA[0], minMaxA[2], minMaxA[3], minMaxA[5], 
-											minMaxB[0], minMaxB[2], minMaxB[3], minMaxB[5]);
+			return faceOccludedByOtherFace(pointsMin[0], pointsMin[2], pointsMin[3], pointsMin[5], 
+											pointsMax[0], pointsMax[2], pointsMax[3], pointsMax[5]);
 		case NORTH:
 		case SOUTH:
-			if(faceA.getPoints()[2] != faceB.getPoints()[2])
+			if(faceA.point0Z != faceB.point0Z)
 				return false;
-			return faceOccludedByOtherFace(minMaxA[0], minMaxA[1], minMaxA[3], minMaxA[4], 
-											minMaxB[0], minMaxB[1], minMaxB[3], minMaxB[4]);
+			return faceOccludedByOtherFace(pointsMin[0], pointsMin[1], pointsMin[3], pointsMin[4], 
+											pointsMax[0], pointsMax[1], pointsMax[3], pointsMax[4]);
 		case EAST:
 		case WEST:
-			if(faceA.getPoints()[0] != faceB.getPoints()[0])
+			if(faceA.point0X != faceB.point0X)
 				return false;
-			return faceOccludedByOtherFace(minMaxA[2], minMaxA[1], minMaxA[5], minMaxA[4], 
-											minMaxB[2], minMaxB[1], minMaxB[5], minMaxB[4]);
+			return faceOccludedByOtherFace(pointsMin[2], pointsMin[1], pointsMin[5], pointsMin[4], 
+											pointsMax[2], pointsMax[1], pointsMax[5], pointsMax[4]);
 		}
 		return false;
 	}
 	
-	private float[] getMinMaxPoints(ModelFace face) {
-		return new float[]{
-				Math.min(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.min(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.min(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-				Math.max(face.getPoints()[0*3+0], face.getPoints()[2*3+0]),
-				Math.max(face.getPoints()[0*3+1], face.getPoints()[2*3+1]),
-				Math.max(face.getPoints()[0*3+2], face.getPoints()[2*3+2]),
-		};
+	private void getMinMaxPoints(ModelFace face, float[] out) {
+		out[0] = Math.min(face.point0X, face.point2X);
+		out[1] = Math.min(face.point0Y, face.point2Y);
+		out[2] = Math.min(face.point0Z, face.point2Z);
+		out[3] = Math.max(face.point0X, face.point2X);
+		out[4] = Math.max(face.point0Y, face.point2Y);
+		out[5] = Math.max(face.point0Z, face.point2Z);
 	}
 	
 	private boolean faceOccludedByOtherFace(float minXA, float minYA, float maxXA, float maxYA,
@@ -379,6 +388,7 @@ public class Occlusion {
 	public int getCornerIndexForFace(ModelFace face, int faceIndex) {
 		if(!Config.calculateCornerUVs)
 			return 0;
+		face.getPoints(points);
 		
 		int cornerData = (int) this.cornerData[faceIndex];
 		
@@ -387,13 +397,13 @@ public class Occlusion {
 		int v1 = ((1 + edgeOffset) % 4) * 3;
 		int v3 = ((3 + edgeOffset) % 4) * 3;
 		
-		float widthX = face.getPoints()[v0 + 0] - face.getPoints()[v1 + 0];
-		float widthY = face.getPoints()[v0 + 1] - face.getPoints()[v1 + 1];
-		float widthZ = face.getPoints()[v0 + 2] - face.getPoints()[v1 + 2];
+		float widthX = points[v0 + 0] - points[v1 + 0];
+		float widthY = points[v0 + 1] - points[v1 + 1];
+		float widthZ = points[v0 + 2] - points[v1 + 2];
 		float width = (float) Math.sqrt(widthX * widthX + widthY * widthY + widthZ * widthZ);
-		float heightX = face.getPoints()[v0 + 0] - face.getPoints()[v3 + 0];
-		float heightY = face.getPoints()[v0 + 1] - face.getPoints()[v3 + 1];
-		float heightZ = face.getPoints()[v0 + 2] - face.getPoints()[v3 + 2];
+		float heightX = points[v0 + 0] - points[v3 + 0];
+		float heightY = points[v0 + 1] - points[v3 + 1];
+		float heightZ = points[v0 + 2] - points[v3 + 2];
 		float height = (float) Math.sqrt(heightX * heightX + heightY * heightY + heightZ * heightZ);
 		
 		int iwidth = floatSizeToInt(width);

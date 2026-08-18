@@ -113,6 +113,17 @@ public class TokenMap<Value> implements Iterable<Entry<String, Value>>{
 		return defaultValue;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public Value getOrDefault(int keyId, int expectedIndex, Value defaultValue) {
+		if(expectedIndex < size && keys[expectedIndex] == keyId)
+			return (Value) values[expectedIndex];
+		for(int i = 0; i < size; ++i) {
+			if(keys[i] == keyId)
+				return (Value) values[i];
+		}
+		return defaultValue;
+	}
+	
 	public Value getOrDefault(String key, Value defaultValue) {
 		return getOrDefault(_getKeyId(key), defaultValue);
 	}

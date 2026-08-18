@@ -67,6 +67,7 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import nl.bramstout.mcworldexporter.Config;
+import nl.bramstout.mcworldexporter.ExportBounds;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Converter;
@@ -819,6 +820,21 @@ public class ToolBar extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				boolean hasDefaultExportBounds = false;
+				for(ExportBounds bounds : MCWorldExporter.getApp().getExportBoundsList()) {
+					if(bounds.defaultValues) {
+						hasDefaultExportBounds = true;
+					}
+				}
+				if(hasDefaultExportBounds) {
+					int option = Popups.showConfirmDialog(MCWorldExporter.getApp().getUI(), 
+							"There are Export Regions still with their default bounds. Are you sure that you would like to export?", 
+							"Default bounds", Popups.YES_NO_OPTION);
+					
+					if(option != 0) {
+						return;
+					}
+				}
 				if(MCWorldExporter.forceOutputPath != null) {
 					try {
 						File file = new File(MCWorldExporter.forceOutputPath);

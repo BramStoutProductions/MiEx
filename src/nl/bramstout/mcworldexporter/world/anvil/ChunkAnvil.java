@@ -38,9 +38,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 
+import nl.bramstout.mcworldexporter.InflaterInputStream;
 import nl.bramstout.mcworldexporter.entity.Entity;
 import nl.bramstout.mcworldexporter.export.BlendedBiome;
 import nl.bramstout.mcworldexporter.nbt.NbtDataInputStream;
@@ -51,6 +50,18 @@ import nl.bramstout.mcworldexporter.world.anvil.chunkreader.ChunkReader;
 import nl.bramstout.mcworldexporter.world.anvil.entityreader.EntityReader;
 
 public class ChunkAnvil extends Chunk {
+	
+	private static class DataBuffer{
+		
+		public byte[] buffer = null;
+		
+	}
+	
+	private static final ThreadLocal<DataBuffer> DATABUFFERS = new ThreadLocal<DataBuffer>() {
+		protected DataBuffer initialValue() {
+			return new DataBuffer();
+		};
+	};
 
 	private int dataOffset;
 	private int dataSize;
@@ -103,14 +114,17 @@ public class ChunkAnvil extends Chunk {
 			}
 			int len = buffer.getInt();
 			int compressionType = buffer.get();
-			byte[] byteBuffer = new byte[len - 1];
+			DataBuffer dataBuffer = DATABUFFERS.get();
+			if(dataBuffer.buffer == null || dataBuffer.buffer.length < (len-1))
+				dataBuffer.buffer = new byte[len-1];
+			byte[] byteBuffer = dataBuffer.buffer;
 			buffer.get(byteBuffer, 0, len - 1);
 
 			InputStream is = null;
 			if (compressionType == 1)
 				is = new GZIPInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else if (compressionType == 2)
-				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1), new Inflater(), 1024 * 16);
+				is = new InflaterInputStream(new ByteArrayInputStream(byteBuffer, 0, len - 1));
 			else
 				throw new Exception("Could not load chunk. Some chunks might not be loaded. Invalid compression type: " + compressionType);
 
@@ -163,7 +177,10 @@ public class ChunkAnvil extends Chunk {
 			MappedByteBuffer buffer = fileChannel.map(MapMode.READ_ONLY, entityDataOffset, entityDataSize);
 			int len = buffer.getInt();
 			byte compressionType = buffer.get();
-			byte[] byteBuffer = new byte[len - 1];
+			DataBuffer dataBuffer = DATABUFFERS.get();
+			if(dataBuffer.buffer == null || dataBuffer.buffer.length < (len-1))
+				dataBuffer.buffer = new byte[len-1];
+			byte[] byteBuffer = dataBuffer.buffer;
 			buffer.get(byteBuffer, 0, len - 1);
 
 			InputStream is = null;

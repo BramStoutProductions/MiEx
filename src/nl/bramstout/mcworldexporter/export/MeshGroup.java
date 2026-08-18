@@ -40,16 +40,28 @@ import nl.bramstout.mcworldexporter.model.ModelFace;
 public class MeshGroup extends Mesh{
 
 	private List<Mesh> children;
+	private List<String> childNames;
 	
 	public MeshGroup(String name, MeshPurpose purpose) {
 		super(name, purpose, name, name, false, false, ModelFace.SHADING_MODE_STANDARD, 0, 0);
 		children = new ArrayList<Mesh>();
+		childNames = new ArrayList<String>();
 	}
 	
-	public MeshGroup(LargeDataInputStream dis) throws IOException{
+	public MeshGroup(LargeDataInputStream dis, boolean chunked) throws IOException{
 		super();
 		children = new ArrayList<Mesh>();
-		read(dis);
+		childNames = new ArrayList<String>();
+		read(dis, chunked);
+	}
+	
+	public void appendMesh(Mesh mesh, boolean useSubsets) {
+		if(mesh instanceof MeshGroup) {
+			for(String child : ((MeshGroup) mesh).childNames) {
+				if(!childNames.contains(child))
+					childNames.add(child);
+			}
+		}
 	}
 	
 	public void addMesh(Mesh mesh) {
@@ -64,6 +76,10 @@ public class MeshGroup extends Mesh{
 		return children.size();
 	}
 	
+	public List<String> getChildNames(){
+		return childNames;
+	}
+	
 	@Override
 	public boolean hasPurpose(MeshPurpose purpose) {
 		if(getPurpose() == purpose)
@@ -75,7 +91,7 @@ public class MeshGroup extends Mesh{
 	}
 	
 	@Override
-	public void write(LargeDataOutputStream dos) throws IOException {
+	public void write(LargeDataOutputStream dos, boolean chunked) throws IOException {
 		dos.writeByte(2); // Mesh type : Group
 		dos.writeUTF(getName());
 		dos.writeInt(getPurpose().id);
@@ -83,28 +99,44 @@ public class MeshGroup extends Mesh{
 			dos.writeUTF(getExtraData());
 		else
 			dos.writeUTF("");
-		for(Mesh child : children) {
-			child.write(dos);
+		
+		if(chunked) {			
+			dos.writeInt(getNumChildren());
+			for(Mesh child : children) {
+				dos.writeUTF(child.getName());
+			}
+		}else {
+			for(Mesh child : children)
+				child.write(dos, false);
+			dos.writeByte(0);
 		}
-		dos.writeByte(0); // End list with empty type.
 	}
 	
-	public void read(LargeDataInputStream dis) throws IOException{
+	public void read(LargeDataInputStream dis, boolean chunked) throws IOException{
 		setName(dis.readUTF());
 		setPurpose(MeshPurpose.fromId(dis.readInt()));
 		String extraData = dis.readUTF();
 		if(extraData != "")
 			setExtraData(extraData);
-		while(true) {
-			byte childType = dis.readByte();
-			if(childType == 0) {
-				break;
-			}else if(childType == 1) {
-				Mesh child = new Mesh(dis);
-				children.add(child);
-			}else if(childType == 2) {
-				Mesh child = new MeshGroup(dis);
-				children.add(child);
+		
+		if(chunked) {
+			childNames.clear();
+			int numChildren = dis.readInt();
+			for(int i = 0; i < numChildren; i++) {
+				childNames.add(dis.readUTF());
+			}
+		}else {
+			while(true) {
+				byte childType = dis.readByte();
+				if(childType == 0) {
+					break;
+				}else if(childType == 1) {
+					Mesh child = new Mesh(dis);
+					children.add(child);
+				}else if(childType == 2) {
+					Mesh child = new MeshGroup(dis, false);
+					children.add(child);
+				}
 			}
 		}
 	}

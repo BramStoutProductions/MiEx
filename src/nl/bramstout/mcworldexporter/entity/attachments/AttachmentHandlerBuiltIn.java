@@ -205,10 +205,10 @@ public class AttachmentHandlerBuiltIn extends AttachmentHandler{
 	public Model getModel(Attachment attachment, AttachmentLocation location) {
 		BuiltInModel modelHandler = models.getOrDefault(location, null);
 		if(modelHandler == null) {
-			return new Model(attachment.getName(), null, false);
+			return new Model(attachment.getName(), null, false, false);
 		}
 		
-		Model model = new Model(attachment.getName(), null, modelHandler.doubleSided);
+		Model model = new Model(attachment.getName(), null, modelHandler.doubleSided, false);
 		ExprContext context = new ExprContext(attachment.getName(), attachment.getProperties(), false, 
 				0, 0, 0, 0, 0, 0, 0f, 0, 0,
 				model, new ExprValue(new ExprValueDict()), ExprValue.VALUE_BUILTINS, 

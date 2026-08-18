@@ -64,6 +64,8 @@ import nl.bramstout.mcworldexporter.resourcepack.ModelHandler;
 import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
 import nl.bramstout.mcworldexporter.resourcepack.TextureGroup;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.AnimationBedrock;
+import nl.bramstout.mcworldexporter.resourcepack.bedrock.ModelHandlerBedrockEdition;
 import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 
 public class ResourcePackJavaEdition extends ResourcePack{
@@ -75,6 +77,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	private List<EntitySpawner> entitySpawners;
 	private Map<String, Font> fonts;
 	private Map<String, Map<String, String>> localisations;
+	private Map<String, Animation> animations;
 	
 	public ResourcePackJavaEdition(File folder) {
 		super(folder.getName(), folder.getName(), folder);
@@ -86,6 +89,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		entitySpawners = new ArrayList<EntitySpawner>();
 		fonts = new HashMap<String, Font>();
 		localisations = new HashMap<String, Map<String, String>>();
+		animations = new HashMap<String, Animation>();
 	}
 
 	@Override
@@ -97,6 +101,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		paintingVariants.clear();
 		entitySpawners.clear();
 		localisations.clear();
+		animations.clear();
 		
 		File packMcMetaFile = new File(getFolder(), "pack.mcmeta");
 		if(packMcMetaFile.exists()) {
@@ -150,6 +155,10 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		File fontFolder = new File(folder, "font");
 		if(fontFolder.exists() && fontFolder.isDirectory())
 			parseFonts(fontFolder, namespace);
+		
+		File animationFolder = new File(folder, "animation");
+		if(animationFolder.exists() && animationFolder.isDirectory())
+			parseAnimations(animationFolder, namespace);
 	}
 	
 	private void parseFonts(File folder, String namespace) {
@@ -160,10 +169,31 @@ public class ResourcePackJavaEdition extends ResourcePack{
 				continue;
 			String id = namespace + ":" + f.getName().replace(".json", "");
 			try {
-				JsonObject obj = Json.read(f).getAsJsonObject();
-				fonts.put(id, new FontJava(obj));
+				JsonElement el = Json.read(f);
+				if(el.isJsonObject()) {
+					JsonObject obj = el.getAsJsonObject();
+					fonts.put(id, new FontJava(obj));
+				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
+			}
+		}
+	}
+	
+	private void parseAnimations(File folder, String namespace) {
+		for(File f : listFilesRecursively(folder)) {
+			if(f.isFile() && f.getName().endsWith(".json")) {
+				try {
+					JsonObject data = Json.read(f).getAsJsonObject();
+					if(!data.has("animations"))
+						continue;
+					
+					for(Entry<String, JsonElement> entry : data.getAsJsonObject("animations").entrySet()) {
+						animations.put(entry.getKey(), new AnimationBedrock(entry.getKey(), entry.getValue().getAsJsonObject()));
+					}
+				}catch(Exception ex){
+					ex.printStackTrace();
+				}
 			}
 		}
 	}
@@ -331,6 +361,35 @@ public class ResourcePackJavaEdition extends ResourcePack{
 		if(modelFile.exists()) {
 			try {
 				JsonObject data = Json.read(modelFile).getAsJsonObject();
+				if(data.has("minecraft:geometry")) {
+					JsonElement data2 = data.get("minecraft:geometry");
+					JsonObject geoData = null;
+					if(data2.isJsonArray())
+						geoData = data2.getAsJsonArray().get(0).getAsJsonObject();
+					else if(data2.isJsonObject())
+						geoData = data2.getAsJsonObject();
+					
+					return new ModelHandlerBedrockEdition(null, geoData);
+				}
+				return new ModelHandlerJavaEdition(data);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+		modelFile = getResource(name, "models", "assets", "geo.json");
+		if(modelFile.exists()) {
+			try {
+				JsonObject data = Json.read(modelFile).getAsJsonObject();
+				if(data.has("minecraft:geometry")) {
+					JsonElement data2 = data.get("minecraft:geometry");
+					JsonObject geoData = null;
+					if(data2.isJsonArray())
+						geoData = data2.getAsJsonArray().get(0).getAsJsonObject();
+					else if(data2.isJsonObject())
+						geoData = data2.getAsJsonObject();
+					
+					return new ModelHandlerBedrockEdition(null, geoData);
+				}
 				return new ModelHandlerJavaEdition(data);
 			}catch(Exception ex) {
 				ex.printStackTrace();
@@ -603,7 +662,7 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	
 	@Override
 	public Animation getAnimation(String animation) {
-		return null;
+		return animations.getOrDefault(animation, null);
 	}
 	
 	@Override
@@ -797,6 +856,21 @@ public class ResourcePackJavaEdition extends ResourcePack{
 	@Override
 	public String getLocalisation(String key, String language) {
 		return getLocalisation(language).getOrDefault(key, null);
+	}
+	
+	private List<File> listFilesRecursively(File folder){
+		List<File> files = new ArrayList<File>();
+		listFilesRecursively(folder, files);
+		return files;
+	}
+	
+	private void listFilesRecursively(File folder, List<File> files) {
+		for(File f : folder.listFiles()) {
+			if(f.isFile())
+				files.add(f);
+			else if(f.isDirectory())
+				listFilesRecursively(f, files);
+		}
 	}
 
 }

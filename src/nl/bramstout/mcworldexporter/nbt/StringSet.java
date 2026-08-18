@@ -40,7 +40,7 @@ public class StringSet {
 		
 		private static final int maxSize = 256;
 		
-		private String[][] strings;
+		private Object[] strings;
 		private int[] hashes;
 		private int hashesSize;
 		private StringSetNode leftNode;
@@ -48,7 +48,7 @@ public class StringSet {
 		private int splitHash;
 		
 		public StringSetNode(int initialCapacity) {
-			strings = new String[initialCapacity][];
+			strings = new Object[initialCapacity];
 			hashes = new int[initialCapacity];
 			hashesSize = 0;
 			leftNode = null;
@@ -124,24 +124,34 @@ public class StringSet {
 				return null;
 			
 			// Hash matches, now see if the string matches
-			String[] strings2 = strings[index];
-			int i = 0;
-			boolean match = true;
-			for(String str : strings2) {
+			Object strings2 = strings[index];
+			if(strings2 instanceof String) {
+				String str = (String) strings2;
 				if(str.length() != length)
-					continue;
-				
-				match = true;
-				for(i = 0; i < length; ++i) {
-					if(str.charAt(i) != data[i]) {
-						match = false;
-						break;
+					return null;
+				for(int i = 0; i < length; ++i)
+					if(str.charAt(i) != data[i])
+						return null;
+				return str;
+			}else {
+				int i = 0;
+				boolean match = true;
+				for(String str : ((String[]) strings2)) {
+					if(str.length() != length)
+						continue;
+					
+					match = true;
+					for(i = 0; i < length; ++i) {
+						if(str.charAt(i) != data[i]) {
+							match = false;
+							break;
+						}
 					}
+					if(match)
+						return str;
 				}
-				if(match)
-					return str;
+				return null;
 			}
-			return null;
 		}
 		
 		public void put(int hash, String str) {
@@ -160,10 +170,19 @@ public class StringSet {
 			if(insertIndex < hashes.length) {
 				if(hashes[insertIndex] == hash) {
 					// Add it to the existing hash
-					String[] strings2 = strings[insertIndex];
-					String[] newStrings2 = Arrays.copyOf(strings2, strings2.length + 1);
-					newStrings2[newStrings2.length - 1] = str;
-					return;
+					Object strings2 = strings[insertIndex];
+					if(strings2 instanceof String) {
+						strings[insertIndex] = new String[] { 
+								(String) strings2,
+								str
+						};
+					}else {
+						String[] newStrings2 = Arrays.copyOf(((String[]) strings2), 
+								((String[]) strings2).length + 1);
+						newStrings2[newStrings2.length - 1] = str;
+						strings[insertIndex] = newStrings2;
+						return;
+					}
 				}
 			}
 			// We need to insert it
@@ -181,7 +200,7 @@ public class StringSet {
 			
 			// Now we insert out new values
 			hashes[insertIndex] = hash;
-			strings[insertIndex] = new String[] { str };
+			strings[insertIndex] = str;
 			hashesSize++;
 		}
 		

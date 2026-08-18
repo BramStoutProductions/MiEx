@@ -66,6 +66,7 @@ public class CommandGetEntityModel extends Command{
 				Entity entity = EntityRegistry.getEntity(id, properties);
 				
 				Model model = entity.getModel();
+				model.addRootBone();
 				
 				JsonObject entityObj = new JsonObject();
 				entityObj.addProperty("id", id);

@@ -183,6 +183,8 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 				for(Entry<String, JsonElement> el : textureData.entrySet()) {
 					List<String> paths = new ArrayList<String>();
 					JsonElement textures = el.getValue().getAsJsonObject().get("textures");
+					if(textures == null)
+						continue;
 					if(textures.isJsonArray()) {
 						for(JsonElement path : textures.getAsJsonArray().asList()) {
 							if(path.isJsonObject()) {
@@ -929,8 +931,10 @@ public class ResourcePackBedrockEdition extends ResourcePack{
 		String relativePath = textureFile.getAbsolutePath().substring(getFolder().getAbsolutePath().length()+1);
 		int extensionDot = relativePath.lastIndexOf('.');
 		relativePath = relativePath.substring(0, extensionDot);
+		relativePath = relativePath.replace('\\', '/');
+		relativePath = relativePath.replace("//", "/");
 		
-		return mcmetas.getOrDefault(relativePath, null);
+		return mcmetas.getOrDefault(relativePath, mcmetas.getOrDefault(texture, null));
 	}
 	
 	public static boolean supportsResourcePack(File folder) {

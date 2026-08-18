@@ -45,6 +45,7 @@ public class ItemHandlerHytale extends ItemHandler{
 			return null;
 		// Make sure to make a copy of it, so that we can edit it.
 		model = new Model(model);
+		model.setImmoveable();
 		
 		float textureWidth = 32f;
 		float textureHeight = 32f;
@@ -70,14 +71,14 @@ public class ItemHandlerHytale extends ItemHandler{
 			// but since we don't know what the texture is when loading in
 			// the model, we needed to defer it to now. So, now we can update
 			// the UVs to take into account the texture resolution.
-			face.getUVs()[0] = face.getUVs()[0] * texScaleU;
-			face.getUVs()[1] = 16f - face.getUVs()[1] * texScaleV;
-			face.getUVs()[2] = face.getUVs()[2] * texScaleU;
-			face.getUVs()[3] = 16f - face.getUVs()[3] * texScaleV;
-			face.getUVs()[4] = face.getUVs()[4] * texScaleU;
-			face.getUVs()[5] = 16f - face.getUVs()[5] * texScaleV;
-			face.getUVs()[6] = face.getUVs()[6] * texScaleU;
-			face.getUVs()[7] = 16f - face.getUVs()[7] * texScaleV;
+			face.uvs0U = face.uvs0U * texScaleU;
+			face.uvs0V = 16f - face.uvs0V * texScaleV;
+			face.uvs1U = face.uvs1U * texScaleU;
+			face.uvs1V = 16f - face.uvs1V * texScaleV;
+			face.uvs2U = face.uvs2U * texScaleU;
+			face.uvs2V = 16f - face.uvs2V * texScaleV;
+			face.uvs3U = face.uvs3U * texScaleU;
+			face.uvs3V = 16f - face.uvs3V * texScaleV;
 		}
 		
 		return model;

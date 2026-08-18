@@ -91,6 +91,7 @@ public class BlockStateMultiPart extends BlockStatePart{
 				if(el.getAsJsonObject().has("uvlock"))
 					uvLock = el.getAsJsonObject().get("uvlock").getAsBoolean();
 				Model model = new Model(ModelRegistry.getModel(modelId));
+				model.setImmoveable();
 				if(rotX != 0 || rotY != 0 || rotZ != 0)
 					model.rotate(rotX, rotY, rotZ, uvLock);
 				if(el.getAsJsonObject().has("weight"))
@@ -112,6 +113,7 @@ public class BlockStateMultiPart extends BlockStatePart{
 			if(modelData.getAsJsonObject().has("uvlock"))
 				uvLock = modelData.getAsJsonObject().get("uvlock").getAsBoolean();
 			Model model = new Model(ModelRegistry.getModel(modelId));
+			model.setImmoveable();
 			if(rotX != 0 || rotY != 0 || rotZ != 0)
 				model.rotate(rotX, rotY, rotZ, uvLock);
 			models.add(model);

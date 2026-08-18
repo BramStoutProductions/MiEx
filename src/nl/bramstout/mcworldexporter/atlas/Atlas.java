@@ -105,6 +105,25 @@ public class Atlas {
 			return (v + (height - y - ((float) padding))) / height;
 		}
 		
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if(!(obj instanceof AtlasItem))
+				return false;
+			AtlasItem other = (AtlasItem) obj;
+			return name.equals(other.name) &&
+					atlas.equals(other.atlas) &&
+					x == other.x &&
+					y == other.y &&
+					width == other.width &&
+					height == other.height &&
+					padding == other.padding;
+		}
+		
 	}
 	
 	private static HashMap<String, AtlasItem> items = new HashMap<String, AtlasItem>();

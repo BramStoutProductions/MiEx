@@ -45,6 +45,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import nl.bramstout.mcworldexporter.Json;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -151,64 +152,72 @@ public class LauncherHytale extends Launcher{
 	
 	public List<HytaleMod> getMods(){
 		List<HytaleMod> mods = new ArrayList<HytaleMod>();
+		AsyncGroup asyncGroup = new AsyncGroup();
 		
 		File modsFolder = new File(rootFolder, "UserData/Mods");
 		if(modsFolder.exists() && modsFolder.isDirectory()) {
 			for(File mod : modsFolder.listFiles()) {
-				try {
-					if(mod.isDirectory()) {
-						File manifestFile = new File(mod, "manifest.json");
-						JsonObject manifestData = Json.read(manifestFile).getAsJsonObject();
-						
-						String name = mod.getName();
-						if(manifestData.has("Name"))
-							name = manifestData.get("Name").getAsString();
-						if(manifestData.has("Group")) {
-							String group = manifestData.get("Group").getAsString();
-							if(!group.isEmpty())
-								name = group + ":" + name;
-						}
-						
-						String uuid = ResourcePackSource.getHash(mod);
-						
-						mods.add(new HytaleMod(name, uuid, mod));
-					}else if(mod.isFile() && mod.getName().endsWith(".zip")) {
-						ZipInputStream zipIn = new ZipInputStream(new FileInputStream(mod));
-						try {
-						    ZipEntry entry = null;
-						    
-						    while ((entry = zipIn.getNextEntry()) != null) {
-						    	String entryName = entry.getName();
-						    	if(!entryName.equals("manifest.json"))
-						    		continue;
-						    	
-						    	JsonObject manifestData = JsonParser.parseReader(new InputStreamReader(zipIn)).getAsJsonObject();
-						    	
-						    	String name = mod.getName();
-								if(manifestData.has("Name"))
-									name = manifestData.get("Name").getAsString();
-								if(manifestData.has("Group")) {
-									String group = manifestData.get("Group").getAsString();
-									if(!group.isEmpty())
-										name = group + ":" + name;
-								}
-								
-								String uuid = ResourcePackSource.getHash(mod);
-								
+				asyncGroup.runTask(()->{
+					try {
+						if(mod.isDirectory()) {
+							File manifestFile = new File(mod, "manifest.json");
+							JsonObject manifestData = Json.read(manifestFile).getAsJsonObject();
+							
+							String name = mod.getName();
+							if(manifestData.has("Name"))
+								name = manifestData.get("Name").getAsString();
+							if(manifestData.has("Group")) {
+								String group = manifestData.get("Group").getAsString();
+								if(!group.isEmpty())
+									name = group + ":" + name;
+							}
+							
+							String uuid = ResourcePackSource.getHash(mod);
+							
+							synchronized(mods) {
 								mods.add(new HytaleMod(name, uuid, mod));
-						    	
-						        zipIn.closeEntry();
-						    }
-						}catch(Exception ex) {
-							ex.printStackTrace();
+							}
+						}else if(mod.isFile() && mod.getName().endsWith(".zip")) {
+							ZipInputStream zipIn = new ZipInputStream(new FileInputStream(mod));
+							try {
+							    ZipEntry entry = null;
+							    
+							    while ((entry = zipIn.getNextEntry()) != null) {
+							    	String entryName = entry.getName();
+							    	if(!entryName.equals("manifest.json"))
+							    		continue;
+							    	
+							    	JsonObject manifestData = JsonParser.parseReader(new InputStreamReader(zipIn)).getAsJsonObject();
+							    	
+							    	String name = mod.getName();
+									if(manifestData.has("Name"))
+										name = manifestData.get("Name").getAsString();
+									if(manifestData.has("Group")) {
+										String group = manifestData.get("Group").getAsString();
+										if(!group.isEmpty())
+											name = group + ":" + name;
+									}
+									
+									String uuid = ResourcePackSource.getHash(mod);
+									
+									synchronized(mods) {
+										mods.add(new HytaleMod(name, uuid, mod));
+								    }
+							        zipIn.closeEntry();
+							        break;
+							    }
+							}catch(Exception ex) {
+								ex.printStackTrace();
+							}
+						    zipIn.close();
 						}
-					    zipIn.close();
+					}catch(Exception ex) {
+						ex.printStackTrace();
 					}
-				}catch(Exception ex) {
-					ex.printStackTrace();
-				}
+				});
 			}
 		}
+		asyncGroup.waitUntilDone();
 		
 		return mods;
 	}
@@ -219,18 +228,14 @@ public class LauncherHytale extends Launcher{
 	}
 	
 	@Override
-	public List<ResourcePackSource> getAllResourcePackSources() {
-		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-		
+	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {
 		List<HytaleMod> installedMods = getMods();
 		
 		for(HytaleMod mod : installedMods) {
 			ResourcePackSource source = new ResourcePackSource(mod.name, this);
 			source.addSource(mod.uuid, mod.file);
-			sources.add(source);
+			collector.addSource(source);
 		}
-		
-		return sources;
 	}
 
 }

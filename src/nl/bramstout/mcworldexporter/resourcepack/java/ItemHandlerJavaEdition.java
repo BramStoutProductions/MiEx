@@ -1197,7 +1197,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(0, 0, 0, models);
 			for(Model model2 : models)
-				model.addModel(model2);
+				model.addModel(model2, true);
 			
 			// Make sure to free the allocated NbtTags
 			if(properties != null)
@@ -1323,7 +1323,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(0, 0, 0, models);
 			for(Model model2 : models)
-				model.addModel(model2);
+				model.addModel(model2, true);
 			
 			// Make sure to free the allocated nbt tags.
 			properties.free();
@@ -1595,7 +1595,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 	
 	@Override
 	public Model getModel(String name, NbtTagCompound data, String displayContext) {
-		Model model = new Model(name, null, false);
+		Model model = new Model(name, null, false, false);
 		if(itemModel != null)
 			itemModel.setupModel(name, data, displayContext, model);
 		return model;

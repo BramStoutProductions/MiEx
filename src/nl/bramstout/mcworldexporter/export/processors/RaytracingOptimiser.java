@@ -38,6 +38,7 @@ import java.util.Stack;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.Poolable;
 import nl.bramstout.mcworldexporter.SingleThreadedMemoryPool;
+import nl.bramstout.mcworldexporter.export.FloatArray;
 import nl.bramstout.mcworldexporter.export.LargeDataOutputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
 import nl.bramstout.mcworldexporter.export.MeshGroup;
@@ -112,22 +113,22 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			depth = 0;
 		}
 		
-		public void calculateBoundingBox(Mesh mesh) {
+		public void calculateBoundingBox(Mesh mesh, FloatArray faceCenters) {
 			if(primsCount >= 1) {
-				float size = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 3) * 16f;
-				minX = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 0);
-				minY = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 1);
-				minZ = mesh.getFaceCenters().get(prims[primsOffset] * 4 + 2);
+				float size = faceCenters.get(prims[primsOffset] * 4 + 3) * 16f;
+				minX = faceCenters.get(prims[primsOffset] * 4 + 0);
+				minY = faceCenters.get(prims[primsOffset] * 4 + 1);
+				minZ = faceCenters.get(prims[primsOffset] * 4 + 2);
 				maxX = minX + size;
 				maxY = minY + size;
 				maxZ = minZ + size;
 				
 				float x, y, z = 0f;
 				for(int i = 1; i < primsCount; ++i) {
-					x = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 0);
-					y = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 1);
-					z = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 2);
-					size = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 3) * 16f;
+					x = faceCenters.get(prims[primsOffset + i] * 4 + 0);
+					y = faceCenters.get(prims[primsOffset + i] * 4 + 1);
+					z = faceCenters.get(prims[primsOffset + i] * 4 + 2);
+					size = faceCenters.get(prims[primsOffset + i] * 4 + 3) * 16f;
 					minX = Math.min(minX, x);
 					minY = Math.min(minY, y);
 					minZ = Math.min(minZ, z);
@@ -150,7 +151,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			return false;
 		}
 		
-		public void split(Mesh mesh, SingleThreadedMemoryPool<BVHNode> nodePool) {
+		public void split(Mesh mesh, SingleThreadedMemoryPool<BVHNode> nodePool, FloatArray faceCenters) {
 			float dx = maxX - minX;
 			float dy = maxY - minY;
 			float dz = maxZ - minZ;
@@ -169,9 +170,9 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			float averageZ = 0f;
 			float x, y, z = 0;
 			for(int i = 0; i < primsCount; ++i) {
-				x = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 0);
-				y = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 1);
-				z = mesh.getFaceCenters().get(prims[primsOffset + i] * 4 + 2);
+				x = faceCenters.get(prims[primsOffset + i] * 4 + 0);
+				y = faceCenters.get(prims[primsOffset + i] * 4 + 1);
+				z = faceCenters.get(prims[primsOffset + i] * 4 + 2);
 				spreadX += (x - cx) * (x - cx);
 				spreadY += (y - cy) * (y - cy);
 				spreadZ += (z - cz) * (z - cz);
@@ -229,7 +230,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			int primIndex = 0;
 			for(int i = 0; i < primsCount; ++i) {
 				primIndex = prims[primsOffset + i];
-				pos = mesh.getFaceCenters().get(primIndex * 4 + componentOffset);
+				pos = faceCenters.get(primIndex * 4 + componentOffset);
 				if(pos < threshold)
 					left.addPrim(primIndex);
 				else
@@ -263,8 +264,8 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			
 			primsCount = 0;
 			
-			left.calculateBoundingBox(mesh);
-			right.calculateBoundingBox(mesh);
+			left.calculateBoundingBox(mesh, faceCenters);
+			right.calculateBoundingBox(mesh, faceCenters);
 		}
 		
 		public void addPrim(int prim) {
@@ -320,16 +321,54 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 	private int[] primsArray = null;
 	private float fullnessThreshold = 0.0f;
 	private LargeDataOutputStream dos;
+	private FloatArray faceCenters;
 	
 	public RaytracingOptimiser(float fullnessThreshold, LargeDataOutputStream dos) {
 		this.fullnessThreshold = fullnessThreshold;
 		this.dos = dos;
+		this.faceCenters = new FloatArray();
+	}
+	
+	private void buildFaceCenters(Mesh mesh) {
+		faceCenters.clear();
+		int numFaces = mesh.getFaceIndices().size() / 4;
+		for(int i = 0; i < numFaces; ++i) {
+			int vi0 = mesh.getFaceIndices().get(i*4+0);
+			int vi2 = mesh.getFaceIndices().get(i*4+2);
+			float minX = Float.MAX_VALUE;
+			float minY = Float.MAX_VALUE;
+			float minZ = Float.MAX_VALUE;
+			float maxX = -Float.MAX_VALUE;
+			float maxY = -Float.MAX_VALUE;
+			float maxZ = -Float.MAX_VALUE;
+			minX = Math.min(minX, mesh.getVertices().get(vi0 * 3));
+			minY = Math.min(minY, mesh.getVertices().get(vi0 * 3 + 1));
+			minZ = Math.min(minZ, mesh.getVertices().get(vi0 * 3 + 2));
+			maxX = Math.max(maxX, mesh.getVertices().get(vi0 * 3));
+			maxY = Math.max(maxY, mesh.getVertices().get(vi0 * 3 + 1));
+			maxZ = Math.max(maxZ, mesh.getVertices().get(vi0 * 3 + 2));
+			minX = Math.min(minX, mesh.getVertices().get(vi2 * 3));
+			minY = Math.min(minY, mesh.getVertices().get(vi2 * 3 + 1));
+			minZ = Math.min(minZ, mesh.getVertices().get(vi2 * 3 + 2));
+			maxX = Math.max(maxX, mesh.getVertices().get(vi2 * 3));
+			maxY = Math.max(maxY, mesh.getVertices().get(vi2 * 3 + 1));
+			maxZ = Math.max(maxZ, mesh.getVertices().get(vi2 * 3 + 2));
+			float scaleX = Math.max((maxX - minX) / 16f, 1f);
+			float scaleY = Math.max((maxY - minY) / 16f, 1f);
+			float scaleZ = Math.max((maxZ - minZ) / 16f, 1f);
+			
+			faceCenters.add((minX + maxX) / 2f);
+			faceCenters.add((minY + maxY) / 2f);
+			faceCenters.add((minZ + maxZ) / 2f);
+			faceCenters.add(Math.max(Math.max(scaleX, scaleY), scaleZ));
+		}
 	}
 	
 	private BVH buildBVH(Mesh mesh) {
 		BVH bvh = new BVH();
+		buildFaceCenters(mesh);
 		//bvh.primsArray = new int[Integer.highestOneBit((mesh.getFaceCenters().size() / 4) * 2 + 1) << 1];
-		int primsArraySize = (mesh.getFaceCenters().size() / 4) * 2;
+		int primsArraySize = (faceCenters.size() / 4) * 2;
 		if(primsArray == null || primsArray.length < primsArraySize)
 			primsArray = new int[primsArraySize];
 		bvh.primsArray = primsArray;
@@ -342,17 +381,17 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 		currentNode.prims = bvh.primsArray;
 		currentNode.primsOffset = 0;
 		currentNode.primsCapacity = bvh.primsArray.length;
-		for(int i = 0; i < mesh.getFaceCenters().size() / 4; ++i) {
+		for(int i = 0; i < faceCenters.size() / 4; ++i) {
 			currentNode.addPrim(i);
 		}
-		currentNode.calculateBoundingBox(mesh);
+		currentNode.calculateBoundingBox(mesh, faceCenters);
 		stack.add(currentNode);
 		bvh.root = currentNode;
 		
 		while(!stack.empty()) {
 			currentNode = stack.pop();
 			if(currentNode.shouldSplit()) {
-				currentNode.split(mesh, nodePool);
+				currentNode.split(mesh, nodePool, faceCenters);
 				if(currentNode.left != null) {
 					stack.add(currentNode.left);
 					stack.add(currentNode.right);
@@ -417,14 +456,17 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 						long uniqueId = Integer.toUnsignedLong(mesh.hashCode()) << 32 | Integer.toUnsignedLong(meshCounter);
 						if(subsetId < 0) {
 							// No subset to copy from.
-							subset = new MeshSubset("section_" + meshCounter, null, null, false, MeshPurpose.RENDER, true, uniqueId);
+							subset = new MeshSubset("section_" + meshCounter, 
+									null, null, false, MeshPurpose.RENDER, 
+									true, uniqueId, node.primsCount);
 							subsets.set(actualSubsetId, subset);
 						}else {
 							// Subset to copy from.
 							MeshSubset origSubset = mesh.getSubset(subsetId);
 							subset = new MeshSubset(origSubset.getName() + "_" + meshCounter,
 													origSubset.getTexture(), origSubset.getMatTexture(),
-													origSubset.isAnimatedTexture(), MeshPurpose.RENDER, true, uniqueId);
+													origSubset.isAnimatedTexture(), MeshPurpose.RENDER, 
+													true, uniqueId, origSubset.getFaceIndices().size());
 							subsets.set(actualSubsetId, subset);
 						}
 					}
@@ -448,9 +490,11 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 	private void newSubset(Mesh mesh, BVHNode node, int meshCounter, int[] subsetIds, List<MeshSubset> subsets) {
 		newSubsets.clear();
 		addPrimsToSubset(mesh, newSubsets, meshCounter, subsetIds, node);
-		for(MeshSubset subset : newSubsets)
+		for(int i = 0; i < newSubsets.size(); ++i) {
+			MeshSubset subset = newSubsets.get(i);
 			if(subset != null)
 				subsets.add(subset);
+		}
 	}
 	
 	public Mesh optimiseMesh(Mesh mesh, float fullnessThreshold) {
@@ -557,7 +601,7 @@ public class RaytracingOptimiser implements MeshProcessors.IMeshProcessor{
 			WriteCapturer capturer = manager.getWriteCapturer(writeCapturerId);
 			Mesh proxyMesh = new Mesh(mesh.getName(), MeshPurpose.PROXY, mesh.getTexture(), 
 										mesh.getMatTexture(), mesh.hasAnimatedTexture(), mesh.isDoubleSided(),
-										mesh.getShadingMode(), mesh.getVertices().size()/3, mesh.getUs().size());
+										mesh.getShadingMode(), mesh.getVertices().size()/3, mesh.getUVs().size()/2);
 			for(Mesh mesh2 : capturer.meshes) {
 				mesh2.appendMesh(mesh2, false);
 			}

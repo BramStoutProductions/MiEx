@@ -117,7 +117,7 @@ public class BlockStatePart {
 					}
 					if(entryObj.has("render_method")) {
 						String renderMethod = entryObj.get("render_method").getAsString();
-						if(renderMethod.equals("blend") || renderMethod.equals("alpha_test"))
+						if(renderMethod.contains("blend") || renderMethod.contains("alpha_test"))
 							this.transparency = true;
 					}
 				}
@@ -132,13 +132,14 @@ public class BlockStatePart {
 			this.scale = new Vector3f(1f);
 			this.scalePivot = new Vector3f(8f, 8f, 8f);
 			if(transformationObj.has("translation"))
-				this.translation = readVector3f(transformationObj.get("translation"));
+				this.translation = readVector3f(transformationObj.get("translation")).multiply(16f);
 			if(transformationObj.has("rotation")) {
 				this.rotation = readVector3f(transformationObj.get("rotation"));
+				this.rotation.x *= -1f;
 				this.rotation.y *= -1f;
 			}
 			if(transformationObj.has("rotation_pivot")) {
-				this.rotationPivot = readVector3f(transformationObj.get("rotation_pivot"));
+				this.rotationPivot = readVector3f(transformationObj.get("rotation_pivot")).multiply(16f);
 				// MiEx origin is bottom left of the block
 				// but that of Bedrock Edition is center, so offset the pivot
 				this.rotationPivot = this.rotationPivot.add(new Vector3f(8f, 8f, 8f));
@@ -146,7 +147,7 @@ public class BlockStatePart {
 			if(transformationObj.has("scale"))
 				this.scale = readVector3f(transformationObj.get("scale"));
 			if(transformationObj.has("scale_pivot")) {
-				this.scalePivot = readVector3f(transformationObj.get("scale_pivot"));
+				this.scalePivot = readVector3f(transformationObj.get("scale_pivot")).multiply(16f);
 				// MiEx origin is bottom left of the block
 				// but that of Bedrock Edition is center, so offset the pivot
 				this.scalePivot = this.scalePivot.add(new Vector3f(8f, 8f, 8f));

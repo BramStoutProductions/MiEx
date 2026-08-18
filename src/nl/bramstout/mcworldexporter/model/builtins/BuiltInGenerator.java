@@ -66,6 +66,7 @@ import nl.bramstout.mcworldexporter.model.MapCreator;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.model.TextureRegistry;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByte;
 import nl.bramstout.mcworldexporter.nbt.NbtTagByteArray;
@@ -184,7 +185,7 @@ public abstract class BuiltInGenerator {
 			if(model == null)
 				return;
 			
-			context.model.addModel(model);
+			context.model.addModel(model, true);
 		}
 		
 	}
@@ -277,7 +278,7 @@ public abstract class BuiltInGenerator {
 			
 			if(model != null) {
 				model.applyTransformation(displayContext);
-				context.model.addModel(model);
+				context.model.addModel(model, true);
 			}
 		}
 		
@@ -310,7 +311,7 @@ public abstract class BuiltInGenerator {
 			Model model = attachment.getModel(location);
 			
 			if(model != null) {
-				context.model.addModel(model);
+				context.model.addModel(model, true);
 			}
 		}
 		
@@ -355,7 +356,7 @@ public abstract class BuiltInGenerator {
 			Model model = attachment.getModel(location);
 			
 			if(model != null) {
-				context.model.addModel(model);
+				context.model.addModel(model, true);
 			}
 		}
 		
@@ -403,7 +404,7 @@ public abstract class BuiltInGenerator {
 				model = MapCreator.createMapModel(mapId, isBedrock);
 			
 			if(model != null) {
-				context.model.addModel(model);
+				context.model.addModel(model, true);
 			}
 		}
 		
@@ -442,8 +443,8 @@ public abstract class BuiltInGenerator {
 			int modelId = ModelRegistry.getIdForName(modelName, false);
 			Model model = ModelRegistry.getModel(modelId);
 			if(model != null) {
-				for(Entry<String, String> entry : model.getTextures().entrySet()) {
-					String texKey = entry.getKey();
+				for(int i = 0; i< model.getTextures().size(); ++i) {
+					String texKey = TextureRegistry.getTextureFromId(model.getTextures().getKey(i));
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
 					if(hasRemaps) {
@@ -451,16 +452,12 @@ public abstract class BuiltInGenerator {
 					}
 					
 					texKey = "#" + prefix + texKey;
-					String texPath = entry.getValue();
-					if(texPath.startsWith("#")) {
-						// Remap to also use prefix.
-						texPath = model.getTexture(texPath);
-					}
+					String texPath = model.getTexture(model.getTextures().getKey(i));
 					
 					context.model.addTexture(texKey, texPath);
 				}
 				for(ModelFace face : model.getFaces()) {
-					String texKey = face.getTexture();
+					String texKey = TextureRegistry.getTextureFromId(face.getTexture());
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
 					if(hasRemaps) {
@@ -539,8 +536,8 @@ public abstract class BuiltInGenerator {
 			NbtTagCompound tintIndices = NbtTagCompound.newNonPooledInstance("");
 			
 			for(Model model : models) {
-				for(Entry<String, String> entry : model.getTextures().entrySet()) {
-					String texKey = entry.getKey();
+				for(int i = 0; i< model.getTextures().size(); ++i) {
+					String texKey = TextureRegistry.getTextureFromId(model.getTextures().getKey(i));
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
 					if(hasRemaps) {
@@ -548,16 +545,12 @@ public abstract class BuiltInGenerator {
 					}
 					
 					texKey = "#" + prefix + texKey;
-					String texPath = entry.getValue();
-					if(texPath.startsWith("#")) {
-						// Remap to also use prefix.
-						texPath = model.getTexture(texPath);
-					}
+					String texPath = model.getTexture(model.getTextures().getKey(i));
 					
 					context.model.addTexture(texKey, texPath);
 				}
 				for(ModelFace face : model.getFaces()) {
-					String texKey = face.getTexture();
+					String texKey = TextureRegistry.getTextureFromId(face.getTexture());
 					if(texKey.startsWith("#"))
 						texKey = texKey.substring(1);
 					if(hasRemaps) {
@@ -647,7 +640,7 @@ public abstract class BuiltInGenerator {
 				return;
 			}
 			
-			Model model = new Model("painting", null, false);
+			Model model = new Model("painting", null, false, false);
 			model.addTexture("#back", "minecraft:painting/back");
 			model.addTexture("#front", variant.getAssetPath());
 			
@@ -672,7 +665,7 @@ public abstract class BuiltInGenerator {
 			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 1.0f, 16.0f }, Direction.EAST, "#back");
 			model.addFace(minMaxPoints, new float[] { 0.0f, 0.0f, 1.0f, 16.0f }, Direction.WEST, "#back");
 			
-			context.model.addModel(model);
+			context.model.addModel(model, true);
 		}
 		
 		private int getOffset(int width) {
@@ -1261,14 +1254,14 @@ public abstract class BuiltInGenerator {
 				face.translate(textOffsetX, textOffsetY, textOffsetZ);
 
 				String texKey = null;
-				for (Entry<String, String> entry : model.getTextures().entrySet()) {
-					if (entry.getValue().equals(face.getTexture())) {
-						texKey = entry.getKey();
+				for(int i = 0; i < model.getTextures().size(); ++i) {
+					if (model.getTextures().getLongValue(i) == face.getTexture()) {
+						texKey = TextureRegistry.getTextureFromId(model.getTextures().getKey(i));
 					}
 				}
 				if (texKey == null) {
 					texKey = "#font_" + Integer.toString(model.getTextures().size());
-					String texture = face.getTexture();
+					String texture = TextureRegistry.getTextureFromId(face.getTexture());
 					if (glowing)
 						texture = texture.replace("font/", "font/glowing/");
 					model.addTexture(texKey, texture);

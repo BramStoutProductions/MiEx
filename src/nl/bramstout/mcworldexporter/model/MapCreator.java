@@ -51,9 +51,9 @@ import nl.bramstout.mcworldexporter.world.bedrock.WorldBedrock;
 public class MapCreator {
 	
 	public static Model createMapModel(long mapId, boolean isBedrock) {
-		Model model = new Model("map", null, false);
+		Model model = new Model("map", null, false, false);
 
-		RGB[] colorIds = new RGB[128 * 128];
+		float[] colorIds = new float[128 * 128 * 3];
 
 		if(isBedrock) {
 			readBedrockMapData(mapId, colorIds);
@@ -70,21 +70,23 @@ public class MapCreator {
 				float xMax = x + (1f / 8f);
 				float yMax = y + (1f / 8f);
 
-				RGB color = colorIds[i + j * 128];
-				if (color == null)
+				float colorR = colorIds[i + j * 128];
+				float colorG = colorIds[i + j * 128 + 1];
+				float colorB = colorIds[i + j * 128 + 2];
+				if (Float.isInfinite(colorR))
 					continue;
 
-				model.addFace(new float[]{ x, y, 8.05f, xMax, yMax, 8.05f }, new float[] { x, y, xMax, yMax }, 
+				model.addFace(new float[]{ x, y, 8.05f, xMax, yMax, 8.05f }, new float[] { 0f, 0f, 16f, 16f }, 
 						Direction.SOUTH, "#VertexColor");
 				
-				model.faces.get(model.faces.size() - 1).setFaceColour(color.x, color.y, color.z);
+				model.faces.get(model.faces.size() - 1).setFaceColour(colorR, colorG, colorB);
 			}
 		}
 
 		return model;
 	}
 	
-	private static void readJavaMapData(long mapId, RGB[] colorIds) {
+	private static void readJavaMapData(long mapId, float[] colorIds) {
 		try {
 			File dataDir = new File(MCWorldExporter.getApp().getWorld().getWorldDir(), "data");
 			File mapFile = new File(dataDir, "map_" + mapId + ".dat");
@@ -110,8 +112,17 @@ public class MapCreator {
 				return;
 			}
 
+			RGB rgb = new RGB(0.0f, 0.0f, 0.0f);
 			for (int i = 0; i < 128 * 128; ++i) {
-				colorIds[i] = getRGBFromId(((int) colors.getData()[i]) & 0xFF);
+				if(getRGBFromId(((int) colors.getData()[i]) & 0xFF, rgb)) {
+					colorIds[i * 3] = rgb.x;
+					colorIds[i * 3 + 1] = rgb.y;
+					colorIds[i * 3 + 2] = rgb.z;
+				}else {
+					colorIds[i * 3] = Float.POSITIVE_INFINITY;
+					colorIds[i * 3 + 1] = Float.POSITIVE_INFINITY;
+					colorIds[i * 3 + 2] = Float.POSITIVE_INFINITY;
+				}
 			}
 			
 			dis.close();
@@ -122,7 +133,7 @@ public class MapCreator {
 		}
 	}
 	
-	private static void readBedrockMapData(long mapId, RGB[] colorIds) {
+	private static void readBedrockMapData(long mapId, float[] colorIds) {
 		DB worldDB = null;
 		if(MCWorldExporter.getApp().getWorld() instanceof WorldBedrock) {
 			worldDB = ((WorldBedrock) MCWorldExporter.getApp().getWorld()).getWorldDB();
@@ -144,7 +155,8 @@ public class MapCreator {
 				root.free();
 				return;
 			}
-	
+			
+			RGB baseColor = new RGB(0, 0, 0);
 			for (int i = 0; i < 128 * 128; ++i) {
 				int r = ((int) colors.getData()[i*4]) & 0xFF;
 				int g = ((int) colors.getData()[i*4 + 1]) & 0xFF;
@@ -152,11 +164,15 @@ public class MapCreator {
 				int a = ((int) colors.getData()[i*4 + 3]) & 0xFF;
 				
 				if(a < 127) {
-					colorIds[i] = null;
+					colorIds[i * 3] = Float.POSITIVE_INFINITY;
+					colorIds[i * 3 + 1] = Float.POSITIVE_INFINITY;
+					colorIds[i * 3 + 2] = Float.POSITIVE_INFINITY;
 					continue;
 				}
 				
-				RGB baseColor = new RGB(r, g, b);
+				baseColor.x = r;
+				baseColor.y = g;
+				baseColor.z = b;
 				baseColor.x = (float) Math.pow(baseColor.x / 255f, 2.2f);
 				baseColor.y = (float) Math.pow(baseColor.y / 255f, 2.2f);
 				baseColor.z = (float) Math.pow(baseColor.z / 255f, 2.2f);
@@ -164,7 +180,9 @@ public class MapCreator {
 				baseColor.x = baseColor.x * Color.GAMUT.r0 + baseColor.y * Color.GAMUT.r1 + baseColor.z * Color.GAMUT.r2;
 				baseColor.y = baseColor.x * Color.GAMUT.g0 + baseColor.y * Color.GAMUT.g1 + baseColor.z * Color.GAMUT.g2;
 				baseColor.z = baseColor.x * Color.GAMUT.b0 + baseColor.y * Color.GAMUT.b1 + baseColor.z * Color.GAMUT.b2;
-				colorIds[i] = baseColor;
+				colorIds[i * 3] = baseColor.x;
+				colorIds[i * 3 + 1] = baseColor.y;
+				colorIds[i * 3 + 2] = baseColor.z;
 			}
 			
 			root.free();
@@ -173,34 +191,36 @@ public class MapCreator {
 		}
 	}
 
-	private static RGB getRGBFromId(int colorId) {
+	private static boolean getRGBFromId(int colorId, RGB out) {
 		int multiplier = colorId % 4;
 		int baseColorIndex = colorId / 4;
 
 		if(baseColorIndex < 0 || baseColorIndex >= BASE_COLORS.length)
-			return null;
+			return false;
 		
 		RGB baseColor = BASE_COLORS[baseColorIndex];
 		if(baseColor == null)
-			return null;
-		baseColor = new RGB(baseColor);
+			return false;
+		out.x = baseColor.x;
+		out.y = baseColor.y;
+		out.z = baseColor.z;
 		
 		if (multiplier == 0)
-			baseColor = baseColor.mult(new RGB(0.71f, 0.71f, 0.71f));
+			out.mult(0.71f, 0.71f, 0.71f);
 		else if (multiplier == 1)
-			baseColor = baseColor.mult(new RGB(0.86f, 0.86f, 0.86f));
+			out.mult(0.86f, 0.86f, 0.86f);
 		else if (multiplier == 3)
-			baseColor = baseColor.mult(new RGB(0.53f, 0.53f, 0.53f));
+			out.mult(0.53f, 0.53f, 0.53f);
 
-		baseColor.x = (float) Math.pow(baseColor.x / 255f, 2.2f);
-		baseColor.y = (float) Math.pow(baseColor.y / 255f, 2.2f);
-		baseColor.z = (float) Math.pow(baseColor.z / 255f, 2.2f);
+		out.x = (float) Math.pow(out.x / 255f, 2.2f);
+		out.y = (float) Math.pow(out.y / 255f, 2.2f);
+		out.z = (float) Math.pow(out.z / 255f, 2.2f);
 		
-		baseColor.x = baseColor.x * Color.GAMUT.r0 + baseColor.y * Color.GAMUT.r1 + baseColor.z * Color.GAMUT.r2;
-		baseColor.y = baseColor.x * Color.GAMUT.g0 + baseColor.y * Color.GAMUT.g1 + baseColor.z * Color.GAMUT.g2;
-		baseColor.z = baseColor.x * Color.GAMUT.b0 + baseColor.y * Color.GAMUT.b1 + baseColor.z * Color.GAMUT.b2;
+		out.x = out.x * Color.GAMUT.r0 + out.y * Color.GAMUT.r1 + out.z * Color.GAMUT.r2;
+		out.y = out.x * Color.GAMUT.g0 + out.y * Color.GAMUT.g1 + out.z * Color.GAMUT.g2;
+		out.z = out.x * Color.GAMUT.b0 + out.y * Color.GAMUT.b1 + out.z * Color.GAMUT.b2;
 
-		return baseColor;
+		return true;
 	}
 
 	private static final RGB BASE_COLORS[] = { null, new RGB(127, 178, 56), new RGB(247, 233, 163),
@@ -231,14 +251,10 @@ public class MapCreator {
 			this.z = z;
 		}
 		
-		public RGB(RGB other) {
-			this.x = other.x;
-			this.y = other.y;
-			this.z = other.z;
-		}
-		
-		public RGB mult(RGB other) {
-			return new RGB(x * other.x, y * other.y, z * other.z);
+		public void mult(float xO, float yO, float zO) {
+			x *= xO;
+			y *= yO;
+			z *= zO;
 		}
 	}
 

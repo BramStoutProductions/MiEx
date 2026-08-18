@@ -36,6 +36,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,7 +53,7 @@ import nl.bramstout.mcworldexporter.world.hytale.WorldHytale;
 
 public class Renderer2D implements Runnable {
 
-	public static ThreadPool threadPool = new ThreadPool("Renderer2D", 1536);
+	public static ThreadPool threadPool = new ThreadPool("Renderer2D", 512);
 
 	private BufferedImage buffer;
 	private BufferedImage heightBuffer;
@@ -454,14 +455,17 @@ public class Renderer2D implements Runnable {
 						|| postBuffer.getHeight() != buffer.getHeight()) {
 					postBuffer = new BufferedImage(buffer.getWidth(), buffer.getHeight(), BufferedImage.TYPE_INT_ARGB);
 				}
+				int[] heightBufferData = ((DataBufferInt) (heightBuffer.getRaster().getDataBuffer())).getData();
+				int[] colorBufferData = ((DataBufferInt) (buffer.getRaster().getDataBuffer())).getData();
+				int[] postBufferData = ((DataBufferInt) (postBuffer.getRaster().getDataBuffer())).getData();
 				// Process the heightmap and copy over the colours from buffer into frontBuffer
 				for(int j = 0; j < heightBuffer.getHeight(); ++j) {
 					for(int i = 0; i < heightBuffer.getWidth(); ++i) {
-						int centre = (heightBuffer.getRGB(i, j) & 0x00FFFFFF) - 1024;
-						int left = (heightBuffer.getRGB(Math.max(i - 1, 0), j) & 0x00FFFFFF) - 1024;
-						int right = (heightBuffer.getRGB(Math.min(i + 1, heightBuffer.getWidth()-1), j) & 0x00FFFFFF) - 1024;
-						int up = (heightBuffer.getRGB(i, Math.min(j + 1, heightBuffer.getHeight()-1)) & 0x00FFFFFF) - 1024;
-						int down = (heightBuffer.getRGB(i, Math.max(j - 1, 0)) & 0x00FFFFFF) - 1024;
+						int centre = (heightBufferData[j * heightBuffer.getWidth() + i] & 0x00FFFFFF) - 1024;
+						int left = (heightBufferData[j * heightBuffer.getWidth() + Math.max(i - 1, 0)] & 0x00FFFFFF) - 1024;
+						int right = (heightBufferData[j * heightBuffer.getWidth() + Math.min(i + 1, heightBuffer.getWidth()-1)] & 0x00FFFFFF) - 1024;
+						int up = (heightBufferData[Math.min(j + 1, heightBuffer.getHeight()-1) * heightBuffer.getWidth() + i] & 0x00FFFFFF) - 1024;
+						int down = (heightBufferData[Math.max(j - 1, 0) * heightBuffer.getWidth() + i] & 0x00FFFFFF) - 1024;
 						left = centre - left;
 						right = centre - right;
 						up = centre - up;
@@ -477,13 +481,13 @@ public class Renderer2D implements Runnable {
 						
 						float ftotal = (float) (0.5 + 1.0 / (1.0 + Math.exp(-0.25 * ((double) total))));
 						
-						int colour = buffer.getRGB(i, j);
+						int colour = colorBufferData[j * buffer.getWidth() + i];
 						Color color = new Color(colour);
 						color = new Color(	Math.min((int) (((float) color.getRed()) * ftotal), 255),
 											Math.min((int) (((float) color.getGreen()) * ftotal), 255), 
 											Math.min((int) (((float) color.getBlue()) * ftotal), 255));
 						colour = color.getRGB();
-						postBuffer.setRGB(i, j, colour);
+						postBufferData[j * postBuffer.getWidth() + i] = colour;
 					}
 				}
 

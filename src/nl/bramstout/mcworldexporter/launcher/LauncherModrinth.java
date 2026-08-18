@@ -41,6 +41,7 @@ import com.google.gson.JsonObject;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.Util;
+import nl.bramstout.mcworldexporter.parallel.Async.AsyncGroup;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePackSource;
 import nl.bramstout.mcworldexporter.world.World;
 
@@ -107,16 +108,18 @@ public class LauncherModrinth extends Launcher{
 	@Override
 	public List<ResourcePackSource> getResourcePackSourcesForWorld(World world) {
 		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
+		AsyncGroup asyncGroup = new AsyncGroup();
 		
 		File instanceFolder = getInstanceFolderForWorld(world);
 		if(instanceFolder != null) {
 			File modsFolder = new File(instanceFolder, "mods");
 			if(modsFolder.exists()) {
 				ResourcePackSource source = new ResourcePackSource("Modrinth " + instanceFolder.getName() + " Mods", this);
-				findSources(modsFolder, source);
+				findSources(modsFolder, source, asyncGroup);
 				sources.add(source);
 			}
 		}
+		asyncGroup.waitUntilDone();
 		
 		return sources;
 	}
@@ -133,14 +136,19 @@ public class LauncherModrinth extends Launcher{
 		return null;
 	}
 	
-	private void findSources(File file, ResourcePackSource source) {
+	private void findSources(File file, ResourcePackSource source, AsyncGroup asyncGroup) {
 		if(file.isDirectory()) {
 			for(File f : file.listFiles()) {
-				findSources(f, source);
+				findSources(f, source, asyncGroup);
 			}
 		}else if(file.isFile()) {
 			if(file.getName().endsWith(".jar")) {
-				source.addSource(ResourcePackSource.getHash(file), file);
+				asyncGroup.runTask(()->{
+					String hash = ResourcePackSource.getHash(file);
+					synchronized(source) {
+						source.addSource(hash, file);
+					}
+				});
 			}
 		}
 	}
@@ -151,37 +159,35 @@ public class LauncherModrinth extends Launcher{
 	}
 	
 	@Override
-	public List<ResourcePackSource> getAllResourcePackSources() {
-		List<ResourcePackSource> sources = new ArrayList<ResourcePackSource>();
-		
+	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {
 		File instacesFolder = new File(rootFile, "profiles");
 		if(instacesFolder.exists() && instacesFolder.isDirectory()) {
 			for(File instanceFolder : instacesFolder.listFiles()) {
 				File resourcePacksFolder = new File(instanceFolder, "resourcepacks");
 				if(resourcePacksFolder.exists() && resourcePacksFolder.isDirectory()) {
 					for(File f : resourcePacksFolder.listFiles()) {
-						if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
-							ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
-							source.addSource(ResourcePackSource.getHash(f), f);
-							sources.add(source);
-						}else if(f.isFile() && f.getName().endsWith(".zip")) {
-							ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
-							source.addSource(ResourcePackSource.getHash(f), f);
-							sources.add(source);
-						}
+						asyncGroup.runTask(()->{
+							if(f.isDirectory() && new File(f, "pack.mcmeta").exists()) {
+								ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
+								source.addSource(ResourcePackSource.getHash(f), f);
+								collector.addSource(source);
+							}else if(f.isFile() && f.getName().endsWith(".zip")) {
+								ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + "/" + f.getName(), this);
+								source.addSource(ResourcePackSource.getHash(f), f);
+								collector.addSource(source);
+							}
+						});
 					}
 				}
 				
 				File modsFolder = new File(instanceFolder, "mods");
 				if(modsFolder.exists()) {
 					ResourcePackSource source = new ResourcePackSource(instanceFolder.getName() + " Mods", this);
-					findSources(modsFolder, source);
-					sources.add(source);
+					findSources(modsFolder, source, asyncGroup);
+					collector.addSource(source);
 				}
 			}
 		}
-		
-		return sources;
 	}
 	
 }

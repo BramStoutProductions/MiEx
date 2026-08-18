@@ -146,20 +146,26 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 				scalePivot = part.getScalePivot();
 			if(part.getAnimation() != null)
 				animation = part.getAnimation();
-			if(animation.equals(""))
+			if(animation != null && animation.equals(""))
 				animation = null;
 		}
 		
 		int modelId = ModelRegistry.getIdForName(geometry, doubleSided);
 		Model model = ModelRegistry.getModel(modelId);
+		if(animation == null)
+			animation = model.getAnimation();
 		
 		model = new Model(model); // Make a copy of it
+		model.setImmoveable();
 		
 		if(animationHandler != null && animationHandler instanceof BlockAnimationHandlerBedrock) {
 			((BlockAnimationHandlerBedrock) animationHandler).applyAnimation(model, frame);
 		}
 		
 		List<ModelFace> removeFaces = new ArrayList<ModelFace>();
+		int[] newFaceIds = new int[model.getFaces().size()];
+		for(int i = 0; i < newFaceIds.length; ++i)
+			newFaceIds[i] = i;
 		for(Entry<String, MolangExpression> entry : boneVisibility.entrySet()) {
 			MolangContext molangContext = new MolangContext(molangQuery, new Random(
 					x + ((((long) y) & 0xFFFFFFFFl) << 32) + ((((long) y) & 0xFFFFFFFFl) << 16)));
@@ -178,11 +184,20 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 					if(faceId.intValue() < 0 || faceId.intValue() >= model.getFaces().size())
 						continue;
 					removeFaces.add(model.getFaces().get(faceId.intValue()));
+					for(int i = faceId.intValue() + 1; i < newFaceIds.length; ++i)
+						newFaceIds[i] -= 1;
 				}
+				// Clear face ids since they don't exist anymore.
+				bone.faceIds.clear();
 			}
 		}
 		// We hide the faces by just removing them from this copy of the model.
 		model.getFaces().removeAll(removeFaces);
+		// Update bone face ids.
+		for(ModelBone bone2 : model.getBones()) {
+			for(int i = 0; i < bone2.faceIds.size(); ++i)
+				bone2.faceIds.set(i, newFaceIds[bone2.faceIds.get(i)]);
+		}
 		
 		Map<String, String> otherMaterialInstances = ResourcePackBedrockEdition.getBlockTextureMapping(name);
 		if(otherMaterialInstances != null) {
@@ -251,7 +266,8 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 			}
 		}
 		
-		model.getTextures().putAll(materialInstances);
+		for(Entry<String, String> entry : materialInstances.entrySet())
+			model.addTexture(entry.getKey(), entry.getValue());
 		
 		model.applyBones();
 		// Bedrock puts the origin at the bottom centre of the block,
@@ -279,6 +295,10 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 					Matrix.scale(scale).mult(
 					Matrix.translate(scalePivot.multiply(-1f))))))));
 			model.transform(transformMatrix);
+		}
+		
+		if(Config.moveTransparentFaces && state.isTransparentOcclusion() && !state.isLeavesOcclusion()) {
+			model.moveTransparentFaces();
 		}
 		
 		if(noOcclusion) {
@@ -332,7 +352,7 @@ public class BlockStateHandlerBedrockEdition extends BlockStateHandler{
 		for(Entry<String, String> entry : materialInstances.entrySet()) {
 			if(!entry.getValue().contains("/")) {
 				List<String> paths = ResourcePackBedrockEdition.getTerrainTexture(entry.getValue());
-				if(paths.size() > 0){
+				if(paths != null && paths.size() > 0){
 					return new DefaultTexture(TranslationRegistry.FILE_PATH_MAPPING_BEDROCK.unmap(paths.get(0)), true);
 				}
 			}

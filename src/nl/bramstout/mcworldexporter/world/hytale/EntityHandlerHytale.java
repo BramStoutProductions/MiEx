@@ -194,7 +194,7 @@ public class EntityHandlerHytale extends EntityHandler{
 	
 	@Override
 	public Model getModel(Entity entity) {
-		Model model = new Model(id, null, true);
+		Model model = new Model(id, null, true, false);
 		
 		BsonDocument blockEntity = components.getDocument("BlockEntity", null);
 		if(blockEntity != null) {
@@ -213,7 +213,6 @@ public class EntityHandlerHytale extends EntityHandler{
 		
 		model.scale(scale, new Vector3f(0f, 0f, 0f));
 		
-		model.addRootBone();
 		return model;
 	}
 	
@@ -265,7 +264,7 @@ public class EntityHandlerHytale extends EntityHandler{
 		Model model2 = itemHandler.getModel(itemName, properties, ItemHandler.DISP_CONTEXT_NONE);
 		if(model2 == null)
 			return;
-		model.addModel(model2);
+		model.addModel(model2, true);
 		
 		model.translate(-8f, 0f, -8f);
 		model.transform(Matrix.rotateX(pitch).mult(Matrix.rotateZ(roll).mult(Matrix.rotateY(yaw))));
@@ -369,6 +368,7 @@ public class EntityHandlerHytale extends EntityHandler{
 			return;
 		// Make sure to make a copy of it, so that we can edit it.
 		model2 = new Model(model2);
+		model.setImmoveable();
 		
 		float textureWidth = 32f;
 		float textureHeight = 32f;
@@ -394,14 +394,14 @@ public class EntityHandlerHytale extends EntityHandler{
 			// but since we don't know what the texture is when loading in
 			// the model, we needed to defer it to now. So, now we can update
 			// the UVs to take into account the texture resolution.
-			face.getUVs()[0] = face.getUVs()[0] * texScaleU;
-			face.getUVs()[1] = 16f - face.getUVs()[1] * texScaleV;
-			face.getUVs()[2] = face.getUVs()[2] * texScaleU;
-			face.getUVs()[3] = 16f - face.getUVs()[3] * texScaleV;
-			face.getUVs()[4] = face.getUVs()[4] * texScaleU;
-			face.getUVs()[5] = 16f - face.getUVs()[5] * texScaleV;
-			face.getUVs()[6] = face.getUVs()[6] * texScaleU;
-			face.getUVs()[7] = 16f - face.getUVs()[7] * texScaleV;
+			face.uvs0U = face.uvs0U * texScaleU;
+			face.uvs0V = 16f - face.uvs0V * texScaleV;
+			face.uvs1U = face.uvs1U * texScaleU;
+			face.uvs1V = 16f - face.uvs1V * texScaleV;
+			face.uvs2U = face.uvs2U * texScaleU;
+			face.uvs2V = 16f - face.uvs2V * texScaleV;
+			face.uvs3U = face.uvs3U * texScaleU;
+			face.uvs3V = 16f - face.uvs3V * texScaleV;
 		}
 		// Block models are from (0,0,0) to (16,16,16)
 		// but entity models should be from (-8,0,-8) to (8, 16, 8)
@@ -409,7 +409,7 @@ public class EntityHandlerHytale extends EntityHandler{
 		model2.translate(-8f, 0f, -8f);
 		model2.scale(modelScale, new Vector3f(0,0,0));
 		
-		model.addModel(model2);
+		model.addModel(model2, true);
 		model.transform(Matrix.rotateX(pitch).mult(Matrix.rotateZ(roll).mult(Matrix.rotateY(yaw))));
 	}
 

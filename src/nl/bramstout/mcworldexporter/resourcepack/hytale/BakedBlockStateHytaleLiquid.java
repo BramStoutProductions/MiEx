@@ -43,16 +43,20 @@ import nl.bramstout.mcworldexporter.model.builtins.BakedBlockStateLiquid;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.world.Block;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
+import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
 public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 
-	public BakedBlockStateHytaleLiquid(String name, String stillTexture, String flowTexture) {
+	private String shadingMode;
+	
+	public BakedBlockStateHytaleLiquid(String name, String stillTexture, String flowTexture, String shadingMode) {
 		super(name);
 		this.stillTexture = stillTexture;
 		this.flowTexture = flowTexture;
+		this.shadingMode = shadingMode;
 	}
 	
-	public void getModels(int x, int y, int z, List<Model> res){
+	public void getModels(int x, int y, int z, List<Model> res, LayeredBlock layeredBlockCache){
 		int levelNorth = getLevel(x  , y, z-1);
 		int levelWest = getLevel(x-1, y, z);
 		int levelCenter = getLevel(x  , y, z);
@@ -83,7 +87,8 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		float heightEast = getHeight(levelEast);
 		float heightWest = getHeight(levelWest);
 		
-		Model model = new Model(getName(), null, true);
+		Model model = new Model(getName(), null, true, false);
+		model.setImmoveable();
 		
 		model.addTexture("#still", stillTexture);
 		model.addTexture("#flow", flowTexture);
@@ -92,20 +97,20 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		float[] minMaxUVs = new float[] { 0, 0, 16, 16 };
 		
 		if(heightCenter < 16f) {
-			model.addFace(minMaxPoints, minMaxUVs, Direction.UP, "#still", 0);
+			model.addFace(minMaxPoints, minMaxUVs, Direction.UP, "#still", 0, shadingMode);
 		}
 		
 		if(blockBelow > 0)
-			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still", 0);
+			model.addFace(minMaxPoints, minMaxUVs, Direction.DOWN, "#still", 0, shadingMode);
 		
 		if(heightNorth < heightCenter) {
-			ModelFace northFace = model.addFace(minMaxPoints, minMaxUVs, Direction.NORTH, "#flow", 0);
-			northFace.getPoints()[0*3+1] = Math.max(heightNorth, 0f);
-			northFace.getPoints()[1*3+1] = Math.max(heightNorth, 0f);
-			northFace.getUVs()[0*2+1] = Math.max(heightNorth, 0f);
-			northFace.getUVs()[1*2+1] = Math.max(heightNorth, 0f);
-			northFace.getUVs()[2*2+1] = heightCenter;
-			northFace.getUVs()[3*2+1] = heightCenter;
+			ModelFace northFace = model.addFace(minMaxPoints, minMaxUVs, Direction.NORTH, "#flow", 0, shadingMode);
+			northFace.point0Y = Math.max(heightNorth, 0f);
+			northFace.point1Y = Math.max(heightNorth, 0f);
+			northFace.uvs0V = Math.max(heightNorth, 0f);
+			northFace.uvs1V = Math.max(heightNorth, 0f);
+			northFace.uvs2V = heightCenter;
+			northFace.uvs3V = heightCenter;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -118,13 +123,13 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		}
 		
 		if(heightSouth < heightCenter) {
-			ModelFace southFace = model.addFace(minMaxPoints, minMaxUVs, Direction.SOUTH, "#flow", 0);
-			southFace.getPoints()[0*3+1] = Math.max(heightSouth, 0f);
-			southFace.getPoints()[1*3+1] = Math.max(heightSouth, 0f);
-			southFace.getUVs()[0*2+1] = Math.max(heightSouth, 0f);
-			southFace.getUVs()[1*2+1] = Math.max(heightSouth, 0f);
-			southFace.getUVs()[2*2+1] = heightCenter;
-			southFace.getUVs()[3*2+1] = heightCenter;
+			ModelFace southFace = model.addFace(minMaxPoints, minMaxUVs, Direction.SOUTH, "#flow", 0, shadingMode);
+			southFace.point0Y = Math.max(heightSouth, 0f);
+			southFace.point1Y = Math.max(heightSouth, 0f);
+			southFace.uvs0V = Math.max(heightSouth, 0f);
+			southFace.uvs1V = Math.max(heightSouth, 0f);
+			southFace.uvs2V = heightCenter;
+			southFace.uvs3V = heightCenter;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -137,13 +142,13 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		}
 		
 		if(heightEast < heightCenter) {
-			ModelFace eastFace = model.addFace(minMaxPoints, minMaxUVs, Direction.EAST, "#flow", 0);
-			eastFace.getPoints()[0*3+1] = Math.max(heightEast, 0f);
-			eastFace.getPoints()[1*3+1] = Math.max(heightEast, 0f);
-			eastFace.getUVs()[0*2+1] = Math.max(heightEast, 0f);
-			eastFace.getUVs()[1*2+1] = Math.max(heightEast, 0f);
-			eastFace.getUVs()[2*2+1] = heightCenter;
-			eastFace.getUVs()[3*2+1] = heightCenter;
+			ModelFace eastFace = model.addFace(minMaxPoints, minMaxUVs, Direction.EAST, "#flow", 0, shadingMode);
+			eastFace.point0Y = Math.max(heightEast, 0f);
+			eastFace.point1Y = Math.max(heightEast, 0f);
+			eastFace.uvs0V = Math.max(heightEast, 0f);
+			eastFace.uvs1V = Math.max(heightEast, 0f);
+			eastFace.uvs2V = heightCenter;
+			eastFace.uvs3V = heightCenter;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block
@@ -156,13 +161,13 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		}
 		
 		if(heightWest < heightCenter) {
-			ModelFace westFace = model.addFace(minMaxPoints, minMaxUVs, Direction.WEST, "#flow", 0);
-			westFace.getPoints()[0*3+1] = Math.max(heightWest, 0f);
-			westFace.getPoints()[1*3+1] = Math.max(heightWest, 0f);
-			westFace.getUVs()[0*2+1] = Math.max(heightWest, 0f);
-			westFace.getUVs()[1*2+1] = Math.max(heightWest, 0f);
-			westFace.getUVs()[2*2+1] = heightCenter;
-			westFace.getUVs()[3*2+1] = heightCenter;
+			ModelFace westFace = model.addFace(minMaxPoints, minMaxUVs, Direction.WEST, "#flow", 0, shadingMode);
+			westFace.point0Y = Math.max(heightWest, 0f);
+			westFace.point1Y = Math.max(heightWest, 0f);
+			westFace.uvs0V = Math.max(heightWest, 0f);
+			westFace.uvs1V = Math.max(heightWest, 0f);
+			westFace.uvs2V = heightCenter;
+			westFace.uvs3V = heightCenter;
 			if(isWaterLogged == 0) {
 				// Move the face a tiny bit outwards in case there happens
 				// to be a block

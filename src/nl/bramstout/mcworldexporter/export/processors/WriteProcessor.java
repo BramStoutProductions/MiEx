@@ -31,17 +31,44 @@
 
 package nl.bramstout.mcworldexporter.export.processors;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import nl.bramstout.mcworldexporter.export.IndexCacheFlat;
 import nl.bramstout.mcworldexporter.export.LargeDataOutputStream;
 import nl.bramstout.mcworldexporter.export.Mesh;
+import nl.bramstout.mcworldexporter.export.MeshGroup;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMerger;
 import nl.bramstout.mcworldexporter.export.processors.MeshProcessors.MeshMergerMode;
 
 public class WriteProcessor implements MeshProcessors.IMeshProcessor{
 	
 	private LargeDataOutputStream dos;
+	private Map<String, Long> meshLocations;
+	private IndexCacheFlat indexCache;
 	
 	public WriteProcessor(LargeDataOutputStream dos) {
 		this.dos = dos;
+		this.meshLocations = new HashMap<String, Long>();
+		this.indexCache = new IndexCacheFlat(16);
+	}
+	
+	public Map<String, Long> getMeshLocations(){
+		return meshLocations;
+	}
+	
+	private void writeMesh(Mesh mesh) throws Exception{
+		if(!(mesh instanceof MeshGroup)) {
+			mesh.packVertices(indexCache);
+		}
+		meshLocations.put(mesh.getName(), dos.size());
+		mesh.write(dos, true);
+		
+		if(mesh instanceof MeshGroup) {
+			for(Mesh child : ((MeshGroup) mesh).getChildren()) {
+				writeMesh(child);
+			}
+		}
 	}
 	
 	@Override
@@ -52,7 +79,7 @@ public class WriteProcessor implements MeshProcessors.IMeshProcessor{
 			return;
 		}
 		try {
-			mesh.write(dos);
+			writeMesh(mesh);
 		}catch(Exception ex) {
 			throw new RuntimeException(ex);
 		}

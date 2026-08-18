@@ -37,26 +37,22 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-
 import nl.bramstout.mcworldexporter.image.ImageReader;
 import nl.bramstout.mcworldexporter.model.Direction;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.model.ModelFace;
-import nl.bramstout.mcworldexporter.model.ModelRegistry;
+import nl.bramstout.mcworldexporter.model.ModelFace.FaceData;
+import nl.bramstout.mcworldexporter.model.TextureRegistry;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 
 public class ModelItemGenerated extends Model{
 	
 	public ModelItemGenerated(String name) {
-		super(name, null, false);
-		this.id = ModelRegistry.getNextId(this);
+		super(name, null, false, true);
 		
 		extraData = "{\"item\":\"true\"}";
 	}
-	
+
 	@Override
 	public Model postConstruct(Model topLevelModel) {
 		//Model model = new Model(this);
@@ -129,7 +125,9 @@ public class ModelItemGenerated extends Model{
 		
 		// Find all layers
 		List<ItemLayer> layers = new ArrayList<ItemLayer>();
-		for(String layerName : model.getTextures().keySet()) {
+		for(int i = 0; i < model.getTextures().size(); ++i) {
+			long layerNameId = model.getTextures().getKey(i);
+			String layerName = TextureRegistry.getTextureFromId(layerNameId);
 			if(!layerName.startsWith("#layer"))
 				continue;
 			int layerIndex = -1;
@@ -138,9 +136,9 @@ public class ModelItemGenerated extends Model{
 			}catch(Exception ex) {}
 			if(layerIndex < 0)
 				continue;
-			String texPath = model.getTexture(layerName);
+			String texPath = model.getTexture(layerNameId);
 			File texFile = ResourcePacks.getTexture(texPath);
-			if(!texFile.exists())
+			if(texFile == null || !texFile.exists())
 				continue;
 			BufferedImage image = ImageReader.readImage(texFile);
 			if(image == null)
@@ -171,14 +169,13 @@ public class ModelItemGenerated extends Model{
 		float voxelHeight = 16f / ((float) item.height);
 		
 		float[] minMaxPoints = new float[] { 0, 0, 7.5f, 16, 16, 8.5f };
-		JsonObject faceData = new JsonObject();
-		faceData.addProperty("texture", "#layer0");
-		JsonArray uvData = new JsonArray();
-		uvData.add(0);
-		uvData.add(0);
-		uvData.add(16);
-		uvData.add(16);
-		faceData.add("uv", uvData);
+		FaceData faceData = new FaceData();
+		faceData.texture = "#layer0";
+		faceData.uv0 = 0;
+		faceData.uv1 = 0;
+		faceData.uv2 = 16;
+		faceData.uv3 = 16;
+		faceData.hasUV = true;
 		int prevLayerIndex = -1;
 		
 		for(int j = 0; j < item.height; ++j) {
@@ -198,18 +195,18 @@ public class ModelItemGenerated extends Model{
 					if(layer.layer != prevLayerIndex) {
 						// Update the texture.
 						prevLayerIndex = layer.layer;
-						faceData.addProperty("texture", layer.layerName);
-						faceData.addProperty("tintindex", layer.layer);
+						faceData.texture = layer.layerName;
+						faceData.tintindex = layer.layer;
 					}
 					
 					minMaxPoints[0] = x;
 					minMaxPoints[1] = y;
 					minMaxPoints[3] = x + voxelWidth;
 					minMaxPoints[4] = y + voxelHeight;
-					uvData.set(0, new JsonPrimitive(u));
-					uvData.set(1, new JsonPrimitive(v));
-					uvData.set(2, new JsonPrimitive(u + voxelWidth));
-					uvData.set(3, new JsonPrimitive(v + voxelHeight));
+					faceData.uv0 = u;
+					faceData.uv1 = v;
+					faceData.uv2 = u + voxelWidth;
+					faceData.uv3 = v + voxelHeight;
 					
 					boolean west = i == 0 || !item.sampleMask(i - 1, j);
 					boolean east = i == (item.width - 1) || !item.sampleMask(i + 1, j);

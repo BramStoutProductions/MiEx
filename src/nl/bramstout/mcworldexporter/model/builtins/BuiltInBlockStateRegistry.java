@@ -31,6 +31,7 @@
 
 package nl.bramstout.mcworldexporter.model.builtins;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,18 +50,22 @@ public class BuiltInBlockStateRegistry {
 	
 	public static class DefaultBlockStateConstructor implements IBlockStateConstructor{
 		
-		private Class<? extends BlockState> clazz;
+		private Constructor<? extends BlockState> constructor;
 		
 		public DefaultBlockStateConstructor(Class<? extends BlockState> clazz) {
-			this.clazz = clazz;
+			try {
+				this.constructor = clazz.getConstructor(String.class, int.class);
+			} catch (IllegalArgumentException | NoSuchMethodException | SecurityException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		@Override
 		public BlockState construct(String name, int dataVersion) {
 			try {
-				return clazz.getConstructor(String.class, int.class).newInstance(name, dataVersion);
+				return constructor.newInstance(name, dataVersion);
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-					| NoSuchMethodException | SecurityException e) {
+					| SecurityException e) {
 				e.printStackTrace();
 			}
 			return null;

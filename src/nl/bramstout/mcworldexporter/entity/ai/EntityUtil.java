@@ -126,12 +126,12 @@ public class EntityUtil {
 							for(int j = 0; j < model.getFaces().size(); ++j) {
 								ModelFace face = model.getFaces().get(j);
 								// Get the face's bounding box
-								float fbbMinX = Math.min(face.getPoints()[0], face.getPoints()[6]) / 16f;
-								float fbbMinY = Math.min(face.getPoints()[1], face.getPoints()[7]) / 16f;
-								float fbbMinZ = Math.min(face.getPoints()[2], face.getPoints()[8]) / 16f;
-								float fbbMaxX = Math.max(face.getPoints()[0], face.getPoints()[6]) / 16f;
-								float fbbMaxY = Math.max(face.getPoints()[1], face.getPoints()[7]) / 16f;
-								float fbbMaxZ = Math.max(face.getPoints()[2], face.getPoints()[8]) / 16f;
+								float fbbMinX = Math.min(face.point0X, face.point2X) / 16f;
+								float fbbMinY = Math.min(face.point0Y, face.point2Y) / 16f;
+								float fbbMinZ = Math.min(face.point0Z, face.point2Z) / 16f;
+								float fbbMaxX = Math.max(face.point0X, face.point2X) / 16f;
+								float fbbMaxY = Math.max(face.point0Y, face.point2Y) / 16f;
+								float fbbMaxZ = Math.max(face.point0Z, face.point2Z) / 16f;
 								
 								// Only faces aligned with primary axis can be a collider.
 								// In other words, the size of the face's bounding box must
@@ -247,12 +247,12 @@ public class EntityUtil {
 							for(int j = 0; j < model.getFaces().size(); ++j) {
 								ModelFace face = model.getFaces().get(j);
 								// Get the face's bounding box
-								float fbbMinX = Math.min(face.getPoints()[0], face.getPoints()[6]) / 16f;
-								float fbbMinY = Math.min(face.getPoints()[1], face.getPoints()[7]) / 16f;
-								float fbbMinZ = Math.min(face.getPoints()[2], face.getPoints()[8]) / 16f;
-								float fbbMaxX = Math.max(face.getPoints()[0], face.getPoints()[6]) / 16f;
-								float fbbMaxY = Math.max(face.getPoints()[1], face.getPoints()[7]) / 16f;
-								float fbbMaxZ = Math.max(face.getPoints()[2], face.getPoints()[8]) / 16f;
+								float fbbMinX = Math.min(face.point0X, face.point2X) / 16f;
+								float fbbMinY = Math.min(face.point0Y, face.point2Y) / 16f;
+								float fbbMinZ = Math.min(face.point0Z, face.point2Z) / 16f;
+								float fbbMaxX = Math.max(face.point0X, face.point2X) / 16f;
+								float fbbMaxY = Math.max(face.point0Y, face.point2Y) / 16f;
+								float fbbMaxZ = Math.max(face.point0Z, face.point2Z) / 16f;
 								
 								// Only faces aligned with primary axis can be a collider.
 								// In other words, the size of the face's bounding box must

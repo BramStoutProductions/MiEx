@@ -145,12 +145,19 @@
                                                 },
                                                 {
                                                     "condition": "thisEntity.state.block_state != null",
+													"variables": [
+						                                "blockName = thisEntity.state.block_state.Name",
+						                                "blockName = blockName == null ? (thisEntity.state.block_state.id) : blockName",
+						                                "blockName = blockName == null ? (thisEntity.state.block_state) : blockName",
+						                                "blockProperties = thisEntity.state.block_state.Properties",
+														"blockProperties = blockProperties == null ? (thisEntity.state.block_state.properties) : blockProperties"
+						                            ],
                                                     "generators": [
                                                         {
                                                             "type": "block",
                                                             "args": {
-                                                                "name": "thisEntity.state.block_state.Name",
-                                                                "properties": "thisEntity.state.block_state.Properties"
+                                                                "name": "blockName",
+                                                                "properties": "blockProperties"
                                                             }
                                                         }
                                                     ]

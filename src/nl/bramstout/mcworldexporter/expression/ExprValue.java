@@ -1689,16 +1689,27 @@ public class ExprValue {
 		
 	}
 	
+	private static Map<Class<?>, Map<String, Method>> NativeFuncsRegistry = new HashMap<Class<?>, Map<String, Method>>();
+	
 	private static abstract class ExprValueNativeClass extends ExprValueImpl{
 		
-		private Map<String, ExprValue> funcs;
+		private Map<String, Method> funcs;
 		
 		public ExprValueNativeClass() {
-			funcs = new HashMap<String, ExprValue>();
-			for(Method method : this.getClass().getMethods()) {
-				if(method.isAnnotationPresent(NativeFunction.class)) {
-					if(ExprValue.class.isAssignableFrom(method.getReturnType())) {
-						funcs.put(method.getName(), new ExprValue(new ExprValueNativeFunction(this, method)));
+			funcs = NativeFuncsRegistry.getOrDefault(this.getClass(), null);
+			if(funcs == null) {
+				synchronized(NativeFuncsRegistry) {
+					funcs = NativeFuncsRegistry.getOrDefault(this.getClass(), null);
+					if(funcs == null) {
+						funcs = new HashMap<String, Method>();
+						for(Method method : this.getClass().getMethods()) {
+							if(method.isAnnotationPresent(NativeFunction.class)) {
+								if(ExprValue.class.isAssignableFrom(method.getReturnType())) {
+									funcs.put(method.getName(), method);
+								}
+							}
+						}
+						NativeFuncsRegistry.put(this.getClass(), funcs);
 					}
 				}
 			}
@@ -1706,9 +1717,9 @@ public class ExprValue {
 		
 		@Override
 		public ExprValue member(String name) {
-			ExprValue val = funcs.getOrDefault(name, null);
+			Method val = funcs.getOrDefault(name, null);
 			if(val != null)
-				return val;
+				return new ExprValue(new ExprValueNativeFunction(this, val));
 			return new ExprValue(new ExprValueNull());
 		}
 		
