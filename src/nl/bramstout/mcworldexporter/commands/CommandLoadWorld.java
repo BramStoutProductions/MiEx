@@ -64,11 +64,13 @@ public class CommandLoadWorld extends Command{
 		if(!(worldFolder.exists())) {
 			boolean foundFile = false;
 			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-				for(MinecraftSave save : launcher.getSaves()) {
-					if(save.getLabel().equals(world)) {
-						worldFolder = save.getWorldFolder();
-						foundFile = true;
-						break;
+				if(launcher.hasSaves()) {
+					for(MinecraftSave save : launcher.getSaves()) {
+						if(save.getLabel().equals(world)) {
+							worldFolder = save.getWorldFolder();
+							foundFile = true;
+							break;
+						}
 					}
 				}
 				if(foundFile)

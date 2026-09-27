@@ -38,11 +38,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,7 +115,9 @@ public class ResourcePackDefaults {
 			System.out.println("Installing base_resource_pack.");
 			List<MinecraftVersion> versions = new ArrayList<MinecraftVersion>();
 			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-				versions.addAll(launcher.getVersions());
+				if(launcher.hasVersions()) {
+					versions.addAll(launcher.getVersions());
+				}
 			}
 			List<String> versionLabels = new ArrayList<String>();
 			for(MinecraftVersion version : versions)
@@ -146,7 +152,7 @@ public class ResourcePackDefaults {
 			
 			String selectedVersion = (String) selectedValue;
 			
-			File versionJar = null;
+			URL versionJar = null;
 			for(MinecraftVersion version : versions) {
 				if(version.getLabel().equals(selectedVersion)) {
 					versionJar = version.getJarFile();
@@ -158,14 +164,24 @@ public class ResourcePackDefaults {
 				return;
 			}
 			
+			File versionJarFile = new File("");
+			if(versionJar.getProtocol().equals("file"))
+				versionJarFile = new File(versionJar.toURI());
+			if(!versionJarFile.exists()) {
+				// Doesn't exist. We need to download it first.
+				versionJarFile = File.createTempFile("mc_jar_file", ".jar");
+				System.out.println("Downloading version jar file " + versionJar.toString() + " -> " + versionJarFile.toString());
+				Files.copy(versionJar.openStream(), versionJarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
+			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.3f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Updating base resource pack");
 			
-			int worldVersion = getWorldVersionFromJar(versionJar);
+			int worldVersion = getWorldVersionFromJar(versionJarFile);
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.35f);
 			
-			System.out.println("Extracting base_resource_pack from " + versionJar.getAbsolutePath());
-			extractResourcePackFromJar(versionJar, new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
+			System.out.println("Extracting base_resource_pack from " + versionJarFile.toString());
+			extractResourcePackFromJar(versionJarFile, new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
 			
 			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.45f);
 			MCWorldExporter.getApp().getUI().getProgressBar().setText("Patching base resource pack");
@@ -459,6 +475,66 @@ public class ResourcePackDefaults {
 		}
 	}
 	
+    private static byte[] readAllBytes(InputStream is) throws IOException {
+        List<byte[]> bufs = null;
+        byte[] result = null;
+        int total = 0;
+        int remaining = Integer.MAX_VALUE;
+        int n;
+        do {
+            byte[] buf = new byte[Math.min(remaining, 16384)];
+            int nread = 0;
+
+            // read to EOF which may read more or less than buffer size
+            while ((n = is.read(buf, nread,
+                    Math.min(buf.length - nread, remaining))) > 0) {
+                nread += n;
+                remaining -= n;
+            }
+
+            if (nread > 0) {
+                if (Integer.MAX_VALUE - total < nread) {
+                    throw new OutOfMemoryError("Required array size too large");
+                }
+                if (nread < buf.length) {
+                    buf = Arrays.copyOfRange(buf, 0, nread);
+                }
+                total += nread;
+                if (result == null) {
+                    result = buf;
+                } else {
+                    if (bufs == null) {
+                        bufs = new ArrayList<>();
+                        bufs.add(result);
+                    }
+                    bufs.add(buf);
+                }
+            }
+            // if the last call to read returned -1 or the number of bytes
+            // requested have been read then break
+        } while (n >= 0 && remaining > 0);
+
+        if (bufs == null) {
+            if (result == null) {
+                return new byte[0];
+            }
+            return result.length == total ?
+                result : Arrays.copyOf(result, total);
+        }
+
+        result = new byte[total];
+        int offset = 0;
+        remaining = total;
+        for (byte[] b : bufs) {
+            int count = Math.min(b.length, remaining);
+            System.arraycopy(b, 0, result, offset, count);
+            offset += count;
+            remaining -= count;
+        }
+
+        return result;
+    }
+	
 	private static void extractFolderToResourcePack(File source, File dst, String entryName, float startProgress, float progressRange) {
 		if(source.isDirectory()) {
 			File[] files = source.listFiles();
@@ -476,7 +552,7 @@ public class ResourcePackDefaults {
 				
 				FileInputStream is = new FileInputStream(source);
 				try {
-					byte[] data = is.readAllBytes();
+					byte[] data = readAllBytes(is);
 					installFile(data, entryName.substring(1), dst); // substring(1) to remove leading slash
 				}catch(Exception ex) {
 					is.close();
@@ -515,7 +591,7 @@ public class ResourcePackDefaults {
 				        if (!entry.isDirectory()) {
 				        	File dir = outFile.getParentFile();
 				        	dir.mkdirs();
-				        	byte[] data = zipIn.readAllBytes();
+				        	byte[] data = readAllBytes(zipIn);
 				        	installFile(data, entryName, outFile);
 				        }
 				        zipIn.closeEntry();
@@ -573,7 +649,7 @@ public class ResourcePackDefaults {
 				        if (!entry.isDirectory()) {
 				        	File dir = outFile.getParentFile();
 				        	dir.mkdirs();
-				        	byte[] data = zipIn.readAllBytes();
+				        	byte[] data = readAllBytes(zipIn);
 				        	installFile(data, entryName, outFile);
 				        }
 				        zipIn.closeEntry();

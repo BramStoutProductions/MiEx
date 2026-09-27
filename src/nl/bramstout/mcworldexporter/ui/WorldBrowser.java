@@ -102,9 +102,11 @@ public class WorldBrowser extends JDialog {
 		JPanel tabPanel = new JPanel();
 		tabPanel.setLayout(new BoxLayout(tabPanel, BoxLayout.X_AXIS));
 		for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-			Tab tab = new Tab(launcher, this);
-			tabs.add(tab);
-			tabPanel.add(tab);
+			if(launcher.hasSaves()) {
+				Tab tab = new Tab(launcher, this);
+				tabs.add(tab);
+				tabPanel.add(tab);
+			}
 		}
 		tabPanel.add(new BrowseTab(this));
 		root.add(tabPanel, BorderLayout.NORTH);

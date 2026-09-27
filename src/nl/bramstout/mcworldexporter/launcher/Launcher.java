@@ -52,4 +52,10 @@ public abstract class Launcher {
 	
 	public abstract boolean ownsWorld(File worldFolder);
 	
+	public abstract boolean hasVersions();
+	
+	public abstract boolean hasSaves();
+	
+	public abstract boolean hasResourcePacks();
+	
 }

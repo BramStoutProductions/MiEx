@@ -4,7 +4,6 @@ import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
@@ -51,7 +50,6 @@ public class InflaterInputStream extends FilterInputStream {
         if (b == null) {
             throw new NullPointerException();
         }
-        Objects.checkFromIndexSize(off, len, b.length);
         if (len == 0) {
             return 0;
         }

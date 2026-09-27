@@ -178,4 +178,19 @@ public class LauncherBedrockEdition extends Launcher{
 		}
 	}
 
+	@Override
+	public boolean hasVersions() {
+		return false;
+	}
+
+	@Override
+	public boolean hasSaves() {
+		return true;
+	}
+
+	@Override
+	public boolean hasResourcePacks() {
+		return true;
+	}
+
 }

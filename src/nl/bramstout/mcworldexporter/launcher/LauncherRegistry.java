@@ -45,6 +45,8 @@ public class LauncherRegistry {
 		System.out.println("Searching for launchers.");
 		launchers.clear();
 		
+		launchers.add(new LauncherOnlineMC());
+		
 		File javaEditionRootDir = new File(FileUtil.getMinecraftRootDir());
 		if(javaEditionRootDir.exists() && javaEditionRootDir.isDirectory()) {
 			System.out.println("Found Minecraft Java Edition launcher at " + javaEditionRootDir.getPath());

@@ -58,6 +58,8 @@ public abstract class ResourcePack {
 	 * if that was the case.
 	 */
 	private List<String> sourceUuids;
+	private List<String> dependencies;
+	private List<String> softDependencies;
 	
 	public ResourcePack(String name, String uuid, File folder) {
 		this.name = name;
@@ -65,6 +67,8 @@ public abstract class ResourcePack {
 		this.folder = folder;
 		this.worldVersion = 0;
 		this.sourceUuids = new ArrayList<String>();
+		this.dependencies = new ArrayList<String>();
+		this.softDependencies = new ArrayList<String>();
 		File packInfoFile = new File(folder, "packInfo.json");
 		if(packInfoFile.exists()) {
 			try {
@@ -77,10 +81,30 @@ public abstract class ResourcePack {
 						sourceUuids.add(el.getAsString());
 					}
 				}
+				if(obj.has("dependencies")) {
+					JsonArray dependenciesData = obj.getAsJsonArray("dependencies");
+					for(JsonElement el : dependenciesData.asList()) {
+						dependencies.add(el.getAsString());
+					}
+				}
+				if(obj.has("softDependencies")) {
+					JsonArray dependenciesData = obj.getAsJsonArray("softDependencies");
+					for(JsonElement el : dependenciesData.asList()) {
+						softDependencies.add(el.getAsString());
+					}
+				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
 			}
 		}
+	}
+	
+	public List<String> getDependencies(){
+		return dependencies;
+	}
+	
+	public List<String> getSoftDependencies(){
+		return softDependencies;
 	}
 	
 	@Override

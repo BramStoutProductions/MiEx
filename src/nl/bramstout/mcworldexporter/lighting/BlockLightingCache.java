@@ -197,7 +197,7 @@ public class BlockLightingCache {
 						
 						for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
 							int blockId = chunk.getBlockIdLocal(x, y, z, layer);
-							BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, wx, wy, wz, layer);
+							BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, wx, wy, wz, layer, false);
 							
 							if(state.getEmissiveLightLevel() > blockLightLevel) {
 								blockLightLevel = state.getEmissiveLightLevel();
@@ -229,7 +229,7 @@ public class BlockLightingCache {
 						boolean attenuates = false;
 						for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
 							int blockId = chunk.getBlockIdLocal(x, y, z, layer);
-							BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer);
+							BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, false);
 							
 							if(state.getLightAttenuationY() > 0) {
 								attenuates = true;

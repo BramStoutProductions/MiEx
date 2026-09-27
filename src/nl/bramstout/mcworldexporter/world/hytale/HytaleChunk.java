@@ -137,6 +137,29 @@ public class HytaleChunk {
 				for(int i = 0; i < sections.length; ++i) {
 					sections[i] = new Section(sectionsData.get(i).asDocument());
 				}
+				
+				// Newer Hytale versions store entities per section in
+				// ChunkColumn/Sections[i]/Components/Entity/Entities
+				// rather than in a chunk-level EntityChunk component.
+				for(int i = 0; i < sectionsData.size(); ++i) {
+					try {
+						BsonDocument sectionDoc = sectionsData.get(i).asDocument();
+						BsonDocument sectionComponents = sectionDoc.getDocument("Components", null);
+						if(sectionComponents == null)
+							continue;
+						BsonDocument entitySection = sectionComponents.getDocument("Entity", null);
+						if(entitySection == null)
+							continue;
+						BsonArray sectionEntities = entitySection.getArray("Entities", null);
+						if(sectionEntities == null || sectionEntities.size() == 0)
+							continue;
+						if(this.entityChunk == null)
+							this.entityChunk = new EntityChunkV0();
+						((EntityChunkV0) this.entityChunk).readEntities(sectionEntities);
+					}catch(Exception ex) {
+						World.handleError(ex);
+					}
+				}
 			}
 		}
 		if(components.containsKey("EnvironmentChunk")) {
@@ -167,8 +190,11 @@ public class HytaleChunk {
 		if(components.containsKey("EntityChunk")) {
 			BsonDocument entityChunk = components.getDocument("EntityChunk");
 			int version = entityChunk.getInt32("Version", new BsonInt32(0)).getValue();
-			this.entityChunk = EntityChunk.getEntityChunk(version);
-			if(this.entityChunk != null) {
+			EntityChunk entityChunkReader = this.entityChunk;
+			if(entityChunkReader == null)
+				entityChunkReader = EntityChunk.getEntityChunk(version);
+			if(entityChunkReader != null) {
+				this.entityChunk = entityChunkReader;
 				try {
 					this.entityChunk.read(entityChunk);
 				}catch(Exception ex) {
@@ -452,7 +478,15 @@ public class HytaleChunk {
 								stateStr = blockName.substring(sep + 7);
 								blockName = blockName.substring(1, sep);
 							}else {
-								blockName = blockName.substring(1);
+								// Newer Hytale versions also use non-Definitions states,
+								// e.g. *Deco_Mug_State_Filled_Water. Fall back to the base block/item.
+								int sep2 = blockName.indexOf("_State_");
+								if(sep2 > 0) {
+									stateStr = "Definitions_" + blockName.substring(sep2 + 7);
+									blockName = blockName.substring(1, sep2);
+								}else {
+									blockName = blockName.substring(1);
+								}
 							}
 							
 							if(stateStr != null) {
@@ -569,7 +603,15 @@ public class HytaleChunk {
 								stateStr = blockName.substring(sep + 7);
 								blockName = blockName.substring(1, sep);
 							}else {
-								blockName = blockName.substring(1);
+								// Newer Hytale versions also use non-Definitions states,
+								// e.g. *Deco_Mug_State_Filled_Water. Fall back to the base block/item.
+								int sep2 = blockName.indexOf("_State_");
+								if(sep2 > 0) {
+									stateStr = "Definitions_" + blockName.substring(sep2 + 7);
+									blockName = blockName.substring(1, sep2);
+								}else {
+									blockName = blockName.substring(1);
+								}
 							}
 							
 							if(stateStr != null) {
@@ -1040,6 +1082,10 @@ public class HytaleChunk {
 			BsonArray entities = bson.getArray("Entities", null);
 			if(entities == null)
 				return;
+			readEntities(entities);
+		}
+
+		public void readEntities(BsonArray entities) {
 			if(entities.size() == 0)
 				return;
 			for(BsonValue entityValue : entities) {

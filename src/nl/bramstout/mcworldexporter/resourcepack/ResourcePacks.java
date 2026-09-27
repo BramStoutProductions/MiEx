@@ -175,12 +175,61 @@ public class ResourcePacks {
 		setActiveResourcePacks(packs2);
 	}
 	
+	public static List<ResourcePack> resolveDependencies(List<ResourcePack> packs, int depth){
+		List<ResourcePack> packs2 = new ArrayList<ResourcePack>();
+		boolean changed = false;
+		for(int i = packs.size()-1; i >= 0; i--) {
+			ResourcePack pack = packs.get(i);
+			if(packs2.contains(pack))
+				continue;
+			for(String dependency : pack.getDependencies()) {
+				ResourcePack depPack = ResourcePacks.getResourcePack(dependency);
+				if(depPack == null) {
+					Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), 
+							"A resource pack being loaded in has the dependency " + dependency + " but that resource pack could not be found.", 
+							"Error", Popups.ERROR_MESSAGE);
+					throw new RuntimeException("Could not find resource pack dependency " + dependency);
+				}
+				if(packs2.contains(depPack))
+					continue;
+				packs2.add(0, depPack);
+				changed = true;
+			}
+			for(String dependency : pack.getSoftDependencies()) {
+				ResourcePack depPack = ResourcePacks.getResourcePack(dependency);
+				if(depPack == null) {
+					continue;
+				}
+				if(!packs.contains(depPack))
+					// For soft dependencies, it will only reorder packs, not add any in.
+					continue;
+				if(packs2.contains(depPack))
+					continue;
+				packs2.add(0, depPack);
+				changed = true;
+			}
+			if(packs2.contains(pack))
+				continue;
+			packs2.add(0, pack);
+		}
+		if(changed && depth < packs2.size()) {
+			// If we've changed the resource packs list, then
+			// the newly added in resource packs might have dependencies of their own,
+			// so we just run our algorithm again.
+			// We do limit the recursion depth in case of an infinite loop.
+			packs2 = resolveDependencies(packs2, depth + 1);
+		}
+		return packs2;
+	}
+	
 	public static void setActiveResourcePacks(List<ResourcePack> packs) {
 		isLoading.set(true);
 		MCWorldExporter.getApp().getUI().getViewer().pauseRendering();
+		
 
 		boolean hasLoadError = false;
 		try {
+			packs = resolveDependencies(packs, 0);
 			System.out.println("Setting Active Resource Packs (thread: " + Thread.currentThread().getName() + "):");
 			for(ResourcePack rp : packs)
 				System.out.println("  " + rp.getUUID());

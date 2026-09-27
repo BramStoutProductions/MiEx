@@ -664,7 +664,7 @@ public class BlockStateVariant {
 	}
 	
 	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, 
-										BlockState state, BlockAnimationHandler animationHandler, float frame) {
+										BlockState state, boolean asItem, BlockAnimationHandler animationHandler, float frame) {
 		BlockAnimationHandler animationHandler2 = animationHandler;
 		if(animationHandler == null && this.animationHandler != null && this.looping == false) {
 			// This variant has an animation applied on it, but not looping.
@@ -687,7 +687,7 @@ public class BlockStateVariant {
 		int numPermutations = getNumPermutations();
 		
 		for(int permutation = 0; permutation < numPermutations; ++permutation) {
-			Matrix transform = getTransform(properties, x, y, z, permutation);
+			Matrix transform = getTransform(properties, x, y, z, permutation, asItem);
 			
 			if(this.drawType.equals("Cube") || this.drawType.equals("CubeWithModel")) {
 				Model model = createCubeModel(x, y, z, permutation);
@@ -697,7 +697,7 @@ public class BlockStateVariant {
 				modelsCube.add(model);
 			}
 			if((this.drawType.equals("Model") || this.drawType.equals("CubeWithModel")) && customModelId != null) {
-				Model model = createCustomModel(x, y, z, permutation, animationHandler2, frame);
+				Model model = createCustomModel(x, y, z, permutation, animationHandler2, frame, asItem);
 				if(transform != null)
 					model.transform(transform);
 				model.calculateOcclusions();
@@ -829,7 +829,7 @@ public class BlockStateVariant {
 		return model;
 	}
 	
-	private Model createCustomModel(int x, int y, int z, int permutation, BlockAnimationHandler animationHandler, float frame) {
+	private Model createCustomModel(int x, int y, int z, int permutation, BlockAnimationHandler animationHandler, float frame, boolean asItem) {
 		int customModelId = ModelRegistry.getIdForName(this.customModelId, false);
 		Model customModel = ModelRegistry.getModel(customModelId);
 		Model model = null;
@@ -927,7 +927,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(this.customModelScale != 1f) {
+		if(this.customModelScale != 1f && !asItem) {
 			// Scale the model. The pivot is the bottom center of the block.
 			model.scale(this.customModelScale, new Vector3f(8f, 0f, 8f));
 		}
@@ -952,7 +952,7 @@ public class BlockStateVariant {
 		return new Matrix();
 	}
 	
-	private Matrix getTransform(NbtTagCompound properties, int x, int y, int z, int permutation) {
+	private Matrix getTransform(NbtTagCompound properties, int x, int y, int z, int permutation, boolean asItem) {
 		int rotation = 0;
 		NbtTag rotTag = properties.get("rotation");
 		if(rotTag != null)
@@ -965,40 +965,42 @@ public class BlockStateVariant {
 			mat = rotMatrix;
 		}
 		
-		if(this.randomRotation == RandomRotation.YawPitchRollStep1) {
-			float randX = Noise.get(x+1, y, z) * 360f;
-			float randY = Noise.get(x+2, y+2, z) * 360f;
-			float randZ = Noise.get(x+3, y, z+3) * 360f;
-			
-			Matrix rotMatrix = Matrix.rotate(randX, randY, randZ, new Vector3f(8f, 8f, 8f));
-			if(mat == null)
-				mat = rotMatrix;
-			else
-				mat = mat.mult(rotMatrix);
-		}else if(this.randomRotation == RandomRotation.YawStep1) {
-			float randY = getYawRotationForPermutation(permutation);
-			
-			Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
-			if(mat == null)
-				mat = rotMatrix;
-			else
-				mat = mat.mult(rotMatrix);
-		}else if(this.randomRotation == RandomRotation.YawStep1XZ) {
-			float randY = getYawRotationForPermutation(permutation);
-			
-			Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
-			if(mat == null)
-				mat = rotMatrix;
-			else
-				mat = mat.mult(rotMatrix);
-		}else if(this.randomRotation == RandomRotation.YawStep90) {
-			float randY = getYawRotationForPermutation(permutation);
-			
-			Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
-			if(mat == null)
-				mat = rotMatrix;
-			else
-				mat = mat.mult(rotMatrix);
+		if(!asItem) {
+			if(this.randomRotation == RandomRotation.YawPitchRollStep1) {
+				float randX = Noise.get(x+1, y, z) * 360f;
+				float randY = Noise.get(x+2, y+2, z) * 360f;
+				float randZ = Noise.get(x+3, y, z+3) * 360f;
+				
+				Matrix rotMatrix = Matrix.rotate(randX, randY, randZ, new Vector3f(8f, 8f, 8f));
+				if(mat == null)
+					mat = rotMatrix;
+				else
+					mat = mat.mult(rotMatrix);
+			}else if(this.randomRotation == RandomRotation.YawStep1) {
+				float randY = getYawRotationForPermutation(permutation);
+				
+				Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
+				if(mat == null)
+					mat = rotMatrix;
+				else
+					mat = mat.mult(rotMatrix);
+			}else if(this.randomRotation == RandomRotation.YawStep1XZ) {
+				float randY = getYawRotationForPermutation(permutation);
+				
+				Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
+				if(mat == null)
+					mat = rotMatrix;
+				else
+					mat = mat.mult(rotMatrix);
+			}else if(this.randomRotation == RandomRotation.YawStep90) {
+				float randY = getYawRotationForPermutation(permutation);
+				
+				Matrix rotMatrix = Matrix.rotate(0, randY, 0, new Vector3f(8f, 8f, 8f));
+				if(mat == null)
+					mat = rotMatrix;
+				else
+					mat = mat.mult(rotMatrix);
+			}
 		}
 		
 		return mat;

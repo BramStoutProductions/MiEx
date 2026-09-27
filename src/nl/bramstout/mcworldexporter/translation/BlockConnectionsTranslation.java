@@ -109,7 +109,7 @@ public class BlockConnectionsTranslation {
 					if(matchesList(block, thisGroup, thisBlockName, thisGroup, x, y, z))
 						return true;
 				}else if(match.equals("minecraft:$solid_block")){
-					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(block.getId(), x, y, z, 0, false);
+					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(block.getId(), x, y, z, 0, false, false);
 					return state.isSolidBlock();
 				} else if(match.equals(block.getName())) {
 					return true;

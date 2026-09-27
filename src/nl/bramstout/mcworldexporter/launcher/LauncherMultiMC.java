@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -77,7 +78,11 @@ public class LauncherMultiMC extends Launcher{
 									releaseTime = new Date(jarFile.lastModified());
 							}
 						}
-						versions.add(new MinecraftVersion("MultiMC/" + f.getName(), jarFile, releaseTime));
+						try {
+							versions.add(new MinecraftVersion("MultiMC/" + f.getName(), jarFile.toURI().toURL(), releaseTime));
+						} catch (MalformedURLException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -196,6 +201,21 @@ public class LauncherMultiMC extends Launcher{
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean hasVersions() {
+		return true;
+	}
+
+	@Override
+	public boolean hasSaves() {
+		return true;
+	}
+
+	@Override
+	public boolean hasResourcePacks() {
+		return true;
 	}
 
 }

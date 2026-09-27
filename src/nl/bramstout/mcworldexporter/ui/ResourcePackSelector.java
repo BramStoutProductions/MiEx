@@ -551,6 +551,16 @@ public class ResourcePackSelector extends JPanel{
 				activePanel.add(newComp);
 				newComp.setEnabled(activePanel.isEnabled());
 			}
+			
+			List<String> activeResourcePacks = new ArrayList<String>();
+			for(Component comp : activePanel.getComponents()) {
+				if(comp instanceof ActiveResourcePack) {
+					if(!((ActiveResourcePack)comp).isNoMove()) {
+						activeResourcePacks.add(((ActiveResourcePack)comp).getUUID());
+					}
+				}
+			}
+			this.activeResourcePacks = activeResourcePacks;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -691,8 +701,10 @@ public class ResourcePackSelector extends JPanel{
 			if(new File(packInfoPath).exists()) {
 				try {
 					JsonObject data = Json.read(new File(packInfoPath)).getAsJsonObject();
-					String versionName = data.get("version").getAsString();
-					labelText = name + " (" + versionName + ")";
+					if(data.has("version")) {
+						String versionName = data.get("version").getAsString();
+						labelText = name + " (" + versionName + ")";
+					}
 				}catch(Exception ex) {
 				}
 			}

@@ -216,7 +216,7 @@ public class BlockState {
 		return extraAnimationHandler;
 	}
 	
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections, boolean asItem) {
 		if(handler == null) {
 			return new BakedBlockState(name, new ArrayList<List<Model>>(), false, false, false, 
 					false, false, false, false, false, false, false, false, false, false, 0, false, null, false, false, null, null);
@@ -228,11 +228,11 @@ public class BlockState {
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
 				properties.free();
-				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections);
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections, asItem);
 			}
 		}
 		
-		BakedBlockState res = handler.getBakedBlockState(properties, x, y, z, layer, this);
+		BakedBlockState res = handler.getBakedBlockState(properties, x, y, z, layer, this, asItem);
 		if(blockConnections != null && runBlockConnections) {
 			properties.free(); // Free the copy that we made.
 		}

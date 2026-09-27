@@ -240,7 +240,7 @@ public class AnimatedBlock {
 			BlockState state = BlockStateRegistry.getState(stateId);
 			
 			BakedBlockState bakedState = state.getHandler().getAnimatedBakedBlockState(block.getProperties(), 
-					id.x, id.y, id.z, id.layer, state, null, 0);
+					id.x, id.y, id.z, id.layer, state, false, null, 0);
 			
 			blockLightEmission = bakedState.getEmissiveLightLevel();
 			if(blockLightEmission < 0)
@@ -253,13 +253,13 @@ public class AnimatedBlock {
 		Block block = BlockRegistry.getBlock(id.blockId);
 		int stateId = BlockStateRegistry.getIdForName(block.getName(), block.getDataVersion());
 		BlockState state = BlockStateRegistry.getState(stateId);
-		BlockAnimationHandler animationHandler = BlockStateRegistry.getBakedStateForBlock(id.blockId, id.x, id.y, id.z, id.layer).getAnimationHandler();
+		BlockAnimationHandler animationHandler = BlockStateRegistry.getBakedStateForBlock(id.blockId, id.x, id.y, id.z, id.layer, false).getAnimationHandler();
 		if(animationHandler == null || state.getHandler() == null)
 			// Shouldn't ever happen.
 			return;
 		
 		BakedBlockState bakedState = state.getHandler().getAnimatedBakedBlockState(block.getProperties(), 
-				id.x, id.y, id.z, id.layer, state, animationHandler, frame);
+				id.x, id.y, id.z, id.layer, state, false, animationHandler, frame);
 		
 		byte blockLightEmission = bakedState.getEmissiveLightLevel();
 		

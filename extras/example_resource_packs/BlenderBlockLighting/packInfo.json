@@ -1,0 +1,5 @@
+{
+    "softDependencies": [
+        "BlenderCycles", "BlenderEEVEE"
+    ]
+}

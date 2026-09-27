@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.launcher;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -83,7 +84,7 @@ public class LauncherJavaEdition extends Launcher{
 						if(releaseTime == null)
 							releaseTime = new Date(versionJar.lastModified());
 					}
-					versions.add(new MinecraftVersion("MC/" + name, versionJar, releaseTime));
+					versions.add(new MinecraftVersion("MC/" + name, versionJar.toURI().toURL(), releaseTime));
 				}
 			}catch(Exception ex) {
 				ex.printStackTrace();
@@ -106,7 +107,11 @@ public class LauncherJavaEdition extends Launcher{
 							}
 						}
 						
-						versions.add(new MinecraftVersion("MC/" + f.getName(), versionJar, releaseTime));
+						try {
+							versions.add(new MinecraftVersion("MC/" + f.getName(), versionJar.toURI().toURL(), releaseTime));
+						} catch (MalformedURLException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -175,6 +180,21 @@ public class LauncherJavaEdition extends Launcher{
 				});
 			}
 		}
+	}
+
+	@Override
+	public boolean hasVersions() {
+		return true;
+	}
+
+	@Override
+	public boolean hasSaves() {
+		return true;
+	}
+
+	@Override
+	public boolean hasResourcePacks() {
+		return true;
 	}
 	
 }

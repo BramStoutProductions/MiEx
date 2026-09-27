@@ -60,7 +60,7 @@ public class ConnectedTextureTransitionHytale extends ConnectedTexture{
 		
 		int sampleAboveId = MCWorldExporter.getApp().getWorld().getBlockId(x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z, 0);
 		BakedBlockState sampleAboveState = BlockStateRegistry.getBakedStateForBlock(
-											sampleAboveId, x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z, 0);
+											sampleAboveId, x + sampleDir.x, y + sampleDir.y + 1, z + sampleDir.z, 0, false);
 		if(!sampleAboveState.isAir() && !sampleAboveState.isTransparentOcclusion())
 			// Require air above the neighbouring block, so that we can actually see it.
 			return DELETE_FACE;

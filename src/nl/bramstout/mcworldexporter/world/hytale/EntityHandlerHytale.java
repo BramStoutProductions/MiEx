@@ -82,6 +82,10 @@ public class EntityHandlerHytale extends EntityHandler{
 	private float headPitch;
 	private float headYaw;
 	private float headRoll;
+	// Newer Hytale versions store prop block entities with the visible
+	// rotation in Transform (no HeadRotation), the scale already halved,
+	// and the position at the center of the block.
+	private boolean newFormatBlockEntity = false;
 	private String id;
 	
 	public EntityHandlerHytale(BsonDocument data) {
@@ -113,6 +117,15 @@ public class EntityHandlerHytale extends EntityHandler{
 			}
 			
 			BsonDocument headRotation = components.getDocument("HeadRotation", null);
+			if(headRotation == null && components.containsKey("BlockEntity")) {
+				newFormatBlockEntity = true;
+				// Props placed as block entities in newer Hytale versions
+				// may not have a HeadRotation component. In that case, the
+				// entity's transform rotation is the one that is visible.
+				headPitch = pitch;
+				headYaw = yaw;
+				headRoll = -roll;
+			}
 			if(headRotation != null) {
 				BsonDocument rotation = headRotation.getDocument("Rotation", null);
 				if(rotation != null) {
@@ -238,7 +251,15 @@ public class EntityHandlerHytale extends EntityHandler{
 				stateStr = itemName.substring(sep + 7);
 				itemName = itemName.substring(1, sep);
 			}else {
-				itemName = itemName.substring(1);
+				// Newer Hytale versions also use non-Definitions states,
+				// e.g. *Deco_Mug_State_Filled_Water. Fall back to the base block/item.
+				int sep2 = itemName.indexOf("_State_");
+				if(sep2 > 0) {
+					stateStr = "Definitions_" + itemName.substring(sep2 + 7);
+					itemName = itemName.substring(1, sep2);
+				}else {
+					itemName = itemName.substring(1);
+				}
 			}
 			
 			if(stateStr != null) {
@@ -267,7 +288,15 @@ public class EntityHandlerHytale extends EntityHandler{
 		model.addModel(model2, true);
 		
 		model.translate(-8f, 0f, -8f);
-		model.transform(Matrix.rotateX(pitch).mult(Matrix.rotateZ(roll).mult(Matrix.rotateY(yaw))));
+		// Hytale applies yaw, then pitch, then roll (R = Ry(yaw) * Rx(pitch) * Rz(roll)).
+		// MiEx's rotateX/rotateY rotate in the opposite direction of the standard
+		// convention, and yaw/pitch were converted in the constructor, so this
+		// results in the correct rotation.
+		// Entity models face the opposite direction, hence the extra 180 degrees around Y.
+		model.transform(Matrix.rotateY(yaw - 180f).mult(Matrix.rotateX(pitch).mult(
+						Matrix.rotateZ(roll).mult(Matrix.rotateY(180f)))));
+		// Item models are authored at 64 units per block (vs 32 for blocks).
+		model.scale(0.5f, new Vector3f(0f, 0f, 0f));
 	}
 	
 	private void getModelBlockEntity(BsonDocument blockEntity, Model model) {
@@ -289,7 +318,15 @@ public class EntityHandlerHytale extends EntityHandler{
 				stateStr = blockName.substring(sep + 7);
 				blockName = blockName.substring(1, sep);
 			}else {
-				blockName = blockName.substring(1);
+				// Newer Hytale versions also use non-Definitions states,
+				// e.g. *Deco_Mug_State_Filled_Water. Fall back to the base block/item.
+				int sep2 = blockName.indexOf("_State_");
+				if(sep2 > 0) {
+					stateStr = "Definitions_" + blockName.substring(sep2 + 7);
+					blockName = blockName.substring(1, sep2);
+				}else {
+					blockName = blockName.substring(1);
+				}
 			}
 			
 			if(stateStr != null) {
@@ -311,7 +348,7 @@ public class EntityHandlerHytale extends EntityHandler{
 		
 		Reference<char[]> charBuffer = new Reference<char[]>();
 		int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
-		BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, (int) x, (int) y, (int) z, 0);
+		BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, (int) x, (int) y, (int) z, 0, true);
 		
 		List<Color> tints = null;
 		if(state.getTint() != null) {
@@ -340,10 +377,18 @@ public class EntityHandlerHytale extends EntityHandler{
 		for(Model model2 : models)
 			model.addModel(model2, tints);
 		model.translate(-8f, -8f, -8f);
-		model.transform(Matrix.rotateZ(headRoll).mult(Matrix.rotateX(headPitch).mult(Matrix.rotateY(headYaw))));
-		model.translate(0f, 8f, 0f);
-		// Block entities seem to be half scale
-		model.scale(0.5f, new Vector3f(0,0,0));
+		// Same rotation convention as item and model entities:
+		// R = Ry(yaw) * Rx(pitch) * Rz(roll) * Ry(180) (standard convention).
+		// Verified with rope props that have pitch and roll (they connect end to end).
+		model.transform(Matrix.rotateY(headYaw - 180f).mult(Matrix.rotateX(headPitch).mult(
+						Matrix.rotateZ(-headRoll).mult(Matrix.rotateY(180f)))));
+		if(!newFormatBlockEntity) {
+			model.translate(0f, 8f, 0f);
+			// Block entities seem to be half scale
+			model.scale(0.5f, new Vector3f(0,0,0));
+		}
+		// In the new format, the block is centered on the entity position
+		// and the stored scale is already the final scale.
 	}
 	
 	private void getModelModel(BsonDocument modelData, Model model) {

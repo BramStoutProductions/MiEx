@@ -101,7 +101,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		int blockBelow = 0;
 		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(
 											MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 0), 
-											x, y-1, z, 0);
+											x, y-1, z, 0, false);
 		if(blockBelowState == null || 
 				(!blockBelowState.hasLiquid() && (blockBelowState.isTransparentOcclusion() ||
 				blockBelowState.isLeavesOcclusion())))
@@ -360,7 +360,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 		}
 		BakedBlockState blockAboveState = null;
 		if(blockAbove != null)
-			blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), x, y + 1, z, 0);
+			blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), x, y + 1, z, 0, false);
 		
 		int level = 0;
 
@@ -385,7 +385,7 @@ public class BakedBlockStateLiquid extends BakedBlockState{
 						blockAbove = getLiquidBlock(i, j, k, layeredBlockCache);
 						blockAboveState = null;
 						if(blockAbove != null)
-							blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), i, j, k, 0);
+							blockAboveState = BlockStateRegistry.getBakedStateForBlock(blockAbove.getId(), i, j, k, 0, false);
 						if(blockAboveState == null || (!blockAboveState.hasLiquid() && blockAboveState.getOccludes() == 0 && 
 								!blockAboveState.isTransparentOcclusion() && !blockAboveState.isLeavesOcclusion())) {
 							fullSourceBlock = false;

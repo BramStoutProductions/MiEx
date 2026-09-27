@@ -61,13 +61,13 @@ public class BlockStateBanner extends BlockState{
 
 		@Override
 		public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
-				BlockState state) {
-			return getAnimatedBakedBlockState(properties, x, y, z, layer,state, null, 0f);
+				BlockState state, boolean asItem) {
+			return getAnimatedBakedBlockState(properties, x, y, z, layer, state, asItem, null, 0f);
 		}
 
 		@Override
 		public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer,
-				BlockState state, BlockAnimationHandler animationHandler, float frame) {
+				BlockState state, boolean asItem, BlockAnimationHandler animationHandler, float frame) {
 			List<List<Model>> models = new ArrayList<List<Model>>();
 			
 			List<Model> list = new ArrayList<Model>();

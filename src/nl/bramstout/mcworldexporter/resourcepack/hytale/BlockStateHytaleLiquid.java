@@ -90,7 +90,7 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections) {
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, boolean runBlockConnections, boolean asItem) {
 		if(blockConnections != null && runBlockConnections) {
 			properties = (NbtTagCompound) properties.copy();
 			String newName = blockConnections.map(name, properties, x, y, z, layer);
@@ -98,7 +98,7 @@ public class BlockStateHytaleLiquid extends BlockStateLiquid{
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(newName, properties, dataVersion, charBuffer);
 				properties.free();
-				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections);
+				return BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, runBlockConnections, asItem);
 			}
 		}
 		

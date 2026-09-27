@@ -133,4 +133,19 @@ public class LauncherSavesDirectory extends Launcher{
 	@Override
 	public void getAllResourcePackSources(ResourcePackSourceCollector collector, AsyncGroup asyncGroup) {}
 
+	@Override
+	public boolean hasVersions() {
+		return false;
+	}
+
+	@Override
+	public boolean hasSaves() {
+		return true;
+	}
+
+	@Override
+	public boolean hasResourcePacks() {
+		return false;
+	}
+
 }

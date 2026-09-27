@@ -124,7 +124,7 @@ public class CommandGetBakedBlockState extends Command{
 				}else if(el.isJsonPrimitive()) {
 					blockId = el.getAsInt();
 				}
-				BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer);
+				BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer, false);
 				
 				JsonObject blockStateObj = getBlockStateObj(state, blockX, blockY, blockZ, layer, blockId);
 				blockStateArray.add(blockStateObj);
@@ -161,7 +161,7 @@ public class CommandGetBakedBlockState extends Command{
 				}
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
-				BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer);
+				BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer, false);
 				
 				JsonObject blockStateObj = getBlockStateObj(state, blockX, blockY, blockZ, layer, blockId);
 				blockStateArray.add(blockStateObj);
@@ -189,7 +189,7 @@ public class CommandGetBakedBlockState extends Command{
 					
 					int blockId = MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, layer);
 					
-					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer);
+					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer, false);
 					
 					JsonObject blockStateObj = getBlockStateObj(state, blockX, blockY, blockZ, layer, blockId);
 					blockStateArray.add(blockStateObj);
@@ -200,7 +200,7 @@ public class CommandGetBakedBlockState extends Command{
 					for(int i = 0; i < layeredBlock.getLayerCount(); ++i) {
 						int blockId = layeredBlock.getBlock(i);
 						
-						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, i);
+						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, i, false);
 						
 						JsonObject blockStateObj = getBlockStateObj(state, blockX, blockY, blockZ, i, blockId);
 						blockStateObjArray.add(blockStateObj);

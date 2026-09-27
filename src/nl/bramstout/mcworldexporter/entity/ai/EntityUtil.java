@@ -64,7 +64,7 @@ public class EntityUtil {
 		LayeredBlock blocks = new LayeredBlock();
 		MCWorldExporter.getApp().getWorld().getBlockId(blockX, blockY, blockZ, blocks);
 		for(int layer = 0; layer < blocks.getLayerCount(); ++layer) {
-			BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blocks.getBlock(layer), blockX, blockY, blockZ, layer);
+			BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blocks.getBlock(layer), blockX, blockY, blockZ, layer, false);
 			if(blockState.hasLiquid())
 				return true;
 		}
@@ -113,7 +113,7 @@ public class EntityUtil {
 						float eCenterY = (ebbMinY + ebbMaxY) / 2f;
 						
 						Block block = BlockRegistry.getBlock(blockId);
-						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
+						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0, false);
 						if(state.isAir() || block.isLiquid())
 							continue;
 						models.clear();
@@ -234,7 +234,7 @@ public class EntityUtil {
 						float eCenterZ = (ebbMinZ + ebbMaxZ) / 2f;
 						
 						Block block = BlockRegistry.getBlock(blockId);
-						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
+						BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0, false);
 						if(state.isAir() || block.isLiquid())
 							continue;
 						models.clear();

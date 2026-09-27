@@ -112,19 +112,19 @@ public class BlockStateRegistry {
 		return new BlockState(name, dataVersion, handler);
 	}
 	
-	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer) {
-		return getBakedStateForBlock(blockId, x, y, z, layer, true);
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer, boolean asItem) {
+		return getBakedStateForBlock(blockId, x, y, z, layer, true, asItem);
 	}
 	
-	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer, boolean runBlockConnections) {
+	public static BakedBlockState getBakedStateForBlock(int blockId, int x, int y, int z, int layer, boolean runBlockConnections, boolean asItem) {
 		if(blockId < 0)
 			blockId = 0;
 		
-		if(!runBlockConnections) {
+		if(!runBlockConnections || asItem) {
 			Block block = BlockRegistry.getBlock(blockId);
 			int stateId = getIdForName(block.getName(), block.getDataVersion());
 			BlockState state = getState(stateId);
-			return state.getBakedBlockState(block.getProperties(), x, y, z, layer, false);
+			return state.getBakedBlockState(block.getProperties(), x, y, z, layer, false, asItem);
 		}
 		
 		if(blockId >= bakedBlockStates.size()) {
@@ -138,7 +138,7 @@ public class BlockStateRegistry {
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
 				
-				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
+				BakedBlockState bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true, asItem);
 				if(!state.needsConnectionInfo())
 					bakedBlockStates.set(blockId, bakedState);
 				needsConnectionInfo.set(blockId, state.needsConnectionInfo());
@@ -155,7 +155,7 @@ public class BlockStateRegistry {
 				Block block = BlockRegistry.getBlock(blockId);
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true, asItem);
 			}
 		}catch(Exception ex) {} // Empty catch because due to race condition it could fail, but that's fine.
 		
@@ -168,14 +168,14 @@ public class BlockStateRegistry {
 				Block block = BlockRegistry.getBlock(blockId);
 				int stateId = getIdForName(block.getName(), block.getDataVersion());
 				BlockState state = getState(stateId);
-				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
+				return state.getBakedBlockState(block.getProperties(), x, y, z, layer, true, asItem);
 			}
 			
 			Block block = BlockRegistry.getBlock(blockId);
 			int stateId = getIdForName(block.getName(), block.getDataVersion());
 			BlockState state = getState(stateId);
 			
-			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true);
+			bakedState = state.getBakedBlockState(block.getProperties(), x, y, z, layer, true, asItem);
 			if(!state.needsConnectionInfo())
 				bakedBlockStates.set(blockId, bakedState);
 			needsConnectionInfo.set(blockId, state.needsConnectionInfo());

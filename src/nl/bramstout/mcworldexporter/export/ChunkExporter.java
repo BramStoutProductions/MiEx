@@ -370,7 +370,7 @@ public class ChunkExporter {
 						getLODBlockId(chunk, bx, by, bz, layer, lodSize, lodYSize, blockId);
 						if(blockId[0] < 0)
 							continue;
-						state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer);
+						state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer, false);
 						
 						if(state.isAir() || state.hasLiquid()) {
 							placeStone = false;
@@ -403,7 +403,7 @@ public class ChunkExporter {
 								}
 								if(placeStone)
 									state = BlockStateRegistry.getBakedStateForBlock(
-											stoneBlockId, blockId[1], blockId[2], blockId[3], layer);
+											stoneBlockId, blockId[1], blockId[2], blockId[3], layer, false);
 							}
 							if(!placeStone && state.isAir())
 								continue; // No need to do anything with air
@@ -804,7 +804,7 @@ public class ChunkExporter {
 						return;
 					}
 					allowed = true;
-					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ, layer);
+					state = BlockStateRegistry.getBakedStateForBlock(blockId, x + chunkX, y, z + chunkZ, layer, false);
 					if(state.isAir())
 						allowed = false;
 					blockPriority = state.getLodPriority();
@@ -924,7 +924,7 @@ public class ChunkExporter {
 							out[3] = 0;
 							return;
 						}
-						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3], layer);
+						state = BlockStateRegistry.getBakedStateForBlock(out[0], out[1], out[2], out[3], layer, false);
 						if(state.isTransparentOcclusion() || state.isLeavesOcclusion() || state.isAir()) {
 							return;
 						}
@@ -1112,7 +1112,7 @@ public class ChunkExporter {
 											int blockId2 = BlockRegistry.getIdForName(overlayTexture.getTintBlock(), null, 
 																					dataVersion, charBuffer);
 											BakedBlockState blockState = BlockStateRegistry.getBakedStateForBlock(blockId2, 
-																						ix, iy, iz, layer);
+																						ix, iy, iz, layer, false);
 											overlayTint = blockState.getTint();
 										}else {
 											overlayTint = tintLayers;
@@ -1316,7 +1316,7 @@ public class ChunkExporter {
 			}
 			
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer, false);
 
 			// Transparent blocks don't occlude non-transparent blocks or liquid blocks
 			if(state.isTransparentOcclusion() && (!currentState.isTransparentOcclusion() || currentState.hasLiquid()))
@@ -1378,7 +1378,7 @@ public class ChunkExporter {
 			}
 			
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
+					OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer, false);
 
 			// Transparent blocks don't occlude non-transparent blocks
 			if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
@@ -1481,7 +1481,7 @@ public class ChunkExporter {
 					}
 					
 					BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(OCCLUSION_BLOCK_ID[0], OCCLUSION_BLOCK_ID[1],
-							OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer);
+							OCCLUSION_BLOCK_ID[2], OCCLUSION_BLOCK_ID[3], layer, false);
 
 					// Transparent blocks don't occlude non-transparent blocks
 					if(state.isTransparentOcclusion() && !currentState.isTransparentOcclusion())
@@ -1678,7 +1678,7 @@ public class ChunkExporter {
 					yEnergy -= Config.removeCavesCaveBlockCost;
 					continue;
 				}
-				state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer);
+				state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, false);
 				if(sampleHeight(x, z) < y) {
 					// Surface reached, so we aren't in a cave
 					return false;
@@ -1717,7 +1717,7 @@ public class ChunkExporter {
 						if(blockId < 0) {
 							continue;
 						}
-						state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer);
+						state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, layer, false);
 						if(sampleHeight(x, z) < y) {
 							// Surface reached, so we aren't in a cave
 							return false;

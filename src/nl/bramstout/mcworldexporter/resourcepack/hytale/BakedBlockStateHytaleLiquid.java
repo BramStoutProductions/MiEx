@@ -65,16 +65,17 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		int isWaterLogged = 0;
 		int currentBlockId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, 0);
 		Block currentBlock = BlockRegistry.getBlock(currentBlockId);
-		if(!currentBlock.isLiquid()) {
+		if(currentBlock.getId() != 0) {
+			// Non air block
 			isWaterLogged = 1;
 		}
 		int blockBelow = 0;
 		BakedBlockState blockBelowState = BlockStateRegistry.getBakedStateForBlock(
 											MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 0), 
-											x, y-1, z, 0);
+											x, y-1, z, 0, false);
 		BakedBlockState blockBelowFluidState = BlockStateRegistry.getBakedStateForBlock(
 				MCWorldExporter.getApp().getWorld().getBlockId(x, y - 1, z, 1), 
-				x, y-1, z, 1);
+				x, y-1, z, 1, false);
 		boolean blockBelowLiquid = blockBelowFluidState != null && blockBelowFluidState.hasLiquid();
 		if(blockBelowState == null || 
 				(!blockBelowLiquid && (blockBelowState.isTransparentOcclusion() ||
@@ -201,7 +202,7 @@ public class BakedBlockStateHytaleLiquid extends BakedBlockStateLiquid{
 		// a full liquid block. Which is the size of an entire block (a source block is less tall).
 		BakedBlockState blockAbove = BlockStateRegistry.getBakedStateForBlock(
 											MCWorldExporter.getApp().getWorld().getBlockId(x, y + 1, z, 1), 
-											x, y + 1, z, 1);
+											x, y + 1, z, 1, false);
 		if(blockAbove != null && blockAbove.hasLiquid()) {
 			return 9;
 		}

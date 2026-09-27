@@ -89,7 +89,7 @@ public abstract class ConnectLogic {
 		@Override
 		public boolean connects(ModelFace face, int x, int y, int z, int layer, int dx, int dy, int dz) {
 			int thisId = MCWorldExporter.getApp().getWorld().getBlockId(x, y, z, layer);
-			BakedBlockState thisState = BlockStateRegistry.getBakedStateForBlock(thisId, x, y, z, layer);
+			BakedBlockState thisState = BlockStateRegistry.getBakedStateForBlock(thisId, x, y, z, layer, false);
 			String thisTex = null;
 			List<Model> models = new ArrayList<Model>();
 			thisState.getModels(x, y, z, models);
@@ -109,7 +109,7 @@ public abstract class ConnectLogic {
 			LayeredBlock otherBlocks = new LayeredBlock();
 			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
 			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); layer2++) {
-				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
+				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2, false);
 				String otherTex = null;
 				models.clear();
 				otherState.getModels(x + dx, y + dy, z + dz, models);
@@ -223,7 +223,7 @@ public abstract class ConnectLogic {
 			LayeredBlock otherBlocks = new LayeredBlock();
 			MCWorldExporter.getApp().getWorld().getBlockId(x + dx, y + dy, z + dz, otherBlocks);
 			for(int layer2 = 0; layer2 < otherBlocks.getLayerCount(); ++layer2) {
-				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2);
+				BakedBlockState otherState = BlockStateRegistry.getBakedStateForBlock(otherBlocks.getBlock(layer2), x + dx, y + dy, z + dz, layer2, false);
 				String otherTex = null;
 				List<Model> models = new ArrayList<Model>();
 				otherState.getModels(x + dx, y + dy, z + dz, models);

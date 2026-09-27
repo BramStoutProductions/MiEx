@@ -16,10 +16,20 @@ public class ItemHandlerHytale extends ItemHandler{
 
 	private String modelId;
 	private String texture;
+	private String parentId;
 	
 	public ItemHandlerHytale(JsonObject data) {
 		modelId = "";
 		texture = "";
+		
+		parentId = null;
+
+		// Items can inherit their model and texture from a parent item.
+		if(data.has("Parent") && data.get("Parent").isJsonPrimitive()) {
+			parentId = data.get("Parent").getAsString();
+			if(parentId.indexOf(':') == -1)
+				parentId = "hytale:" + parentId;
+		}
 		
 		if(data.has("Model"))
 			modelId = data.get("Model").getAsString();
@@ -39,6 +49,29 @@ public class ItemHandlerHytale extends ItemHandler{
 	
 	@Override
 	public Model getModel(String name, NbtTagCompound data, String displayContext) {
+		return getModel(name, data, displayContext, 0);
+	}
+
+	private Model getModel(String name, NbtTagCompound data, String displayContext, int depth) {
+		if(this.modelId.isEmpty()) {
+			// No model defined on this item, so try the parent item.
+			if(this.parentId != null && depth < 16) {
+				ItemHandler parentHandler = ResourcePacks.getItemHandler(this.parentId, data);
+				if(parentHandler instanceof ItemHandlerHytale && parentHandler != this) {
+					ItemHandlerHytale parent = (ItemHandlerHytale) parentHandler;
+					if(!parent.modelId.isEmpty() && !this.texture.isEmpty()) {
+						// Parent's model, but with our own texture.
+						ItemHandlerHytale merged = new ItemHandlerHytale(new JsonObject());
+						merged.modelId = parent.modelId;
+						merged.texture = this.texture;
+						return merged.getModel(name, data, displayContext, depth + 1);
+					}
+					return parent.getModel(name, data, displayContext, depth + 1);
+				}
+			}
+			// Nothing to export, rather than looking up a model with an empty name.
+			return null;
+		}
 		int modelId = ModelRegistry.getIdForName(this.modelId, false);
 		Model model = ModelRegistry.getModel(modelId);
 		if(model == null)

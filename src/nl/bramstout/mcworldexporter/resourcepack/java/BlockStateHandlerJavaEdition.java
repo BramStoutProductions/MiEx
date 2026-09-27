@@ -84,12 +84,12 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 	}
 	
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
-		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state, boolean asItem) {
+		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, asItem, null, 0f);
 	}
 	
 	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state, boolean asItem,
 			BlockAnimationHandler animationHandler, float frame) {		
 		String animation = null;
 		List<List<Model>> models = new ArrayList<List<Model>>();

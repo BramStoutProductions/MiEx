@@ -113,12 +113,12 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 	}
 
 	@Override
-	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state) {
-		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, null, 0f);
+	public BakedBlockState getBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state, boolean asItem) {
+		return getAnimatedBakedBlockState(properties, x, y, z, layer, state, asItem, null, 0f);
 	}
 	
 	@Override
-	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state,
+	public BakedBlockState getAnimatedBakedBlockState(NbtTagCompound properties, int x, int y, int z, int layer, BlockState state, boolean asItem,
 			BlockAnimationHandler animationHandler, float frame) {
 		String variantName = "";
 		NbtTag variantProp = properties.get("Definitions");
@@ -144,7 +144,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 					state.isSeparateMeshForBlock(), null, state.needsConnectionInfo(), state.hasLocators(), null,
 					null);
 		}
-		return variant.getBakedBlockState(properties, x, y, z, state, animationHandler, frame);
+		return variant.getBakedBlockState(properties, x, y, z, state, asItem, animationHandler, frame);
 	}
 
 	@Override

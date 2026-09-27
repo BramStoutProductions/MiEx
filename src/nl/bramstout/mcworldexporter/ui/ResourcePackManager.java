@@ -42,6 +42,7 @@ import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.metal.MetalIconFactory;
 
@@ -164,7 +165,13 @@ public class ResourcePackManager extends JPanel {
 					@Override
 					public void run() {
 						ResourcePacks.setActiveResourcePackUUIDs(resourcePackSelector.getActiveResourcePacks());
-						repaint();
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								syncWithResourcePacks();
+								repaint();
+							}
+						});
 					}
 				
 				});

@@ -371,7 +371,7 @@ public class AmbientOcclusion {
 						if(blockId[0] <= 0)
 							blocks[z*9+y*3+x][layer] = null;
 						else {
-							blocks[z*9+y*3+x][layer] = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer);
+							blocks[z*9+y*3+x][layer] = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer, false);
 							if(blocks[z*9+y*3+x][layer].isTransparentOcclusion())
 								blocks[z*9+y*3+x][layer] = null;
 						}

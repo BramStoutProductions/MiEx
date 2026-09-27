@@ -46,12 +46,14 @@ public class CommandGetWorlds extends Command{
 		
 		JsonArray array = new JsonArray();
 		for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-			for(MinecraftSave save : launcher.getSaves()) {
-				JsonObject saveObj = new JsonObject();
-				saveObj.addProperty("name", save.getLabel());
-				saveObj.addProperty("path", save.getWorldFolder().getPath());
-				saveObj.addProperty("launcher", launcher.getName());
-				array.add(saveObj);
+			if(launcher.hasSaves()) {
+				for(MinecraftSave save : launcher.getSaves()) {
+					JsonObject saveObj = new JsonObject();
+					saveObj.addProperty("name", save.getLabel());
+					saveObj.addProperty("path", save.getWorldFolder().getPath());
+					saveObj.addProperty("launcher", launcher.getName());
+					array.add(saveObj);
+				}
 			}
 		}
 		res.add("worlds", array);

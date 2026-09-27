@@ -216,7 +216,7 @@ public abstract class BuiltInGenerator {
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
-			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0, false);
 			
 			List<Color> tints = null;
 			if(state.getTint() != null) {
@@ -528,7 +528,7 @@ public abstract class BuiltInGenerator {
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			int blockId = BlockRegistry.getIdForName(blockName, properties, Integer.MAX_VALUE, charBuffer);
-			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0);
+			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, x, y, z, 0, false);
 			
 			List<Model> models = new ArrayList<Model>();
 			state.getModels(x, y, z, models);

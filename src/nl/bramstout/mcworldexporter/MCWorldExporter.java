@@ -415,6 +415,7 @@ public class MCWorldExporter {
 			this.exportBounds.add(bound.copy());
 		}
 		setActiveExportBoundsIndex(activeExportBoundsIndex);
+		validateExportBounds();
 	}
 	
 	public void resetExportBounds() {
@@ -447,6 +448,20 @@ public class MCWorldExporter {
 			activeExportBoundsIndex = 0;
 		this.activeExportBoundsIndex = activeExportBoundsIndex;
 		this.getUI().update();
+	}
+	
+	public void validateExportBounds() {
+		for(int i = 0; i < this.exportBounds.size(); ++i) {
+			ExportBounds bounds = this.exportBounds.get(i);
+			for(int j = 0; j < i; ++j) {
+				ExportBounds bounds2 = this.exportBounds.get(j);
+				if(bounds.getSafeName().equals(bounds2.getSafeName()) || bounds.getName().equals(bounds2.getName())) {
+					// Duplicate name, so rename it.
+					bounds.setName(bounds.getName() + Integer.toString(i));
+					break;
+				}
+			}
+		}
 	}
 	
 	public void setActiveExportBounds(String name) {
@@ -682,11 +697,13 @@ public class MCWorldExporter {
 					if(!(new File(forceOpenWorld).exists())) {
 						boolean foundFile = false;
 						for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-							for(MinecraftSave save : launcher.getSaves()) {
-								if(save.getLabel().equals(forceOpenWorld)) {
-									forceOpenWorld = save.getWorldFolder().getPath();
-									foundFile = true;
-									break;
+							if(launcher.hasSaves()) {
+								for(MinecraftSave save : launcher.getSaves()) {
+									if(save.getLabel().equals(forceOpenWorld)) {
+										forceOpenWorld = save.getWorldFolder().getPath();
+										foundFile = true;
+										break;
+									}
 								}
 							}
 							if(foundFile)

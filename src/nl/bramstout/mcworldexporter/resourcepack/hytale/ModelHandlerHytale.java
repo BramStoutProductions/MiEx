@@ -468,7 +468,7 @@ public class ModelHandlerHytale extends ModelHandler{
 					maxV = minV + 1;
 
 				modelFace.uvs0U = minU;
-				modelFace.uvs1V = minV;
+				modelFace.uvs0V = minV;
 
 				modelFace.uvs1U = maxU;
 				modelFace.uvs1V = minV;

@@ -885,11 +885,11 @@ public class ExportBounds {
 						} else {
 							field.set(this, entry.getValue().getAsString());
 						}
-					}else if(Float.class.isAssignableFrom(field.getType())) {
+					}else if(Float.class.isAssignableFrom(field.getType()) || float.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsFloat());
-					}else if(Integer.class.isAssignableFrom(field.getType())) {
+					}else if(Integer.class.isAssignableFrom(field.getType()) || int.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsInt());
-					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+					}else if(Boolean.class.isAssignableFrom(field.getType()) || boolean.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsBoolean());
 					}
 				}

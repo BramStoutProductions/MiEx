@@ -99,6 +99,8 @@ public class Exporter {
 		}
 		System.out.println("Exporting world to " + usdFile.getPath());
 		
+		MCWorldExporter.getApp().validateExportBounds();
+		
 		MCWorldExporter.getApp().getUI().getEntityDialog().load();
 		
 		String extensionTokens[] = usdFile.getName().split("\\.");
@@ -234,7 +236,7 @@ public class Exporter {
 			dos.writeInt(blockId.getY());
 			dos.writeInt(blockId.getZ());
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId.getBlockId(), 
-											blockId.getX(), blockId.getY(), blockId.getZ(), blockId.getLayer());
+											blockId.getX(), blockId.getY(), blockId.getZ(), blockId.getLayer(), false);
 			dos.writeUTF(state.getName());
 			Map<String, Mesh> meshes = new HashMap<String, Mesh>();
 			models.clear();

@@ -105,7 +105,9 @@ public class ResourcePackInstallerDialog extends JDialog{
 		JComboBox<String> availableLauncherFilter = new JComboBox<String>();
 		availableLauncherFilter.addItem("All Launchers");
 		for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-			availableLauncherFilter.addItem(launcher.getName());
+			if(launcher.hasResourcePacks()) {
+				availableLauncherFilter.addItem(launcher.getName());
+			}
 		}
 		availableLauncherFilter.setMinimumSize(new Dimension(0, 18));
 		availableLauncherFilter.setPreferredSize(new Dimension(160, 18));
@@ -648,9 +650,11 @@ public class ResourcePackInstallerDialog extends JDialog{
 			collector.unpause();
 			asyncGroup = new AsyncGroup();
 			for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-				asyncGroup.runTask(()->{					
-					launcher.getAllResourcePackSources(collector, asyncGroup);
-				});
+				if(launcher.hasResourcePacks()) {
+					asyncGroup.runTask(()->{					
+						launcher.getAllResourcePackSources(collector, asyncGroup);
+					});
+				}
 			}
 		}else {
 			collector.pause();

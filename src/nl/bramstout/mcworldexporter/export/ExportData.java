@@ -399,7 +399,7 @@ public class ExportData {
 										bounds.setName(entry2.getKey());
 										fieldData.add(bounds);
 									}
-									bounds.fromJson(entry.getValue().getAsJsonObject());
+									bounds.fromJson(entry2.getValue().getAsJsonObject());
 								}
 							}
 						}
@@ -422,11 +422,11 @@ public class ExportData {
 				}else{
 					if(String.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsString());
-					}else if(Float.class.isAssignableFrom(field.getType())) {
+					}else if(Float.class.isAssignableFrom(field.getType()) || float.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsFloat());
-					}else if(Integer.class.isAssignableFrom(field.getType())) {
+					}else if(Integer.class.isAssignableFrom(field.getType()) || int.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsInt());
-					}else if(Boolean.class.isAssignableFrom(field.getType())) {
+					}else if(Boolean.class.isAssignableFrom(field.getType()) || boolean.class.isAssignableFrom(field.getType())) {
 						field.set(this, entry.getValue().getAsBoolean());
 					}
 				}

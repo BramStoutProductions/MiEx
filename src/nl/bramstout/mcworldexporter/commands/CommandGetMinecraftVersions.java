@@ -46,13 +46,15 @@ public class CommandGetMinecraftVersions extends Command{
 		
 		JsonArray array = new JsonArray();
 		for(Launcher launcher : LauncherRegistry.getLaunchers()) {
-			for(MinecraftVersion version : launcher.getVersions()) {
-				JsonObject versionObj = new JsonObject();
-				versionObj.addProperty("name", version.getLabel());
-				versionObj.addProperty("path", version.getJarFile().getPath());
-				versionObj.addProperty("releaseDate", version.getReleaseTime().toInstant().toString());
-				versionObj.addProperty("launcher", launcher.getName());
-				array.add(versionObj);
+			if(launcher.hasVersions()) {
+				for(MinecraftVersion version : launcher.getVersions()) {
+					JsonObject versionObj = new JsonObject();
+					versionObj.addProperty("name", version.getLabel());
+					versionObj.addProperty("path", version.getJarFile().getPath());
+					versionObj.addProperty("releaseDate", version.getReleaseTime().toInstant().toString());
+					versionObj.addProperty("launcher", launcher.getName());
+					array.add(versionObj);
+				}
 			}
 		}
 		res.add("versions", array);
