@@ -100,7 +100,6 @@ public class LauncherOnlineMC extends Launcher{
 				}
 			}
 		}catch(Exception ex) {
-			ex.printStackTrace();
 		}
 		
 		return versions;
