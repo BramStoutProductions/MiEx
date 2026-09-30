@@ -455,7 +455,9 @@ public class EntityHandlerHytale extends EntityHandler{
 		model2.scale(modelScale, new Vector3f(0,0,0));
 		
 		model.addModel(model2, true);
-		model.transform(Matrix.rotateX(pitch).mult(Matrix.rotateZ(roll).mult(Matrix.rotateY(yaw))));
+		model.transform(Matrix.rotateY(yaw - 180f).mult(Matrix.rotateX(pitch).mult(
+		        Matrix.rotateZ(roll).mult(Matrix.rotateY(180f)))));
+		model.scale(0.5f, new Vector3f(0f, 0f, 0f));
 	}
 
 }

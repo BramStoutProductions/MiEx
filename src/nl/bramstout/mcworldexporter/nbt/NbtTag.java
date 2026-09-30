@@ -308,25 +308,25 @@ public abstract class NbtTag extends Poolable{
 			}
 			if(numWritten != children.length)
 				children = Arrays.copyOf(children, numWritten);
-			return NbtTagList.newInstance(name, children);
+			return NbtTagList.newNonPooledInstance(name, children);
 		}else if(value.isJsonObject()) {
 			JsonObject doc = value.getAsJsonObject();
-			NbtTagCompound tag = NbtTagCompound.newInstance(name);
+			NbtTagCompound tag = NbtTagCompound.newNonPooledInstance(name);
 			for(Entry<String, JsonElement> entry : doc.entrySet()) {
 				NbtTag childTag = fromJsonValue(entry.getKey(), entry.getValue());
 				if(childTag == null)
 					continue;
-				tag.addElement(tag);
+				tag.addElement(childTag);
 			}
 			return tag;
 		}else if(value.isJsonPrimitive()) {
 			JsonPrimitive valuePrim = value.getAsJsonPrimitive();
 			if(valuePrim.isBoolean()) {
-				return NbtTagByte.newInstance(name, value.getAsBoolean() ? (byte)1 : (byte)0);
+				return NbtTagByte.newNonPooledInstance(name, value.getAsBoolean() ? (byte)1 : (byte)0);
 			}else if(valuePrim.isNumber()) {
-				return NbtTagDouble.newInstance(name, value.getAsDouble());
+				return NbtTagDouble.newNonPooledInstance(name, value.getAsDouble());
 			}else if(valuePrim.isString()) {
-				return NbtTagString.newInstance(name, value.getAsString());
+				return NbtTagString.newNonPooledInstance(name, value.getAsString());
 			}
 		}
 		return null;

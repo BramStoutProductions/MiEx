@@ -52,6 +52,7 @@ import nl.bramstout.mcworldexporter.nbt.NbtTagList;
 import nl.bramstout.mcworldexporter.nbt.NbtTagString;
 import nl.bramstout.mcworldexporter.resourcepack.ItemHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 
 public class ItemHandlerJavaEdition extends ItemHandler{
@@ -1190,6 +1191,7 @@ public class ItemHandlerJavaEdition extends ItemHandler{
 				data2.addAllElements(properties);
 				data = data2;
 			}
+			properties = TranslationRegistry.DEFAULT_PROPERTIES_JAVA.addDefaultProperties(blockName, properties);
 			
 			Reference<char[]> charBuffer = new Reference<char[]>();
 			int blockId = BlockRegistry.getIdForName(blockName, data, Integer.MAX_VALUE, charBuffer);

@@ -47,6 +47,7 @@ import nl.bramstout.mcworldexporter.model.BlockStateRegistry;
 import nl.bramstout.mcworldexporter.model.Model;
 import nl.bramstout.mcworldexporter.nbt.NbtTag;
 import nl.bramstout.mcworldexporter.nbt.NbtTagCompound;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.LayeredBlock;
 
@@ -159,6 +160,7 @@ public class CommandGetBakedBlockState extends Command{
 				}else if(el.isJsonPrimitive()) {
 					blockName = el.getAsString();
 				}
+				properties = TranslationRegistry.DEFAULT_PROPERTIES_JAVA.addDefaultProperties(blockName, properties);
 				Reference<char[]> charBuffer = new Reference<char[]>();
 				int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
 				BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId, blockX, blockY, blockZ, layer, false);

@@ -687,9 +687,8 @@ public class BlockStateVariant {
 		int numPermutations = getNumPermutations();
 		
 		for(int permutation = 0; permutation < numPermutations; ++permutation) {
-			Matrix transform = getTransform(properties, x, y, z, permutation, asItem);
-			
 			if(this.drawType.equals("Cube") || this.drawType.equals("CubeWithModel")) {
+				Matrix transform = getTransform(properties, x, y, z, permutation, asItem, true);
 				Model model = createCubeModel(x, y, z, permutation);
 				if(transform != null)
 					model.transform(transform);
@@ -697,6 +696,7 @@ public class BlockStateVariant {
 				modelsCube.add(model);
 			}
 			if((this.drawType.equals("Model") || this.drawType.equals("CubeWithModel")) && customModelId != null) {
+				Matrix transform = getTransform(properties, x, y, z, permutation, asItem, false);
 				Model model = createCustomModel(x, y, z, permutation, animationHandler2, frame, asItem);
 				if(transform != null)
 					model.transform(transform);
@@ -952,7 +952,7 @@ public class BlockStateVariant {
 		return new Matrix();
 	}
 	
-	private Matrix getTransform(NbtTagCompound properties, int x, int y, int z, int permutation, boolean asItem) {
+	private Matrix getTransform(NbtTagCompound properties, int x, int y, int z, int permutation, boolean asItem, boolean isCube) {
 		int rotation = 0;
 		NbtTag rotTag = properties.get("rotation");
 		if(rotTag != null)
@@ -965,7 +965,7 @@ public class BlockStateVariant {
 			mat = rotMatrix;
 		}
 		
-		if(!asItem) {
+		if(!asItem && !isCube) {
 			if(this.randomRotation == RandomRotation.YawPitchRollStep1) {
 				float randX = Noise.get(x+1, y, z) * 360f;
 				float randY = Noise.get(x+2, y+2, z) * 360f;

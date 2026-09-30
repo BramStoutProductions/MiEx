@@ -172,7 +172,7 @@ public class ChunkExporter {
 				setupMaterialTemplate();
 			if(other.materialTemplate == null)
 				other.setupMaterialTemplate();
-			if(!materialTemplate.equals(other.materialTemplate))
+			if(materialTemplateHash != other.materialTemplateHash)
 				return false;
 			if((blockName == null || other.blockName == null) && blockName != other.blockName)
 				return false;

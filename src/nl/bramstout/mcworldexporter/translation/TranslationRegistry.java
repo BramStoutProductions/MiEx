@@ -41,6 +41,7 @@ public class TranslationRegistry {
 	
 	public static BiomeTranslation BIOME_JAVA = new BiomeTranslation("java");
 	public static BlockTranslation BLOCK_JAVA = new BlockTranslation("java");
+	public static DefaultBlockProperties DEFAULT_PROPERTIES_JAVA = new DefaultBlockProperties("java");
 	
 	public static BlockTranslation BLOCK_HYTALE = new BlockTranslation("hytale");
 	public static BiomeTranslation BIOME_HYTALE = new BiomeTranslation("hytale");
@@ -52,6 +53,7 @@ public class TranslationRegistry {
 		
 		BIOME_JAVA.load();
 		BLOCK_JAVA.load();
+		DEFAULT_PROPERTIES_JAVA.load();
 		
 		BLOCK_HYTALE.load();
 		BIOME_HYTALE.load();

@@ -89,6 +89,7 @@ import nl.bramstout.mcworldexporter.resourcepack.PaintingVariant;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePacks;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintValue;
 import nl.bramstout.mcworldexporter.text.TextMeshCreator;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 import nl.bramstout.mcworldexporter.world.BiomeRegistry;
 import nl.bramstout.mcworldexporter.world.BlockRegistry;
 import nl.bramstout.mcworldexporter.world.World;
@@ -207,6 +208,7 @@ public abstract class BuiltInGenerator {
 				if(propertiesTag instanceof NbtTagCompound)
 					properties = (NbtTagCompound) propertiesTag.copy();
 			}
+			properties = TranslationRegistry.DEFAULT_PROPERTIES_JAVA.addDefaultProperties(blockName, properties);
 			if(arguments.containsKey("x"))
 				x = (int) arguments.get("x").eval(context).asInt();
 			if(arguments.containsKey("y"))

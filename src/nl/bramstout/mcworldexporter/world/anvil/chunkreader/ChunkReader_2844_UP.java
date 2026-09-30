@@ -134,6 +134,7 @@ public class ChunkReader_2844_UP extends ChunkReader{
 					}else {
 						throw new RuntimeException("Unsupported block data");
 					}
+					blockProperties = TranslationRegistry.DEFAULT_PROPERTIES_JAVA.addDefaultProperties(blockName, blockProperties);
 					if(blockName.equals("cave_air") || blockName.equals("minecraft:cave_air") || 
 							blockName.equals("void_air") || blockName.equals("minecraft:void_air"))
 						blockName = "minecraft:air";
