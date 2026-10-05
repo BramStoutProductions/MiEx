@@ -164,43 +164,17 @@ public class ResourcePackDefaults {
 				return;
 			}
 			
-			File versionJarFile = new File("");
+			File versionJarFile = null;
 			if(versionJar.getProtocol().equals("file"))
 				versionJarFile = new File(versionJar.toURI());
-			if(!versionJarFile.exists()) {
+			if(versionJarFile == null || !versionJarFile.exists()) {
 				// Doesn't exist. We need to download it first.
 				versionJarFile = File.createTempFile("mc_jar_file", ".jar");
 				System.out.println("Downloading version jar file " + versionJar.toString() + " -> " + versionJarFile.toString());
 				Files.copy(versionJar.openStream(), versionJarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 			
-			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.3f);
-			MCWorldExporter.getApp().getUI().getProgressBar().setText("Updating base resource pack");
-			
-			int worldVersion = getWorldVersionFromJar(versionJarFile);
-			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.35f);
-			
-			System.out.println("Extracting base_resource_pack from " + versionJarFile.toString());
-			extractResourcePackFromJar(versionJarFile, new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
-			
-			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.45f);
-			MCWorldExporter.getApp().getUI().getProgressBar().setText("Patching base resource pack");
-			Patcher.load();
-			Patcher.patch();
-			
-			MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.7f);
-			MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
-			ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack"), false);
-		    
-		    // Write out packInfo file
-		    JsonWriter writer = new JsonWriter(new FileWriter(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json")));
-		    writer.beginObject();
-		    writer.name("version");
-		    writer.value(selectedVersion);
-		    writer.name("worldVersion");
-		    writer.value(worldVersion);
-		    writer.endObject();
-		    writer.close();
+			updateBaseResourcePack(versionJarFile, selectedVersion);
 		    
 		    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
 		    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
@@ -209,8 +183,45 @@ public class ResourcePackDefaults {
 		    Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "base_resource_pack updated successfully");
 		}catch(Exception ex) {
 			ex.printStackTrace();
-			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack", "Error", Popups.ERROR_MESSAGE);
+			Popups.showMessageDialog(MCWorldExporter.getApp().getUI(), "Could not update base_resource_pack. Try manually updating it via the Tools button.", "Error", Popups.ERROR_MESSAGE);
 		}
+	}
+	
+	private static boolean updateBaseResourcePack(File versionJarFile, String selectedVersion) throws IOException{
+		if(!versionJarFile.exists())
+			return false;
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.3f);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Updating base resource pack");
+		
+		System.out.println("Minecraft Version " + selectedVersion);
+		int worldVersion = getWorldVersionFromJar(versionJarFile);
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.35f);
+		
+		System.out.println("Extracting base_resource_pack from " + versionJarFile.toString());
+		extractResourcePackFromJar(versionJarFile, new File(FileUtil.getResourcePackDir(), "base_resource_pack"));
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.45f);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Patching base resource pack");
+		Patcher.load();
+		Patcher.patch();
+		
+		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.7f);
+		MCWorldExporter.getApp().getUI().getProgressBar().setText("Infering miex_config.json");
+		ResourcePackDefaults.inferMiExConfigFromResourcePack(new File(FileUtil.getResourcePackDir(), "base_resource_pack"), false);
+	    
+	    // Write out packInfo file
+	    JsonWriter writer = new JsonWriter(new FileWriter(new File(FileUtil.getResourcePackDir() + "base_resource_pack/packInfo.json")));
+	    writer.beginObject();
+	    writer.name("version");
+	    writer.value(selectedVersion);
+	    writer.name("worldVersion");
+	    writer.value(worldVersion);
+	    writer.endObject();
+	    writer.close();
+	    
+	    MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.0f);
+	    MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+	    return true;
 	}
 	
 	public static void updateBaseResourcePackHytale(boolean updateToNewest) {

@@ -31,6 +31,9 @@
 
 package nl.bramstout.mcworldexporter.resourcepack.java;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
@@ -126,34 +129,36 @@ public class BlockStateMultiPart extends BlockStatePart{
 	}
 
 	@Override
-	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer) {
+	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer, Map<String, String> defaults) {
 		if(check == null)
 			return true;
 		if(check.has("OR")) {
 			for(JsonElement checkObj : check.get("OR").getAsJsonArray().asList()) {
-				if(testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer))
+				if(testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer, defaults))
 					return true;
 			}
 			return false;
 		} else if(check.has("AND")) {
 			for(JsonElement checkObj : check.get("AND").getAsJsonArray().asList()) {
-				if(!testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer))
+				if(!testProperties(properties, checkObj.getAsJsonObject(), x, y, z, layer, defaults))
 					return false;
 			}
 			return true;
 		} else {
-			return testProperties(properties, check, x, y, z, layer);
+			return testProperties(properties, check, x, y, z, layer, defaults);
 		}
 	}
 	
-	private boolean testProperties(NbtTagCompound properties, JsonObject checkObject, int x, int y, int z, int layer) {
-		int numItems = properties.getSize();
-		for(int i = 0; i < numItems; ++i) {
-			NbtTag tag = properties.get(i);
-			if(!checkObject.has(tag.getName()))
-				continue;
-			String[] values = checkObject.get(tag.getName()).getAsString().split("\\|");
-			String propValue = tag.asString();
+	private boolean testProperties(NbtTagCompound properties, JsonObject checkObject, int x, int y, int z, int layer, Map<String, String> defaults) {
+		for(Entry<String, JsonElement> check : checkObject.entrySet()) {
+			NbtTag tag = properties.get(check.getKey());
+			
+			String[] values = check.getValue().getAsString().split("\\|");
+			String propValue = null;
+			if(tag != null)
+				propValue = tag.asString();
+			if(propValue == null)
+				propValue = defaults.getOrDefault(check.getKey(), "");
 			
 			if(propValue != null) {
 				boolean found = false;
@@ -184,6 +189,37 @@ public class BlockStateMultiPart extends BlockStatePart{
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public void properties(Map<String, List<String>> properties) {
+		if(check == null)
+			return;
+		for(Entry<String, JsonElement> el : check.entrySet()) {
+			if(el.getValue().isJsonPrimitive()) {
+				List<String> properties2 = properties.getOrDefault(el.getKey(), null);
+				if(properties2 == null) {
+					properties2 = new ArrayList<String>();
+					properties.put(el.getKey(), properties2);
+				}
+				if(!properties2.contains(el.getValue().getAsString()))
+					properties2.add(el.getValue().getAsString());
+			} else if(el.getValue().isJsonArray()) {
+				for(JsonElement el2 : el.getValue().getAsJsonArray().asList()) {
+					if(el2.isJsonObject()) {
+						for(Entry<String, JsonElement> el3 : el2.getAsJsonObject().entrySet()) {
+							List<String> properties2 = properties.getOrDefault(el3.getKey(), null);
+							if(properties2 == null) {
+								properties2 = new ArrayList<String>();
+								properties.put(el3.getKey(), properties2);
+							}
+							if(!properties2.contains(el3.getValue().getAsString()))
+								properties2.add(el3.getValue().getAsString());
+						}
+					}
+				}
+			}
+		}
 	}
 
 }

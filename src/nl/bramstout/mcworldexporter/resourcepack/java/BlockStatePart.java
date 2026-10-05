@@ -33,6 +33,7 @@ package nl.bramstout.mcworldexporter.resourcepack.java;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.model.BlockState.DefaultTexture;
@@ -55,8 +56,10 @@ public abstract class BlockStatePart {
 	public List<Model> getModels(){
 		return models;
 	}
+	
+	public abstract void properties(Map<String, List<String>> properties);
 
-	public abstract boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer);
+	public abstract boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer, Map<String, String> defaults);
 	
 	public abstract boolean needsConnectionInfo();
 	

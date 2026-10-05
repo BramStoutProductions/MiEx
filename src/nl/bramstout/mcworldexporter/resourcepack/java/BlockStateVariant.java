@@ -118,33 +118,38 @@ public class BlockStateVariant extends BlockStatePart{
 	}
 
 	@Override
-	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer) {
+	public boolean usePart(NbtTagCompound properties, int x, int y, int z, int layer, Map<String, String> defaults) {
 		if(checks.isEmpty())
 			return true;
 		
 		Map<String, String> check = null;
 		for(int i = 0; i < checks.size(); ++i) {
 			check = checks.get(i);
-			boolean res = doCheck(properties, check, x, y, z, layer);
+			boolean res = doCheck(properties, check, x, y, z, layer, defaults);
 			if(res)
 				return true;
 		}
 		return false;
 	}
 	
-	private boolean doCheck(NbtTagCompound properties, Map<String, String> check, int x, int y, int z, int layer) {
-		int numItems = properties.getSize();
-		for(int i = 0; i < numItems; ++i) {
-			NbtTag tag = properties.get(i);
-			String value = check.get(tag.getName());
-			if(value != null) {
-				String propValue = tag.asString();
-				if(propValue != null) {
-					if(!value.equals(propValue)) {
-						if(!((value.equals("false") && propValue.equals("0")) || (value.equals("true") && propValue.equals("1"))))
-							return false;
-					}
-				}
+	private boolean doCheck(NbtTagCompound properties, Map<String, String> check, int x, int y, int z, int layer, Map<String, String> defaults) {
+		for(Entry<String, String> check2 : check.entrySet()) {
+			NbtTag tag = properties.get(check2.getKey());
+			String value = null;
+			if(tag != null) {
+				value = tag.asString();
+			}
+			if(value == null){
+				value = defaults.getOrDefault(check2.getKey(), "");
+			}
+			if(!value.equals(check2.getValue())) {
+				if(!(
+						(value.equals("false") && check2.getValue().equals("0")) || 
+						(value.equals("0") && check2.getValue().equals("false")) || 
+						(value.equals("true") && check2.getValue().equals("1")) || 
+						(value.equals("1") && check2.getValue().equals("true"))
+					))
+					return false;
 			}
 		}
 		// Check for connection info
@@ -160,6 +165,22 @@ public class BlockStateVariant extends BlockStatePart{
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public void properties(Map<String, List<String>> properties) {
+		for(Map<String, String> check : checks) {
+			for(Entry<String, String> check2 : check.entrySet()) {
+				List<String> properties2 = properties.getOrDefault(check2.getKey(), null);
+				if(properties2 == null) {
+					properties2 = new ArrayList<String>();
+					properties.put(check2.getKey(), properties2);
+				}
+				if(!properties2.contains(check2.getValue())) {
+					properties2.add(check2.getValue());
+				}
+			}
+		}
 	}
 
 }

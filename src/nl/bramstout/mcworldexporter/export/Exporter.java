@@ -235,6 +235,7 @@ public class Exporter {
 			dos.writeInt(blockId.getX());
 			dos.writeInt(blockId.getY());
 			dos.writeInt(blockId.getZ());
+			dos.writeInt(blockId.getLayer());
 			BakedBlockState state = BlockStateRegistry.getBakedStateForBlock(blockId.getBlockId(), 
 											blockId.getX(), blockId.getY(), blockId.getZ(), blockId.getLayer(), false);
 			dos.writeUTF(state.getName());

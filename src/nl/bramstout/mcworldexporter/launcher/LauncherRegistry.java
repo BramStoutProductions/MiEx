@@ -48,7 +48,7 @@ public class LauncherRegistry {
 		launchers.add(new LauncherOnlineMC());
 		
 		File javaEditionRootDir = new File(FileUtil.getMinecraftRootDir());
-		if(javaEditionRootDir.exists() && javaEditionRootDir.isDirectory()) {
+		if(!FileUtil.getMinecraftRootDir().isEmpty() && javaEditionRootDir.exists() && javaEditionRootDir.isDirectory()) {
 			System.out.println("Found Minecraft Java Edition launcher at " + javaEditionRootDir.getPath());
 			launchers.add(new LauncherJavaEdition(javaEditionRootDir));
 		}
@@ -62,25 +62,25 @@ public class LauncherRegistry {
 		}
 		
 		File multiMCRootDir = new File(FileUtil.getMultiMCRootDir());
-		if(multiMCRootDir.exists() && multiMCRootDir.isDirectory()) {
+		if(!FileUtil.getMultiMCRootDir().isEmpty() && multiMCRootDir.exists() && multiMCRootDir.isDirectory()) {
 			System.out.println("Found Multi MC launcher at " + multiMCRootDir.getPath());
 			launchers.add(new LauncherMultiMC(multiMCRootDir));
 		}
 		
 		File technicRootDir = new File(FileUtil.getTechnicRootDir());
-		if(technicRootDir.exists() && technicRootDir.isDirectory()) {
+		if(!FileUtil.getTechnicRootDir().isEmpty() && technicRootDir.exists() && technicRootDir.isDirectory()) {
 			System.out.println("Found Technic launcher at " + technicRootDir.getPath());
 			launchers.add(new LauncherTechnic(technicRootDir));
 		}
 		
 		File modrinthRootDir = new File(FileUtil.getModrinthRootDir());
-		if(modrinthRootDir.exists() && modrinthRootDir.isDirectory()) {
+		if(!FileUtil.getModrinthRootDir().isEmpty() && modrinthRootDir.exists() && modrinthRootDir.isDirectory()) {
 			System.out.println("Found Modrinth launcher at " + modrinthRootDir.getPath());
 			launchers.add(new LauncherModrinth(modrinthRootDir));
 		}
 		
 		File hytaleRootDir = new File(FileUtil.getHytaleRootDir());
-		if(hytaleRootDir.exists() && hytaleRootDir.isDirectory()) {
+		if(!FileUtil.getHytaleRootDir().isEmpty() && hytaleRootDir.exists() && hytaleRootDir.isDirectory()) {
 			System.out.println("Found Hytale launcher at " + hytaleRootDir.getPath());
 			launchers.add(new LauncherHytale(hytaleRootDir));
 		}

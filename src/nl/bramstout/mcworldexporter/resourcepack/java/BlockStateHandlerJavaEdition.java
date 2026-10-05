@@ -32,7 +32,9 @@
 package nl.bramstout.mcworldexporter.resourcepack.java;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gson.JsonElement;
@@ -49,15 +51,18 @@ import nl.bramstout.mcworldexporter.resourcepack.BlockStateHandler;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.Tint;
 import nl.bramstout.mcworldexporter.resourcepack.Tints.TintLayers;
 import nl.bramstout.mcworldexporter.resourcepack.bedrock.BlockAnimationHandlerBedrock;
+import nl.bramstout.mcworldexporter.translation.TranslationRegistry;
 
 public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 
 	private List<BlockStatePart> parts;
 	private String animation;
+	private Map<String, String> defaultProperties;
 	
 	public BlockStateHandlerJavaEdition(String name, JsonObject data) {
 		this.parts = new ArrayList<BlockStatePart>();
 		this.animation = null;
+		this.defaultProperties = new HashMap<String, String>();
 		
 		if(data == null)
 			return;
@@ -81,6 +86,21 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 			for(BlockStatePart part : parts)
 				part.noOcclusion();
 		}
+		
+		Map<String, List<String>> properties = new HashMap<String, List<String>>();
+		for(BlockStatePart part : parts) {
+			part.properties(properties);
+		}
+		for(Entry<String, List<String>> entry : properties.entrySet()) {
+			if(entry.getValue().contains("false") || entry.getValue().contains("true")) {
+				if(!entry.getValue().contains("false"))
+					entry.getValue().add("false");
+				if(!entry.getValue().contains("true"))
+					entry.getValue().add("true");
+			}
+			defaultProperties.put(entry.getKey(), 
+					TranslationRegistry.DEFAULT_PROPERTIES_JAVA.getGeneralDefaultProperty(entry.getKey(), entry.getValue()));
+		}
 	}
 	
 	@Override
@@ -96,7 +116,7 @@ public class BlockStateHandlerJavaEdition extends BlockStateHandler{
 		BlockStatePart part = null;
 		for(int i = 0; i < parts.size(); ++i) {
 			part = parts.get(i);
-			if(part.usePart(properties, x, y, z, layer)) {
+			if(part.usePart(properties, x, y, z, layer, defaultProperties)) {
 				if(animationHandler != null && state.getExtraAnimationHandler() != null) {
 					// Models get animated, which are changed in-place,
 					// so make sure to make a copy of the models.

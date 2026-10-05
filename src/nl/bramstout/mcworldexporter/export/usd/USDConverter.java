@@ -649,9 +649,10 @@ public class USDConverter extends Converter{
 				int baseMeshX = dis.readInt();
 				int baseMeshY = dis.readInt();
 				int baseMeshZ = dis.readInt();
+				int baseMeshLayer = dis.readInt();
 				String blockName = dis.readUTF();
 				String primName = ("_class_" + Util.makeSafeName(blockName) + baseMeshId + "_" + 
-												baseMeshX + "_" + baseMeshY + "_" + baseMeshZ).replace('-', 'N');
+												baseMeshX + "_" + baseMeshY + "_" + baseMeshZ + "_" + baseMeshLayer).replace('-', 'N');
 				
 				if(Config.usePointInstancersForIndividualBlocks)
 					writer.beginDef("Xform", primName);
@@ -673,7 +674,7 @@ public class USDConverter extends Converter{
 					writer.endClass();
 				
 				
-				individualBlocksRegistry.put(new IndividualBlockId(baseMeshId, baseMeshX, baseMeshY, baseMeshZ, 0), 
+				individualBlocksRegistry.put(new IndividualBlockId(baseMeshId, baseMeshX, baseMeshY, baseMeshZ, baseMeshLayer), 
 												new IndividualBlockInfo(primName));
 			}
 			writer.endChildren();
