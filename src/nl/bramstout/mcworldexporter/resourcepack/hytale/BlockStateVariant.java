@@ -234,7 +234,7 @@ public class BlockStateVariant {
 	
 	public BlockStateVariant(String name, JsonObject data) {
 		this.name = name;
-		this.drawType = "";
+		this.drawType = "Cube";
 		this.opacity = "Solid";
 		this.cubeTextures = new ArrayList<CubeTextures>();
 		this.cubeTexturesTotalWeight = 0f;

@@ -367,7 +367,7 @@ public class ChunkExporter {
 					boolean calculatedBiome = false;
 					
 					for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {	
-						getLODBlockId(chunk, bx, by, bz, layer, lodSize, lodYSize, blockId);
+						getLODBlockId(chunk, bx, by, bz, layer, lodSize, lodYSize, lod_blockIds, this, blockId);
 						if(blockId[0] < 0)
 							continue;
 						state = BlockStateRegistry.getBakedStateForBlock(blockId[0], blockId[1], blockId[2], blockId[3], layer, false);
@@ -739,30 +739,42 @@ public class ChunkExporter {
 		return Integer.highestOneBit(lodYSize);
 	}
 	
-	private int lodSampleBlockId(Chunk chunk, int cx, int cy, int cz,  int layer) {
+	private static int lodSampleBlockId(Chunk chunk, int cx, int cy, int cz,  int layer, ChunkExporter exporter) {
 		if(cx < 0 || cx >= 16 || cz < 0 || cz >= 16)
-			return lodSampleBlockId(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16, layer);
-		if(bounds.isExcludeRegionsAsAir() && bounds.isInExcludeRegion(chunk.getChunkX() * 16 + cx, cy, chunk.getChunkZ() * 16 + cz))
+			return lodSampleBlockId(cx + chunk.getChunkX() * 16, cy, cz + chunk.getChunkZ() * 16, layer, exporter);
+		if(exporter != null && exporter.bounds.isExcludeRegionsAsAir() && 
+				exporter.bounds.isInExcludeRegion(chunk.getChunkX() * 16 + cx, cy, chunk.getChunkZ() * 16 + cz))
 			return 0;
 		return chunk.getBlockIdLocal(cx, cy, cz, layer);
 	}
 	
-	private int lodSampleBlockId(int wx, int wy, int wz, int layer) {
-		Chunk chunk = getPrefetchedChunkForBlockPos(wx, wz);
+	private static int lodSampleBlockId(int wx, int wy, int wz, int layer, ChunkExporter exporter) {
+		Chunk chunk = null;
+		if(exporter != null) {
+			chunk = exporter.getPrefetchedChunkForBlockPos(wx, wz);
+		} else {
+			try {
+				chunk = MCWorldExporter.getApp().getWorld().getChunk(wx >> 4, wz >> 4);
+			}catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 		if (chunk != null)
-			return lodSampleBlockId(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, layer);
+			return lodSampleBlockId(chunk, wx - chunk.getChunkX() * 16, wy, wz - chunk.getChunkZ() * 16, layer, exporter);
 		return -1;
 	}
 	
+	public static final int lodBlockIdsSize = 16*16*16*5;
 	/** 
 	 * Stores the blockId and then the number of blocks for that Id.
 	 * and then the x, y, z coordinate of the block.
 	 */
-	private int lod_blockIds[] = new int[16*16*16*5];
+	public int lod_blockIds[] = new int[lodBlockIdsSize];
 	
-	public void getLODBlockId(Chunk chunk, int cx, int cy, int cz, int layer, int lodSize, int lodYSize, int[] out) {
+	public static void getLODBlockId(Chunk chunk, int cx, int cy, int cz, int layer, int lodSize, int lodYSize, 
+									int lod_blockIds[], ChunkExporter exporter, int[] out) {
 		if(lodSize <= 1) {
-			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer);
+			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer, exporter);
 			out[1] = chunk.getChunkX() * 16 + cx;
 			out[2] = cy;
 			out[3] = chunk.getChunkZ() * 16 + cz;
@@ -795,7 +807,7 @@ public class ChunkExporter {
 		for(int y = cy; y < cy + lodYSize; y += stepY) {
 			for(int z = cz; z < cz + lodSize; z += stepXZ) {
 				for(int x = cx; x < cx + lodSize; x += stepXZ) {
-					blockId = lodSampleBlockId(chunk, x, y, z, layer);
+					blockId = lodSampleBlockId(chunk, x, y, z, layer, exporter);
 					if(blockId < 0) {
 						out[0] = -1;
 						out[1] = 0;
@@ -869,7 +881,7 @@ public class ChunkExporter {
 	
 	private void getLODBlockIdOcclusion(Chunk chunk, int cx, int cy, int cz, int layer, int lodSize, int lodYSize, Direction direction, int[] out) {
 		if(lodSize <= 1) {
-			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer);
+			out[0] = lodSampleBlockId(chunk, cx, cy, cz, layer, this);
 			out[1] = chunk.getChunkX() * 16 + cx;
 			out[2] = cy;
 			out[3] = chunk.getChunkZ() * 16 + cz;
@@ -891,7 +903,7 @@ public class ChunkExporter {
 					(cy >> sampleLodYLevel) << sampleLodYLevel, 
 					(cz >> sampleLodLevel) << sampleLodLevel, 
 					layer,
-					sampleLodSize, sampleLodYSize, out);
+					sampleLodSize, sampleLodYSize, lod_blockIds, this, out);
 		}else {
 			out[0] = -2;
 			int lodXSize = lodSize;
@@ -915,7 +927,7 @@ public class ChunkExporter {
 			for(int y = startY; y < cy + lodYSize; y += sampleLodYSize) {
 				for(int z = startZ; z < cz + lodZSize; z += sampleLodSize) {
 					for(int x = startX; x < cx + lodXSize; x += sampleLodSize) {
-						getLODBlockId(chunk, x, y, z, layer, sampleLodSize, sampleLodYSize, out);
+						getLODBlockId(chunk, x, y, z, layer, sampleLodSize, sampleLodYSize, lod_blockIds, this, out);
 						if(out[0] <= 0) {
 							// Early out for performance.
 							//out[0] = 0;
@@ -1306,7 +1318,7 @@ public class ChunkExporter {
 					(by >> sampleLodYLevel) << sampleLodYLevel, 
 					(bz >> sampleLodLevel) << sampleLodLevel, 
 					layer,
-					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+					sampleLodSize, sampleLodYSize, lod_blockIds, this, OCCLUSION_BLOCK_ID);
 			
 			if(OCCLUSION_BLOCK_ID[0] < 0) {
 				// If the block id is less than 0, that means
@@ -1369,7 +1381,7 @@ public class ChunkExporter {
 					(by >> sampleLodYLevel) << sampleLodYLevel, 
 					(bz >> sampleLodLevel) << sampleLodLevel, 
 					layer,
-					sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+					sampleLodSize, sampleLodYSize, lod_blockIds, this, OCCLUSION_BLOCK_ID);
 			if(OCCLUSION_BLOCK_ID[0] < 0) {
 				// If the block id is less than 0, that means
 				// that there was no chunk, so let's say that it does
@@ -1470,7 +1482,7 @@ public class ChunkExporter {
 							(y >> sampleLodYLevel) << sampleLodYLevel, 
 							(z >> sampleLodLevel) << sampleLodLevel, 
 							layer,
-							sampleLodSize, sampleLodYSize, OCCLUSION_BLOCK_ID);
+							sampleLodSize, sampleLodYSize, lod_blockIds, this, OCCLUSION_BLOCK_ID);
 					
 					if(OCCLUSION_BLOCK_ID[0] < 0) {
 						// If the block id is less than 0, that means
@@ -1673,7 +1685,7 @@ public class ChunkExporter {
 			foundLiquid = false;
 			foundAir = false;
 			for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
-				blockId = lodSampleBlockId(x, y, z, layer);
+				blockId = lodSampleBlockId(x, y, z, layer, this);
 				if(blockId < 0) {
 					yEnergy -= Config.removeCavesCaveBlockCost;
 					continue;
@@ -1713,7 +1725,7 @@ public class ChunkExporter {
 			for(z = minZ; z <= maxZ; z += 2) {
 				for(x = minX; x <= maxX; x += 2) {
 					for(int layer = 0; layer < chunk.getLayerCount(); ++layer) {
-						blockId = lodSampleBlockId(x, y, z, layer);
+						blockId = lodSampleBlockId(x, y, z, layer, this);
 						if(blockId < 0) {
 							continue;
 						}

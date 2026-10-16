@@ -33,6 +33,8 @@ package nl.bramstout.mcworldexporter.export;
 
 import java.util.Arrays;
 
+import com.google.gson.JsonArray;
+
 public class FloatArray {
 	
 	private static final int INIT_SIZE = 32;
@@ -99,6 +101,13 @@ public class FloatArray {
 	
 	public int getMemoryUsage() {
 		return data.length * 4;
+	}
+
+	public JsonArray toJson() {
+		JsonArray array = new JsonArray();
+		for(int i = 0; i < size; ++i)
+			array.add(data[i]);
+		return array;
 	}
 
 }

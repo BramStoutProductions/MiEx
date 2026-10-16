@@ -463,6 +463,10 @@ public class ResourcePacks {
 	}
 	
 	public static Biome getBiome(String name, int id) {
+		return getBiome(name, id, true);
+	}
+
+	public static Biome getBiome(String name, int id, boolean showError) {
 		BiomeCombined resBiome = new BiomeCombined(name, id);
 		ResourcePack pack = null;
 		for(int i = 0; i < activeResourcePacks.size(); ++i) {
@@ -478,7 +482,7 @@ public class ResourcePacks {
 			resBiome.getSubBiomes().add(new BiomeCombined("minecraft:the_void", 0));
 		}
 		resBiome.calculateTints();
-		if(resBiome.getSubBiomes().isEmpty())
+		if(resBiome.getSubBiomes().isEmpty() && showError)
 			World.handleError(new Exception("No biome file available for " + name));
 		return resBiome;
 	}

@@ -33,6 +33,9 @@ package nl.bramstout.mcworldexporter.export;
 
 import java.util.Arrays;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 public class VarIntArray {
 
 	private static final int INIT_SIZE = 64;
@@ -276,6 +279,25 @@ public class VarIntArray {
 			return intData.length * 4;
 		}
 		return 0;
+	}
+
+	public JsonElement toJson() {
+		JsonArray array = new JsonArray();
+		switch(type) {
+		case BYTE:
+			for(int i = 0; i < size; ++i)
+				array.add(byteData[i]);
+			break;
+		case SHORT:
+			for(int i = 0; i < size; ++i)
+				array.add(shortData[i]);
+			break;
+		case INT:
+			for(int i = 0; i < size; ++i)
+				array.add(intData[i]);
+			break;
+		}
+		return array;
 	}
 	
 }

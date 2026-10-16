@@ -366,7 +366,7 @@ public class AmbientOcclusion {
 						int ox = (x-1) * lodSize;
 						int oy = (y-1) * lodYSize;
 						int oz = (z-1) * lodSize;
-						exporter.getLODBlockId(chunk, cx + ox, cy + oy, cz + oz, layer, lodSize, lodYSize, blockId);
+						ChunkExporter.getLODBlockId(chunk, cx + ox, cy + oy, cz + oz, layer, lodSize, lodYSize, exporter.lod_blockIds, exporter, blockId);
 						
 						if(blockId[0] <= 0)
 							blocks[z*9+y*3+x][layer] = null;

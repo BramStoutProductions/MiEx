@@ -41,6 +41,7 @@ public class CommandRegistry {
 	
 	static {
 		registerCommand("applyExportSettings", CommandApplyExportSettings.class);
+		registerCommand("chunkPreview", CommandChunkPreview.class);
 		registerCommand("createAtlases", CommandCreateAtlases.class);
 		registerCommand("downloadExampleResourcePacks", CommandDownloadExampleResourcePacks.class);
 		registerCommand("executeFile", CommandExecuteFile.class);

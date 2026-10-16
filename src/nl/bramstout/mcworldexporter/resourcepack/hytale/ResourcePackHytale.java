@@ -466,7 +466,7 @@ public class ResourcePackHytale extends ResourcePack{
 		String name2 = name;
 		int lastDot = name.lastIndexOf('.');
 		if(lastDot != -1)
-			name2 = name2.substring(0, lastDot-1);
+			name2 = name2.substring(0, lastDot);
 		
 		File texFile = getResource(name2, "", "Common", ".exr");
 		if(texFile.exists())

@@ -57,13 +57,15 @@ public class CommandPbrGenerator extends Command{
 		List<String> utilityTextures = Arrays.asList("_emission", "_emissionMask", "_bump", "_normal", 
 				"_specular", "_roughness", "_metalness", "_n", "_s");
 		if(command.has("utilityTextures")) {
-			utilityTextures.clear();
+			utilityTextures = new ArrayList<String>();
 			for(JsonElement el : command.getAsJsonArray("utilityTextures")) {
 				utilityTextures.add(el.getAsString());
 			}
 		}
+		String[] utilityTexturesArray = new String[utilityTextures.size()];
+		utilityTexturesArray = utilityTextures.toArray(utilityTexturesArray);
 		
-		PbrGeneratorDialog.generatePBR(resourcePacks, saveToResourcePack, (String[]) utilityTextures.toArray());
+		PbrGeneratorDialog.generatePBR(resourcePacks, saveToResourcePack, utilityTexturesArray);
 		
 		return null;
 	}

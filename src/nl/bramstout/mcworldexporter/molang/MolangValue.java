@@ -289,7 +289,7 @@ public class MolangValue {
 		}
 		
 		public MolangArray(MolangValue... value) {
-			this.values = Arrays.asList(value);
+			this.values = new ArrayList<MolangValue>(Arrays.asList(value));
 		}
 		
 		@Override

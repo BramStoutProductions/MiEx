@@ -49,7 +49,7 @@ public class PbrNodeBlendNormals extends PbrNode{
 															"nearest", "linear", "bicubic");
 	public PbrAttributeEnum boundary = new PbrAttributeEnum(this, false, false, "repeat",
 															"empty", "clip", "repeat");
-	public PbrAttributeImage output = new PbrAttributeImage(this, false, false, new PbrImageConstant(new RGBA(0.5f, 0.5f, 1f, 1f)));
+	public PbrAttributeImage output = new PbrAttributeImage(this, true, false, new PbrImageConstant(new RGBA(0.5f, 0.5f, 1f, 1f)));
 	
 	public PbrNodeBlendNormals(String name, PbrNodeGraph graph) {
 		super(name, graph);

@@ -293,6 +293,20 @@ public class HytaleChunk {
 	}
 	
 	public int getBiome(int localX, int localY, int localZ) {
+		if(this.sections == null)
+			return 0;
+		
+		int sectionIndex = localY >> 5;
+		int sectionY = localY & 31;
+		if(sectionIndex >= 0 && sectionIndex < this.sections.length) {
+			Section section = this.sections[sectionIndex];
+			if(section != null) {
+				if(section.environments != null) {
+					return section.getEnvironmentId(localX, sectionY, localZ);
+				}
+			}
+		}
+		
 		if(this.environmentChunk == null)
 			return 0;
 		return this.environmentChunk.getBiomeId(localX, localY, localZ);
@@ -318,10 +332,12 @@ public class HytaleChunk {
 		
 		private int[] blocks;
 		private int[] fluids;
+		private int[] environments;
 		
 		public Section(BsonDocument data) {
 			blocks = null;
 			fluids = null;
+			environments = null;
 			
 			BsonDocument components = data.getDocument("Components");
 			
@@ -353,12 +369,27 @@ public class HytaleChunk {
 				}
 			}
 			
-			for(String key : components.keySet()) {
-				if(!key.equals("Block") && !key.equals("Fluid") &&
-						!key.equals("ChunkSection") && !key.equals("BlockPhysics")) {
-					System.out.println(key);
+			BsonDocument environmentSection = components.getDocument("Environment", null);
+			if(environmentSection != null) {
+				int version = environmentSection.getInt32("Version", new BsonInt32(0)).getValue();
+				
+				EnvironmentSectionReader reader = EnvironmentSectionReader.getReader(version);
+				if(reader != null) {
+					try {
+						reader.read(this, environmentSection);
+					}catch(Exception ex) {
+						World.handleError(ex);
+					}
 				}
 			}
+			
+			/*for(String key : components.keySet()) {
+				if(!key.equals("Block") && !key.equals("Fluid") &&
+						!key.equals("ChunkSection") && !key.equals("BlockPhysics") &&
+						 !key.equals("BlockComponent") && !key.equals("Entity")) {
+					System.out.println(key);
+				}
+			}*/
 		}
 		
 		public int getBlockId(int localX, int localY, int localZ) {
@@ -373,23 +404,31 @@ public class HytaleChunk {
 			return fluids[((localY * 32) + localZ) * 32 + localX];
 		}
 		
+		public int getEnvironmentId(int localX, int localY, int localZ) {
+			if(environments == null)
+				return 0;
+			return environments[((localY * 32) + localZ) * 32 + localX];
+		}
+		
 	}
 	
 	private static abstract class BlockSectionReader{
 		
 		public abstract void read(Section section, BsonDocument data) throws IOException;
 		
-		private static final BlockSectionReader V6 = new BlockSectionReaderV6();
+		private static final BlockSectionReader V6V7 = new BlockSectionReaderV6V7();
 		
 		public static BlockSectionReader getReader(int version) {
 			if(version == 6)
-				return V6;
+				return V6V7;
+			if(version == 7)
+				return V6V7;
 			return null;
 		}
 		
 	}
 	
-	private static class BlockSectionReaderV6 extends BlockSectionReader{
+	private static class BlockSectionReaderV6V7 extends BlockSectionReader{
 
 		@Override
 		public void read(Section section, BsonDocument bson) throws IOException {
@@ -641,6 +680,163 @@ public class HytaleChunk {
 						
 						int blockId = BlockRegistry.getIdForName(blockName, properties, 0, charBuffer);
 						section.fluids[i] = blockId;
+					}
+				}
+			}
+		}
+		
+	}
+	
+	private static abstract class EnvironmentSectionReader{
+		
+		public abstract void read(Section section, BsonDocument data) throws IOException;
+		
+		private static final EnvironmentSectionReader V0 = new EnvironmentSectionReaderV0();
+		
+		public static EnvironmentSectionReader getReader(int version) {
+			if(version == 0)
+				return V0;
+			return null;
+		}
+		
+	}
+	
+	private static class EnvironmentSectionReaderV0 extends EnvironmentSectionReader{
+
+		@Override
+		public void read(Section section, BsonDocument bson) throws IOException {
+			BsonBinary data = bson.getBinary("Data", null);
+			if(data == null)
+				return;
+			
+			ByteArrayBEDataInputStream bis = new ByteArrayBEDataInputStream(data.getData());
+			BiomeTranslation biomeTranslatorManager = TranslationRegistry.BIOME_HYTALE;
+			
+			int paletteCount = bis.readVarInt();
+			if(paletteCount == 0)
+				return;
+			
+			int[] palette = new int[paletteCount];
+			
+			for(int i = 0; i < paletteCount; ++i) {
+				// Decode block state data
+				String biomeName = bis.readHytaleUTF();
+				
+				if(biomeName.indexOf(':') == -1)
+					biomeName = "hytale:" + biomeName;
+				if(biomeName.equals("hytale:Unknown"))
+					biomeName = "hytale:Env_Default_Void";
+				
+				biomeName = biomeTranslatorManager.map(biomeName);
+				
+				int biomeId = BiomeRegistry.getIdForName(biomeName);
+				
+				palette[i] = biomeId;
+			}
+			
+			int mode = bis.readUnsignedByte();
+			if(mode == 0) { // Storage Uniform
+				int index = bis.readVarInt();
+				
+				int biome = 0;
+				if(index >= 0 && index < palette.length)
+					biome = palette[index];
+				
+				section.environments = new int[32*32*32];
+				for(int i = 0; i < section.environments.length; ++i)
+					section.environments[i] = biome;
+			}else if(mode == 1) { // Storage Columns
+				
+				section.environments = new int[32*32*32];
+				
+				int[] maxYs = new int[33];
+				maxYs[0] = 0;
+				for(int z = 0; z < 32; ++z) {
+					for(int x = 0; x < 32; ++x) {
+						int boundaries = bis.readUnsignedByte();
+						if(boundaries >= 32)
+							return;
+						for(int i = 0; i < boundaries; ++i) {
+							int maxY = bis.readUnsignedByte();
+							maxYs[i + 1] = maxY;
+						}
+						maxYs[boundaries + 1] = 31;
+						for(int i = 0; i < (boundaries+1); ++i) {
+							int index = bis.readVarInt();
+							
+							int biome = 0;
+							if(index >= 0 && index < palette.length)
+								biome = palette[index];
+							
+							int minY = maxYs[i];
+							int maxY = maxYs[i+1];
+							for(int y = minY; y <= maxY; ++y) {
+								section.environments[((y * 32) + z) * 32 + x] = biome;
+							}
+						}
+					}
+				}
+				
+			}else if(mode == 2) { // Storage Dedup
+				
+				
+				int uniqueCount = bis.readVarInt();
+				if(uniqueCount < 1 || uniqueCount > (32*32))
+					return;
+				
+				section.environments = new int[32*32*32];
+				
+				int[] biomeColumns = new int[uniqueCount * 32];
+				int[] maxYs = new int[33];
+				maxYs[0] = 0;
+				for(int column = 0; column < uniqueCount; ++column) {
+					int boundaries = bis.readUnsignedByte();
+					if(boundaries >= 32)
+						return;
+					for(int i = 0; i < boundaries; ++i) {
+						int maxY = bis.readUnsignedByte();
+						maxYs[i + 1] = maxY;
+					}
+					maxYs[boundaries + 1] = 31;
+					for(int i = 0; i < (boundaries+1); ++i) {
+						int index = bis.readVarInt();
+						
+						int biome = 0;
+						if(index >= 0 && index < palette.length)
+							biome = palette[index];
+						
+						int minY = maxYs[i];
+						int maxY = maxYs[i+1];
+						for(int y = minY; y <= maxY; ++y) {
+							biomeColumns[column * 32 + y] = biome;
+						}
+					}
+				}
+				
+				int[] refs = new int[32*32];
+				int bits = 32 - Integer.numberOfLeadingZeros(uniqueCount - 1);
+				int bitsMask = (1 << bits) - 1;
+				if(bits > 0) {
+					int value = 0;
+					int bitsAvailable = 0;
+					for(int i = 0; i < refs.length; ++i) {
+						while(bitsAvailable < bits) {
+							value = (value << 8) | bis.readUnsignedByte();
+							bitsAvailable += 8;
+						}
+						bitsAvailable -= bits;
+						int ref = (value >>> bitsAvailable) & bitsMask;
+						if(ref < uniqueCount)
+							refs[i] = ref;
+					}
+				}
+				
+				for(int z = 0; z < 32; ++z) {
+					for(int x = 0; x < 32; ++x) {
+						int ref = refs[z * 32 + x];
+						for(int y = 0; y < 32; ++y) {
+							section.environments[((y * 32) + z) * 32 + x] = biomeColumns[ref * 32 + y];
+						}
 					}
 				}
 			}

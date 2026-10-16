@@ -38,6 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.gson.JsonObject;
+
 import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
@@ -1681,6 +1683,45 @@ public class Mesh {
 			for(VertexColorSet vcs : additionalColorSets)
 				memory += vcs.getMemoryUsage();
 		return memory;
+	}
+	
+	public JsonObject toJson() {
+		JsonObject obj = new JsonObject();
+		
+		obj.addProperty("name", name);
+		obj.addProperty("doubleSided", doubleSided);
+		obj.addProperty("texture", texture);
+		obj.addProperty("matTexture", matTexture);
+		obj.addProperty("animatedTexture", animatedTexture);
+		obj.addProperty("shadingMode", shadingMode);
+		obj.addProperty("blockLightEmission", blockLightEmission);
+		obj.addProperty("extraData", extraData);
+		
+		obj.add("vertices", vertices.toJson());
+		obj.add("uvs", uvs.toJson());
+		if(Config.calculateCornerUVs)
+			obj.add("cornerUVs", cornerUVs.toJson());
+		obj.add("normals", normals.toJson());
+		obj.add("faceIndices", faceIndices.toJson());
+		obj.add("uvIndices", uvIndices.toJson());
+		obj.add("cornerUVIndices", cornerUVIndices.toJson());
+		obj.add("normalIndices", normalIndices.toJson());
+		if(hasColors) {
+			obj.add("colors", colors.getValues().toJson());
+			obj.add("colorIndices", colors.getIndices().toJson());
+		}
+		if(hasAO) {
+			obj.add("aos", ao.getValues().toJson());
+			obj.add("aoIndices", ao.getIndices().toJson());
+		}
+		if(additionalColorSets != null) {
+			for(VertexColorSet colorSet : additionalColorSets) {
+				obj.add("colorSet_" + colorSet.getName(), colorSet.getValues().toJson());
+				obj.add("colorSet_" + colorSet.getName() + "Indices", colorSet.getIndices().toJson());
+			}
+		}
+				
+		return obj;
 	}
 
 }

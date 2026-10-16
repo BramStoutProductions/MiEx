@@ -70,11 +70,11 @@ public class BiomeRegistry {
 	}
 	
 	private static Biome getBiomeFromName(String name, int id) {
-		BiomeCombined biome = (BiomeCombined) ResourcePacks.getBiome(name, id);
+		BiomeCombined biome = (BiomeCombined) ResourcePacks.getBiome(name, id, false);
 		if(biome.getSubBiomes().isEmpty()) {
-			synchronized(missingBiomes) {
+			/*synchronized(missingBiomes) {
 				missingBiomes.add(name);
-			}
+			}*/
 		}
 		return biome;
 	}

@@ -225,6 +225,29 @@ public class ByteArrayBEDataInputStream implements DataInput{
 		readFully(bytes);
 		return new String(bytes, StandardCharsets.UTF_8);
 	}
+	
+	public int readVarInt() throws IOException{
+		int b = read();
+		int value = b & 0x7F;
+		if((b & 0x80) == 0)
+			return value;
+		b = read();
+		value |= (b & 0x7F) << 7;
+		if((b & 0x80) == 0)
+			return value;
+		b = read();
+		value |= (b & 0x7F) << 14;
+		if((b & 0x80) == 0)
+			return value;
+		b = read();
+		value |= (b & 0x7F) << 21;
+		if((b & 0x80) == 0)
+			return value;
+		
+		b = read();
+		value |= (b & 0x7F) << 28;
+		return value;
+	}
 
 	public int available() {
 		return data.length - pos;

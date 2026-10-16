@@ -76,6 +76,7 @@ public class MCWorldExporter {
 	public static File commandFile = null;
 	public static String commandString = null;
 	public static boolean commandStdIn = false;
+	public static boolean cliAutoQuit = false;
 	
 	public static MCWorldExporter getApp() {
 		return instance;
@@ -139,6 +140,13 @@ public class MCWorldExporter {
 						if(commandFile != null)
 							commandSystem.parseAndRunCommand(commandFile);
 						commandSystem.run();
+						if(cliAutoQuit) {
+							SwingUtilities.invokeLater(()->{
+								// Quit a little bit later, so that a success message
+								// can at least be outputted. 
+								System.exit(0);
+							});
+						}
 					}
 				}
 				
@@ -150,6 +158,13 @@ public class MCWorldExporter {
 				if(commandFile != null)
 					commandSystem.parseAndRunCommand(commandFile);
 				commandSystem.run();
+				if(cliAutoQuit) {
+					SwingUtilities.invokeLater(()->{
+						// Quit a little bit later, so that a success message
+						// can at least be outputted. 
+						System.exit(0);
+					});
+				}
 			}
 		}
 	}
@@ -718,6 +733,8 @@ public class MCWorldExporter {
 					commandString = args[i+1];
 				}else if(args[i].equalsIgnoreCase("-commandFile")) {
 					commandFile = new File(args[i+1]);
+				}else if(args[i].equalsIgnoreCase("-cliAutoQuit")) {
+					cliAutoQuit = true;
 				}
 			}
 		}catch(Exception ex) {

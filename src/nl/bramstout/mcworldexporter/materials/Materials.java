@@ -957,7 +957,9 @@ public class Materials {
 				String filename = tokens[0];
 				for(int i = 1; i < tokens.length-1; ++i)
 					filename = filename + "." + tokens[i];
-				return ResourcePacks.getFile(filename, "textures", "." + extension, "assets");
+				File file = ResourcePacks.getFile(filename, "textures", "." + extension, "assets");
+				if(file != null)
+					return file;
 			}
 		}
 		File file = ResourcePacks.getTexture(texture);

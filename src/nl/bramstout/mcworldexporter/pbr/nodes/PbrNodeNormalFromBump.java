@@ -47,6 +47,7 @@ public class PbrNodeNormalFromBump extends PbrNode{
 														"empty", "clip", "repeat");
 	public PbrAttributeEnum derivativeMode = new PbrAttributeEnum(this, false, false, "both",
 														"left", "right", "both");
+	public PbrAttributeBoolean ignoreTransparentPixels = new PbrAttributeBoolean(this, false, false, false);
 	public PbrAttributeImage output = new PbrAttributeImage(this, true, false, new PbrImageConstant(new RGBA()));
 	
 	public PbrNodeNormalFromBump(String name, PbrNodeGraph graph) {
@@ -66,6 +67,7 @@ public class PbrNodeNormalFromBump extends PbrNode{
 			float imageSizeInUnits = this.imageSizeInUnits.getFloatValue(context);
 			float bumpHeightInUnits = this.bumpHeightInUnits.getFloatValue(context);
 			int derivativeMode = this.derivativeMode.getIndexValue(context);
+			boolean ignoreTransparentPixels = this.ignoreTransparentPixels.getBooleanValue(context);
 			
 			Boundary boundary = Boundary.REPEAT;
 			int boundaryIndex = this.boundary.getIndexValue(context);
@@ -87,8 +89,8 @@ public class PbrNodeNormalFromBump extends PbrNode{
 			float length = 0f;
 			for(int j = 0; j < outImg.getHeight(); ++j) {
 				for(int i = 0; i < outImg.getWidth(); ++i) {
-					dx = calcDX(input, i, j, imageSizeInUnits, bumpHeightInUnits, derivativeMode, boundary, rgba);
-					dy = calcDY(input, i, j, imageSizeInUnits, bumpHeightInUnits, derivativeMode, boundary, rgba);
+					dx = calcDX(input, i, j, imageSizeInUnits, bumpHeightInUnits, derivativeMode, boundary, ignoreTransparentPixels, rgba);
+					dy = calcDY(input, i, j, imageSizeInUnits, bumpHeightInUnits, derivativeMode, boundary, ignoreTransparentPixels, rgba);
 					// Invert dy since (0,0) is top-left for PbrImage but bottom-left for normal maps.
 					dy *= -1f;
 					
@@ -117,22 +119,23 @@ public class PbrNodeNormalFromBump extends PbrNode{
 	}
 	
 	private float calcDX(PbrImage img, int i, int j, float imgScale, float bumpHeight, int derivativeMode, 
-						Boundary boundary, RGBA rgba) {
-		float rawDX = calcRawDelta(img, i, j, 1, 0, derivativeMode, boundary, rgba);
+						Boundary boundary, boolean ignoreTransparentPixels, RGBA rgba) {
+		float rawDX = calcRawDelta(img, i, j, 1, 0, derivativeMode, boundary, ignoreTransparentPixels, rgba);
 		rawDX *= bumpHeight;
 		float pixelSize = imgScale / ((float) img.getWidth());
 		return rawDX / pixelSize;
 	}
 	
 	private float calcDY(PbrImage img, int i, int j, float imgScale, float bumpHeight, int derivativeMode, 
-						Boundary boundary, RGBA rgba) {
-		float rawDY = calcRawDelta(img, i, j, 0, 1, derivativeMode, boundary, rgba);
+						Boundary boundary, boolean ignoreTransparentPixels, RGBA rgba) {
+		float rawDY = calcRawDelta(img, i, j, 0, 1, derivativeMode, boundary, ignoreTransparentPixels, rgba);
 		rawDY *= bumpHeight;
 		float pixelSize = imgScale / ((float) img.getWidth());
 		return rawDY / pixelSize;
 	}
 	
-	private float calcRawDelta(PbrImage img, int i, int j, int dx, int dy, int derivativeMode, Boundary boundary, RGBA rgba) {
+	private float calcRawDelta(PbrImage img, int i, int j, int dx, int dy, int derivativeMode, Boundary boundary, 
+								boolean ignoreTransparentPixels, RGBA rgba) {
 		float v0 = 0f;
 		float v1 = 0f;
 		float v2 = 0f;
@@ -142,20 +145,28 @@ public class PbrNodeNormalFromBump extends PbrNode{
 			v1 = rgba.r;
 			img.sample(i - dx, j - dy, boundary, rgba);
 			v0 = rgba.r;
+			if(rgba.a <= 0.01f)
+				v0 = v1;
 			return v1 - v0;
 		case 1:
 			img.sample(i, j, boundary, rgba);
 			v0 = rgba.r;
 			img.sample(i + dx, j + dy, boundary, rgba);
 			v1 = rgba.r;
+			if(rgba.a <= 0.01f)
+				v1 = v0;
 			return v1 - v0;
 		case 2:
 			img.sample(i, j, boundary, rgba);
 			v1 = rgba.r;
 			img.sample(i - dx, j - dy, boundary, rgba);
 			v0 = rgba.r;
+			if(rgba.a <= 0.01f)
+				v0 = v1;
 			img.sample(i + dx, j + dy, boundary, rgba);;
 			v2 = rgba.r;
+			if(rgba.a <= 0.01f)
+				v2 = v1;
 			return ((v2 - v1) + (v1 - v0)) / 2f;
 		default:
 			return 0f;
