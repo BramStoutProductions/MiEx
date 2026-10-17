@@ -1213,6 +1213,8 @@ public class HytaleChunk {
 		public static BlockChunk getBlockChunk(int version) {
 			if(version == 3)
 				return new BlockChunkV3();
+			if(version == 4)
+				return new BlockChunkV4();
 			return null;
 		}
 		
@@ -1240,6 +1242,35 @@ public class HytaleChunk {
 			boolean needsPhysics = bis.readBoolean();
 			
 			this.height.read(bis);
+			
+			this.tint.read(bis);
+		}
+		
+		@Override
+		public int getTint(int localX, int localZ) {
+			return tint.get(localZ * 32 + localX);
+		}
+		
+	}
+	
+	private static class BlockChunkV4 extends BlockChunk{
+		
+		private IntBytePalette tint;
+		
+		public BlockChunkV4() {
+			this.tint = new IntBytePalette();
+		}
+		
+		
+		@Override
+		public void read(BsonDocument bson) throws IOException {
+			BsonBinary data = bson.getBinary("Data", null);
+			if(data == null)
+				return;
+			
+			ByteArrayBEDataInputStream bis = new ByteArrayBEDataInputStream(data.getData());
+			@SuppressWarnings("unused")
+			boolean needsPhysics = bis.readBoolean();
 			
 			this.tint.read(bis);
 		}

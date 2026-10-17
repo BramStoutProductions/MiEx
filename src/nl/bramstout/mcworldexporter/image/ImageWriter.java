@@ -45,6 +45,7 @@ public abstract class ImageWriter {
 	
 	private static ImageWriter[] writers = new ImageWriter[] {
 			new ImageWriterPNG(),
+			new ImageWriterTarga(),
 			new ImageWriterEXR()
 	};
 	

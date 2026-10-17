@@ -68,13 +68,6 @@ public class PbrContext {
 	}
 	
 	public File getTexture(String id, boolean forceSameResourcepack, boolean isSave) {
-		String extension = null;
-		int extensionIndex = id.lastIndexOf((int) '.');
-		if(extensionIndex >= 0) {
-			extension = id.substring(extensionIndex);
-			id = id.substring(0, extensionIndex);
-		}
-		
 		ResourcePack forceRp = null;
 		if(id.startsWith("{")) {
 			String rpName = id.substring(1, id.indexOf('}'));
@@ -87,7 +80,16 @@ public class PbrContext {
 			}
 		}
 		
+		String extension = null;
+		int extensionIndex = id.lastIndexOf((int) '.');
+		if(extensionIndex >= 0) {
+			extension = id.substring(extensionIndex);
+			id = id.substring(0, extensionIndex);
+		}
+		
 		if(isSave) {
+			if(id.equals("@texture@") && extension == null)
+				extension = this.textureExtension;
 			if(saveToResourcePack != null) {
 				id = id.replace("@texture@", texture);
 				return getTexture(id, extension, saveToResourcePack);
