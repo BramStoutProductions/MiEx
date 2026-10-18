@@ -63,7 +63,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 		if(data == null)
 			return;
 		
-		if(data.has("Parent")) {
+		if(data.has("Parent") && !data.get("Parent").isJsonNull()) {
 			String parentId = "hytale:" + data.get("Parent").getAsString();
 			BlockStateHandlerHytale parent = (BlockStateHandlerHytale)ResourcePacks.getBlockStateHandler(parentId);
 			if(parent != null) {
@@ -75,13 +75,17 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 		
 		if(data.has("BlockType")) {
 			JsonObject blockType = data.getAsJsonObject("BlockType");
-			if(blockType.has("Group") && blockType.get("Group").getAsString().equals("@Tech"))
-				// Blocks in the "@Tech" group, should be ignored.
-				return;
 			if(blockType.has("Group")) {
-				this.group = blockType.get("Group").getAsString();
-				if(this.group.indexOf(':') == -1)
-					this.group = "hytale:" + this.group;
+				JsonElement groupEl = blockType.get("Group");
+				if(groupEl.isJsonPrimitive()) {
+					String group = groupEl.getAsString();
+					if(group.equals("@Tech"))
+						// Blocks in the "@Tech" group, should be ignored.
+						return;
+					this.group = group;
+					if(this.group.indexOf(':') == -1)
+						this.group = "hytale:" + this.group;
+				}
 			}
 			
 			if(this.variants.containsKey(""))
@@ -89,7 +93,7 @@ public class BlockStateHandlerHytale extends BlockStateHandler{
 			else
 				this.variants.put("", new BlockStateVariant("", blockType));
 			
-			if(blockType.has("State")) {
+			if(blockType.has("State") && !blockType.get("State").isJsonNull()) {
 				JsonObject state = blockType.getAsJsonObject("State");
 				if(state.has("Definitions")) {
 					JsonObject definitions = state.getAsJsonObject("Definitions");

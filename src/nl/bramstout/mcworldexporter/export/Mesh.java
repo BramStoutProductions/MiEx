@@ -172,9 +172,9 @@ public class Mesh {
 		float originZ = this.boundsMin.z;
 		// 1048575 scales it to take up 20 bits.
 		// 3x20 = 60 which makes it fit nicely in a single long.
-		float scaleX = 1048575f / (this.boundsMax.x - this.boundsMin.x);
-		float scaleY = 1048575f / (this.boundsMax.x - this.boundsMin.x);
-		float scaleZ = 1048575f / (this.boundsMax.x - this.boundsMin.x);
+		float scaleX = 1048575f / Math.max(this.boundsMax.x - this.boundsMin.x, 1f);
+		float scaleY = 1048575f / Math.max(this.boundsMax.y - this.boundsMin.y, 1f);
+		float scaleZ = 1048575f / Math.max(this.boundsMax.z - this.boundsMin.z, 1f);
 		
 		int numVertices = this.vertices.size() / 3;
 		cache.reset(numVertices);
@@ -192,7 +192,7 @@ public class Mesh {
 			largestVertexI = Math.max(largestVertexI, vertexI);
 		}
 		
-		this.vertices.resizeFast(largestVertexI);
+		this.vertices.resizeFast((largestVertexI + 1) * 3);
 	}
 	
 	/*private long packVertexId(long x, long y, long z) {
@@ -256,9 +256,9 @@ public class Mesh {
 			this.boundsMin.x = Math.min(this.boundsMin.x, x);
 			this.boundsMin.y = Math.min(this.boundsMin.y, y);
 			this.boundsMin.z = Math.min(this.boundsMin.z, z);
-			this.boundsMax.x = Math.min(this.boundsMax.x, x);
-			this.boundsMax.y = Math.min(this.boundsMax.y, y);
-			this.boundsMax.z = Math.min(this.boundsMax.z, z);
+			this.boundsMax.x = Math.max(this.boundsMax.x, x);
+			this.boundsMax.y = Math.max(this.boundsMax.y, y);
+			this.boundsMax.z = Math.max(this.boundsMax.z, z);
 			//this.vertexCache.put(hash1, hash2, vertexIndex);
 		}
 		
@@ -1433,9 +1433,9 @@ public class Mesh {
 			this.boundsMin.x = Math.min(this.boundsMin.x, vertices[i*3]);
 			this.boundsMin.y = Math.min(this.boundsMin.y, vertices[i*3+1]);
 			this.boundsMin.z = Math.min(this.boundsMin.z, vertices[i*3+2]);
-			this.boundsMax.x = Math.min(this.boundsMax.x, vertices[i*3]);
-			this.boundsMax.y = Math.min(this.boundsMax.y, vertices[i*3+1]);
-			this.boundsMax.z = Math.min(this.boundsMax.z, vertices[i*3+2]);
+			this.boundsMax.x = Math.max(this.boundsMax.x, vertices[i*3]);
+			this.boundsMax.y = Math.max(this.boundsMax.y, vertices[i*3+1]);
+			this.boundsMax.z = Math.max(this.boundsMax.z, vertices[i*3+2]);
 		}
 		this.vertices = new FloatArray(vertices);
 		

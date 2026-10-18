@@ -85,7 +85,7 @@ public class IndexCacheFlat {
 			// We have a hit.
 			return values[index];
 		// We have a miss, so add it.
-		if(index >= keys.length) {
+		if(size >= keys.length) {
 			// Increase capacity.
 			keys = Arrays.copyOf(keys, keys.length * 2);
 			values = Arrays.copyOf(values, values.length * 2);

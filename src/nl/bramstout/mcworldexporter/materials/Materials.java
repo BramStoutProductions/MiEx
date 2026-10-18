@@ -50,6 +50,7 @@ import nl.bramstout.mcworldexporter.Color;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.Json;
 import nl.bramstout.mcworldexporter.atlas.Atlas;
+import nl.bramstout.mcworldexporter.model.ModelFace;
 import nl.bramstout.mcworldexporter.resourcepack.Biome;
 import nl.bramstout.mcworldexporter.resourcepack.MCMeta;
 import nl.bramstout.mcworldexporter.resourcepack.ResourcePack;
@@ -353,6 +354,8 @@ public class Materials {
 						shadingModeName = shadingModeName.substring(0, endIndex);
 					shadingModeName = shadingModeName.toLowerCase();
 					
+					if(shadingMode == null)
+						shadingMode = ModelFace.SHADING_MODE_STANDARD;
 					boolean isShadingMode = shadingMode.equals(shadingModeName);
 					
 					if(invert) {

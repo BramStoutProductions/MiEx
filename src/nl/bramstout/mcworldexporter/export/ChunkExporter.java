@@ -102,7 +102,11 @@ public class ChunkExporter {
 		private void setupMaterialTemplate() {
 			materialTemplate = Materials.getMaterial(texture, hasTint, doubleSided, colorSets, Exporter.currentExportFile.getParent(), 
 													shadingMode, blockLightEmission);
-			materialTemplateHash = materialTemplate.hashCode();
+			if(materialTemplate != null) {
+				materialTemplateHash = materialTemplate.hashCode();
+			}else {
+				materialTemplateHash = 0;
+			}
 			materialTemplateHashStr = Integer.toHexString(materialTemplateHash);
 		}
 		

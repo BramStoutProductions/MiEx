@@ -71,7 +71,7 @@ public class BlockStateVariant {
 		public float weight;
 		
 		public CubeTextures(JsonObject data) {
-			if(data.has("All")) {
+			if(data.has("All") && !data.get("All").isJsonNull()) {
 				String tex = "hytale:" + data.get("All").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
@@ -83,7 +83,7 @@ public class BlockStateVariant {
 				this.up = tex;
 				this.down = tex;
 			}
-			if(data.has("Sides")) {
+			if(data.has("Sides") && !data.get("Sides").isJsonNull()) {
 				String tex = "hytale:" + data.get("Sides").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
@@ -93,7 +93,7 @@ public class BlockStateVariant {
 				this.east = tex;
 				this.west = tex;
 			}
-			if(data.has("UpDown")) {
+			if(data.has("UpDown") && !data.get("UpDown").isJsonNull()) {
 				String tex = "hytale:" + data.get("UpDown").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
@@ -101,42 +101,42 @@ public class BlockStateVariant {
 				this.up = tex;
 				this.down = tex;
 			}
-			if(data.has("North")) {
+			if(data.has("North") && !data.get("North").isJsonNull()) {
 				String tex = "hytale:" + data.get("North").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
 					tex = tex.substring(0, sep);
 				this.north = tex;
 			}
-			if(data.has("South")) {
+			if(data.has("South") && !data.get("South").isJsonNull()) {
 				String tex = "hytale:" + data.get("South").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
 					tex = tex.substring(0, sep);
 				this.south = tex;
 			}
-			if(data.has("East")) {
+			if(data.has("East") && !data.get("East").isJsonNull()) {
 				String tex = "hytale:" + data.get("East").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
 					tex = tex.substring(0, sep);
 				this.east = tex;
 			}
-			if(data.has("West")) {
+			if(data.has("West") && !data.get("West").isJsonNull()) {
 				String tex = "hytale:" + data.get("West").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
 					tex = tex.substring(0, sep);
 				this.west = tex;
 			}
-			if(data.has("Up")) {
+			if(data.has("Up") && !data.get("Up").isJsonNull()) {
 				String tex = "hytale:" + data.get("Up").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
 					tex = tex.substring(0, sep);
 				this.up = tex;
 			}
-			if(data.has("Down")) {
+			if(data.has("Down") && !data.get("Down").isJsonNull()) {
 				String tex = "hytale:" + data.get("Down").getAsString();
 				int sep = tex.lastIndexOf('.');
 				if(sep != -1)
@@ -144,7 +144,7 @@ public class BlockStateVariant {
 				this.down = tex;
 			}
 			this.weight = 1f;
-			if(data.has("Weight"))
+			if(data.has("Weight") && !data.get("Weight").isJsonNull())
 				this.weight = data.get("Weight").getAsFloat();
 		}
 		
@@ -168,14 +168,14 @@ public class BlockStateVariant {
 			this.texture = "";
 			this.weight = 1f;
 			
-			if(data.has("Texture")) {
+			if(data.has("Texture") && !data.get("Texture").isJsonNull()) {
 				this.texture = "hytale:" + data.get("Texture").getAsString();
 				int sep = this.texture.lastIndexOf('.');
 				if(sep != -1)
 					this.texture = this.texture.substring(0, sep);
 			}
 			
-			if(data.has("Weight"))
+			if(data.has("Weight") && !data.get("Weight").isJsonNull())
 				this.weight = data.get("Weight").getAsFloat();
 		}
 		
@@ -306,13 +306,13 @@ public class BlockStateVariant {
 		if(data == null)
 			return;
 			
-		if(data.has("DrawType"))
+		if(data.has("DrawType") && !data.get("DrawType").isJsonNull())
 			this.drawType = data.get("DrawType").getAsString();
 
-		if(data.has("Opacity"))
+		if(data.has("Opacity") && !data.get("Opacity").isJsonNull())
 			this.opacity = data.get("Opacity").getAsString();
 		
-		if(data.has("Textures")) {
+		if(data.has("Textures") && !data.get("Textures").isJsonNull()) {
 			this.cubeTextures.clear();
 			this.cubeTexturesTotalWeight = 0f;
 			JsonArray texturesArray = data.getAsJsonArray("Textures");
@@ -337,7 +337,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("CubeShadingMode")) {
+		if(data.has("CubeShadingMode") && !data.get("CubeShadingMode").isJsonNull()) {
 			this.cubeShadingMode = data.get("CubeShadingMode").getAsString().toLowerCase().intern();
 		}
 		
@@ -352,7 +352,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("CustomModelTexture")){
+		if(data.has("CustomModelTexture") && !data.get("CustomModelTexture").isJsonNull()){
 			this.customModelTextures.clear();
 			this.customModelTexturesTotalWeight = 0f;
 			JsonArray texturesArray = data.getAsJsonArray("CustomModelTexture");
@@ -365,7 +365,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("CustomModelScale"))
+		if(data.has("CustomModelScale") && !data.get("CustomModelScale").isJsonNull())
 			this.customModelScale = data.get("CustomModelScale").getAsFloat();
 		
 		if(data.has("CustomModelAnimation")) {
@@ -385,7 +385,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("Looping"))
+		if(data.has("Looping") && !data.get("Looping").isJsonNull())
 			this.looping = data.get("Looping").getAsBoolean();
 		
 		if(data.has("RandomRotation")) {
@@ -417,7 +417,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("TransitionToGroups")) {
+		if(data.has("TransitionToGroups") && !data.get("TransitionToGroups").isJsonNull()) {
 			JsonArray groupsArray = data.getAsJsonArray("TransitionToGroups");
 			if(!groupsArray.isEmpty()) {
 				this.transitionToGroups = new String[groupsArray.size()];
@@ -430,7 +430,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("Tint")) {
+		if(data.has("Tint") && !data.get("Tint").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("Tint");
 			if(!tints.isEmpty()) {
 				this.tintsUp = new Color[tints.size()];
@@ -454,7 +454,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("TintUp")) {
+		if(data.has("TintUp") && !data.get("TintUp").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintUp");
 			if(!tints.isEmpty()) {
 				this.tintsUp = new Color[tints.size()];
@@ -474,7 +474,7 @@ public class BlockStateVariant {
 				this.tintsUp = null;
 			}
 		}
-		if(data.has("TintDown")) {
+		if(data.has("TintDown") && !data.get("TintDown").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintDown");
 			if(!tints.isEmpty()) {
 				this.tintsDown = new Color[tints.size()];
@@ -494,7 +494,7 @@ public class BlockStateVariant {
 				this.tintsDown = null;
 			}
 		}
-		if(data.has("TintNorth")) {
+		if(data.has("TintNorth") && !data.get("TintNorth").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintNorth");
 			if(!tints.isEmpty()) {
 				this.tintsNorth = new Color[tints.size()];
@@ -514,7 +514,7 @@ public class BlockStateVariant {
 				this.tintsNorth = null;
 			}
 		}
-		if(data.has("TintSouth")) {
+		if(data.has("TintSouth") && !data.get("TintSouth").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintSouth");
 			if(!tints.isEmpty()) {
 				this.tintsSouth = new Color[tints.size()];
@@ -534,7 +534,7 @@ public class BlockStateVariant {
 				this.tintsSouth = null;
 			}
 		}
-		if(data.has("TintEast")) {
+		if(data.has("TintEast") && !data.get("TintEast").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintEast");
 			if(!tints.isEmpty()) {
 				this.tintsEast = new Color[tints.size()];
@@ -554,7 +554,7 @@ public class BlockStateVariant {
 				this.tintsEast = null;
 			}
 		}
-		if(data.has("TintWest")) {
+		if(data.has("TintWest") && !data.get("TintWest").isJsonNull()) {
 			JsonArray tints = data.getAsJsonArray("TintWest");
 			if(!tints.isEmpty()) {
 				this.tintsWest = new Color[tints.size()];
@@ -575,7 +575,7 @@ public class BlockStateVariant {
 			}
 		}
 		
-		if(data.has("BiomeTint")) {
+		if(data.has("BiomeTint") && !data.get("BiomeTint").isJsonNull()) {
 			int biomeTint = data.get("BiomeTint").getAsInt();
 			this.biomeTintUp = biomeTint;
 			this.biomeTintDown = biomeTint;
@@ -585,22 +585,22 @@ public class BlockStateVariant {
 			this.biomeTintWest = biomeTint;
 		}
 		
-		if(data.has("BiomeTintUp"))
+		if(data.has("BiomeTintUp") && !data.get("BiomeTintUp").isJsonNull())
 			this.biomeTintUp = data.get("BiomeTintUp").getAsInt();
 
-		if(data.has("BiomeTintDown"))
+		if(data.has("BiomeTintDown") && !data.get("BiomeTintDown").isJsonNull())
 			this.biomeTintDown = data.get("BiomeTintDown").getAsInt();
 
-		if(data.has("BiomeTintNorth"))
+		if(data.has("BiomeTintNorth") && !data.get("BiomeTintNorth").isJsonNull())
 			this.biomeTintNorth = data.get("BiomeTintNorth").getAsInt();
 
-		if(data.has("BiomeTintSouth"))
+		if(data.has("BiomeTintSouth") && !data.get("BiomeTintSouth").isJsonNull())
 			this.biomeTintSouth = data.get("BiomeTintSouth").getAsInt();
 
-		if(data.has("BiomeTintEast"))
+		if(data.has("BiomeTintEast") && !data.get("BiomeTintEast").isJsonNull())
 			this.biomeTintEast = data.get("BiomeTintEast").getAsInt();
 
-		if(data.has("BiomeTintWest"))
+		if(data.has("BiomeTintWest") && !data.get("BiomeTintWest").isJsonNull())
 			this.biomeTintWest = data.get("BiomeTintWest").getAsInt();
 		
 		// In Hytale, a tint of 0 means no tint,
