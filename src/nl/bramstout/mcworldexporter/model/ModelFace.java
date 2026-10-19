@@ -861,6 +861,52 @@ public class ModelFace {
 					uvs3U = ((ouvs3U - uvPivotU) * cosR - (ouvs3V - uvPivotV) * sinR) + uvPivotU;
 					uvs3V = ((ouvs3U - uvPivotU) * sinR + (ouvs3V - uvPivotV) * cosR) + uvPivotV;
 				}
+				float dirRotateX = rotateX;
+				if (dirRotateX < 0.0f)
+					dirRotateX += 360.0f;
+				Direction direction = this.direction;
+				while (dirRotateX > 45.0f) {
+					dirRotateX -= 90.0f;
+					switch (direction) {
+					case DOWN:
+						direction = Direction.SOUTH;
+						break;
+					case SOUTH:
+						direction = Direction.UP;
+						break;
+					case UP:
+						direction = Direction.NORTH;
+						// Rotate UVs 180 degrees
+						if(uvLock){
+							uvs0U = 16f - uvs0U;
+							uvs0V = 16f - uvs0V;
+							uvs1U = 16f - uvs1U;
+							uvs1V = 16f - uvs1V;
+							uvs2U = 16f - uvs2U;
+							uvs2V = 16f - uvs2V;
+							uvs3U = 16f - uvs3U;
+							uvs3V = 16f - uvs3V;
+						}
+						break;
+					case NORTH:
+						direction = Direction.DOWN;
+						// Rotate UVs 180 degrees
+						if(uvLock){
+							uvs0U = 16f - uvs0U;
+							uvs0V = 16f - uvs0V;
+							uvs1U = 16f - uvs1U;
+							uvs1V = 16f - uvs1V;
+							uvs2U = 16f - uvs2U;
+							uvs2V = 16f - uvs2V;
+							uvs3U = 16f - uvs3U;
+							uvs3V = 16f - uvs3V;
+						}
+						break;
+					default:
+						break;
+					}
+				}
+				calculateDirection();
 			}
 		}
 
@@ -923,6 +969,7 @@ public class ModelFace {
 					uvs3U = ((ouvs3U - uvPivotU) * cosR - (ouvs3V - uvPivotV) * sinR) + uvPivotU;
 					uvs3V = ((ouvs3U - uvPivotU) * sinR + (ouvs3V - uvPivotV) * cosR) + uvPivotV;
 				}
+				calculateDirection();
 			}
 		}
 		
