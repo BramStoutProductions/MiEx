@@ -117,6 +117,10 @@ public class ToolBar extends JPanel {
 
 	public JButton exportButton;
 	private JButton reexportButton;
+	private JPanel exportPanel;
+	
+	private JPanel cancelPanel;
+	private JButton cancelButton;
 	
 	private File exportLastDirectory;
 	
@@ -470,7 +474,7 @@ public class ToolBar extends JPanel {
 
 		add(new JPanel());
 
-		JPanel exportPanel = new JPanel();
+		exportPanel = new JPanel();
 		exportPanel.setLayout(new BoxLayout(exportPanel, BoxLayout.Y_AXIS));
 		exportPanel.setMinimumSize(new Dimension(90, 140));
 		exportPanel.setMaximumSize(exportPanel.getMinimumSize());
@@ -492,6 +496,22 @@ public class ToolBar extends JPanel {
 		exportPanel.add(reexportButton);
 		exportPanel.add(new JPanel());
 		add(exportPanel);
+		
+		cancelPanel = new JPanel();
+		cancelPanel.setLayout(new BoxLayout(cancelPanel, BoxLayout.Y_AXIS));
+		cancelPanel.setMinimumSize(new Dimension(90, 140));
+		cancelPanel.setMaximumSize(cancelPanel.getMinimumSize());
+		cancelPanel.setPreferredSize(cancelPanel.getMinimumSize());
+		cancelPanel.setVisible(false);
+		cancelPanel.add(new JLabel(" "));
+		cancelPanel.add(new JPanel());
+		cancelButton = new JButton("Cancel");
+		cancelButton.setPreferredSize(new Dimension(84, 84));
+		cancelButton.setMinimumSize(cancelButton.getPreferredSize());
+		cancelButton.setMaximumSize(cancelButton.getPreferredSize());
+		cancelPanel.add(cancelButton);
+		cancelPanel.add(new JPanel());
+		add(cancelPanel);
 
 		add(new JPanel());
 		add(new JPanel());
@@ -945,6 +965,15 @@ public class ToolBar extends JPanel {
 
 		});
 		
+		cancelButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Exporter.cancelExport();
+			}
+			
+		});
+		
 		addMouseListener(new MouseListener() {
 			
 			@Override
@@ -1164,7 +1193,7 @@ public class ToolBar extends JPanel {
 	}
 	
 	private void setEnabled(Component comp, boolean enabled) {
-		if(comp != this)
+		if(comp != this && comp != cancelButton)
 			comp.setEnabled(enabled);
 		if(comp.getClass().equals(JPanel.class) || comp == this) {
 			int num = ((JPanel) comp).getComponentCount();
@@ -1178,6 +1207,13 @@ public class ToolBar extends JPanel {
 	public void setEnabled(boolean enabled) {
 		super.setEnabled(enabled);
 		setEnabled(this, enabled);
+		if(Exporter.isExporting()) {
+			exportPanel.setVisible(false);
+			cancelPanel.setVisible(true);
+		}else {
+			exportPanel.setVisible(true);
+			cancelPanel.setVisible(false);
+		}
 	}
 
 }

@@ -47,6 +47,7 @@ import javax.swing.border.EmptyBorder;
 
 import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.ReleaseChecker;
+import nl.bramstout.mcworldexporter.export.Exporter;
 
 public class MainWindow extends JFrame{
 
@@ -193,7 +194,12 @@ public class MainWindow extends JFrame{
 		resourcePackManager.setEnabled(b);
 		entityDialog.setEnabled(b);
 		viewer.setEnabled(b);
-		loadingPanel.setVisible(!b);
+		advancedSettings.setEnabled(b);
+		if(Exporter.isExporting()) {
+			
+		}else {
+			loadingPanel.setVisible(!b);
+		}
 	}
 	
 	public void toggleAdvancedSettings(boolean visible) {

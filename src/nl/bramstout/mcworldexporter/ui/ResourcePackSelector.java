@@ -81,6 +81,7 @@ public class ResourcePackSelector extends JPanel{
 	private JScrollPane activeScrollPane;
 	private JPanel activePanel;
 	private String searchString;
+	private SearchField searchField;
 	
 	private List<String> activeResourcePacks;
 	private Runnable onResourcePackChange;
@@ -103,7 +104,7 @@ public class ResourcePackSelector extends JPanel{
 		availableLabel.setMinimumSize(availableLabel.getPreferredSize());
 		availableLabel.setMaximumSize(availableLabel.getPreferredSize());
 		add(availableLabel);
-		SearchField searchField = new SearchField();
+		searchField = new SearchField();
 		searchField.setPlaceholder("Search");
 		searchField.setPreferredSize(new Dimension(260, 14));
 		searchField.setFont(searchField.getFont().deriveFont(10F));
@@ -792,6 +793,7 @@ public class ResourcePackSelector extends JPanel{
 		availablePanel.setEnabled(enabled);
 		activeScrollPane.setEnabled(enabled);
 		activePanel.setEnabled(enabled);
+		searchField.setEnabled(enabled);
 		
 		int num = availablePanel.getComponentCount();
 		for(int i = 0; i < num; ++i) {

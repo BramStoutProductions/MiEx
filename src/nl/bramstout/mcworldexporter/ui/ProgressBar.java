@@ -44,6 +44,8 @@ import java.awt.event.MouseEvent;
 
 import javax.swing.JPanel;
 
+import nl.bramstout.mcworldexporter.export.Exporter;
+
 public class ProgressBar extends JPanel {
 
 	/**
@@ -130,7 +132,7 @@ public class ProgressBar extends JPanel {
 	private void progressChanged() {
 		if(Math.abs(progress - prevProgress) > 0.001f) {
 			prevProgress = progress;
-			paintImmediately(0, 0, getWidth(), getHeight());
+			repaintNow();
 		}
 	}
 	
@@ -146,7 +148,15 @@ public class ProgressBar extends JPanel {
 	
 	public void setText(String text) {
 		this.text = text;
-		paintImmediately(0, 0, getWidth(), getHeight());
+		repaintNow();
+	}
+	
+	private void repaintNow() {
+		if(Exporter.isExporting()) {
+			repaint();
+		}else {
+			paintImmediately(0, 0, getWidth(), getHeight());
+		}
 	}
 
 }

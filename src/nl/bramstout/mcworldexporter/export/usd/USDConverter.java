@@ -209,6 +209,19 @@ public class USDConverter extends Converter{
 		individualBlocksRegistry = new HashMap<IndividualBlockId, IndividualBlockInfo>();
 	}
 	
+	@Override
+	public void deleteAllFiles() throws Exception {
+		USDWriter.finalCleanup();
+		if(this.outputFile.exists())
+			this.outputFile.delete();
+		if(this.chunksFolder.exists())
+			deleteDir(this.chunksFolder);
+		if(this.materialsFile.exists())
+			this.materialsFile.delete();
+		if(new File(materialsFile.getPath().replace(".usd", ".json")).exists())
+			new File(materialsFile.getPath().replace(".usd", ".json")).delete();
+	}
+	
 	private void deleteDir(File dir) {
 		for(String f : dir.list()) {
 			File file = new File(dir, f);
@@ -259,13 +272,31 @@ public class USDConverter extends Converter{
 		rootWriter.endMetaData();
 		rootWriter.beginChildren();
 		
+		if(Exporter.isExportCancelled()) {
+			dis.close();
+			rootWriter.close(true);
+			return;
+		}
+		
 		Map<String, Texture> usedTextures = new HashMap<String, Texture>();
 		
 		writeEntities(rootWriter, usedTextures);
 		
+		if(Exporter.isExportCancelled()) {
+			dis.close();
+			rootWriter.close(true);
+			return;
+		}
+		
 		String[] chunkFilenames = readChunkNames();
 		
 		writeIndividualBlocks(rootWriter, usedTextures, individualBlocksOffset);
+		
+		if(Exporter.isExportCancelled()) {
+			dis.close();
+			rootWriter.close(true);
+			return;
+		}
 		
 		// Done with this input file, so we can close it.
 		dis.close();
@@ -275,9 +306,24 @@ public class USDConverter extends Converter{
 		
 		writeChunks(rootWriter, usedTextures, chunkFilenames, bgChunks, fgChunks);
 		
+		if(Exporter.isExportCancelled()) {
+			rootWriter.close(true);
+			return;
+		}
+		
 		writeMaterials(rootWriter, usedTextures);
 		
+		if(Exporter.isExportCancelled()) {
+			rootWriter.close(true);
+			return;
+		}
+		
 		writeChunkPayloads(rootWriter, bgChunks, fgChunks);
+		
+		if(Exporter.isExportCancelled()) {
+			rootWriter.close(true);
+			return;
+		}
 		
 		rootWriter.endChildren();
 		rootWriter.endDef();

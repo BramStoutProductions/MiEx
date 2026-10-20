@@ -271,7 +271,13 @@ public class ChunkExporter {
 				1 : 0); // Is foreground chunk
 		
 		generateMeshes(dos);
+		if(Exporter.isExportCancelled()) {
+			return;
+		}
 		flushMeshes(dos);
+		if(Exporter.isExportCancelled()) {
+			return;
+		}
 		writeEnd(dos);
 	}
 	
@@ -288,6 +294,10 @@ public class ChunkExporter {
 		
 		for(int z = chunkZ; z < (chunkZ + chunkSize); ++z) {
 			for(int x = chunkX; x < (chunkX + chunkSize); ++x) {
+				if(Exporter.isExportCancelled()) {
+					return;
+				}
+				
 				final int fx = x;
 				final int fz = z;
 				try {
@@ -363,6 +373,10 @@ public class ChunkExporter {
 				wz = bz + chunkWorldZ;
 				for(bx = minX; bx < maxX; bx += lodSize) {
 					wx = bx + chunkWorldX;
+					
+					if(Exporter.isExportCancelled()) {
+						return;
+					}
 					
 					if(bounds.isInExcludeRegion(wx, by, wz))
 						continue;
@@ -495,6 +509,9 @@ public class ChunkExporter {
 			List<Entity> entities = chunk.getEntities();
 			if(entities != null) {
 				for(Entity entity : entities) {
+					if(Exporter.isExportCancelled()) {
+						return;
+					}
 					if(Config.exportEntityAsBlocks.contains(entity.getId())) {
 						handleEntity(entity, chunk);
 					}
@@ -1801,6 +1818,10 @@ public class ChunkExporter {
 		
 		IndexCacheFlat indexCache = new IndexCacheFlat(16);
 		for(Entry<MeshKey, Mesh> mesh : meshes.entrySet()) {
+			if(Exporter.isExportCancelled()) {
+				return;
+			}
+			
 			mesh.getValue().packVertices(indexCache);
 			processors.process(mesh.getValue());
 			if(!rootMeshes.contains(mesh.getValue().getName()))

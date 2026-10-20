@@ -84,6 +84,11 @@ public class Materials {
 		}
 		
 		@Override
+		public int hashCode() {
+			return Objects.hash(name, type, value, connection, expression);
+		}
+		
+		@Override
 		public boolean equals(Object obj) {
 			if(!(obj instanceof ShadingAttribute))
 				return false;
@@ -189,6 +194,11 @@ public class Materials {
 		}
 		
 		@Override
+		public int hashCode() {
+			return (name.hashCode() * 31 + type.hashCode()) * 31 + attributes.hashCode();
+		}
+		
+		@Override
 		public boolean equals(Object obj) {
 			if(!(obj instanceof ShadingNode))
 				return false;
@@ -256,6 +266,11 @@ public class Materials {
 		public MaterialNetwork(String condition) {
 			this.condition = condition;
 			this.nodes = new ArrayList<ShadingNode>();
+		}
+		
+		@Override
+		public int hashCode() {
+			return nodes.hashCode();
 		}
 		
 		@Override
@@ -488,7 +503,7 @@ public class Materials {
 		
 		@Override
 		public int hashCode() {
-			return name.hashCode();
+			return name.hashCode() * 31 + networks.hashCode();
 		}
 		
 		public boolean isInSelection(String texture) {

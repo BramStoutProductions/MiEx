@@ -32,6 +32,7 @@
 package nl.bramstout.mcworldexporter.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -335,6 +336,41 @@ public class ExcludeRegionsManager extends JPanel{
 			});
 		}
 		
+		private void setEnabled(Component comp, boolean enabled) {
+			if(comp != this)
+				comp.setEnabled(enabled);
+			if(comp.getClass().equals(JPanel.class) || comp == this) {
+				int num = ((JPanel) comp).getComponentCount();
+				for(int i = 0; i < num; ++i) {
+					setEnabled(((JPanel) comp).getComponent(i), enabled);
+				}
+			}
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled) {
+			super.setEnabled(enabled);
+			setEnabled(this, enabled);
+		}
+		
+	}
+	
+	private void setEnabled(Component comp, boolean enabled) {
+		if(comp != this)
+			comp.setEnabled(enabled);
+		if(comp.getClass().equals(JPanel.class) || comp == this) {
+			int num = ((JPanel) comp).getComponentCount();
+			for(int i = 0; i < num; ++i) {
+				setEnabled(((JPanel) comp).getComponent(i), enabled);
+			}
+		}
+	}
+	
+	@Override
+	public void setEnabled(boolean enabled) {
+		super.setEnabled(enabled);
+		setEnabled(this, enabled);
+		setEnabled(regionsPanel, enabled);
 	}
 
 }

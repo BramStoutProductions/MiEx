@@ -31,6 +31,9 @@
 
 package nl.bramstout.mcworldexporter.export;
 
+import java.awt.EventQueue;
+import java.awt.SecondaryLoop;
+import java.awt.Toolkit;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -77,20 +80,58 @@ public class Exporter {
 	public static File currentExportFile = null;
 	public static File chunksFolder = null;
 	private static AtomicBoolean isExporting = new AtomicBoolean();
+	private static boolean exportCancelled = false;
 
 	public static boolean isExporting() {
 		return isExporting.get();
 	}
 	
+	public static boolean isExportCancelled() {
+		return exportCancelled;
+	}
+	
+	public static void cancelExport() {
+		exportCancelled = true;
+	}
+	
+	private static Exception exportException = null;
+	private static SecondaryLoop exportSecondaryLoop = null;
 	public static void export(File usdFile) throws Exception{
-		isExporting.set(true);
-		try {
-			_export(usdFile);
-		}catch(Exception e) {
-			isExporting.set(false);
-			throw e;
+		exportException = null;
+		exportSecondaryLoop = null;
+		Runnable exportRunnable = new Runnable() {
+
+			@Override
+			public void run() {
+				isExporting.set(true);
+				exportCancelled = false;
+				MCWorldExporter.getApp().getUI().setEnabled(false);
+				try {
+					_export(usdFile);
+				}catch(Exception e) {
+					exportException = e;
+				}
+				isExporting.set(false);
+				MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0);
+				MCWorldExporter.getApp().getUI().getProgressBar().setText("");
+				MCWorldExporter.getApp().getUI().setEnabled(true);
+				if(exportSecondaryLoop != null) {
+					exportSecondaryLoop.exit();
+				}
+			}
+			
+		};
+		if(!MCWorldExporter.cliMode) {
+			EventQueue systemEventQueue = Toolkit.getDefaultToolkit().getSystemEventQueue();
+			exportSecondaryLoop = systemEventQueue.createSecondaryLoop();
+			
+			new Thread(exportRunnable).start();
+			exportSecondaryLoop.enter();
+		}else {
+			exportRunnable.run();
 		}
-		isExporting.set(false);
+		if(exportException != null)
+			throw exportException;
 	}
 	
 	private static void _export(File usdFile) throws Exception {
@@ -109,6 +150,10 @@ public class Exporter {
 		currentExportFile = usdFile;
 		chunksFolder = new File(usdFile.getParentFile(), usdFile.getName().replace("." + extension, "_chunks"));
 		BackgroundThread.waitUntilDoneWithBackgroundTasks();
+		
+		if(isExportCancelled()) {
+			return;
+		}
 		
 		Materials.clearCaches();
 		MaterialWriter.clearCounters();
@@ -138,6 +183,12 @@ public class Exporter {
 		exportData.print();
 		exportData.write(dos);
 		
+		if(isExportCancelled()) {
+			dos.close();
+			file.delete();
+			return;
+		}
+		
 
 		// Export entities
 		EntityExporter entityExporter = new EntityExporter(MCWorldExporter.getApp().getExportBoundsList().get(0), MCWorldExporter.getApp().getWorld());
@@ -148,6 +199,12 @@ public class Exporter {
 		entityExporter.writeEntities(entityDos);
 		entityDos.close();
 		dos.writeUTF(entityFilename);
+		
+		if(isExportCancelled()) {
+			dos.close();
+			file.delete();
+			return;
+		}
 		
 		// Export chunks
 		List<File> chunkFiles = new ArrayList<File>();
@@ -214,6 +271,15 @@ public class Exporter {
 		futures = null;
 		System.gc();
 		
+		if(isExportCancelled()) {
+			dos.close();
+			file.delete();
+			for(File chunkFile : chunkFiles)
+				if(chunkFile.exists())
+					chunkFile.delete();
+			return;
+		}
+		
 		int centerX = MCWorldExporter.getApp().getActiveExportBounds().getCenterX();
 		int centerZ = MCWorldExporter.getApp().getActiveExportBounds().getCenterZ();
 		int defaultBiomeId = MCWorldExporter.getApp().getWorld().getBiomeId(
@@ -231,6 +297,15 @@ public class Exporter {
 		List<ModelFace> emptyFaceList = new ArrayList<ModelFace>();
 		LayeredBlock layeredBlockCache = new LayeredBlock();
 		for(IndividualBlockId blockId : individualBlockIds) {
+			if(isExportCancelled()) {
+				dos.close();
+				file.delete();
+				for(File chunkFile : chunkFiles)
+					if(chunkFile.exists())
+						chunkFile.delete();
+				return;
+			}
+			
 			dos.writeInt(blockId.getBlockId());
 			dos.writeInt(blockId.getX());
 			dos.writeInt(blockId.getY());
@@ -301,6 +376,14 @@ public class Exporter {
 		dos.close();
 		dos = null;
 		
+		if(isExportCancelled()) {
+			file.delete();
+			for(File chunkFile : chunkFiles)
+				if(chunkFile.exists())
+					chunkFile.delete();
+			return;
+		}
+		
 		// Write out any data that we couldn't write earlier.
 		// Like the byte offset for where the instancer models are
 		RandomAccessFile raf = new RandomAccessFile(file, "rw");
@@ -321,8 +404,25 @@ public class Exporter {
 		MCWorldExporter.getApp().getUI().getProgressBar().setProgress(0.1f);
 		MCWorldExporter.getApp().getUI().getProgressBar().setText("Converting");
 		
+		if(isExportCancelled()) {
+			file.delete();
+			for(File chunkFile : chunkFiles)
+				if(chunkFile.exists())
+					chunkFile.delete();
+			return;
+		}
+		
 		converter.init();
 		converter.convert();
+		
+		if(isExportCancelled()) {
+			file.delete();
+			for(File chunkFile : chunkFiles)
+				if(chunkFile.exists())
+					chunkFile.delete();
+			converter.deleteAllFiles();
+			return;
+		}
 		
 		if(converter.deleteMiExFiles()) {
 			// Delete the .miex file, since we don't need it anymore
@@ -408,6 +508,9 @@ public class Exporter {
 
 		@Override
 		public void run() {
+			if(Exporter.isExportCancelled()) {
+				return;
+			}
 			try {
 				chunk.export(dos);
 				dos.close();

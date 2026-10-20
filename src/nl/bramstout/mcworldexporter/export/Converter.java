@@ -89,6 +89,11 @@ public abstract class Converter {
 			
 			return null;
 		}
+
+		@Override
+		public void deleteAllFiles() throws Exception {
+			
+		}
 	}
 	
 	private static Map<String, Class<? extends Converter>> converterRegistry = new HashMap<String, Class<? extends Converter>>();
@@ -120,6 +125,8 @@ public abstract class Converter {
 	public abstract void convert() throws Exception;
 	
 	public abstract boolean deleteMiExFiles();
+	
+	public abstract void deleteAllFiles() throws Exception;
 	
 	public abstract ExportData getExportData(File file);
 	

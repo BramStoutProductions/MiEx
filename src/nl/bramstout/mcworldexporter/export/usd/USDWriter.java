@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import nl.bramstout.mcworldexporter.FileUtil;
 import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel;
 import nl.bramstout.mcworldexporter.entity.EntityAnimation.AnimationChannel3D;
+import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.export.LargeDataOutputStream;
 
 public class USDWriter {
@@ -111,7 +112,7 @@ public class USDWriter {
 		fw.close();
 		fw = null;
 		
-		if(delete) {
+		if(delete || Exporter.isExportCancelled()) {
 			if(FileUtil.hasUSDCat())
 				usdaFile.delete();
 			else
