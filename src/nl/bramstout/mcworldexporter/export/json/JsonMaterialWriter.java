@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.iq80.leveldb.shaded.guava.io.Files;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -47,6 +49,7 @@ import com.google.gson.JsonObject;
 
 import nl.bramstout.mcworldexporter.Config;
 import nl.bramstout.mcworldexporter.FileUtil;
+import nl.bramstout.mcworldexporter.MCWorldExporter;
 import nl.bramstout.mcworldexporter.export.Exporter;
 import nl.bramstout.mcworldexporter.materials.MaterialWriter;
 import nl.bramstout.mcworldexporter.materials.Materials;
@@ -391,6 +394,20 @@ public class JsonMaterialWriter extends MaterialWriter {
 			
 			if(fullPath.startsWith(resourcePathDir)) {
 				String relativePath = fullPath.substring(resourcePathDir.length());
+				
+				if(MCWorldExporter.portableExports) {
+					File outFile = new File(Exporter.chunksFolder, "resources/" + relativePath);
+					File outFolder = outFile.getParentFile();
+					if(!outFolder.exists())
+						outFolder.mkdirs();
+					try {
+						Files.copy(file.file, outFile);
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
+					return "./" + Exporter.chunksFolder.getName() + "/resources/" + relativePath;
+				}
+				
 				return FileUtil.getResourcePackJSONPrefix() + relativePath;
 			}
 			if(fullPath.startsWith(outputDir)) {
