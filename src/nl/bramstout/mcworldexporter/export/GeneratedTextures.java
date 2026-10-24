@@ -64,7 +64,7 @@ public class GeneratedTextures {
 	
 	public static File getTextureFile(String name) {
 		String texId = getTextureId(name);
-		if(!texId.contains("."))
+		if(texId.indexOf('.', texId.lastIndexOf('/') + 1) == -1)
 			texId = texId + ".png";
 		if(storeGeneratedTexturesInExport) {
 			return new File(Exporter.chunksFolder.getParentFile(), texId);

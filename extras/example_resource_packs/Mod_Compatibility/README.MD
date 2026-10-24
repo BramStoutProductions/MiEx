@@ -5,3 +5,5 @@ MiEx has support for modded worlds. It contains a tool to extract a resource pac
 Here is a list of all mods that this resource pack has support added for, including what it specifically adds:
 #### Yuushya Modelling
 * Adds support for the Show Block.
+#### Framed Blocks
+* Adds support for some of the framed blocks. (Thanks to Vixzzz05)

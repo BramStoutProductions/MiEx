@@ -10,7 +10,7 @@
         "minecraft:jungle_wall_sign", "minecraft:mangrove_wall_sign", "minecraft:oak_wall_sign",
         "minecraft:spruce_wall_sign", "minecraft:warped_wall_sign", "pale_oak_wall_sign"
     ],
-    "defaultTexture": "minecraft:entity/signs/oak",
+    "defaultTexture": "minecraft:block/oak_planks",
     "handler": [
         {
             "variables": [
@@ -45,7 +45,7 @@
                 "offsetX = 8.0",
                 "offsetY = 8.333333",
                 "offsetZ = 1.0",
-                "rotYModel = 0",
+                "rotYModel = rotY",
                 "modelName = 'minecraft:block/' + type"
             ]
         },

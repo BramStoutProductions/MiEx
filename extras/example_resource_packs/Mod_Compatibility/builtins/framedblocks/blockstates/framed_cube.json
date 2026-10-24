@@ -1,0 +1,55 @@
+{
+    "blocks": [
+        "framedblocks:framed_cube"
+    ],
+    "defaultTexture": "framedblocks:block/framed_cube",
+    "handler": [
+        {
+            "textures": {
+                "camo_down": "'framedblocks:block/framed_cube'",
+                "camo_up": "'framedblocks:block/framed_cube'",
+                "camo_north": "'framedblocks:block/framed_cube'",
+                "camo_south": "'framedblocks:block/framed_cube'",
+                "camo_east": "'framedblocks:block/framed_cube'",
+                "camo_west": "'framedblocks:block/framed_cube'"
+            }
+        },
+        {
+            "condition": "(thisBlock.state.camo != null)",
+            "variables": [
+                "camoName = Dict.hasKey(thisBlock.state.camo, 'blockState') ? thisBlock.state.camo.blockState.Name : (Dict.hasKey(thisBlock.state.camo, 'state') ? thisBlock.state.camo.state.Name : 'minecraft:bricks')"
+            ],
+            "generators": [
+                {
+                    "type": "blockTextures",
+                    "args": {
+                        "name": "camoName",
+                        "remap": "'camo_down'",
+                        "remap_down": "'camo_down'",
+                        "remap_up": "'camo_up'",
+                        "remap_north": "'camo_north'",
+                        "remap_south": "'camo_south'",
+                        "remap_east": "'camo_east'",
+                        "remap_west": "'camo_west'"
+                    }
+                }
+            ]
+        },
+        {
+            "elements": [
+                {
+                    "from": [ 0, 0, 0 ],
+                    "to": [ 16, 16, 16 ],
+                    "faces": {
+                        "down":  { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_down'" },
+                        "up":    { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_up'" },
+                        "north": { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_north'" },
+                        "south": { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_south'" },
+                        "west":  { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_west'" },
+                        "east":  { "uv": [ 0, 0, 16, 16 ], "texture": "'#camo_east'" }
+                    }
+                }
+            ]
+        }
+    ]
+}
